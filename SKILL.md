@@ -1,3 +1,15 @@
+---
+name: zeroapi
+version: 2.0.0
+description: >
+  Route tasks to the best model using paid subscriptions (Claude Max, ChatGPT,
+  Gemini Advanced, Kimi). Zero per-token API cost. Benchmark-driven task routing
+  with automatic failover.
+homepage: https://github.com/dorukardahan/ZeroAPI
+user-invocable: true
+metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"]}}
+---
+
 # ZeroAPI — Subscription-Based Model Routing
 
 You are an OpenClaw agent. This skill teaches you HOW to route tasks to the right model across your available providers. You do NOT call external APIs — OpenClaw handles connections. Your job is to CLASSIFY incoming tasks and DELEGATE to the appropriate agent/model.
