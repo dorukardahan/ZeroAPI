@@ -269,40 +269,53 @@ For fewer providers, remove the agents you don't have. Example: Claude + Gemini 
 
 ### Provider Configuration
 
-Each non-built-in provider needs a `models.providers` entry in `openclaw.json`:
+Each non-built-in provider needs configuration. Most go in `openclaw.json` under `models.providers`, but **Google Gemini with subscription OAuth requires special handling** (see below).
+
+**In `openclaw.json`** — Codex and Kimi providers:
 
 ```json
 {
   "models": {
     "mode": "merge",
     "providers": {
-      "google-gemini-cli": {
-        "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
-        "api": "google-generative-ai",
-        "models": [
-          { "id": "gemini-3-pro-preview" },
-          { "id": "gemini-3-flash-preview" },
-          { "id": "gemini-2.5-flash-lite" }
-        ]
-      },
       "openai-codex": {
         "baseUrl": "https://chatgpt.com/backend-api",
         "api": "openai-responses",
-        "models": [
-          { "id": "gpt-5.3-codex" }
-        ]
+        "models": [{ "id": "gpt-5.3-codex" }]
       },
       "kimi-coding": {
         "baseUrl": "https://api.kimi.com/coding/v1",
         "api": "openai-completions",
-        "models": [
-          { "id": "k2p5" }
-        ]
+        "models": [{ "id": "k2p5" }]
       }
     }
   }
 }
 ```
+
+**Google Gemini (subscription OAuth) — per-agent `models.json` ONLY:**
+
+The OpenClaw config schema does not accept `"api": "google-gemini-cli"` as a valid type. But the runtime registers it as a working stream function. The fix: do NOT put the google-gemini-cli provider in `openclaw.json`. Instead, add it to each agent's `models.json` file (located at `~/.openclaw/agents/<agent-id>/agent/models.json`), which is not schema-validated:
+
+```json
+{
+  "google-gemini-cli": {
+    "api": "google-gemini-cli",
+    "models": [
+      { "id": "gemini-3-pro-preview" },
+      { "id": "gemini-3-flash-preview" },
+      { "id": "gemini-2.5-flash-lite" }
+    ]
+  }
+}
+```
+
+**Critical rules for google-gemini-cli provider:**
+- Do NOT set `baseUrl` — the stream function uses a hardcoded default endpoint (`cloudcode-pa.googleapis.com`). Setting baseUrl overrides it and causes 404 errors.
+- Do NOT set `apiKey` — OAuth tokens come from auth-profiles automatically via `Authorization: Bearer` header.
+- Do NOT put this provider in `openclaw.json` — config schema will reject it and crash the gateway.
+
+**Why this matters:** The alternative `"api": "google-generative-ai"` type sends auth via `x-goog-api-key` header, which expects a paid API key. If you have OAuth subscription tokens (Gemini Advanced), they will be rejected with "API key not valid." The `google-gemini-cli` api type sends `Authorization: Bearer` which works with OAuth.
 
 **Important**: The `api` field is REQUIRED for every custom provider (OpenClaw 2026.2.6+). Missing it will crash the gateway with `No API provider registered for api: undefined`.
 
@@ -382,10 +395,19 @@ All tasks route to Opus. No fallback needed.
 ## Troubleshooting
 
 ### Gateway crashes with "No API provider registered for api: undefined"
-The `api` field is missing from a custom provider in `openclaw.json`. Add it:
-- Google Gemini: `"api": "google-generative-ai"`
-- OpenAI Codex: `"api": "openai-responses"`
-- Kimi: `"api": "openai-completions"`
+The `api` field is missing from a custom provider. Add it:
+- OpenAI Codex (in `openclaw.json`): `"api": "openai-responses"`
+- Kimi (in `openclaw.json`): `"api": "openai-completions"`
+- Google Gemini (in per-agent `models.json` ONLY): `"api": "google-gemini-cli"`
+
+Do NOT use `"api": "google-generative-ai"` for subscription OAuth — that type sends auth via `x-goog-api-key` header which rejects OAuth tokens. Use `"google-gemini-cli"` instead.
+
+### Google Gemini returns "API key not valid" with subscription
+Your Gemini provider is using the wrong API type. Two possible causes:
+1. Provider is in `openclaw.json` with `"api": "google-generative-ai"` — move it to per-agent `models.json` with `"api": "google-gemini-cli"` instead.
+2. Provider has a `baseUrl` set — remove it entirely. The `google-gemini-cli` stream function has the correct endpoint hardcoded.
+
+See the Provider Configuration section above for the correct setup.
 
 ### Model shows `missing` in `openclaw models status`
 The model ID does not match the provider's catalog. Common fix: `gemini-2.5-flash-lite-preview` is deprecated — use `gemini-2.5-flash-lite` (stable ID).
