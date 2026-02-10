@@ -18,7 +18,7 @@ You are an OpenClaw agent. This skill teaches you HOW to route tasks to the righ
 
 When this skill is first loaded, determine the user's available providers:
 
-1. Ask: "Which AI subscriptions do you have?" (Claude Max, ChatGPT Plus/Pro, Gemini Advanced, Kimi)
+1. Ask: "Which AI subscriptions do you have?" (Claude Max 5x/20x, ChatGPT Plus/Pro, Gemini Advanced, Kimi)
 2. Map subscriptions to available tiers (see table below)
 3. Disable tiers for missing providers — those decision steps get skipped
 4. Confirm the active configuration with the user
@@ -402,13 +402,26 @@ The model is registered in the main agent context but not available in sub-agent
 
 ## Cost Summary
 
-| Setup | Monthly | Per Day |
-|-------|---------|---------|
-| **Minimal** (Claude Max) | $100 | $3.33 |
-| **Balanced** (+ Gemini Advanced) | $120 | $4.00 |
-| **Code-focused** (+ ChatGPT Plus) | $140 | $4.67 |
-| **Code-focused** (+ ChatGPT Pro) | $320 | $10.67 |
-| **Full stack** (all 4, ChatGPT Plus) | $150 | $5.00 |
-| **Full stack Pro** (all 4, ChatGPT Pro) | $330 | $11.00 |
+### Subscription Plans (as of Feb 2026)
+
+| Provider | Plan | Monthly |
+|----------|------|---------|
+| Anthropic | Claude Max 5x | $100 |
+| Anthropic | Claude Max 20x | $200 |
+| OpenAI | ChatGPT Plus | $20 |
+| OpenAI | ChatGPT Pro | $200 |
+| Google | Gemini Advanced | $20 |
+| Moonshot | Kimi Andante | ~$10 |
+
+### Common Setups
+
+| Setup | Monthly | Notes |
+|-------|---------|-------|
+| **Claude only** (Max 5x) | $100 | No routing, Opus handles everything |
+| **Claude only** (Max 20x) | $200 | No routing, 20x rate limits |
+| **Balanced** (Max 20x + Gemini) | $220 | Adds Flash-Lite speed + Pro research |
+| **Code-focused** (Max 20x + Gemini + ChatGPT Plus) | $240 | Adds Codex for code + math |
+| **Full stack** (all 4, ChatGPT Plus) | $250 | Full specialization, budget-friendly |
+| **Full stack Pro** (all 4, ChatGPT Pro) | $430 | Maximum rate limits across all models |
 
 Source: Artificial Analysis API v4, February 2026. Codex scores estimated (\*) from OpenAI blog data.

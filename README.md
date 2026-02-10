@@ -2,13 +2,13 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**You pay $100-330/mo for AI subscriptions. Your agent should use ALL of them.**
+**You pay $200-430/mo for AI subscriptions. Your agent should use ALL of them.**
 
-ZeroAPI turns your existing AI subscriptions (Claude Max, ChatGPT, Gemini Advanced, Kimi) into a unified model fleet with benchmark-driven routing. No per-token API costs. No proxy. Just smart task routing through [OpenClaw](https://openclaw.ai).
+ZeroAPI turns your existing AI subscriptions (Claude Max 5x/20x, ChatGPT Plus/Pro, Gemini Advanced, Kimi) into a unified model fleet with benchmark-driven routing. No per-token API costs. No proxy. Just smart task routing through [OpenClaw](https://openclaw.ai).
 
 ## Why
 
-You're paying for Claude Max. Maybe Gemini Advanced too. Maybe ChatGPT Plus for Codex. Each subscription gives you access to frontier models with generous rate limits — but your agent only uses one of them.
+You're paying for Claude Max 20x ($200/mo). Maybe Gemini Advanced too ($20/mo). Maybe ChatGPT Plus for Codex ($20/mo). Each subscription gives you access to frontier models with generous rate limits — but your agent only uses one of them.
 
 ZeroAPI fixes that. It routes each task to the model that's actually best at it, based on published benchmarks. Code goes to Codex. Research goes to Gemini Pro. Fast tasks go to Flash-Lite. Reasoning stays on Opus.
 
@@ -48,7 +48,7 @@ The skill will:
 2. Configure model tiers based on your providers
 3. Route tasks using a 9-step decision tree
 
-Works with Claude-only ($100/mo) all the way up to full 4-provider setups ($150-330/mo).
+Works with Claude-only ($100-200/mo) all the way up to full 4-provider setups ($250-430/mo).
 
 ## How It Works
 
@@ -72,22 +72,22 @@ Missing a provider? The tree degrades gracefully. Every branch falls back to Opu
 
 | Setup | Monthly | What You Get |
 |-------|---------|-------------|
-| **Minimal** | $100 | Claude Max only. Opus handles everything. |
-| **Balanced** | $120 | + Gemini Advanced. Adds Flash-Lite speed + Pro research. |
-| **Code-focused** | $140-320 | + ChatGPT Plus/Pro. Adds Codex for code + math. |
-| **Full stack** | $150-330 | All 4 providers. Full specialization. |
+| **Claude only** | $100-200 | Max 5x or 20x. Opus handles everything. |
+| **Balanced** | $220 | Max 20x + Gemini Advanced ($20). Adds Flash-Lite speed + Pro research. |
+| **Code-focused** | $240 | + ChatGPT Plus ($20). Adds Codex for code + math. |
+| **Full stack** | $250-430 | All 4 providers. ChatGPT Plus ($250) or Pro ($430). |
 
 ## Cost Comparison
 
 Running Opus 4.6 through the Anthropic API at moderate usage (~500K tokens/day):
 
-| | Per-Token API | Claude Max (ZeroAPI) |
+| | Per-Token API | Subscriptions (ZeroAPI) |
 |---|---|---|
-| Monthly cost | ~$675 | $100 |
-| Rate limits | Pay-per-use | Subscription limits |
-| Multi-model routing | Extra cost per model | Included in subscriptions |
+| Monthly cost | ~$675 (Opus only) | $250 (all 4 providers) |
+| Rate limits | Pay-per-use, unlimited | Subscription limits |
+| Multi-model routing | Extra API cost per model | Included in subscriptions |
 
-That's **6.75x cheaper** for unlimited Opus access alone — before you even add routing benefits.
+That's **2.7x cheaper** with better results because each task goes to the specialist model. And unlike the API, your cost stays flat no matter how much you use it.
 
 ## What's in SKILL.md
 
