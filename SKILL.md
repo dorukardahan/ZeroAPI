@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 2.1.0
+version: 2.1.1
 description: >
   Route tasks to the best model using paid subscriptions (Claude Max, ChatGPT,
   Gemini Advanced, Kimi). Zero per-token API cost. Benchmark-driven task routing
