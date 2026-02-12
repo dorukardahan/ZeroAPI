@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 2.0.0
+version: 2.1.0
 description: >
   Route tasks to the best model using paid subscriptions (Claude Max, ChatGPT,
   Gemini Advanced, Kimi). Zero per-token API cost. Benchmark-driven task routing
@@ -35,7 +35,7 @@ Any model showing `missing` or `auth_expired` is not usable. Remove it from your
 
 | Tier | Model | OpenClaw ID | Speed | TTFT | Intelligence | Context | Best At |
 |------|-------|-------------|-------|------|-------------|---------|---------|
-| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite` | 645 tok/s | 0.18s | 38.2 | 1M | Heartbeats, pings, trivial tasks |
+| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite-preview` | 645 tok/s | 0.18s | 38.2 | 1M | Heartbeats, pings, trivial tasks |
 | FAST | Gemini 3 Flash | `google-gemini-cli/gemini-3-flash-preview` | 195 tok/s | 12.75s | 46.4 | 1M | Instruction following, structured output |
 | RESEARCH | Gemini 3 Pro | `google-gemini-cli/gemini-3-pro-preview` | 131 tok/s | 29.59s | 48.4 | 1M | Scientific research, long context analysis |
 | CODE | GPT-5.3 Codex | `openai-codex/gpt-5.3-codex` | 113 tok/s | 20.00s | 51.5 | 200K | Code generation, math (99.0) |
@@ -250,7 +250,7 @@ To use routing, the user needs agents defined in `openclaw.json`. Here is the re
       {
         "id": "gemini-fast",
         "model": {
-          "primary": "google-gemini-cli/gemini-2.5-flash-lite",
+          "primary": "google-gemini-cli/gemini-2.5-flash-lite-preview",
           "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
         },
         "workspace": "~/.openclaw/workspace-gemini"
@@ -304,7 +304,7 @@ The OpenClaw config schema does not accept `"api": "google-gemini-cli"` as a val
     "models": [
       { "id": "gemini-3-pro-preview" },
       { "id": "gemini-3-flash-preview" },
-      { "id": "gemini-2.5-flash-lite" }
+      { "id": "gemini-2.5-flash-lite-preview" }
     ]
   }
 }
@@ -410,7 +410,7 @@ Your Gemini provider is using the wrong API type. Two possible causes:
 See the Provider Configuration section above for the correct setup.
 
 ### Model shows `missing` in `openclaw models status`
-The model ID does not match the provider's catalog. Common fix: `gemini-2.5-flash-lite-preview` is deprecated — use `gemini-2.5-flash-lite` (stable ID).
+The model ID does not match the provider's catalog. Common fix: OpenClaw's built-in catalog uses `gemini-2.5-flash-lite-preview` (with `-preview` suffix). The `normalizeGoogleModelId()` function only normalizes Gemini 3 model IDs — Gemini 2.5 IDs must match exactly.
 
 ### Codex stops working (401 Unauthorized)
 The ChatGPT OAuth token was invalidated (usually by logging into ChatGPT on a phone or browser). Fix:
