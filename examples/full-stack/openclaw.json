@@ -1,0 +1,72 @@
+{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "openai-codex": {
+        "baseUrl": "https://chatgpt.com/backend-api",
+        "api": "openai-responses",
+        "models": [{ "id": "gpt-5.3-codex" }]
+      },
+      "kimi-coding": {
+        "baseUrl": "https://api.kimi.com/coding/v1",
+        "api": "openai-completions",
+        "models": [{ "id": "k2p5" }]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-opus-4-6",
+        "fallbacks": [
+          "google-gemini-cli/gemini-3-pro-preview",
+          "openai-codex/gpt-5.3-codex",
+          "kimi-coding/k2p5"
+        ]
+      },
+      "heartbeat": {
+        "model": "google-gemini-cli/gemini-3-flash-preview"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "model": { "primary": "anthropic/claude-opus-4-6" },
+        "workspace": "~/.openclaw/workspace"
+      },
+      {
+        "id": "codex",
+        "model": {
+          "primary": "openai-codex/gpt-5.3-codex",
+          "fallbacks": ["anthropic/claude-opus-4-6"]
+        },
+        "workspace": "~/.openclaw/workspace-codex"
+      },
+      {
+        "id": "gemini-researcher",
+        "model": {
+          "primary": "google-gemini-cli/gemini-3-pro-preview",
+          "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
+        },
+        "workspace": "~/.openclaw/workspace-gemini-research"
+      },
+      {
+        "id": "gemini-fast",
+        "model": {
+          "primary": "google-gemini-cli/gemini-3-flash-preview",
+          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
+        },
+        "workspace": "~/.openclaw/workspace-gemini"
+      },
+      {
+        "id": "kimi-orchestrator",
+        "model": {
+          "primary": "kimi-coding/k2p5",
+          "fallbacks": ["anthropic/claude-opus-4-6"]
+        },
+        "workspace": "~/.openclaw/workspace-kimi"
+      }
+    ]
+  }
+}

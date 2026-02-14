@@ -1,0 +1,38 @@
+{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "openai-codex": {
+        "baseUrl": "https://chatgpt.com/backend-api",
+        "api": "openai-responses",
+        "models": [{ "id": "gpt-5.3-codex" }]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-opus-4-6",
+        "fallbacks": [
+          "openai-codex/gpt-5.3-codex"
+        ]
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "model": { "primary": "anthropic/claude-opus-4-6" },
+        "workspace": "~/.openclaw/workspace"
+      },
+      {
+        "id": "codex",
+        "model": {
+          "primary": "openai-codex/gpt-5.3-codex",
+          "fallbacks": ["anthropic/claude-opus-4-6"]
+        },
+        "workspace": "~/.openclaw/workspace-codex"
+      }
+    ]
+  }
+}

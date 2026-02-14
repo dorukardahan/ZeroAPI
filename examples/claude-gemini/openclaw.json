@@ -1,0 +1,39 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-opus-4-6",
+        "fallbacks": [
+          "google-gemini-cli/gemini-3-pro-preview"
+        ]
+      },
+      "heartbeat": {
+        "model": "google-gemini-cli/gemini-3-flash-preview"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "model": { "primary": "anthropic/claude-opus-4-6" },
+        "workspace": "~/.openclaw/workspace"
+      },
+      {
+        "id": "gemini-researcher",
+        "model": {
+          "primary": "google-gemini-cli/gemini-3-pro-preview",
+          "fallbacks": ["anthropic/claude-opus-4-6"]
+        },
+        "workspace": "~/.openclaw/workspace-gemini-research"
+      },
+      {
+        "id": "gemini-fast",
+        "model": {
+          "primary": "google-gemini-cli/gemini-3-flash-preview",
+          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
+        },
+        "workspace": "~/.openclaw/workspace-gemini"
+      }
+    ]
+  }
+}

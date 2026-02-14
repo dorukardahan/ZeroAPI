@@ -6,6 +6,10 @@
 
 ZeroAPI turns your existing AI subscriptions (Claude Max 5x/20x, ChatGPT Plus/Pro, Gemini Advanced, Kimi) into a unified model fleet with benchmark-driven routing. No per-token API costs. No proxy. Just smart task routing through [OpenClaw](https://openclaw.ai).
 
+## What is OpenClaw?
+
+[OpenClaw](https://openclaw.ai) is an open-source AI gateway that lets you run agents connected to messaging platforms (WhatsApp, Discord, Telegram, Slack). It manages multiple LLM providers, handles auth/failover, and supports sub-agent delegation. ZeroAPI is a **skill** (a Markdown instruction file) that teaches your OpenClaw agent how to route tasks to the right model.
+
 ## Why
 
 You're paying for Claude Max 20x ($200/mo). Maybe Gemini Advanced too ($20/mo). Maybe ChatGPT Plus for Codex ($20/mo). Each subscription gives you access to frontier models with generous rate limits — but your agent only uses one of them.
@@ -18,31 +22,45 @@ The result: better output, faster responses, and you're finally getting value fr
 
 | Model | Speed | Intelligence | Best At |
 |-------|-------|-------------|---------|
-| Gemini 2.5 Flash-Lite | 645 tok/s | 38.2 | Heartbeats, pings, bulk tasks |
-| Gemini 3 Flash | 195 tok/s | 46.4 | Instruction following |
+| Gemini 2.5 Flash-Lite | 495 tok/s | 21.6 | Low-latency pings, trivial tasks |
+| Gemini 3 Flash | 206 tok/s | 46.4 | Instruction following, heartbeats |
 | Gemini 3 Pro | 131 tok/s | 48.4 | Scientific research (GPQA: 0.908) |
 | GPT-5.3 Codex | 113 tok/s | 51.5 | Code (49.3), math (99.0) |
 | Claude Opus 4.6 | 67 tok/s | 53.0 | Reasoning, planning, content |
 | Kimi K2.5 | 39 tok/s | 46.7 | Agentic orchestration (TAU-2: 0.959) |
 
-*Independent evaluation, February 2026.*
+*Artificial Analysis API v4, February 2026 (v2.1 verified). Codex scores estimated from vendor reports. Structured data in [`benchmarks.json`](benchmarks.json).*
+
+## Prerequisites
+
+- [OpenClaw](https://openclaw.ai) v2026.2.6+ installed and running
+- At least one AI subscription (Claude Max is the minimum)
+- Providers authenticated via `openclaw onboard`
 
 ## Quick Start
-
-Requires [OpenClaw](https://openclaw.ai) v2026.2.6+.
 
 ```bash
 git clone https://github.com/dorukardahan/ZeroAPI.git
 ```
 
-Add the skill to your agent in `openclaw.json`:
+**1. Copy a config example** that matches your subscriptions:
+
+```bash
+# Pick one: claude-only, claude-codex, claude-gemini, or full-stack
+cp ZeroAPI/examples/full-stack/openclaw.json ~/.openclaw/openclaw.json
+```
+
+See [`examples/README.md`](examples/README.md) for setup details per config.
+
+**2. Add the skill** to your agent in `openclaw.json`:
+
 ```json
 {
   "skills": ["path/to/ZeroAPI/SKILL.md"]
 }
 ```
 
-The skill will:
+**3. The skill will:**
 
 1. Ask which subscriptions you have
 2. Configure model tiers based on your providers
@@ -59,7 +77,7 @@ INCOMING TASK
 ├─ Math problem?    → Codex (99/100 math score)
 ├─ Write code?      → Codex (49.3 coding score)
 ├─ Review code?     → Opus (intelligence 53.0)
-├─ Need speed?      → Flash-Lite (645 tok/s)
+├─ Need speed?      → Flash (206 tok/s, IFBench 0.780)
 ├─ Research?        → Gemini Pro (GPQA 0.908)
 ├─ Tool pipeline?   → Kimi K2.5 (TAU-2 0.959)
 ├─ Structured I/O?  → Gemini Flash (IFBench 0.780)
@@ -101,6 +119,19 @@ Everything an OpenClaw agent needs to implement routing:
 - Collaboration patterns (pipeline, parallel, adversarial, orchestrated)
 - Fallback chains for every provider combination
 - Troubleshooting common issues
+
+## Customizing for Your Subscriptions
+
+Don't have all 4 providers? No problem. The `examples/` directory has ready-to-use configs:
+
+| Your subscriptions | Config | Agents |
+|-------------------|--------|--------|
+| Claude only | [`claude-only/`](examples/claude-only/) | 1 |
+| Claude + ChatGPT | [`claude-codex/`](examples/claude-codex/) | 2 |
+| Claude + Gemini | [`claude-gemini/`](examples/claude-gemini/) | 3 |
+| All 4 providers | [`full-stack/`](examples/full-stack/) | 5 |
+
+Each config includes proper fallback chains so no agent is left without a backup. Benchmark data is in [`benchmarks.json`](benchmarks.json) for programmatic access.
 
 ## Star History
 

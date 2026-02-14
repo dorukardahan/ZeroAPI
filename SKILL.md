@@ -35,8 +35,8 @@ Any model showing `missing` or `auth_expired` is not usable. Remove it from your
 
 | Tier | Model | OpenClaw ID | Speed | TTFT | Intelligence | Context | Best At |
 |------|-------|-------------|-------|------|-------------|---------|---------|
-| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite-preview` | 645 tok/s | 0.18s | 38.2 | 1M | Heartbeats, pings, trivial tasks |
-| FAST | Gemini 3 Flash | `google-gemini-cli/gemini-3-flash-preview` | 195 tok/s | 12.75s | 46.4 | 1M | Instruction following, structured output |
+| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite-preview` | 495 tok/s | 0.23s | 21.6 | 1M | Low-latency pings, trivial format tasks |
+| FAST | Gemini 3 Flash | `google-gemini-cli/gemini-3-flash-preview` | 206 tok/s | 12.75s | 46.4 | 1M | Instruction following, structured output, heartbeats |
 | RESEARCH | Gemini 3 Pro | `google-gemini-cli/gemini-3-pro-preview` | 131 tok/s | 29.59s | 48.4 | 1M | Scientific research, long context analysis |
 | CODE | GPT-5.3 Codex | `openai-codex/gpt-5.3-codex` | 113 tok/s | 20.00s | 51.5 | 200K | Code generation, math (99.0) |
 | DEEP | Claude Opus 4.6 | `anthropic/claude-opus-4-6` | 67 tok/s | 1.76s | 53.0 | 200K | Reasoning, planning, judgment |
@@ -44,7 +44,7 @@ Any model showing `missing` or `auth_expired` is not usable. Remove it from your
 
 **Key benchmark scores** (higher = better):
 - **Intelligence**: Composite score across all benchmarks (max ~53)
-- **GPQA** (science): Gemini Pro 0.908, Opus 0.769, Codex 0.730*
+- **GPQA** (science): Gemini Pro 0.908, Opus 0.769, Codex 0.738*
 - **Coding** (SWE-bench): Codex 49.3*, Opus 43.3, Gemini Pro 35.1
 - **Math** (AIME '25): Codex 99.0*, Gemini Flash 97.0, Opus 54.0
 - **IFBench** (instruction following): Gemini Flash 0.780, Opus 0.639, Codex 0.590*
@@ -52,7 +52,9 @@ Any model showing `missing` or `auth_expired` is not usable. Remove it from your
 
 Scores marked with * are estimated from vendor reports, not independently verified.
 
-Source: Artificial Analysis API v4, February 2026.
+Source: Artificial Analysis API v4, February 2026 (v2.1 verified).
+
+**v2.1 corrections** (from v2.0): Flash-Lite speed 645→495 tok/s, TTFT 0.18→0.23s, intelligence 38.2→21.6. Flash speed 195→206 tok/s. Codex GPQA 0.730→0.738. Flash-Lite no longer recommended for heartbeats — use Flash instead (better IFBench: 0.780).
 
 ## Decision Algorithm
 
@@ -78,7 +80,9 @@ Walk through these 9 steps IN ORDER for every incoming task. The FIRST match win
 
 ### Step 5: Speed critical / trivial task?
 **Signals**: quick, fast, simple, format, convert, summarize briefly, list, extract, translate short text, rename, timestamp, one-liner
-→ Route to **SIMPLE** (Flash-Lite, 645 tok/s, 0.18s TTFT) / fallback: Flash / Opus
+→ Route to **FAST** (Flash, 206 tok/s, IFBench 0.780) / fallback: Flash-Lite (for sub-second latency) / Opus
+
+**Note**: For tasks where sub-second TTFT matters more than intelligence (pings, health checks), use SIMPLE (Flash-Lite, 0.23s TTFT). For heartbeats and cron jobs, use FAST (Flash) — it has much better instruction following (IFBench 0.780 vs ~0.21 for Flash-Lite).
 
 ### Step 6: Research / scientific / factual?
 **Signals**: research, find out, what is, explain, compare, analyze, paper, study, evidence, fact-check, deep dive, investigate
@@ -121,7 +125,7 @@ When multiple steps seem to match, resolve with these priority rules:
 2. **Specialist trumps generalist.** If a model has a standout benchmark for the exact task type, prefer it.
 3. **Code writing → Codex. Code review → Opus.** Different models for writing vs judging.
 4. **Context overflow → Gemini.** Only Gemini models handle 1M context.
-5. **TTFT matters for interactive tasks.** Flash-Lite (0.18s), Kimi (1.65s), and Opus (1.76s) respond fast. Codex (20s) and Pro (29.59s) are slow to start — don't use them for quick back-and-forth.
+5. **TTFT matters for interactive tasks.** Flash-Lite (0.23s), Kimi (1.65s), and Opus (1.76s) respond fast. Codex (20s) and Pro (29.59s) are slow to start — don't use them for quick back-and-forth.
 6. **When truly tied → Opus.** Highest general intelligence, lowest risk of subtle errors.
 
 ## Sub-Agent Delegation
@@ -229,35 +233,48 @@ To use routing, the user needs agents defined in `openclaw.json`. Here is the re
           "openai-codex/gpt-5.3-codex",
           "kimi-coding/k2p5"
         ]
+      },
+      "heartbeat": {
+        "model": "google-gemini-cli/gemini-3-flash-preview"
       }
     },
     "list": [
       {
         "id": "main",
+        "default": true,
         "model": { "primary": "anthropic/claude-opus-4-6" },
         "workspace": "~/.openclaw/workspace"
       },
       {
         "id": "codex",
-        "model": { "primary": "openai-codex/gpt-5.3-codex" },
+        "model": {
+          "primary": "openai-codex/gpt-5.3-codex",
+          "fallbacks": ["anthropic/claude-opus-4-6"]
+        },
         "workspace": "~/.openclaw/workspace-codex"
       },
       {
         "id": "gemini-researcher",
-        "model": { "primary": "google-gemini-cli/gemini-3-pro-preview" },
+        "model": {
+          "primary": "google-gemini-cli/gemini-3-pro-preview",
+          "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
+        },
         "workspace": "~/.openclaw/workspace-gemini-research"
       },
       {
         "id": "gemini-fast",
         "model": {
-          "primary": "google-gemini-cli/gemini-2.5-flash-lite-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
+          "primary": "google-gemini-cli/gemini-3-flash-preview",
+          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
         },
         "workspace": "~/.openclaw/workspace-gemini"
       },
       {
         "id": "kimi-orchestrator",
-        "model": { "primary": "kimi-coding/k2p5" },
+        "model": {
+          "primary": "kimi-coding/k2p5",
+          "fallbacks": ["anthropic/claude-opus-4-6"]
+        },
         "workspace": "~/.openclaw/workspace-kimi"
       }
     ]
@@ -265,7 +282,9 @@ To use routing, the user needs agents defined in `openclaw.json`. Here is the re
 }
 ```
 
-For fewer providers, remove the agents you don't have. Example: Claude + Gemini only → remove `codex` and `kimi-orchestrator` from the list, remove their entries from `fallbacks`.
+For fewer providers, remove the agents you don't have. See `examples/` directory for ready-to-use configs: `claude-only/`, `claude-codex/`, `claude-gemini/`, `full-stack/`.
+
+**Important — per-agent fallback behavior**: When an agent uses the object form `"model": { "primary": "..." }`, it **replaces** global fallbacks entirely. Always add explicit `"fallbacks"` to every agent using object form. Without fallbacks, a single provider outage means zero responses from that agent. The string form `"model": "..."` inherits global fallbacks automatically.
 
 ### Provider Configuration
 
@@ -446,4 +465,4 @@ The model is registered in the main agent context but not available in sub-agent
 | **Full stack** (all 4, ChatGPT Plus) | $250 | Full specialization, budget-friendly |
 | **Full stack Pro** (all 4, ChatGPT Pro) | $430 | Maximum rate limits across all models |
 
-Source: Artificial Analysis API v4, February 2026. Codex scores estimated (\*) from OpenAI blog data.
+Source: Artificial Analysis API v4, February 2026 (v2.1 verified). Codex scores estimated (\*) from OpenAI blog data. Structured benchmark data available in `benchmarks.json`.
