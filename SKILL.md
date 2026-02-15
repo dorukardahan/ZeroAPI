@@ -43,7 +43,7 @@ For full provider configuration details, consult `references/provider-config.md`
 | SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite` | 495 tok/s | 0.23s | 21.6 | 1M | Low-latency pings, trivial format tasks |
 | FAST | Gemini 3 Flash | `google-gemini-cli/gemini-3-flash-preview` | 206 tok/s | 12.75s | 46.4 | 1M | Instruction following, structured output, heartbeats |
 | RESEARCH | Gemini 3 Pro | `google-gemini-cli/gemini-3-pro-preview` | 131 tok/s | 29.59s | 48.4 | 1M | Scientific research, long context analysis |
-| CODE | GPT-5.3 Codex | `openai-codex/gpt-5.3-codex` | 113 tok/s | 20.00s | 51.5 | 200K | Code generation, math (99.0) |
+| CODE | GPT-5.3 Codex | `openai-codex/gpt-5.3-codex` | 113 tok/s | 20.00s | 51.5 | 266K | Code generation, math (99.0) |
 | DEEP | Claude Opus 4.6 | `anthropic/claude-opus-4-6` | 67 tok/s | 1.76s | 53.0 | 200K | Reasoning, planning, judgment |
 | ORCHESTRATE | Kimi K2.5 | `kimi-coding/k2p5` | 39 tok/s | 1.65s | 46.7 | 128K | Multi-agent orchestration (TAU-2: 0.959) |
 
@@ -219,7 +219,7 @@ When a model is unavailable or rate-limited, fall through in reliability order.
 ### Full Stack (4 providers)
 | Task Type | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |-----------|---------|------------|------------|------------|
-| Reasoning | Opus | Gemini Pro | Codex | Kimi K2.5 |
+| Reasoning | Opus | Codex | Gemini Pro | Kimi K2.5 |
 | Code | Codex | Opus | Gemini Pro | Kimi K2.5 |
 | Research | Gemini Pro | Opus | Codex | Kimi K2.5 |
 | Fast tasks | Flash-Lite | Flash | Opus | Codex |
