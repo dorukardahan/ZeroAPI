@@ -27,7 +27,9 @@ ZeroAPI/
 │   ├── claude-codex/openclaw.json    # 2 providers, 2 agents
 │   ├── claude-gemini/openclaw.json   # 2 providers, 3 agents
 │   │   └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
-│   └── full-stack/openclaw.json      # 4 providers, 5 agents
+│   ├── full-stack/openclaw.json      # 4 providers, 5 agents
+│   │   └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
+│   └── specialist-agents/openclaw.json  # 4 providers, 9 agents (domain specialists)
 │       └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
 └── content/
     └── x-thread.md                   # Launch thread draft
@@ -178,6 +180,7 @@ All models should show as available. See [`examples/README.md`](examples/README.
 | **Claude + Codex** | $220 | + OpenAI | 2 | Specialist code + math via Codex. |
 | **Claude + Gemini** | $220 | + Google | 3 | Flash speed + Pro research + 1M context. |
 | **Full stack** | $250-430 | + Kimi | 5 | Full specialization across all tiers. |
+| **Specialist agents** | $250-430 | All 4 | 9 | Full stack + domain-specific agents (devops, research, content, community). |
 
 ## Cost Comparison
 
