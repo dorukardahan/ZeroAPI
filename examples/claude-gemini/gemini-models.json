@@ -4,7 +4,7 @@
     "models": [
       { "id": "gemini-3-pro-preview" },
       { "id": "gemini-3-flash-preview" },
-      { "id": "gemini-2.5-flash-lite-preview" }
+      { "id": "gemini-2.5-flash-lite" }
     ]
   }
 }

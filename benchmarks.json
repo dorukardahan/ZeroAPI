@@ -4,9 +4,9 @@
   "date": "2026-02-15",
   "notes": "Codex scores marked 'estimated: true' are from OpenAI blog data, not independently verified.",
   "models": {
-    "gemini-2.5-flash-lite-preview": {
+    "gemini-2.5-flash-lite": {
       "provider": "google-gemini-cli",
-      "openclaw_id": "google-gemini-cli/gemini-2.5-flash-lite-preview",
+      "openclaw_id": "google-gemini-cli/gemini-2.5-flash-lite",
       "tier": "SIMPLE",
       "speed_tok_s": 495,
       "ttft_s": 0.23,
@@ -116,7 +116,7 @@
   "tiers": {
     "SIMPLE": {
       "description": "Lowest latency, trivial tasks only",
-      "primary": "gemini-2.5-flash-lite-preview",
+      "primary": "gemini-2.5-flash-lite",
       "requires_provider": "google-gemini-cli"
     },
     "FAST": {

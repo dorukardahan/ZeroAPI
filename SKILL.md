@@ -35,7 +35,7 @@ Any model showing `missing` or `auth_expired` is not usable. Remove it from your
 
 | Tier | Model | OpenClaw ID | Speed | TTFT | Intelligence | Context | Best At |
 |------|-------|-------------|-------|------|-------------|---------|---------|
-| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite-preview` | 495 tok/s | 0.23s | 21.6 | 1M | Low-latency pings, trivial format tasks |
+| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite` | 495 tok/s | 0.23s | 21.6 | 1M | Low-latency pings, trivial format tasks |
 | FAST | Gemini 3 Flash | `google-gemini-cli/gemini-3-flash-preview` | 206 tok/s | 12.75s | 46.4 | 1M | Instruction following, structured output, heartbeats |
 | RESEARCH | Gemini 3 Pro | `google-gemini-cli/gemini-3-pro-preview` | 131 tok/s | 29.59s | 48.4 | 1M | Scientific research, long context analysis |
 | CODE | GPT-5.3 Codex | `openai-codex/gpt-5.3-codex` | 113 tok/s | 20.00s | 51.5 | 200K | Code generation, math (99.0) |
@@ -323,7 +323,7 @@ The OpenClaw config schema does not accept `"api": "google-gemini-cli"` as a val
     "models": [
       { "id": "gemini-3-pro-preview" },
       { "id": "gemini-3-flash-preview" },
-      { "id": "gemini-2.5-flash-lite-preview" }
+      { "id": "gemini-2.5-flash-lite" }
     ]
   }
 }
@@ -409,7 +409,30 @@ All tasks route to Opus. No fallback needed.
 | OpenAI Codex | OAuth (ChatGPT) | `openclaw onboard --auth-choice openai-codex` |
 | Kimi | API key (subscription) | `openclaw onboard --auth-choice kimi-code-api-key` |
 
-**Auth reliability ranking**: Anthropic token (never expires) > Gemini OAuth (auto-refresh, stable) > Kimi API key (static, stable) > Codex OAuth (fragile — logging into ChatGPT on another device can invalidate the VPS token; re-run the onboard command to fix).
+**Auth reliability ranking**: Kimi API key (static, never expires) ≈ Gemini OAuth (auto-refresh, stable) > Anthropic setup-token (auto-refresh, ~8hr access token) > Codex OAuth (auto-refresh works, see notes below).
+
+**Codex OAuth — multi-device usage is safe**: Tested Feb 2026 — logging into ChatGPT web, ChatGPT mobile app, Codex CLI, and Codex desktop app does NOT invalidate the VPS OpenClaw token. All four scenarios were tested while a fresh Codex JWT was active on the VPS; the token survived all of them. OpenClaw's auto-refresh mechanism handles token renewal automatically.
+
+**Codex OAuth on headless VPS (no browser)**: OpenClaw detects VPS environments and offers a paste-the-redirect-URL flow instead of opening a browser. Use `tmux` to run the interactive wizard:
+```bash
+# 1. Start onboard in a tmux session
+tmux new-session -d -s codex 'openclaw onboard --auth-choice openai-codex --accept-risk'
+
+# 2. Navigate the TUI: view screen, send Enter to select defaults
+tmux capture-pane -t codex -p        # see current screen
+tmux send-keys -t codex Enter        # select highlighted option
+
+# 3. When the OAuth URL appears, copy it and open in your LOCAL browser
+#    Log in to ChatGPT, then copy the redirect URL from the browser
+#    (it will fail to load — that's expected, just copy the full URL)
+
+# 4. Paste the redirect URL back into tmux
+tmux send-keys -t codex 'http://localhost:1455/auth/callback?code=...' Enter
+
+# 5. Cancel remaining wizard steps (auth is already saved)
+tmux send-keys -t codex C-c
+```
+This method works without SSH tunnels or port forwarding.
 
 ## Troubleshooting
 
@@ -429,14 +452,14 @@ Your Gemini provider is using the wrong API type. Two possible causes:
 See the Provider Configuration section above for the correct setup.
 
 ### Model shows `missing` in `openclaw models status`
-The model ID does not match the provider's catalog. Common fix: OpenClaw's built-in catalog uses `gemini-2.5-flash-lite-preview` (with `-preview` suffix). The `normalizeGoogleModelId()` function only normalizes Gemini 3 model IDs — Gemini 2.5 IDs must match exactly.
+The model ID does not match the provider's catalog. For `gemini-2.5-flash-lite`: use the ID **without** `-preview` suffix (the `-preview` alias was deprecated Aug 2025). The model may show as `configured,missing` because OpenClaw's catalog hasn't added it yet (issue #10284, PR #10984 pending) — but it still works for API calls. The `normalizeGoogleModelId()` function only normalizes Gemini 3 model IDs — Gemini 2.5 IDs must match exactly.
 
 ### Codex stops working (401 Unauthorized)
-The ChatGPT OAuth token was invalidated (usually by logging into ChatGPT on a phone or browser). Fix:
+The Codex OAuth token has expired and auto-refresh failed. This can happen if the refresh token itself expired (typically after 10+ days without use). Fix:
 ```
 openclaw onboard --auth-choice openai-codex
 ```
-This re-authenticates. OpenClaw 2026.2.6+ auto-refreshes tokens, but cannot recover from multi-device invalidation.
+This re-authenticates. OpenClaw 2026.2.6+ auto-refreshes tokens automatically. Note: using ChatGPT on other devices (web, mobile, Codex CLI, Codex app) does NOT invalidate the VPS token — tested Feb 2026. For headless VPS environments, see the tmux method in the Provider Setup section above.
 
 ### Sub-agent returns "Unknown model"
 The model is registered in the main agent context but not available in sub-agent context. Check that the model's provider has a valid auth-profile. Run `openclaw models status` to verify.
