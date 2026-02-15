@@ -33,7 +33,11 @@ To use routing, agents must be defined in `openclaw.json`. Here is the recommend
         "id": "codex",
         "model": {
           "primary": "openai-codex/gpt-5.3-codex",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
+          "fallbacks": [
+            "anthropic/claude-opus-4-6",
+            "google-gemini-cli/gemini-3-pro-preview",
+            "kimi-coding/k2p5"
+          ]
         },
         "workspace": "~/.openclaw/workspace-codex"
       },
@@ -41,7 +45,11 @@ To use routing, agents must be defined in `openclaw.json`. Here is the recommend
         "id": "gemini-researcher",
         "model": {
           "primary": "google-gemini-cli/gemini-3-pro-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-flash-preview",
+            "anthropic/claude-opus-4-6",
+            "openai-codex/gpt-5.3-codex"
+          ]
         },
         "workspace": "~/.openclaw/workspace-gemini-research"
       },
@@ -49,7 +57,11 @@ To use routing, agents must be defined in `openclaw.json`. Here is the recommend
         "id": "gemini-fast",
         "model": {
           "primary": "google-gemini-cli/gemini-3-flash-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-pro-preview",
+            "anthropic/claude-opus-4-6",
+            "openai-codex/gpt-5.3-codex"
+          ]
         },
         "workspace": "~/.openclaw/workspace-gemini"
       },
@@ -57,7 +69,11 @@ To use routing, agents must be defined in `openclaw.json`. Here is the recommend
         "id": "kimi-orchestrator",
         "model": {
           "primary": "kimi-coding/k2p5",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
+          "fallbacks": [
+            "kimi-coding/k2-thinking",
+            "google-gemini-cli/gemini-3-pro-preview",
+            "anthropic/claude-opus-4-6"
+          ]
         },
         "workspace": "~/.openclaw/workspace-kimi"
       }
@@ -71,6 +87,8 @@ For fewer providers, remove agents you don't have. See `examples/` directory for
 ## Per-Agent Fallback Behavior
 
 **CRITICAL**: When an agent uses the object form `"model": { "primary": "..." }`, it **replaces** global fallbacks entirely. Always add explicit `"fallbacks"` to every agent using object form. Without fallbacks, a single provider outage means zero responses from that agent. The string form `"model": "..."` inherits global fallbacks automatically.
+
+**Cross-provider fallbacks are essential.** Same-provider fallbacks (e.g., Gemini Pro → Gemini Flash) are useless when the provider itself is down. Every agent should have at least one fallback from a DIFFERENT provider. Example: if Google is down, `gemini-researcher` needs to fall through to Opus or Codex, not just another Google model.
 
 ## Provider Entries in openclaw.json
 

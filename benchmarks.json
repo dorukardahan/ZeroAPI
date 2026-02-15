@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "source": "Artificial Analysis API v4",
   "date": "2026-02-15",
   "notes": "Codex scores marked 'estimated: true' are from OpenAI blog data, not independently verified.",

@@ -40,3 +40,59 @@ OpenClaw 2026.2.6+ auto-refreshes tokens automatically — this manual flow is o
 **Cause**: The model is registered in the main agent context but not available in sub-agent context.
 
 **Fix**: Check that the model's provider has a valid auth-profile. Run `openclaw models status` to verify. Ensure the sub-agent's `models.json` includes the provider (see `references/provider-config.md` for Google Gemini's special per-agent setup).
+
+## Token works for some agents but not others after manual renewal
+
+**Cause**: OAuth tokens are stored in 3 locations that do NOT auto-sync. Manual renewal (tmux OAuth flow) only writes to `auth-profiles.json`. Other agents may still reference the old token from `openclaw.json` or `credentials/oauth.json`.
+
+**Fix**: After manual renewal, sync the new token to all locations. See `references/oauth-setup.md` → "Token Storage Architecture" for the sync script and details.
+
+## systemd ExecStartPre fails with "too many arguments"
+
+**Cause**: `ExecStartPre` does NOT run through a shell. Common shell syntax like `|| true` or `&&` is interpreted literally as arguments, not operators.
+
+**Fix**: Use systemd's `-` prefix for error tolerance:
+
+```ini
+# WRONG — systemd passes "||" and "true" as arguments to fuser:
+ExecStartPre=/usr/bin/fuser -k 8787/tcp || true
+
+# CORRECT — "-" prefix means "ignore exit code":
+ExecStartPre=-/usr/bin/fuser -k 8787/tcp
+```
+
+Note: OpenClaw runs as a user service (`systemctl --user`), not a system service.
+
+## MEMORY.md or skill content is silently truncated
+
+**Cause**: OpenClaw has per-file and total bootstrap character limits. Files exceeding the limit are truncated without warning.
+
+**Fix**: Adjust the bootstrap budget in `openclaw.json`:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "bootstrapTotalMaxChars": 50000,
+      "bootstrapMaxChars": 30000
+    }
+  }
+}
+```
+
+- `bootstrapMaxChars`: Maximum characters per single file (default: 20000)
+- `bootstrapTotalMaxChars`: Total budget across all bootstrap files (default: varies)
+
+These count **characters**, not bytes. UTF-8 characters (Turkish İ, ş, ç etc.) are 1 character but 2 bytes. Requires OpenClaw 2026.2.14+.
+
+**Tip**: Keep pre-MEMORY files small (AGENTS.md, TOOLS.md, etc.). Bootstrap load order: AGENTS → SOUL → TOOLS → IDENTITY → USER → HEARTBEAT → BOOTSTRAP → MEMORY. Earlier files consume budget first.
+
+## Config shows "invalid" after editing openclaw.json
+
+**Cause**: OpenClaw uses strict Zod schema validation. Any unrecognized key in `openclaw.json` causes the ENTIRE config to be rejected as invalid — not just the unknown field.
+
+**Fix**:
+1. Remove any keys not in the schema (e.g., `autoCapture` was mentioned in changelogs but has no schema key)
+2. After editing, validate JSON syntax: `python3 -c "import json; json.load(open('openclaw.json'))"`
+3. Hot-reload may reject keys from a newer OpenClaw version — do a full restart with the new binary instead
+4. Always backup before editing: `cp openclaw.json openclaw.json.bak`

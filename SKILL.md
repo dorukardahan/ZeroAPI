@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 2.2.0
+version: 2.3.0
 description: >
   Route tasks to the best AI model across paid subscriptions (Claude, ChatGPT,
   Codex, Gemini, Kimi) via OpenClaw gateway. Use when user mentions model routing,
@@ -9,7 +9,7 @@ description: >
   providers. Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
-compatibility: Requires OpenClaw 2026.2.6+ with at least one AI subscription
+compatibility: Requires OpenClaw 2026.2.6+ with at least one AI subscription. Bootstrap budget config requires 2026.2.14+.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
@@ -220,10 +220,12 @@ When a model is unavailable or rate-limited, fall through in reliability order.
 | Task Type | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |-----------|---------|------------|------------|------------|
 | Reasoning | Opus | Gemini Pro | Codex | Kimi K2.5 |
-| Code | Codex | Opus | Gemini Pro | — |
-| Research | Gemini Pro | Opus | Codex | — |
-| Fast tasks | Flash-Lite | Flash | Opus | — |
-| Agentic | Kimi K2.5 | Codex | Opus | — |
+| Code | Codex | Opus | Gemini Pro | Kimi K2.5 |
+| Research | Gemini Pro | Opus | Codex | Kimi K2.5 |
+| Fast tasks | Flash-Lite | Flash | Opus | Codex |
+| Agentic | Kimi K2.5 | Codex | Gemini Pro | Opus |
+
+**Important**: Always use cross-provider fallbacks. Same-provider fallbacks (e.g., Gemini Pro → Flash) help with model-specific issues but not provider outages. Every fallback chain should span at least 2 different providers.
 
 ### Claude + Gemini (2 providers)
 | Task Type | Primary | Fallback 1 | Fallback 2 |

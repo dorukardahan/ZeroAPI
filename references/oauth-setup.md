@@ -113,3 +113,46 @@ openclaw doctor
 ```
 
 If Codex shows `auth_expired`, guide the user through the OAuth flow above. For Anthropic, run `openclaw onboard --auth-choice setup-token`. For Gemini, run `openclaw models auth login --provider google-gemini-cli`. Kimi API keys do not expire — if Kimi fails, check that the subscription is active.
+
+## Token Storage Architecture (CRITICAL)
+
+OAuth tokens are stored in **3 separate locations** that do **NOT auto-sync**:
+
+| Location | Purpose | Auto-Updated? |
+|----------|---------|--------------|
+| `credentials/oauth.json` | Raw OAuth output from initial `openclaw onboard` | Only on first onboard |
+| `models.providers.<name>.apiKey` in `openclaw.json` | Runtime API calls | By auto-refresh |
+| `agents/<id>/agent/auth-profiles.json` | Per-agent active tokens | By auto-refresh |
+
+**Why this matters**: When you manually renew a token (via tmux OAuth flow), the new token is written ONLY to `auth-profiles.json`. The other 2 locations retain the old (possibly expired) token.
+
+OpenClaw's auto-refresh mechanism updates `auth-profiles.json` and `openclaw.json` — but `credentials/oauth.json` is never auto-updated after initial onboard.
+
+**After manual renewal**, sync the new token to all locations. Example for Codex:
+
+```bash
+# Extract the new access token from auth-profiles
+NEW_TOKEN=$(python3 -c "
+import json, glob
+for f in glob.glob('$HOME/.openclaw/agents/*/agent/auth-profiles.json'):
+    profiles = json.load(open(f))
+    for p in profiles:
+        if 'openai' in p.get('provider','').lower():
+            print(p['access']); break
+    else: continue
+    break
+")
+
+# Update openclaw.json
+python3 -c "
+import json
+c = json.load(open('$HOME/.openclaw/openclaw.json'))
+c['models']['providers']['openai-codex']['apiKey'] = '$NEW_TOKEN'
+json.dump(c, open('$HOME/.openclaw/openclaw.json','w'), indent=2)
+"
+
+# Restart to pick up changes
+systemctl --user restart openclaw-gateway.service
+```
+
+**Best practice**: Let auto-refresh handle token renewal whenever possible. Only use the manual tmux flow when auto-refresh fails (e.g., refresh token itself has expired).

@@ -25,7 +25,10 @@
         "id": "gemini-researcher",
         "model": {
           "primary": "google-gemini-cli/gemini-3-pro-preview",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-flash-preview",
+            "anthropic/claude-opus-4-6"
+          ]
         },
         "workspace": "~/.openclaw/workspace-gemini-research"
       },
@@ -33,7 +36,10 @@
         "id": "gemini-fast",
         "model": {
           "primary": "google-gemini-cli/gemini-3-flash-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-pro-preview",
+            "anthropic/claude-opus-4-6"
+          ]
         },
         "workspace": "~/.openclaw/workspace-gemini"
       }

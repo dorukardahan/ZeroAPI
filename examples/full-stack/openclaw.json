@@ -46,7 +46,11 @@
         "id": "codex",
         "model": {
           "primary": "openai-codex/gpt-5.3-codex",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
+          "fallbacks": [
+            "anthropic/claude-opus-4-6",
+            "google-gemini-cli/gemini-3-pro-preview",
+            "kimi-coding/k2p5"
+          ]
         },
         "workspace": "~/.openclaw/workspace-codex"
       },
@@ -54,7 +58,11 @@
         "id": "gemini-researcher",
         "model": {
           "primary": "google-gemini-cli/gemini-3-pro-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-flash-preview",
+            "anthropic/claude-opus-4-6",
+            "openai-codex/gpt-5.3-codex"
+          ]
         },
         "workspace": "~/.openclaw/workspace-gemini-research"
       },
@@ -62,7 +70,11 @@
         "id": "gemini-fast",
         "model": {
           "primary": "google-gemini-cli/gemini-3-flash-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-pro-preview",
+            "anthropic/claude-opus-4-6",
+            "openai-codex/gpt-5.3-codex"
+          ]
         },
         "workspace": "~/.openclaw/workspace-gemini"
       },
@@ -70,7 +82,11 @@
         "id": "kimi-orchestrator",
         "model": {
           "primary": "kimi-coding/k2p5",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
+          "fallbacks": [
+            "kimi-coding/k2-thinking",
+            "google-gemini-cli/gemini-3-pro-preview",
+            "anthropic/claude-opus-4-6"
+          ]
         },
         "workspace": "~/.openclaw/workspace-kimi"
       }
