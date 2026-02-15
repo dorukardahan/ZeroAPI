@@ -22,7 +22,10 @@
       {
         "id": "main",
         "default": true,
-        "model": { "primary": "anthropic/claude-opus-4-6" },
+        "model": {
+          "primary": "anthropic/claude-opus-4-6",
+          "fallbacks": ["openai-codex/gpt-5.3-codex"]
+        },
         "workspace": "~/.openclaw/workspace"
       },
       {

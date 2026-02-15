@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "source": "Artificial Analysis API v4",
   "date": "2026-02-15",
   "notes": "Codex scores marked 'estimated: true' are from OpenAI blog data, not independently verified.",
@@ -48,7 +48,7 @@
       "ttft_s": 29.59,
       "intelligence": 48.4,
       "context_window": 1048576,
-      "best_at": ["scientific research", "long context analysis", "math"],
+      "best_at": ["scientific research", "long context analysis", "fact-checking"],
       "benchmarks": {
         "ifbench": null,
         "gpqa": 0.908,

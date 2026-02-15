@@ -7,7 +7,7 @@ Pick the example that matches your subscription setup. Each directory contains a
 | Directory | Subscriptions | Monthly Cost | Agents |
 |-----------|--------------|-------------|--------|
 | `claude-only/` | Claude Max 5x/20x | $100-200 | 1 (main) |
-| `claude-codex/` | Claude Max + ChatGPT Plus | $220-240 | 2 (main, codex) |
+| `claude-codex/` | Claude Max + ChatGPT Plus | $220 | 2 (main, codex) |
 | `claude-gemini/` | Claude Max + Gemini Advanced | $220 | 3 (main, gemini-researcher, gemini-fast) |
 | `full-stack/` | Claude Max + ChatGPT + Gemini + Kimi | $250-430 | 5 (main, codex, gemini-researcher, gemini-fast, kimi-orchestrator) |
 

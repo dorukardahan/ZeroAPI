@@ -32,7 +32,14 @@
       {
         "id": "main",
         "default": true,
-        "model": { "primary": "anthropic/claude-opus-4-6" },
+        "model": {
+          "primary": "anthropic/claude-opus-4-6",
+          "fallbacks": [
+            "google-gemini-cli/gemini-3-pro-preview",
+            "openai-codex/gpt-5.3-codex",
+            "kimi-coding/k2p5"
+          ]
+        },
         "workspace": "~/.openclaw/workspace"
       },
       {

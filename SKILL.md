@@ -54,7 +54,7 @@ For full provider configuration details, consult `references/provider-config.md`
 - **IFBench** (instruction following): Gemini Flash 0.780, Opus 0.639, Codex 0.590*
 - **TAU-2** (agentic tool use): Kimi K2.5 0.959, Codex 0.811*, Opus 0.780
 
-Scores marked with * are estimated from vendor reports, not independently verified. Source: Artificial Analysis API v4, February 2026 (v2.1 verified). Structured data in `benchmarks.json`.
+Scores marked with * are estimated from vendor reports, not independently verified. Source: Artificial Analysis API v4, February 2026. Structured data in `benchmarks.json`.
 
 ## Decision Algorithm
 
@@ -82,7 +82,7 @@ Walk through these 9 steps IN ORDER for every incoming task. The FIRST match win
 **Signals**: quick, fast, simple, format, convert, summarize briefly, list, extract, translate short text, rename, timestamp, one-liner
 → Route to **FAST** (Flash, 206 tok/s, IFBench 0.780) / fallback: Flash-Lite (for sub-second latency) / Opus
 
-**Note**: For tasks where sub-second TTFT matters more than intelligence (pings, health checks), use SIMPLE (Flash-Lite, 0.23s TTFT). For heartbeats and cron jobs, use FAST (Flash) — it has much better instruction following (IFBench 0.780 vs ~0.21 for Flash-Lite).
+**Note**: For tasks where sub-second TTFT matters more than intelligence (pings, health checks), use SIMPLE (Flash-Lite, 0.23s TTFT). For heartbeats and cron jobs, use FAST (Flash) — it has much better instruction following (IFBench 0.780; Flash-Lite has no verified IFBench score).
 
 ### Step 6: Research / scientific / factual?
 **Signals**: research, find out, what is, explain, compare, analyze, paper, study, evidence, fact-check, deep dive, investigate
@@ -279,4 +279,4 @@ For detailed troubleshooting, consult `references/troubleshooting.md` (in the sa
 | **Full stack** (all 4, ChatGPT Plus) | $250 | Full specialization |
 | **Full stack Pro** (all 4, ChatGPT Pro) | $430 | Maximum rate limits |
 
-Source: Artificial Analysis API v4, February 2026 (v2.1 verified). Codex scores estimated (*) from OpenAI blog data. Structured benchmark data available in `benchmarks.json`.
+Source: Artificial Analysis API v4, February 2026. Codex scores estimated (*) from OpenAI blog data. Structured benchmark data available in `benchmarks.json`.

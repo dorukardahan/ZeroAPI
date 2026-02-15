@@ -29,7 +29,7 @@ The result: better output, faster responses, and you're finally getting value fr
 | Claude Opus 4.6 | 67 tok/s | 53.0 | Reasoning, planning, content |
 | Kimi K2.5 | 39 tok/s | 46.7 | Agentic orchestration (TAU-2: 0.959) |
 
-*Artificial Analysis API v4, February 2026 (v2.1 verified). Codex scores estimated from vendor reports. Structured data in [`benchmarks.json`](benchmarks.json).*
+*Artificial Analysis API v4, February 2026. Codex scores estimated from vendor reports. Structured data in [`benchmarks.json`](benchmarks.json).*
 
 ## Prerequisites
 
