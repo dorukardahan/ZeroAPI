@@ -3,6 +3,13 @@
   "source": "Artificial Analysis API v4",
   "date": "2026-02-15",
   "notes": "Codex scores marked 'estimated: true' are from OpenAI blog data, not independently verified.",
+  "benchmark_scales": {
+    "ifbench": { "scale": "0-1", "description": "Instruction Following Benchmark. Higher = better instruction compliance." },
+    "gpqa": { "scale": "0-1", "description": "Graduate-level science QA. Higher = better scientific reasoning." },
+    "coding": { "scale": "0-100", "unit": "percent", "description": "SWE-bench Verified. Percentage of real GitHub issues resolved." },
+    "math": { "scale": "0-1", "description": "AIME 2025 normalized score. Higher = better mathematical reasoning." },
+    "tau2": { "scale": "0-1", "description": "TAU-bench v2 (agentic tool use). Higher = better multi-step tool orchestration." }
+  },
   "models": {
     "gemini-2.5-flash-lite": {
       "provider": "google-gemini-cli",
