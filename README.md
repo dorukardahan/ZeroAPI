@@ -27,9 +27,11 @@ ZeroAPI/
 │   ├── claude-codex/openclaw.json    # 2 providers, 2 agents
 │   ├── claude-gemini/openclaw.json   # 2 providers, 3 agents
 │   │   └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
-│   ├── full-stack/openclaw.json      # 4 providers, 5 agents
+│   ├── full-stack/
+│   │   ├── openclaw.json             # 4 providers, 5 agents
 │   │   └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
-│   └── specialist-agents/openclaw.json  # 4 providers, 9 agents (domain specialists)
+│   └── specialist-agents/
+│       ├── openclaw.json             # 4 providers, 9 agents (domain specialists)
 │       └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
 └── content/
     └── x-thread.md                   # Launch thread draft

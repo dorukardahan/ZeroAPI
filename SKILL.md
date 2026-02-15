@@ -227,7 +227,11 @@ Each specialist gets its own workspace directory with domain-specific files:
 
 This keeps domain context separate. The main orchestrator does not load devops runbooks, and the devops agent does not carry content writing guidelines.
 
+**Note:** Workspace directory names are arbitrary — `workspace-devops`, `workspace-infra`, `workspace-ops` all work. The agent `id` and workspace path don't need to match.
+
 See `examples/specialist-agents/` for a ready-to-use config with 4 specialist agents.
+
+**Fallback depth:** Specialist agents in the example use 2 fallbacks instead of the core agents' 3. This is intentional — specialists are narrower in scope and trade some redundancy for simpler configs. Add more fallbacks if your specialists handle critical tasks.
 
 ## Image Model Routing
 
@@ -245,7 +249,7 @@ Set `imageModel` in your agent config to route vision/image analysis tasks to th
 
 Gemini Pro is recommended as the primary image model — it has strong multimodal capabilities and 1M context for analyzing large images or multiple images in one request. Flash is a good fallback for speed, and Opus handles vision well as a last resort.
 
-Place this in `agents.defaults` to apply to all agents, or set it per-agent. Agents without `imageModel` will use their primary text model for vision tasks.
+Place this in `agents.defaults` to apply to all agents, or set it per-agent. Agents without `imageModel` typically fall back to their primary text model for vision tasks (exact behavior may vary by OpenClaw version — check [docs.openclaw.ai](https://docs.openclaw.ai) for current defaults).
 
 ## Collaboration Patterns
 
