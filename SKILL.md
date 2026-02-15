@@ -1,13 +1,16 @@
 ---
 name: zeroapi
-version: 2.1.1
+version: 2.2.0
 description: >
-  Route tasks to the best model using paid subscriptions (Claude Max, ChatGPT,
-  Gemini Advanced, Kimi). Zero per-token API cost. Benchmark-driven task routing
-  with automatic failover.
+  Route tasks to the best AI model across paid subscriptions (Claude, ChatGPT,
+  Codex, Gemini, Kimi) via OpenClaw gateway. Use when user mentions model routing,
+  multi-model setup, "use Codex for this", "delegate to Gemini", "route to the
+  best model", agent delegation, or has OpenClaw agents configured with multiple
+  providers. Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
-metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"]}}
+compatibility: Requires OpenClaw 2026.2.6+ with at least one AI subscription
+metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
 # ZeroAPI — Subscription-Based Model Routing
@@ -31,6 +34,8 @@ openclaw models status
 ```
 Any model showing `missing` or `auth_expired` is not usable. Remove it from your active tiers until the user fixes it.
 
+For full provider configuration details, consult `references/provider-config.md` (in the same directory as this SKILL.md).
+
 ## Model Tiers
 
 | Tier | Model | OpenClaw ID | Speed | TTFT | Intelligence | Context | Best At |
@@ -43,18 +48,13 @@ Any model showing `missing` or `auth_expired` is not usable. Remove it from your
 | ORCHESTRATE | Kimi K2.5 | `kimi-coding/k2p5` | 39 tok/s | 1.65s | 46.7 | 128K | Multi-agent orchestration (TAU-2: 0.959) |
 
 **Key benchmark scores** (higher = better):
-- **Intelligence**: Composite score across all benchmarks (max ~53)
 - **GPQA** (science): Gemini Pro 0.908, Opus 0.769, Codex 0.738*
 - **Coding** (SWE-bench): Codex 49.3*, Opus 43.3, Gemini Pro 35.1
 - **Math** (AIME '25): Codex 99.0*, Gemini Flash 97.0, Opus 54.0
 - **IFBench** (instruction following): Gemini Flash 0.780, Opus 0.639, Codex 0.590*
 - **TAU-2** (agentic tool use): Kimi K2.5 0.959, Codex 0.811*, Opus 0.780
 
-Scores marked with * are estimated from vendor reports, not independently verified.
-
-Source: Artificial Analysis API v4, February 2026 (v2.1 verified).
-
-**v2.1 corrections** (from v2.0): Flash-Lite speed 645→495 tok/s, TTFT 0.18→0.23s, intelligence 38.2→21.6. Flash speed 195→206 tok/s. Codex GPQA 0.730→0.738. Flash-Lite no longer recommended for heartbeats — use Flash instead (better IFBench: 0.780).
+Scores marked with * are estimated from vendor reports, not independently verified. Source: Artificial Analysis API v4, February 2026 (v2.1 verified). Structured data in `benchmarks.json`.
 
 ## Decision Algorithm
 
@@ -130,25 +130,17 @@ When multiple steps seem to match, resolve with these priority rules:
 
 ## Sub-Agent Delegation
 
-Use OpenClaw's agent system to delegate. The exact syntax:
+Use OpenClaw's agent system to delegate:
 
 ```
 /agent <agent-id> <instruction>
 ```
 
-### How delegation works
-
 1. You send `/agent codex <instruction>` — OpenClaw spawns the sub-agent with that instruction.
 2. The sub-agent runs in its own workspace and returns a text response.
-3. The response appears inline in your conversation — you can read it, process it, and present it to the user.
-4. Sub-agents do NOT share your conversation context or workspace files. Pass ALL necessary context in the instruction.
+3. Sub-agents do NOT share your conversation context or workspace files. Pass ALL necessary context in the instruction.
 
-### What to pass in the instruction
-
-- The specific task (be precise — "write a function that does X" not "help with code")
-- Any relevant code snippets, data, or context the sub-agent needs
-- Output format expectations ("return only the code, no explanation")
-- Constraints ("use Python 3.11+", "no external dependencies")
+**What to pass**: The specific task, relevant code snippets, output format expectations, and constraints.
 
 ### Examples
 
@@ -164,181 +156,32 @@ Use OpenClaw's agent system to delegate. The exact syntax:
 
 ## Error Handling and Retries
 
-### When a sub-agent fails
+1. **Timeout** (no response within 60s): Retry once on same model. If it fails again, fall to next fallback.
+2. **Auth error** (401/403): Do NOT retry — fall to next fallback immediately and tell user to re-authenticate. See `references/oauth-setup.md`.
+3. **Rate limit** (429): Wait 30 seconds, retry once. If still limited, fall to next fallback.
+4. **Partial/garbage response**: Retry once. If still broken, fall to next fallback.
+5. **Model unavailable**: Skip that tier entirely and continue.
 
-1. **Timeout** (no response within 60s): Retry once on the same model. If it fails again, fall to the next model in the fallback chain.
-2. **Auth error** (401/403): The provider's token has expired or been invalidated. Do NOT retry — fall to the next fallback immediately and tell the user to re-authenticate that provider.
-3. **Rate limit** (429): Wait 30 seconds, then retry once. If still limited, fall to the next fallback.
-4. **Partial/garbage response**: If the response is clearly truncated or nonsensical, retry once. If it fails again, fall to the next fallback and note the issue.
-5. **Model unavailable**: Skip that tier entirely and continue to the next step in the decision algorithm.
-
-### Maximum retries
-
-- 1 retry on same model, then fall to next fallback
-- If ALL fallbacks fail for a task, stay on Opus (it is always available as the built-in model)
-- Never retry more than 3 times total across all fallbacks for a single task
-
-### Telling the user
+**Maximum retries**: 1 retry on same model, then next fallback. If ALL fallbacks fail, stay on Opus. Never retry more than 3 times total across all fallbacks.
 
 When a fallback is triggered, briefly inform the user:
 > "Codex is unavailable, routing to Opus instead."
 
-Do not explain the technical details unless the user asks.
-
 ## Multi-Turn Conversation Routing
-
-### Within the same conversation
 
 - **Stay on the same model** for follow-up messages in the same topic. Context continuity matters more than optimal model selection.
 - **Re-route only when the task type clearly changes.** Example: user discusses architecture (Opus) → then says "now write the implementation" → delegate code writing to Codex.
 
-### When switching models mid-conversation
-
+When switching models mid-conversation:
 1. Summarize the relevant context from the current conversation.
 2. Pass that summary as part of the delegation instruction.
-3. Present the sub-agent's response to the user.
-4. Continue the conversation on the original model (Opus) with awareness of what the sub-agent produced.
-
-Example flow:
-```
-User: "Let's design a caching system" → Stay on Opus (architecture, Step 4)
-User: "OK, implement it" → Delegate to Codex:
-  /agent codex Implement a caching system with these requirements: [paste summary from conversation]. Use Python, Redis backend, LRU eviction, 1-hour TTL. Return the complete implementation.
-Codex responds with code → You (Opus) review it and present to user.
-```
+3. Continue on the original model (Opus) with awareness of what the sub-agent produced.
 
 ## Workspace Isolation
 
-Each agent has its own workspace directory defined in `openclaw.json`. This means:
-
-- **Sub-agents cannot read your files.** If a sub-agent needs a file's content, paste the content into the instruction.
-- **Sub-agents cannot write to your workspace.** Their output comes back as text in the response.
-- **Sub-agents share nothing with each other.** Two parallel sub-agents operate in complete isolation.
-- **The main agent can read sub-agent responses** but not their workspace files directly.
-
-This isolation is by design — it prevents sub-agents from accidentally modifying the main workspace.
-
-## OpenClaw Agent Configuration
-
-To use routing, the user needs agents defined in `openclaw.json`. Here is the recommended setup for a full 4-provider configuration:
-
-```json
-{
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "anthropic/claude-opus-4-6",
-        "fallbacks": [
-          "google-gemini-cli/gemini-3-pro-preview",
-          "openai-codex/gpt-5.3-codex",
-          "kimi-coding/k2p5"
-        ]
-      },
-      "heartbeat": {
-        "model": "google-gemini-cli/gemini-3-flash-preview"
-      }
-    },
-    "list": [
-      {
-        "id": "main",
-        "default": true,
-        "model": { "primary": "anthropic/claude-opus-4-6" },
-        "workspace": "~/.openclaw/workspace"
-      },
-      {
-        "id": "codex",
-        "model": {
-          "primary": "openai-codex/gpt-5.3-codex",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
-        },
-        "workspace": "~/.openclaw/workspace-codex"
-      },
-      {
-        "id": "gemini-researcher",
-        "model": {
-          "primary": "google-gemini-cli/gemini-3-pro-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-flash-preview"]
-        },
-        "workspace": "~/.openclaw/workspace-gemini-research"
-      },
-      {
-        "id": "gemini-fast",
-        "model": {
-          "primary": "google-gemini-cli/gemini-3-flash-preview",
-          "fallbacks": ["google-gemini-cli/gemini-3-pro-preview"]
-        },
-        "workspace": "~/.openclaw/workspace-gemini"
-      },
-      {
-        "id": "kimi-orchestrator",
-        "model": {
-          "primary": "kimi-coding/k2p5",
-          "fallbacks": ["anthropic/claude-opus-4-6"]
-        },
-        "workspace": "~/.openclaw/workspace-kimi"
-      }
-    ]
-  }
-}
-```
-
-For fewer providers, remove the agents you don't have. See `examples/` directory for ready-to-use configs: `claude-only/`, `claude-codex/`, `claude-gemini/`, `full-stack/`.
-
-**Important — per-agent fallback behavior**: When an agent uses the object form `"model": { "primary": "..." }`, it **replaces** global fallbacks entirely. Always add explicit `"fallbacks"` to every agent using object form. Without fallbacks, a single provider outage means zero responses from that agent. The string form `"model": "..."` inherits global fallbacks automatically.
-
-### Provider Configuration
-
-Each non-built-in provider needs configuration. Most go in `openclaw.json` under `models.providers`, but **Google Gemini with subscription OAuth requires special handling** (see below).
-
-**In `openclaw.json`** — Codex and Kimi providers:
-
-```json
-{
-  "models": {
-    "mode": "merge",
-    "providers": {
-      "openai-codex": {
-        "baseUrl": "https://chatgpt.com/backend-api",
-        "api": "openai-responses",
-        "models": [{ "id": "gpt-5.3-codex" }]
-      },
-      "kimi-coding": {
-        "baseUrl": "https://api.kimi.com/coding/v1",
-        "api": "openai-completions",
-        "models": [{ "id": "k2p5" }]
-      }
-    }
-  }
-}
-```
-
-**Google Gemini (subscription OAuth) — per-agent `models.json` ONLY:**
-
-The OpenClaw config schema does not accept `"api": "google-gemini-cli"` as a valid type. But the runtime registers it as a working stream function. The fix: do NOT put the google-gemini-cli provider in `openclaw.json`. Instead, add it to each agent's `models.json` file (located at `~/.openclaw/agents/<agent-id>/agent/models.json`), which is not schema-validated:
-
-```json
-{
-  "google-gemini-cli": {
-    "api": "google-gemini-cli",
-    "models": [
-      { "id": "gemini-3-pro-preview" },
-      { "id": "gemini-3-flash-preview" },
-      { "id": "gemini-2.5-flash-lite" }
-    ]
-  }
-}
-```
-
-**Critical rules for google-gemini-cli provider:**
-- Do NOT set `baseUrl` — the stream function uses a hardcoded default endpoint (`cloudcode-pa.googleapis.com`). Setting baseUrl overrides it and causes 404 errors.
-- Do NOT set `apiKey` — OAuth tokens come from auth-profiles automatically via `Authorization: Bearer` header.
-- Do NOT put this provider in `openclaw.json` — config schema will reject it and crash the gateway.
-
-**Why this matters:** The alternative `"api": "google-generative-ai"` type sends auth via `x-goog-api-key` header, which expects a paid API key. If you have OAuth subscription tokens (Gemini Advanced), they will be rejected with "API key not valid." The `google-gemini-cli` api type sends `Authorization: Bearer` which works with OAuth.
-
-**Important**: The `api` field is REQUIRED for every custom provider (OpenClaw 2026.2.6+). Missing it will crash the gateway with `No API provider registered for api: undefined`.
-
-Anthropic (`claude-opus-4-6`) is in OpenClaw's built-in catalog — no custom provider entry needed.
+- Sub-agents cannot read your files — paste content into the instruction.
+- Sub-agents cannot write to your workspace — output comes back as text.
+- Sub-agents share nothing with each other — complete isolation by design.
 
 ## Collaboration Patterns
 
@@ -371,7 +214,7 @@ Choose this for tasks requiring 3+ agents in complex dependency graphs. Caution:
 
 ## Fallback Chains
 
-When a model is unavailable or rate-limited, fall through in reliability order: Gemini (stable OAuth) > Codex (fragile OAuth) > Kimi (API key).
+When a model is unavailable or rate-limited, fall through in reliability order.
 
 ### Full Stack (4 providers)
 | Task Type | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
@@ -402,167 +245,38 @@ All tasks route to Opus. No fallback needed.
 
 ## Provider Setup
 
-| Provider | Auth Method | Setup Command | Maintenance |
-|----------|-----------|---------------|-------------|
-| Anthropic | Setup-token (OAuth) | `openclaw onboard --auth-choice setup-token` | Low — auto-refresh works |
-| Google Gemini | OAuth (CLI plugin) | `openclaw plugins enable google-gemini-cli-auth && openclaw models auth login --provider google-gemini-cli` | Very low — long-lived refresh tokens |
-| OpenAI Codex | OAuth (ChatGPT PKCE) | `openclaw onboard --auth-choice openai-codex` | Low — auto-refresh works |
-| Kimi | Static API key | `openclaw onboard --auth-choice kimi-code-api-key` | None — never expires |
+For auth setup, OAuth flows (including headless VPS), and multi-device safety details, consult `references/oauth-setup.md` (in the same directory as this SKILL.md).
 
-**Auth reliability ranking**: Kimi API key (static, never expires) ≈ Gemini OAuth (auto-refresh, stable) > Anthropic setup-token (auto-refresh, ~8hr access token) > Codex OAuth (auto-refresh works, see notes below).
+For provider configuration (openclaw.json, per-agent models.json, Google Gemini workarounds), consult `references/provider-config.md`.
 
-### Codex OAuth — Multi-Device Safety (Tested Feb 2026)
+Quick reference:
 
-A common concern: "Will logging into ChatGPT on my phone/browser invalidate my agent's Codex token on the VPS?"
-
-**No.** We tested all four scenarios with a fresh Codex JWT active on a VPS:
-
-| Action | VPS Token Affected? |
-|--------|-------------------|
-| Log into ChatGPT web UI (browser) | No — token survived |
-| Log into ChatGPT mobile app + chat | No — token survived |
-| Use Codex desktop app + new session | No — token survived |
-| Use Codex CLI in terminal + chat | No — token survived |
-
-All four passed. The VPS token remained valid through all of them. OpenClaw's auto-refresh mechanism handles token renewal automatically. Users can freely use ChatGPT and Codex on all their devices without disrupting their agent's authentication.
-
-**Technical note**: Codex CLI and OpenClaw share the same OAuth `client_id` (`app_EMoamEE...`). Despite this, concurrent sessions on different devices do not invalidate each other. A dedicated OpenAI account for the VPS is NOT necessary.
-
-### OAuth Setup for Agents (Headless / No Browser)
-
-The `openclaw onboard` command uses an interactive TUI wizard. On a headless VPS (no browser), OpenClaw detects this and switches to a "paste-the-redirect-URL" flow. The agent needs to:
-
-1. Run the wizard in a virtual terminal
-2. Navigate the TUI menus
-3. Extract the OAuth URL
-4. Send it to the user (via WhatsApp, Telegram, Discord, etc.)
-5. Receive the redirect URL back from the user
-6. Paste it into the wizard
-
-Here is how to do this as an agent, regardless of your runtime environment:
-
-#### If you are an OpenClaw agent (running directly on the VPS)
-
-You have direct Bash access. Use `tmux` to manage the interactive TUI:
-
-```bash
-# Step 1: Start the wizard in a tmux session
-tmux new-session -d -s oauth 'openclaw onboard --auth-choice openai-codex --accept-risk'
-
-# Step 2: Read the screen and navigate menus
-tmux capture-pane -t oauth -p        # read current screen
-tmux send-keys -t oauth Enter        # select highlighted option (QuickStart, Use existing values, etc.)
-# Repeat capture-pane + send-keys until you reach the OAuth URL screen
-
-# Step 3: Extract the OAuth URL from the screen output
-# Look for a line starting with https://auth.openai.com/oauth/authorize?...
-# Send this URL to the user via your channel (WhatsApp, Telegram, etc.)
-
-# Step 4: Tell the user:
-#   "Open this link in your browser, log in to ChatGPT.
-#    After login, your browser will try to load a localhost URL that won't work.
-#    Copy that FULL URL from the browser address bar and send it back to me."
-
-# Step 5: When the user sends back the redirect URL, paste it:
-tmux send-keys -t oauth 'THE_REDIRECT_URL_FROM_USER' Enter
-
-# Step 6: Auth is saved. Cancel remaining wizard steps:
-tmux send-keys -t oauth C-c
-
-# Step 7: Verify
-openclaw models status | grep openai-codex
-```
-
-The same approach works for other OAuth providers (Gemini, Anthropic). Change `--auth-choice` accordingly.
-
-#### If you are Claude Code (SSH from local machine)
-
-Run the same tmux commands over SSH:
-
-```bash
-ssh YOUR_VPS 'tmux new-session -d -s oauth "openclaw onboard --auth-choice openai-codex --accept-risk"'
-ssh YOUR_VPS 'tmux capture-pane -t oauth -p'           # read screen
-ssh YOUR_VPS 'tmux send-keys -t oauth Enter'           # navigate menus
-# ... extract URL, user clicks, paste redirect URL back ...
-ssh YOUR_VPS "tmux send-keys -t oauth 'REDIRECT_URL' Enter"
-ssh YOUR_VPS 'tmux send-keys -t oauth C-c'
-```
-
-#### If you are Codex CLI or any other agent
-
-Same principle — use `tmux` (or `screen`) to wrap the interactive wizard, extract the URL, and relay it to the user through whatever channel you communicate on. The key steps are always:
-
-1. Wrap `openclaw onboard` in a virtual terminal (`tmux`/`screen`)
-2. Navigate menus by sending keystrokes
-3. Extract the OAuth URL and send to user
-4. Receive redirect URL from user and paste back
-5. Verify with `openclaw models status`
-
-### Auth Status Monitoring
-
-Any agent can check provider health at any time:
-
-```bash
-# Quick check — exit code 0=ok, 1=expired, 2=expiring soon
-openclaw models status --check
-
-# Detailed view — shows expiry times and usage quotas
-openclaw models status
-
-# Full health check with repair suggestions
-openclaw doctor
-```
-
-If Codex shows `auth_expired`, guide the user through the OAuth flow above. For Anthropic, run `openclaw onboard --auth-choice setup-token`. For Gemini, run `openclaw models auth login --provider google-gemini-cli`. Kimi API keys do not expire — if Kimi fails, check that the subscription is active.
+| Provider | Auth Method | Maintenance |
+|----------|-----------|-------------|
+| Anthropic | Setup-token (OAuth) | Low — auto-refresh |
+| Google Gemini | OAuth (CLI plugin) | Very low — long-lived tokens |
+| OpenAI Codex | OAuth (ChatGPT PKCE) | Low — auto-refresh |
+| Kimi | Static API key | None — never expires |
 
 ## Troubleshooting
 
-### Gateway crashes with "No API provider registered for api: undefined"
-The `api` field is missing from a custom provider. Add it:
-- OpenAI Codex (in `openclaw.json`): `"api": "openai-responses"`
-- Kimi (in `openclaw.json`): `"api": "openai-completions"`
-- Google Gemini (in per-agent `models.json` ONLY): `"api": "google-gemini-cli"`
+For detailed troubleshooting, consult `references/troubleshooting.md` (in the same directory as this SKILL.md). Common issues:
 
-Do NOT use `"api": "google-generative-ai"` for subscription OAuth — that type sends auth via `x-goog-api-key` header which rejects OAuth tokens. Use `"google-gemini-cli"` instead.
-
-### Google Gemini returns "API key not valid" with subscription
-Your Gemini provider is using the wrong API type. Two possible causes:
-1. Provider is in `openclaw.json` with `"api": "google-generative-ai"` — move it to per-agent `models.json` with `"api": "google-gemini-cli"` instead.
-2. Provider has a `baseUrl` set — remove it entirely. The `google-gemini-cli` stream function has the correct endpoint hardcoded.
-
-See the Provider Configuration section above for the correct setup.
-
-### Model shows `missing` in `openclaw models status`
-The model ID does not match the provider's catalog. For `gemini-2.5-flash-lite`: use the ID **without** `-preview` suffix (the `-preview` alias was deprecated Aug 2025). The model may show as `configured,missing` because OpenClaw's catalog hasn't added it yet (issue #10284, PR #10984 pending) — but it still works for API calls. The `normalizeGoogleModelId()` function only normalizes Gemini 3 model IDs — Gemini 2.5 IDs must match exactly.
-
-### Codex stops working (401 Unauthorized)
-The Codex OAuth token has expired and auto-refresh failed. This can happen if the refresh token itself expired (typically after 10+ days without use). To fix, guide the user through the OAuth flow described in the "OAuth Setup for Agents" section above. Use the tmux method to run `openclaw onboard --auth-choice openai-codex`, extract the URL, send it to the user, and paste back the redirect URL. OpenClaw 2026.2.6+ auto-refreshes tokens automatically — this manual flow is only needed when auto-refresh fails. Note: the user's normal ChatGPT usage (web, mobile, Codex CLI, Codex app) does NOT cause this — tested Feb 2026.
-
-### Sub-agent returns "Unknown model"
-The model is registered in the main agent context but not available in sub-agent context. Check that the model's provider has a valid auth-profile. Run `openclaw models status` to verify.
+- **"No API provider registered for api: undefined"** → Missing `api` field in provider config
+- **"API key not valid" with Gemini subscription** → Wrong API type; use `google-gemini-cli` not `google-generative-ai`
+- **Model shows `missing`** → Model ID mismatch; `gemini-2.5-flash-lite` (no `-preview` suffix)
+- **Codex 401 Unauthorized** → Token expired; re-run OAuth flow via `references/oauth-setup.md`
+- **Sub-agent "Unknown model"** → Provider missing from sub-agent's auth-profile
 
 ## Cost Summary
-
-### Subscription Plans (as of Feb 2026)
-
-| Provider | Plan | Monthly |
-|----------|------|---------|
-| Anthropic | Claude Max 5x | $100 |
-| Anthropic | Claude Max 20x | $200 |
-| OpenAI | ChatGPT Plus | $20 |
-| OpenAI | ChatGPT Pro | $200 |
-| Google | Gemini Advanced | $20 |
-| Moonshot | Kimi Andante | ~$10 |
-
-### Common Setups
 
 | Setup | Monthly | Notes |
 |-------|---------|-------|
 | **Claude only** (Max 5x) | $100 | No routing, Opus handles everything |
 | **Claude only** (Max 20x) | $200 | No routing, 20x rate limits |
-| **Balanced** (Max 20x + Gemini) | $220 | Adds Flash-Lite speed + Pro research |
-| **Code-focused** (Max 20x + Gemini + ChatGPT Plus) | $240 | Adds Codex for code + math |
-| **Full stack** (all 4, ChatGPT Plus) | $250 | Full specialization, budget-friendly |
-| **Full stack Pro** (all 4, ChatGPT Pro) | $430 | Maximum rate limits across all models |
+| **Balanced** (Max 20x + Gemini) | $220 | Adds Flash speed + Pro research |
+| **Code-focused** (+ ChatGPT Plus) | $240 | Adds Codex for code + math |
+| **Full stack** (all 4, ChatGPT Plus) | $250 | Full specialization |
+| **Full stack Pro** (all 4, ChatGPT Pro) | $430 | Maximum rate limits |
 
-Source: Artificial Analysis API v4, February 2026 (v2.1 verified). Codex scores estimated (\*) from OpenAI blog data. Structured benchmark data available in `benchmarks.json`.
+Source: Artificial Analysis API v4, February 2026 (v2.1 verified). Codex scores estimated (*) from OpenAI blog data. Structured benchmark data available in `benchmarks.json`.

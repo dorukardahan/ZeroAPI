@@ -37,30 +37,59 @@ The result: better output, faster responses, and you're finally getting value fr
 - At least one AI subscription (Claude Max is the minimum)
 - Providers authenticated via `openclaw onboard`
 
-## Quick Start
+## Installation
+
+### Option A: Shared skill (all agents)
+
+```bash
+git clone https://github.com/dorukardahan/ZeroAPI.git ~/.openclaw/skills/zeroapi
+```
+
+Skills in `~/.openclaw/skills/` are automatically loaded by all agents on the machine. No `openclaw.json` changes needed.
+
+### Option B: Workspace skill (single agent)
 
 ```bash
 git clone https://github.com/dorukardahan/ZeroAPI.git
+cp -r ZeroAPI ~/.openclaw/workspace/skills/zeroapi
 ```
+
+Workspace skills (`<workspace>/skills/`) have highest precedence and are only available to that agent.
+
+### Option C: Claude Code skill
+
+```bash
+git clone https://github.com/dorukardahan/ZeroAPI.git ~/.claude/skills/zeroapi
+```
+
+Works the same way — Claude Code loads SKILL.md and uses the routing logic when relevant.
+
+### Option D: Extra directory
+
+Add any path to `openclaw.json`:
+
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["/path/to/ZeroAPI"]
+    }
+  }
+}
+```
+
+## Quick Start
 
 **1. Copy a config example** that matches your subscriptions:
 
 ```bash
 # Pick one: claude-only, claude-codex, claude-gemini, or full-stack
-cp ZeroAPI/examples/full-stack/openclaw.json ~/.openclaw/openclaw.json
+cp ~/.openclaw/skills/zeroapi/examples/full-stack/openclaw.json ~/.openclaw/openclaw.json
 ```
 
 See [`examples/README.md`](examples/README.md) for setup details per config.
 
-**2. Add the skill** to your agent in `openclaw.json`:
-
-```json
-{
-  "skills": ["path/to/ZeroAPI/SKILL.md"]
-}
-```
-
-**3. The skill will:**
+**2. The skill will:**
 
 1. Ask which subscriptions you have
 2. Configure model tiers based on your providers
@@ -107,18 +136,20 @@ Running Opus 4.6 through the Anthropic API at moderate usage (~500K tokens/day):
 
 That's **2.7x cheaper** with better results because each task goes to the specialist model. And unlike the API, your cost stays flat no matter how much you use it.
 
-## What's in SKILL.md
+## What's Inside
 
-Everything an OpenClaw agent needs to implement routing:
+**SKILL.md** — Core routing logic (~2,300 words, optimized for token efficiency):
 - 9-step decision algorithm with signal keywords
 - Model tiers with benchmark data (speed, TTFT, intelligence, context)
-- Sub-agent delegation syntax and response handling
-- Error handling, retries, and fallback logic
-- Multi-turn conversation routing guidance
-- OpenClaw configuration examples (agents + providers JSON)
+- Sub-agent delegation syntax and examples
+- Error handling, retries, and fallback chains
+- Multi-turn conversation routing and conflict resolution
 - Collaboration patterns (pipeline, parallel, adversarial, orchestrated)
-- Fallback chains for every provider combination
-- Troubleshooting common issues
+
+**references/** — Detailed docs loaded on demand:
+- `provider-config.md` — Full `openclaw.json` setup, per-agent `models.json`, Google Gemini workarounds
+- `oauth-setup.md` — OAuth flows for headless VPS (3 scenarios), multi-device safety test results
+- `troubleshooting.md` — Common error messages and fixes
 
 ## Customizing for Your Subscriptions
 
