@@ -111,6 +111,25 @@
         "tau2": 0.959
       },
       "estimated": false
+    },
+    "k2-thinking": {
+      "provider": "kimi-coding",
+      "openclaw_id": "kimi-coding/k2-thinking",
+      "tier": null,
+      "speed_tok_s": null,
+      "ttft_s": null,
+      "intelligence": null,
+      "context_window": 131072,
+      "best_at": ["extended reasoning", "complex problem solving"],
+      "benchmarks": {
+        "ifbench": null,
+        "gpqa": null,
+        "coding": null,
+        "math": null,
+        "tau2": null
+      },
+      "estimated": false,
+      "notes": "Used as fallback for kimi-orchestrator only. Benchmarks not yet available on Artificial Analysis. Context window from Kimi platform docs (256K advertised, 131072 used conservatively to match K2.5 config)."
     }
   },
   "tiers": {
