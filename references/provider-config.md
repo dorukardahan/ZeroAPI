@@ -13,8 +13,8 @@ To use routing, agents must be defined in `openclaw.json`. Here is the recommend
       "model": {
         "primary": "anthropic/claude-opus-4-6",
         "fallbacks": [
-          "google-gemini-cli/gemini-3-pro-preview",
           "openai-codex/gpt-5.3-codex",
+          "google-gemini-cli/gemini-3-pro-preview",
           "kimi-coding/k2p5"
         ]
       },

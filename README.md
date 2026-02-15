@@ -76,7 +76,7 @@ Every agent must have fallbacks spanning **multiple providers**. Same-provider f
 
 | Agent | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |-------|---------|------------|------------|------------|
-| main | Opus (Anthropic) | Pro (Google) | Codex (OpenAI) | K2.5 (Kimi) |
+| main | Opus (Anthropic) | Codex (OpenAI) | Pro (Google) | K2.5 (Kimi) |
 | codex | Codex (OpenAI) | Opus (Anthropic) | Pro (Google) | K2.5 (Kimi) |
 | gemini-researcher | Pro (Google) | Flash (Google) | Opus (Anthropic) | Codex (OpenAI) |
 | gemini-fast | Flash (Google) | Pro (Google) | Opus (Anthropic) | Codex (OpenAI) |

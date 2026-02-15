@@ -72,7 +72,7 @@
       "speed_tok_s": 113,
       "ttft_s": 20.00,
       "intelligence": 51.5,
-      "context_window": 200000,
+      "context_window": 266000,
       "best_at": ["code generation", "math", "debugging"],
       "benchmarks": {
         "ifbench": 0.590,
