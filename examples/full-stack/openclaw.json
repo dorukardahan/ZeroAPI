@@ -10,7 +10,7 @@
       "kimi-coding": {
         "baseUrl": "https://api.kimi.com/coding/v1",
         "api": "openai-completions",
-        "models": [{ "id": "k2p5" }]
+        "models": [{ "id": "k2p5" }, { "id": "k2-thinking" }]
       }
     }
   },
