@@ -183,6 +183,74 @@ When switching models mid-conversation:
 - Sub-agents cannot write to your workspace — output comes back as text.
 - Sub-agents share nothing with each other — complete isolation by design.
 
+## Specialist Agents (Optional)
+
+Beyond the 5 core agents (main, codex, gemini-researcher, gemini-fast, kimi-orchestrator), you can add domain-specific specialist agents. Specialists have their own workspace with tailored AGENTS.md, MEMORY.md, and skills for a specific domain.
+
+### When to use specialists
+
+- You have distinct project domains (infrastructure, content, community, etc.)
+- Each domain needs its own persistent memory and context
+- You want the main agent to orchestrate without carrying all domain knowledge
+
+### Example specialists
+
+| Agent | Primary Model | Why That Model | Use Case |
+|-------|--------------|----------------|----------|
+| `devops` | Codex | Code generation, shell scripts, config files | Infrastructure, deployment, monitoring scripts |
+| `researcher` | Gemini Pro | GPQA 0.908, 1M context | Deep research, fact-checking, literature review |
+| `content-writer` | Opus | Intelligence 53.0, best judgment | Blog posts, documentation, copywriting |
+| `community` | Flash | 206 tok/s, IFBench 0.780 | Moderation, quick responses, community engagement |
+
+### Delegating to specialists
+
+```
+/agent devops Set up a systemd service for the memory API with health checks and auto-restart
+
+/agent researcher Analyze the latest papers on mixture-of-experts architectures. Focus on routing efficiency.
+
+/agent content-writer Write a blog post about multi-model routing. Target audience: developers running self-hosted AI agents.
+
+/agent community Review the last 24 hours of community posts. Flag any that need moderation.
+```
+
+### Specialist workspace structure
+
+Each specialist gets its own workspace directory with domain-specific files:
+
+```
+~/.openclaw/workspace-devops/
+├── AGENTS.md          # DevOps-specific instructions and runbooks
+├── MEMORY.md          # Infrastructure decisions, deployment history
+└── skills/            # DevOps-relevant skills only
+```
+
+This keeps domain context separate. The main orchestrator does not load devops runbooks, and the devops agent does not carry content writing guidelines.
+
+**Note:** Workspace directory names are arbitrary — `workspace-devops`, `workspace-infra`, `workspace-ops` all work. The agent `id` and workspace path don't need to match.
+
+See `examples/specialist-agents/` for a ready-to-use config with 4 specialist agents.
+
+**Fallback depth:** Specialist agents in the example use 2 fallbacks instead of the core agents' 3. This is intentional — specialists are narrower in scope and trade some redundancy for simpler configs. Add more fallbacks if your specialists handle critical tasks.
+
+## Image Model Routing
+
+Set `imageModel` in your agent config to route vision/image analysis tasks to the best multimodal model:
+
+```json
+"imageModel": {
+  "primary": "google-gemini-cli/gemini-3-pro-preview",
+  "fallbacks": [
+    "google-gemini-cli/gemini-3-flash-preview",
+    "anthropic/claude-opus-4-6"
+  ]
+}
+```
+
+Gemini Pro is recommended as the primary image model — it has strong multimodal capabilities and 1M context for analyzing large images or multiple images in one request. Flash is a good fallback for speed, and Opus handles vision well as a last resort.
+
+Place this in `agents.defaults` to apply to all agents, or set it per-agent. Agents without `imageModel` typically fall back to their primary text model for vision tasks (exact behavior may vary by OpenClaw version — check [docs.openclaw.ai](https://docs.openclaw.ai) for current defaults).
+
 ## Collaboration Patterns
 
 ### Pipeline (sequential)
