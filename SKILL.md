@@ -402,37 +402,118 @@ All tasks route to Opus. No fallback needed.
 
 ## Provider Setup
 
-| Provider | Auth Method | Setup Command |
-|----------|-----------|---------------|
-| Anthropic | API token | `openclaw onboard --auth-choice setup-token` |
-| Google Gemini | OAuth (CLI plugin) | `openclaw plugins enable google-gemini-cli-auth && openclaw models auth login --provider google-gemini-cli` |
-| OpenAI Codex | OAuth (ChatGPT) | `openclaw onboard --auth-choice openai-codex` |
-| Kimi | API key (subscription) | `openclaw onboard --auth-choice kimi-code-api-key` |
+| Provider | Auth Method | Setup Command | Maintenance |
+|----------|-----------|---------------|-------------|
+| Anthropic | Setup-token (OAuth) | `openclaw onboard --auth-choice setup-token` | Low — auto-refresh works |
+| Google Gemini | OAuth (CLI plugin) | `openclaw plugins enable google-gemini-cli-auth && openclaw models auth login --provider google-gemini-cli` | Very low — long-lived refresh tokens |
+| OpenAI Codex | OAuth (ChatGPT PKCE) | `openclaw onboard --auth-choice openai-codex` | Low — auto-refresh works |
+| Kimi | Static API key | `openclaw onboard --auth-choice kimi-code-api-key` | None — never expires |
 
 **Auth reliability ranking**: Kimi API key (static, never expires) ≈ Gemini OAuth (auto-refresh, stable) > Anthropic setup-token (auto-refresh, ~8hr access token) > Codex OAuth (auto-refresh works, see notes below).
 
-**Codex OAuth — multi-device usage is safe**: Tested Feb 2026 — logging into ChatGPT web, ChatGPT mobile app, Codex CLI, and Codex desktop app does NOT invalidate the VPS OpenClaw token. All four scenarios were tested while a fresh Codex JWT was active on the VPS; the token survived all of them. OpenClaw's auto-refresh mechanism handles token renewal automatically.
+### Codex OAuth — Multi-Device Safety (Tested Feb 2026)
 
-**Codex OAuth on headless VPS (no browser)**: OpenClaw detects VPS environments and offers a paste-the-redirect-URL flow instead of opening a browser. Use `tmux` to run the interactive wizard:
+A common concern: "Will logging into ChatGPT on my phone/browser invalidate my agent's Codex token on the VPS?"
+
+**No.** We tested all four scenarios with a fresh Codex JWT active on a VPS:
+
+| Action | VPS Token Affected? |
+|--------|-------------------|
+| Log into ChatGPT web UI (browser) | No — token survived |
+| Log into ChatGPT mobile app + chat | No — token survived |
+| Use Codex desktop app + new session | No — token survived |
+| Use Codex CLI in terminal + chat | No — token survived |
+
+All four passed. The VPS token remained valid through all of them. OpenClaw's auto-refresh mechanism handles token renewal automatically. Users can freely use ChatGPT and Codex on all their devices without disrupting their agent's authentication.
+
+**Technical note**: Codex CLI and OpenClaw share the same OAuth `client_id` (`app_EMoamEE...`). Despite this, concurrent sessions on different devices do not invalidate each other. A dedicated OpenAI account for the VPS is NOT necessary.
+
+### OAuth Setup for Agents (Headless / No Browser)
+
+The `openclaw onboard` command uses an interactive TUI wizard. On a headless VPS (no browser), OpenClaw detects this and switches to a "paste-the-redirect-URL" flow. The agent needs to:
+
+1. Run the wizard in a virtual terminal
+2. Navigate the TUI menus
+3. Extract the OAuth URL
+4. Send it to the user (via WhatsApp, Telegram, Discord, etc.)
+5. Receive the redirect URL back from the user
+6. Paste it into the wizard
+
+Here is how to do this as an agent, regardless of your runtime environment:
+
+#### If you are an OpenClaw agent (running directly on the VPS)
+
+You have direct Bash access. Use `tmux` to manage the interactive TUI:
+
 ```bash
-# 1. Start onboard in a tmux session
-tmux new-session -d -s codex 'openclaw onboard --auth-choice openai-codex --accept-risk'
+# Step 1: Start the wizard in a tmux session
+tmux new-session -d -s oauth 'openclaw onboard --auth-choice openai-codex --accept-risk'
 
-# 2. Navigate the TUI: view screen, send Enter to select defaults
-tmux capture-pane -t codex -p        # see current screen
-tmux send-keys -t codex Enter        # select highlighted option
+# Step 2: Read the screen and navigate menus
+tmux capture-pane -t oauth -p        # read current screen
+tmux send-keys -t oauth Enter        # select highlighted option (QuickStart, Use existing values, etc.)
+# Repeat capture-pane + send-keys until you reach the OAuth URL screen
 
-# 3. When the OAuth URL appears, copy it and open in your LOCAL browser
-#    Log in to ChatGPT, then copy the redirect URL from the browser
-#    (it will fail to load — that's expected, just copy the full URL)
+# Step 3: Extract the OAuth URL from the screen output
+# Look for a line starting with https://auth.openai.com/oauth/authorize?...
+# Send this URL to the user via your channel (WhatsApp, Telegram, etc.)
 
-# 4. Paste the redirect URL back into tmux
-tmux send-keys -t codex 'http://localhost:1455/auth/callback?code=...' Enter
+# Step 4: Tell the user:
+#   "Open this link in your browser, log in to ChatGPT.
+#    After login, your browser will try to load a localhost URL that won't work.
+#    Copy that FULL URL from the browser address bar and send it back to me."
 
-# 5. Cancel remaining wizard steps (auth is already saved)
-tmux send-keys -t codex C-c
+# Step 5: When the user sends back the redirect URL, paste it:
+tmux send-keys -t oauth 'THE_REDIRECT_URL_FROM_USER' Enter
+
+# Step 6: Auth is saved. Cancel remaining wizard steps:
+tmux send-keys -t oauth C-c
+
+# Step 7: Verify
+openclaw models status | grep openai-codex
 ```
-This method works without SSH tunnels or port forwarding.
+
+The same approach works for other OAuth providers (Gemini, Anthropic). Change `--auth-choice` accordingly.
+
+#### If you are Claude Code (SSH from local machine)
+
+Run the same tmux commands over SSH:
+
+```bash
+ssh YOUR_VPS 'tmux new-session -d -s oauth "openclaw onboard --auth-choice openai-codex --accept-risk"'
+ssh YOUR_VPS 'tmux capture-pane -t oauth -p'           # read screen
+ssh YOUR_VPS 'tmux send-keys -t oauth Enter'           # navigate menus
+# ... extract URL, user clicks, paste redirect URL back ...
+ssh YOUR_VPS "tmux send-keys -t oauth 'REDIRECT_URL' Enter"
+ssh YOUR_VPS 'tmux send-keys -t oauth C-c'
+```
+
+#### If you are Codex CLI or any other agent
+
+Same principle — use `tmux` (or `screen`) to wrap the interactive wizard, extract the URL, and relay it to the user through whatever channel you communicate on. The key steps are always:
+
+1. Wrap `openclaw onboard` in a virtual terminal (`tmux`/`screen`)
+2. Navigate menus by sending keystrokes
+3. Extract the OAuth URL and send to user
+4. Receive redirect URL from user and paste back
+5. Verify with `openclaw models status`
+
+### Auth Status Monitoring
+
+Any agent can check provider health at any time:
+
+```bash
+# Quick check — exit code 0=ok, 1=expired, 2=expiring soon
+openclaw models status --check
+
+# Detailed view — shows expiry times and usage quotas
+openclaw models status
+
+# Full health check with repair suggestions
+openclaw doctor
+```
+
+If Codex shows `auth_expired`, guide the user through the OAuth flow above. For Anthropic, run `openclaw onboard --auth-choice setup-token`. For Gemini, run `openclaw models auth login --provider google-gemini-cli`. Kimi API keys do not expire — if Kimi fails, check that the subscription is active.
 
 ## Troubleshooting
 
@@ -455,11 +536,7 @@ See the Provider Configuration section above for the correct setup.
 The model ID does not match the provider's catalog. For `gemini-2.5-flash-lite`: use the ID **without** `-preview` suffix (the `-preview` alias was deprecated Aug 2025). The model may show as `configured,missing` because OpenClaw's catalog hasn't added it yet (issue #10284, PR #10984 pending) — but it still works for API calls. The `normalizeGoogleModelId()` function only normalizes Gemini 3 model IDs — Gemini 2.5 IDs must match exactly.
 
 ### Codex stops working (401 Unauthorized)
-The Codex OAuth token has expired and auto-refresh failed. This can happen if the refresh token itself expired (typically after 10+ days without use). Fix:
-```
-openclaw onboard --auth-choice openai-codex
-```
-This re-authenticates. OpenClaw 2026.2.6+ auto-refreshes tokens automatically. Note: using ChatGPT on other devices (web, mobile, Codex CLI, Codex app) does NOT invalidate the VPS token — tested Feb 2026. For headless VPS environments, see the tmux method in the Provider Setup section above.
+The Codex OAuth token has expired and auto-refresh failed. This can happen if the refresh token itself expired (typically after 10+ days without use). To fix, guide the user through the OAuth flow described in the "OAuth Setup for Agents" section above. Use the tmux method to run `openclaw onboard --auth-choice openai-codex`, extract the URL, send it to the user, and paste back the redirect URL. OpenClaw 2026.2.6+ auto-refreshes tokens automatically — this manual flow is only needed when auto-refresh fails. Note: the user's normal ChatGPT usage (web, mobile, Codex CLI, Codex app) does NOT cause this — tested Feb 2026.
 
 ### Sub-agent returns "Unknown model"
 The model is registered in the main agent context but not available in sub-agent context. Check that the model's provider has a valid auth-profile. Run `openclaw models status` to verify.
