@@ -1,0 +1,116 @@
+import { describe, it, expect } from "vitest";
+import { classifyTask } from "../classifier.js";
+import { filterCapableModels, estimateTokens } from "../filter.js";
+import { selectModel } from "../selector.js";
+import type { ZeroAPIConfig } from "../types.js";
+
+const config: ZeroAPIConfig = {
+  version: "3.0.0",
+  generated: "2026-04-05",
+  benchmarks_date: "2026-04-04",
+  default_model: "google-gemini-cli/gemini-3.1-pro-preview",
+  models: {
+    "google-gemini-cli/gemini-3.1-pro-preview": {
+      context_window: 1000000, supports_vision: true, speed_tps: 120, ttft_seconds: 20,
+      benchmarks: { intelligence: 57.2, coding: 55.5, tau2: 0.956 },
+    },
+    "openai-codex/gpt-5.4": {
+      context_window: 1050000, supports_vision: false, speed_tps: 72, ttft_seconds: 163,
+      benchmarks: { intelligence: 57.2, coding: 57.3, tau2: 0.915 },
+    },
+    "zai/glm-5": {
+      context_window: 200000, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9,
+      benchmarks: { intelligence: 49.8, coding: 44.2, tau2: 0.982 },
+    },
+  },
+  routing_rules: {
+    code: { primary: "openai-codex/gpt-5.4", fallbacks: ["google-gemini-cli/gemini-3.1-pro-preview", "zai/glm-5"] },
+    research: { primary: "google-gemini-cli/gemini-3.1-pro-preview", fallbacks: ["openai-codex/gpt-5.4"] },
+    orchestration: { primary: "zai/glm-5", fallbacks: ["google-gemini-cli/gemini-3.1-pro-preview"] },
+    math: { primary: "openai-codex/gpt-5.4", fallbacks: ["google-gemini-cli/gemini-3.1-pro-preview"] },
+    fast: { primary: "zai/glm-5", fallbacks: ["google-gemini-cli/gemini-3.1-pro-preview"] },
+    default: { primary: "google-gemini-cli/gemini-3.1-pro-preview", fallbacks: ["openai-codex/gpt-5.4", "zai/glm-5"] },
+  },
+  workspace_hints: { codex: null, gemini: null, senti: ["code", "research"] },
+  keywords: {
+    code: ["implement", "function", "class", "refactor", "fix", "test", "debug"],
+    research: ["research", "analyze", "explain", "compare", "investigate"],
+    orchestration: ["orchestrate", "coordinate", "pipeline", "workflow"],
+    math: ["calculate", "solve", "equation", "proof"],
+    fast: ["quick", "simple", "format", "convert", "translate"],
+  },
+  high_risk_keywords: ["deploy", "delete", "drop", "production", "credentials"],
+  fast_ttft_max_seconds: 5,
+};
+
+describe("full routing pipeline", () => {
+  it("routes code task to Codex", () => {
+    const decision = classifyTask("refactor the auth module", config.keywords, config.high_risk_keywords);
+    expect(decision.category).toBe("code");
+    const capable = filterCapableModels(config.models, { estimatedTokens: 1000 });
+    const model = selectModel(decision.category, capable, config.routing_rules, config.default_model);
+    expect(model).toBe("openai-codex/gpt-5.4");
+  });
+
+  it("routes research task — already on default, returns null", () => {
+    const decision = classifyTask("analyze the performance data", config.keywords, config.high_risk_keywords);
+    expect(decision.category).toBe("research");
+    const capable = filterCapableModels(config.models, { estimatedTokens: 1000 });
+    const model = selectModel(decision.category, capable, config.routing_rules, config.default_model);
+    expect(model).toBeNull();
+  });
+
+  it("blocks high-risk tasks from routing", () => {
+    const decision = classifyTask("deploy this to production", config.keywords, config.high_risk_keywords);
+    expect(decision.risk).toBe("high");
+  });
+
+  it("fast task filters by TTFT", () => {
+    const decision = classifyTask("quickly format this list", config.keywords, config.high_risk_keywords);
+    expect(decision.category).toBe("fast");
+    const capable = filterCapableModels(config.models, {
+      estimatedTokens: 100,
+      maxTtftSeconds: config.fast_ttft_max_seconds,
+    });
+    expect(capable["zai/glm-5"]).toBeDefined();
+    expect(capable["openai-codex/gpt-5.4"]).toBeUndefined();
+    expect(capable["google-gemini-cli/gemini-3.1-pro-preview"]).toBeUndefined();
+  });
+
+  it("large context filters out small-window models", () => {
+    const capable = filterCapableModels(config.models, { estimatedTokens: 500000 });
+    expect(capable["zai/glm-5"]).toBeUndefined();
+    expect(Object.keys(capable)).toHaveLength(2);
+  });
+
+  it("ambiguous message stays on default", () => {
+    const decision = classifyTask("buna bi bak", config.keywords, config.high_risk_keywords);
+    expect(decision.category).toBe("default");
+  });
+
+  it("workspace hints help classify ambiguous tasks", () => {
+    const decision = classifyTask("bunu düzelt", config.keywords, config.high_risk_keywords, ["code"]);
+    expect(decision.category).toBe("code");
+  });
+
+  it("estimates tokens from prompt length", () => {
+    expect(estimateTokens("hello world")).toBe(3);
+    expect(estimateTokens("a".repeat(400000))).toBe(100000);
+  });
+
+  it("orchestration routes to GLM", () => {
+    const decision = classifyTask("coordinate a workflow across 3 services", config.keywords, config.high_risk_keywords);
+    expect(decision.category).toBe("orchestration");
+    const capable = filterCapableModels(config.models, { estimatedTokens: 1000 });
+    const model = selectModel(decision.category, capable, config.routing_rules, config.default_model);
+    expect(model).toBe("zai/glm-5");
+  });
+
+  it("math routes to Codex", () => {
+    const decision = classifyTask("solve this equation for x", config.keywords, config.high_risk_keywords);
+    expect(decision.category).toBe("math");
+    const capable = filterCapableModels(config.models, { estimatedTokens: 1000 });
+    const model = selectModel(decision.category, capable, config.routing_rules, config.default_model);
+    expect(model).toBe("openai-codex/gpt-5.4");
+  });
+});
