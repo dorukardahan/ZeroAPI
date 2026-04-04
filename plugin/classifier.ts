@@ -31,9 +31,10 @@ export function classifyTask(
 
   for (const [category, kws] of Object.entries(keywords)) {
     for (const kw of kws) {
-      const idx = lower.indexOf(kw.toLowerCase());
-      if (idx !== -1 && idx < earliestIndex) {
-        earliestIndex = idx;
+      const regex = new RegExp(`\\b${kw.toLowerCase()}\\b`);
+      const match = regex.exec(lower);
+      if (match && match.index < earliestIndex) {
+        earliestIndex = match.index;
         matchedCategory = category as TaskCategory;
         matchedKeyword = kw;
       }

@@ -1,0 +1,80 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+
+describe("config", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = join(tmpdir(), `zeroapi-config-test-${Date.now()}`);
+    mkdirSync(testDir, { recursive: true });
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(testDir, { recursive: true, force: true });
+    } catch {
+      // cleanup best-effort
+    }
+  });
+
+  it("returns null when config file does not exist", async () => {
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
+  it("returns null for invalid JSON", async () => {
+    writeFileSync(join(testDir, "zeroapi-config.json"), "not valid json{{{");
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
+  it("returns null for malformed config missing required fields", async () => {
+    const incomplete = { version: "3.0.0", default_model: "foo/bar" };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(incomplete));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
+  it("returns null when high_risk_keywords is not an array", async () => {
+    const bad = {
+      version: "3.0.0",
+      default_model: "foo/bar",
+      models: {},
+      routing_rules: {},
+      keywords: {},
+      high_risk_keywords: "not-an-array",
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(bad));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
+  it("loads and caches valid config", async () => {
+    const valid = {
+      version: "3.0.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "google/gemini-3.1-pro",
+      models: { "google/gemini-3.1-pro": { context_window: 1000000, supports_vision: true, speed_tps: 120, ttft_seconds: 20, benchmarks: {} } },
+      routing_rules: { default: { primary: "google/gemini-3.1-pro", fallbacks: [] } },
+      workspace_hints: {},
+      keywords: { code: ["implement"] },
+      high_risk_keywords: ["deploy"],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(valid));
+    const { loadConfig, getConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).not.toBeNull();
+    expect(result!.version).toBe("3.0.0");
+    expect(getConfig()).toBe(result);
+  });
+});

@@ -78,4 +78,19 @@ describe("classifyTask", () => {
     const result = classifyTask("bunu düzelt", defaultKeywords, highRisk, ["code"]);
     expect(result.category).toBe("code");
   });
+
+  it("does not match substrings — 'information' should not trigger 'format'", () => {
+    const result = classifyTask("send me the information about the project", defaultKeywords, highRisk);
+    expect(result.category).toBe("default"); // NOT "fast"
+  });
+
+  it("does not match substrings — 'classification' should not trigger 'class'", () => {
+    const result = classifyTask("the classification of this data is wrong", defaultKeywords, highRisk);
+    expect(result.category).toBe("default"); // NOT "code"
+  });
+
+  it("does not match substrings — 'contest' should not trigger 'test'", () => {
+    const result = classifyTask("enter the contest today", defaultKeywords, highRisk);
+    expect(result.category).toBe("default"); // NOT "code"
+  });
 });

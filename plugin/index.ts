@@ -57,12 +57,17 @@ export default definePluginEntry({
         return;
       }
 
+      // Detect likely vision tasks from prompt keywords
+      const visionSignals = ["image", "screenshot", "photo", "picture", "diagram", "chart", "graph", "visual", "logo", "icon", "UI", "mockup", "design"];
+      const likelyVision = visionSignals.some(s => event.prompt.toLowerCase().includes(s.toLowerCase()));
+
       // Stage 1: Capability filter
       const tokenEstimate = estimateTokens(event.prompt);
       const isFast = decision.category === "fast";
       const capable = filterCapableModels(config.models, {
         estimatedTokens: tokenEstimate,
         maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
+        requiresVision: likelyVision,
       });
 
       // Stage 2: Select best model from capable survivors

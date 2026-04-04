@@ -21,7 +21,7 @@ export type ZeroAPIConfig = {
   benchmarks_date: string;
   default_model: string;
   models: Record<string, ModelCapabilities>;
-  routing_rules: Record<TaskCategory, RoutingRule>;
+  routing_rules: Record<string, RoutingRule>;
   workspace_hints: Record<string, TaskCategory[] | null>;
   keywords: Record<string, string[]>;
   high_risk_keywords: string[];
