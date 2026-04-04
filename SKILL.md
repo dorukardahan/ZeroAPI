@@ -1,352 +1,397 @@
 ---
 name: zeroapi
-version: 2.3.0
+version: 3.0.0
 description: >
-  Route tasks to the best AI model across paid subscriptions (Claude, ChatGPT,
-  Codex, Gemini, Kimi) via OpenClaw gateway. Use when user mentions model routing,
-  multi-model setup, "use Codex for this", "delegate to Gemini", "route to the
-  best model", agent delegation, or has OpenClaw agents configured with multiple
-  providers. Do NOT use for single-model conversations or general chat.
+  Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
+  Use when user mentions model routing, multi-model setup, "which model should I use",
+  agent delegation, or wants to optimize their OpenClaw model configuration.
+  Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
-compatibility: Requires OpenClaw 2026.2.6+ with at least one AI subscription. Bootstrap budget config requires 2026.2.14+.
+compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
-# ZeroAPI — Subscription-Based Model Routing
+# ZeroAPI v3.0 — Plugin-Based Model Routing
 
-You are an OpenClaw agent. This skill teaches you HOW to route tasks to the right model across your available providers. You do NOT call external APIs — OpenClaw handles connections. Your job is to CLASSIFY incoming tasks and DELEGATE to the appropriate agent/model.
+You are an OpenClaw setup agent. ZeroAPI routes every message to the optimal AI model using an OpenClaw **gateway plugin** (`before_model_resolve` hook). You do NOT route messages yourself — the plugin does it at runtime with <1ms latency, zero token overhead, and full session context. Your job is to **configure** the plugin: scan the user's setup, generate `zeroapi-config.json`, update `openclaw.json`, and install the plugin.
 
-## First-Time Setup
+This is NOT prompt-based routing. The plugin intercepts messages at the gateway level using keyword/regex matching. No LLM call, no context serialization, no sub-agent spawning.
 
-When this skill is first loaded, determine the user's available providers:
+## Anthropic Notice
 
-1. Ask: "Which AI subscriptions do you have?" (Claude Max 5x/20x, ChatGPT Plus/Pro, Gemini Advanced, Kimi)
-2. Map subscriptions to available tiers (see table below)
-3. Disable tiers for missing providers — those decision steps get skipped
-4. Confirm the active configuration with the user
+As of April 4, 2026, Anthropic Claude subscriptions no longer cover third-party tools like OpenClaw ([source](https://x.com/bcherny/status/2040206440556826908)). Users who relied on Claude as their default model need a migration path. ZeroAPI configures routing across subscription-covered alternatives only. No Anthropic/Claude models are included in routing.
 
-If only Claude is available, all tasks stay on Opus. No routing needed — but conflict resolution and collaboration patterns still apply for judging task complexity.
+## How It Works
 
-To verify providers are actually working after setup, ask the user to run:
+Three layers:
+
+```
+Layer 1: benchmarks.json (embedded in repo, updated by maintainer)
+  201 models, 6 providers, 15 benchmarks from Artificial Analysis API v2
+
+Layer 2: SKILL.md (this file — runs once via /zeroapi)
+  Scans OpenClaw → asks subscriptions → generates plugin config
+  Writes ~/.openclaw/zeroapi-config.json + updates openclaw.json
+
+Layer 3: Plugin (before_model_resolve hook — runs every message)
+  Two-stage routing: capability filter → benchmark ranking
+  Returns modelOverride → OpenClaw switches model for this turn
+  Same session, full context, zero token overhead, <1ms latency
+```
+
+## Supported Providers
+
+Six subscription-based providers. Anthropic excluded.
+
+| Provider | OpenClaw ID | Auth | Tiers (Monthly) | Annual |
+|----------|------------|------|-----------------|--------|
+| Google | `google-gemini-cli` | OAuth via gemini-cli plugin | AI Pro $20/mo | $200/yr |
+| OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus $20/mo, Pro $200/mo | — |
+| Kimi | `kimi-coding` | API key | Moderato $19, Allegretto $39, Allegro $99, Vivace $199 | ~20% off |
+| Z AI (GLM) | `zai` | API key (zai-coding-global) | Lite $10, Pro $30, Max $80 | 30% off |
+| MiniMax | `minimax` | OAuth portal | Starter $10, Plus $20, Max $50, Ultra-HS $150 | 17% off |
+| Alibaba (Qwen) | `modelstudio` | API key (coding plan) | Pro $50 (Lite $10 closed to new subs) | — |
+
+## Task Categories & Benchmark Mapping
+
+The plugin classifies each message into one of 6 categories using keyword/regex matching, then selects the benchmark leader from available models.
+
+| Category | Primary Benchmark | Secondary | Routing Keywords |
+|----------|------------------|-----------|-----------------|
+| **Code** | `coding_index` (reweighted: 0.85*terminalbench + 0.15*scicode) | `terminalbench` | implement, function, class, refactor, fix, test, PR, diff, migration, debug, component, endpoint, deploy |
+| **Research** | `gpqa`, `hle` | `lcr`, `scicode` | research, analyze, explain, compare, paper, evidence, deep dive, investigate, study |
+| **Orchestration** | composite: 0.6*tau2 + 0.4*ifbench | — | orchestrate, coordinate, pipeline, workflow, sequence, parallel, fan-out |
+| **Math** | `math_index` | `aime_25` | calculate, solve, equation, proof, integral, probability, optimize, formula |
+| **Fast** | speed (t/s), TTFT hard filter: <5s | — | quick, simple, format, convert, translate, rename, one-liner, list |
+| **Default** | `intelligence` index | — | No keyword match → best overall model |
+
+**Benchmark composite adjustments:**
+- **coding_index**: Original AA composite is 66.7% terminalbench + 33.3% scicode. SciCode measures scientific coding, not software engineering. Plugin uses: `0.85 * terminalbench + 0.15 * scicode`.
+- **orchestration**: TAU-2 alone measures telecom tool sequences, not multi-agent coordination. Plugin uses: `0.6 * tau2 + 0.4 * ifbench`.
+- **fast TTFT filter**: GPT-5.4 has 170s TTFT. Fast category hard-filters any model with TTFT > 5s regardless of speed score.
+
+## Two-Stage Routing
+
+### Stage 1: Capability Filter (hard requirements)
+
+Before any benchmark comparison, eliminate models that cannot handle the task:
+
+| Check | Method | On Failure |
+|-------|--------|------------|
+| Context window | Estimate tokens (chars / 4), compare to model's `max_context_tokens` | Skip model |
+| Vision/multimodal | Detect image attachments in message | Skip text-only models |
+| Provider auth | Check auth profile status from OpenClaw runtime | Skip unauthenticated providers |
+| Rate limit | Check cooldown state | Skip rate-limited models |
+
+### Stage 2: Benchmark Ranking (among survivors)
+
+From models that passed Stage 1, pick the benchmark leader for the detected task category. If the selected model equals the current default, skip (no unnecessary switch). If no keyword matched, stay on default (no override returned).
+
+## Setup Flow
+
+This is the wizard that runs when `/zeroapi` is invoked. Follow these steps in order.
+
+### Step 1: Detect Existing Setup
+
+Check if `~/.openclaw/zeroapi-config.json` exists.
+
+- **Re-run**: Read existing config, show current subscriptions and routing rules. Ask: "What changed? New subscription, dropped provider, or full reconfiguration?"
+- **First run**: Continue to Step 2.
+
+### Step 2: Ask Subscriptions
+
+Ask the user: **"Which AI subscriptions do you have?"**
+
+Present the provider table (see Supported Providers above). Record which providers and tiers the user has. If re-run, show current subscriptions and ask for confirmation or changes.
+
+Map subscriptions to available model pools:
+- Google AI Pro → all Gemini models (3.1 Pro, 3.1 Flash-Lite, etc.)
+- OpenAI Plus → GPT-5.4, GPT-5.4 mini, GPT-5.4 nano, etc.
+- OpenAI Pro → same models with higher rate limits
+- Kimi any tier → Kimi K2.5
+- Z AI any tier → GLM-5, GLM-5-Turbo, GLM-4.7, GLM-4.7-Flash
+- MiniMax any tier → MiniMax-M2.7
+- Alibaba Pro → Qwen3.5 397B
+
+### Step 3: Verify Providers
+
+Ask the user to run:
 ```
 openclaw models status
 ```
-Any model showing `missing` or `auth_expired` is not usable. Remove it from your active tiers until the user fixes it.
 
-For full provider configuration details, consult `references/provider-config.md` (in the same directory as this SKILL.md).
+Any model showing `missing` or `auth_expired` is not usable. Remove it from available pools. Models showing `ready` or `healthy` are confirmed.
 
-## Model Tiers
+### Step 4: Scan Workspaces
 
-| Tier | Model | OpenClaw ID | Speed | TTFT | Intelligence | Context | Best At |
-|------|-------|-------------|-------|------|-------------|---------|---------|
-| SIMPLE | Gemini 2.5 Flash-Lite | `google-gemini-cli/gemini-2.5-flash-lite` | 495 tok/s | 0.23s | 21.6 | 1M | Low-latency pings, trivial format tasks |
-| FAST | Gemini 3 Flash | `google-gemini-cli/gemini-3-flash-preview` | 206 tok/s | 12.75s | 46.4 | 1M | Instruction following, structured output, heartbeats |
-| RESEARCH | Gemini 3 Pro | `google-gemini-cli/gemini-3-pro-preview` | 131 tok/s | 29.59s | 48.4 | 1M | Scientific research, long context analysis |
-| CODE | GPT-5.3 Codex | `openai-codex/gpt-5.3-codex` | 113 tok/s | 20.00s | 51.5 | 266K | Code generation, math (99.0) |
-| DEEP | Claude Opus 4.6 | `anthropic/claude-opus-4-6` | 67 tok/s | 1.76s | 53.0 | 200K | Reasoning, planning, judgment |
-| ORCHESTRATE | Kimi K2.5 | `kimi-coding/k2p5` | 39 tok/s | 1.65s | 46.7 | 128K | Multi-agent orchestration (TAU-2: 0.959) |
+Read all workspace directories under `~/.openclaw/`:
+- Find each workspace's `AGENTS.md` to understand its purpose
+- Detect the workspace's likely task categories (code, research, orchestration, etc.)
+- Record agent IDs and current model assignments
+- Specialist agents (codex, gemini, glm, etc.) get `null` workspace hints — they already have the right model and the plugin will not route them
 
-**Key benchmark scores** (higher = better):
-- **GPQA** (science): Gemini Pro 0.908, Opus 0.769, Codex 0.738*
-- **Coding** (SWE-bench): Codex 49.3*, Opus 43.3, Gemini Pro 35.1
-- **Math** (AIME '25): Codex 99.0*, Gemini Flash 97.0, Opus 54.0
-- **IFBench** (instruction following): Gemini Flash 0.780, Opus 0.639, Codex 0.590*
-- **TAU-2** (agentic tool use): Kimi K2.5 0.959, Codex 0.811*, Opus 0.780
+### Step 5: Scan Cron Jobs
 
-Scores marked with * are estimated from vendor reports, not independently verified. Source: Artificial Analysis API v4, February 2026. Structured data in `benchmarks.json`.
+Read the user's cron configuration from `openclaw.json`:
+- For each cron job, detect the task type from its command/description
+- Map to model criteria (see Cron Model Assignment section below)
+- First run: preview-only, do not auto-assign. User must explicitly opt in per job.
+- Re-run: show diff against current assignments, require confirmation.
 
-## Decision Algorithm
+### Step 6: Read Benchmarks
 
-Walk through these 9 steps IN ORDER for every incoming task. The FIRST match wins. If a required model is unavailable, skip that step and continue to the next.
+Read `benchmarks.json` from the skill repo. Filter to models available through the user's subscriptions only.
 
-**Estimating token count for Step 1**: Count characters in the input and divide by 4. 100k tokens ≈ 400,000 characters. If the user pastes a large file, codebase, or says "analyze this entire repo," assume it exceeds 100k.
+Check the `fetched` date:
+- < 30 days old: proceed normally
+- 30-60 days old: warn user ("Benchmark data is {N} days old. Consider updating ZeroAPI for fresh data.")
+- \> 60 days old: require explicit override to proceed ("Benchmark data is {N} days old. Type 'proceed anyway' to continue with stale data.")
 
-### Step 1: Context > 100k tokens?
-**Signals**: large file, long document, paste, bulk, CSV, log dump, entire codebase, "analyze this PDF"
-→ Route to **RESEARCH** (Gemini Pro, 1M context window) / fallback: Opus (200K limit)
+### Step 7: Select Category Leaders
 
-### Step 2: Math / proof / numerical reasoning?
-**Signals**: calculate, solve, equation, proof, integral, derivative, probability, statistics, optimize, formula, theorem
-→ Route to **CODE** (Codex, Math: 99.0) / fallback: Gemini Flash (Math: 97.0) / Opus
+For each task category, pick the benchmark leader from available (subscribed + authenticated) models:
 
-### Step 3: Code writing / generation?
-**Signals**: write code, implement, function, class, refactor, create script, migration, API endpoint, test, unit test, pull request, diff, patch
-→ Route to **CODE** (Codex, Coding: 49.3) / fallback: Opus
+- **Code**: highest `coding_index` (reweighted) among available
+- **Research**: highest `gpqa` among available
+- **Orchestration**: highest `0.6*tau2 + 0.4*ifbench` among available
+- **Math**: highest `math_index` among available (fallback: `aime_25`)
+- **Fast**: highest speed (t/s) among available models with TTFT < 5s
+- **Default**: highest `intelligence` among available
 
-### Step 4: Code review / architecture / security?
-**Signals**: review, audit, architecture, design, trade-off, should I use, which approach, security review, best practice, code smell
-→ Stay on **DEEP** (Opus, Intelligence: 53.0) — always stays on main agent
+### Step 8: Generate zeroapi-config.json
 
-### Step 5: Speed critical / trivial task?
-**Signals**: quick, fast, simple, format, convert, summarize briefly, list, extract, translate short text, rename, timestamp, one-liner
-→ Route to **FAST** (Flash, 206 tok/s, IFBench 0.780) / fallback: Flash-Lite (for sub-second latency) / Opus
-
-**Note**: For tasks where sub-second TTFT matters more than intelligence (pings, health checks), use SIMPLE (Flash-Lite, 0.23s TTFT). For heartbeats and cron jobs, use FAST (Flash) — it has much better instruction following (IFBench 0.780; Flash-Lite has no verified IFBench score).
-
-### Step 6: Research / scientific / factual?
-**Signals**: research, find out, what is, explain, compare, analyze, paper, study, evidence, fact-check, deep dive, investigate
-→ Route to **RESEARCH** (Gemini Pro, GPQA: 0.908) / fallback: Opus
-
-### Step 7: Multi-step tool pipeline?
-**Signals**: orchestrate, coordinate, pipeline, multi-step, workflow, chain, sequence of tasks, parallel, fan-out, combine results
-→ Route to **ORCHESTRATE** (Kimi K2.5, TAU-2: 0.959) / fallback: Codex / Opus
-
-### Step 8: Instruction following / structured output?
-**Signals**: follow these rules exactly, format as, JSON schema, strict template, fill in, structured, comply, checklist, table generation
-→ Route to **FAST** (Gemini Flash, IFBench: 0.780) / fallback: Opus
-
-### Step 9: Default
-If no step above matched clearly:
-→ Stay on **DEEP** (Opus, Intelligence: 53.0) — safest all-rounder
-
-### Disambiguation Examples
-
-When a task matches multiple steps:
-- "Analyze this 200-page PDF and write a Python parser for it" → Step 1 wins (context size), route to RESEARCH. Then delegate code writing to CODE as a follow-up.
-- "Quickly solve this integral" → Step 2 wins over Step 5 (math trumps speed).
-- "Generate a JSON schema for this API" → Step 8 wins (structured output, not code writing).
-- "Review this code and refactor the authentication module" → Step 4 wins for review, then Step 3 for the refactor (delegate to CODE).
-
-## When NOT to Route
-
-Do NOT route away from the current model when:
-
-1. **User explicitly requests a model.** "Use Opus for this" or "don't delegate this" — always respect direct instructions.
-2. **Security-sensitive tasks.** If the task involves credentials, private keys, secrets, or personally identifiable data, keep it on the main agent. Do not send sensitive content to sub-agents.
-3. **Debugging a specific model.** If the user is testing or comparing model behavior, route to the model they specify.
-4. **Mid-conversation continuity.** If you are deep in a multi-turn conversation and the user asks a quick follow-up, do not switch models just because the follow-up is "simple." Stay on the current model for context continuity unless the user explicitly asks to delegate.
-
-## Conflict Resolution
-
-When multiple steps seem to match, resolve with these priority rules:
-
-1. **Judgment trumps speed.** If the task has ambiguity, nuance, or risk — stay on Opus.
-2. **Specialist trumps generalist.** If a model has a standout benchmark for the exact task type, prefer it.
-3. **Code writing → Codex. Code review → Opus.** Different models for writing vs judging.
-4. **Context overflow → Gemini.** Only Gemini models handle 1M context.
-5. **TTFT matters for interactive tasks.** Flash-Lite (0.23s), Kimi (1.65s), and Opus (1.76s) respond fast. Codex (20s) and Pro (29.59s) are slow to start — don't use them for quick back-and-forth.
-6. **When truly tied → Opus.** Highest general intelligence, lowest risk of subtle errors.
-
-## Sub-Agent Delegation
-
-Use OpenClaw's agent system to delegate:
-
-```
-/agent <agent-id> <instruction>
-```
-
-1. You send `/agent codex <instruction>` — OpenClaw spawns the sub-agent with that instruction.
-2. The sub-agent runs in its own workspace and returns a text response.
-3. Sub-agents do NOT share your conversation context or workspace files. Pass ALL necessary context in the instruction.
-
-**What to pass**: The specific task, relevant code snippets, output format expectations, and constraints.
-
-### Examples
-
-```
-/agent codex Write a Python function that parses RFC 3339 timestamps with timezone support. Return only the code.
-
-/agent gemini-researcher Analyze the differences between SQLite WAL mode and journal mode. Include benchmarks and a recommendation.
-
-/agent gemini-fast Convert the following list into a markdown table with columns: Name, Role, Status.
-
-/agent kimi-orchestrator Coordinate: (1) gemini-researcher gathers data on X, (2) codex writes a parser, (3) report results.
-```
-
-## Error Handling and Retries
-
-1. **Timeout** (no response within 60s): Retry once on same model. If it fails again, fall to next fallback.
-2. **Auth error** (401/403): Do NOT retry — fall to next fallback immediately and tell user to re-authenticate. See `references/oauth-setup.md`.
-3. **Rate limit** (429): Wait 30 seconds, retry once. If still limited, fall to next fallback.
-4. **Partial/garbage response**: Retry once. If still broken, fall to next fallback.
-5. **Model unavailable**: Skip that tier entirely and continue.
-
-**Maximum retries**: 1 retry on same model, then next fallback. If ALL fallbacks fail, stay on Opus. Never retry more than 3 times total across all fallbacks.
-
-When a fallback is triggered, briefly inform the user:
-> "Codex is unavailable, routing to Opus instead."
-
-## Multi-Turn Conversation Routing
-
-- **Stay on the same model** for follow-up messages in the same topic. Context continuity matters more than optimal model selection.
-- **Re-route only when the task type clearly changes.** Example: user discusses architecture (Opus) → then says "now write the implementation" → delegate code writing to Codex.
-
-When switching models mid-conversation:
-1. Summarize the relevant context from the current conversation.
-2. Pass that summary as part of the delegation instruction.
-3. Continue on the original model (Opus) with awareness of what the sub-agent produced.
-
-## Workspace Isolation
-
-- Sub-agents cannot read your files — paste content into the instruction.
-- Sub-agents cannot write to your workspace — output comes back as text.
-- Sub-agents share nothing with each other — complete isolation by design.
-
-## Specialist Agents (Optional)
-
-Beyond the 5 core agents (main, codex, gemini-researcher, gemini-fast, kimi-orchestrator), you can add domain-specific specialist agents. Specialists have their own workspace with tailored AGENTS.md, MEMORY.md, and skills for a specific domain.
-
-### When to use specialists
-
-- You have distinct project domains (infrastructure, content, community, etc.)
-- Each domain needs its own persistent memory and context
-- You want the main agent to orchestrate without carrying all domain knowledge
-
-### Example specialists
-
-| Agent | Primary Model | Why That Model | Use Case |
-|-------|--------------|----------------|----------|
-| `devops` | Codex | Code generation, shell scripts, config files | Infrastructure, deployment, monitoring scripts |
-| `researcher` | Gemini Pro | GPQA 0.908, 1M context | Deep research, fact-checking, literature review |
-| `content-writer` | Opus | Intelligence 53.0, best judgment | Blog posts, documentation, copywriting |
-| `community` | Flash | 206 tok/s, IFBench 0.780 | Moderation, quick responses, community engagement |
-
-### Delegating to specialists
-
-```
-/agent devops Set up a systemd service for the memory API with health checks and auto-restart
-
-/agent researcher Analyze the latest papers on mixture-of-experts architectures. Focus on routing efficiency.
-
-/agent content-writer Write a blog post about multi-model routing. Target audience: developers running self-hosted AI agents.
-
-/agent community Review the last 24 hours of community posts. Flag any that need moderation.
-```
-
-### Specialist workspace structure
-
-Each specialist gets its own workspace directory with domain-specific files:
-
-```
-~/.openclaw/workspace-devops/
-├── AGENTS.md          # DevOps-specific instructions and runbooks
-├── MEMORY.md          # Infrastructure decisions, deployment history
-└── skills/            # DevOps-relevant skills only
-```
-
-This keeps domain context separate. The main orchestrator does not load devops runbooks, and the devops agent does not carry content writing guidelines.
-
-**Note:** Workspace directory names are arbitrary — `workspace-devops`, `workspace-infra`, `workspace-ops` all work. The agent `id` and workspace path don't need to match.
-
-See `examples/specialist-agents/` for a ready-to-use config with 4 specialist agents.
-
-**Fallback depth:** Specialist agents in the example use 2 fallbacks instead of the core agents' 3. This is intentional — specialists are narrower in scope and trade some redundancy for simpler configs. Add more fallbacks if your specialists handle critical tasks.
-
-## Image Model Routing
-
-Set `imageModel` in your agent config to route vision/image analysis tasks to the best multimodal model:
+Write `~/.openclaw/zeroapi-config.json` with this structure:
 
 ```json
-"imageModel": {
-  "primary": "google-gemini-cli/gemini-3-pro-preview",
-  "fallbacks": [
-    "google-gemini-cli/gemini-3-flash-preview",
-    "anthropic/claude-opus-4-6"
-  ]
+{
+  "version": "3.0.0",
+  "generated": "<ISO 8601 timestamp>",
+  "benchmarks_date": "<fetched date from benchmarks.json>",
+  "default_model": "<provider/model with highest intelligence>",
+  "models": {
+    "<provider/model-slug>": {
+      "context_window": 1000000,
+      "supports_vision": true,
+      "speed_tps": 122.2,
+      "ttft_seconds": 19.97,
+      "benchmarks": {
+        "intelligence": 57.2,
+        "coding": 55.5,
+        "tau2": 0.956,
+        "terminalbench": 0.538,
+        "ifbench": 0.771,
+        "gpqa": 0.941
+      }
+    }
+  },
+  "routing_rules": {
+    "code": { "primary": "<best coding model>", "fallbacks": ["<2nd>", "<3rd>"] },
+    "research": { "primary": "<best research model>", "fallbacks": [...] },
+    "orchestration": { "primary": "<best orchestration model>", "fallbacks": [...] },
+    "math": { "primary": "<best math model>", "fallbacks": [...] },
+    "fast": { "primary": "<fastest model with TTFT<5s>", "fallbacks": [...] }
+  },
+  "workspace_hints": {
+    "<agent-id>": ["code", "research"],
+    "<specialist-agent>": null
+  },
+  "keywords": {
+    "code": ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint", "deploy"],
+    "research": ["research", "analyze", "explain", "compare", "paper", "evidence", "investigate", "study"],
+    "orchestration": ["orchestrate", "coordinate", "pipeline", "workflow", "sequence", "parallel", "fan-out"],
+    "math": ["calculate", "solve", "equation", "proof", "integral", "probability", "optimize", "formula"],
+    "fast": ["quick", "simple", "format", "convert", "translate", "rename", "one-liner", "list"]
+  },
+  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "destroy", "force-push"]
 }
 ```
 
-Gemini Pro is recommended as the primary image model — it has strong multimodal capabilities and 1M context for analyzing large images or multiple images in one request. Flash is a good fallback for speed, and Opus handles vision well as a last resort.
+**Fallback chain rules for routing_rules:**
+- Every category's fallback chain must span **multiple providers** (cross-provider)
+- Fallback order follows benchmark ranking within the category
+- Maximum 3 fallbacks per category (primary + 3 = 4 candidates max)
 
-Place this in `agents.defaults` to apply to all agents, or set it per-agent. Agents without `imageModel` typically fall back to their primary text model for vision tasks (exact behavior may vary by OpenClaw version — check [docs.openclaw.ai](https://docs.openclaw.ai) for current defaults).
+### Step 9: Update openclaw.json
 
-## Collaboration Patterns
+Back up first: `cp openclaw.json openclaw.json.bak-zeroapi-<timestamp>`
 
-### Pipeline (sequential)
+Then update:
+
+1. **Default model**: Set to the highest-intelligence model from available subscriptions
+2. **Fallback chain**: Cross-provider, benchmark-ordered (set in `agents.defaults.model.fallbacks`)
+3. **Cron models**: Per-job assignment (conservative — preview first, user opts in)
+
+Do NOT modify workspace files (AGENTS.md, MEMORY.md, etc.). Plugin-based routing does not touch workspace files.
+
+### Step 10: Install Plugin
+
+If the plugin is not already installed:
 ```
-Research Agent → Main Agent → Code Agent
-(gather facts)   (plan)       (implement)
+openclaw plugins install zeroapi-router
 ```
-Choose this when the task requires gathering facts before implementing.
 
-### Parallel + Merge
+Or manual installation: copy `plugin/` directory to `~/.openclaw/plugins/zeroapi-router/`.
+
+If already installed, skip. The plugin auto-reloads config on gateway restart.
+
+### Step 11: Summary & Restart
+
+Show the user a summary of all changes:
+- Default model set to: `<model>`
+- Routing rules per category (primary + fallbacks)
+- Cron model assignments (if opted in)
+- Workspace hints applied
+
+Then instruct: **"Restart the OpenClaw gateway to activate the new routing configuration."**
+
+Verify with: `openclaw models status`
+
+## Benchmark Data (April 2026)
+
+Current leaders per category from benchmarks.json (fetched 2026-04-04):
+
+| Category | Leader | Score | Provider |
+|----------|--------|-------|----------|
+| Intelligence | GPT-5.4 / Gemini 3.1 Pro | 57.2 | OpenAI / Google |
+| Coding | GPT-5.4 | 57.3 | OpenAI |
+| TAU-2 | GLM-4.7-Flash | 99% | Z AI |
+| IFBench | Qwen3.5 397B | 79% | Alibaba |
+| GPQA | Gemini 3.1 Pro | 94% | Google |
+| Speed | GPT-5.4 nano | 206 t/s | OpenAI |
+
+**Key model profiles** (top models by intelligence):
+
+| Model | Provider | Intelligence | Coding | Speed | TTFT | Context |
+|-------|----------|-------------|--------|-------|------|---------|
+| GPT-5.4 | OpenAI | 57.2 | 57.3 | 72 t/s | 170s | 266K |
+| Gemini 3.1 Pro | Google | 57.2 | 55.5 | 122 t/s | 20s | 1M |
+| GPT-5.3 Codex | OpenAI | 54.0 | 53.1 | 77 t/s | 60s | 266K |
+| GLM-5 | Z AI | 49.8 | 44.2 | 63 t/s | 0.9s | 128K |
+| MiniMax-M2.7 | MiniMax | 49.6 | 41.9 | 41 t/s | 1.8s | 128K |
+| Kimi K2.5 | Kimi | 46.8 | 39.5 | 32 t/s | 2.4s | 128K |
+| Qwen3.5 397B | Alibaba | 45.0 | 41.3 | 59 t/s | 1.4s | 128K |
+
+Source: Artificial Analysis Intelligence Index v4.0.4, fetched 2026-04-04. Full data in `benchmarks.json`.
+
+## Routing Examples
+
+What happens for different prompts:
+
+| Prompt | Category | Routed To | Reason |
+|--------|----------|-----------|--------|
+| "refactor the auth module" | CODE | GPT-5.4 | coding 57.3 (keyword: refactor) |
+| "research the differences between WAL modes" | RESEARCH | Gemini 3.1 Pro | GPQA 94% (keyword: research) |
+| "coordinate a 3-service pipeline" | ORCHESTRATE | GLM-5 | 0.6*tau2 + 0.4*ifbench composite (keyword: coordinate, pipeline) |
+| "quickly format this as markdown" | FAST | GLM-4.7-Flash | 85 t/s, TTFT 0.9s (keyword: quickly, format) |
+| "deploy to production" | HIGH RISK | stays on default | high_risk_keyword: deploy, production |
+| "buna bi bak" | DEFAULT | stays on default | no keyword match |
+
+## Cron Model Assignment
+
+Per-job assignment, not per-workspace. Detected from cron job commands/descriptions.
+
+| Cron Task Type | Detection Signal | Model Criteria |
+|---------------|-----------------|---------------|
+| Health check / status | Reads file, checks thresholds | Cheapest fast model (high ifbench, low cost) |
+| Content generation | Writes creative content | Highest intelligence |
+| Code sync / CI | Checks repos, runs scripts | Highest coding_index |
+| System monitoring | Shell commands, thresholds | Moderate ifbench, fast TTFT |
+| Engagement / moderation | Social media, judgment | High intelligence, moderate speed |
+
+**Conservative defaults**: First run is preview-only. User explicitly opts in per job. Re-run shows diff and requires confirmation for changes.
+
+## Fallback Chain Rules
+
+1. Every chain spans **multiple providers** (cross-provider required)
+2. Fallback order follows benchmark ranking within the category
+3. Maximum 3 fallbacks per category (primary + 3 = 4 candidates)
+4. Plugin does NOT implement retry logic — OpenClaw's built-in failover handles exponential backoff, auth rotation, and cross-provider failover
+
+Example fallback chains (6-provider setup):
+
+| Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
+|----------|---------|------------|------------|------------|
+| Code | GPT-5.4 (OpenAI) | Gemini 3.1 Pro (Google) | GLM-5 (Z AI) | Kimi K2.5 (Kimi) |
+| Research | Gemini 3.1 Pro (Google) | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Qwen3.5 (Alibaba) |
+| Orchestration | GLM-5 (Z AI) | Kimi K2.5 (Kimi) | Gemini 3.1 Pro (Google) | — |
+| Math | GPT-5.4 (OpenAI) | Gemini 3.1 Pro (Google) | GLM-5 (Z AI) | — |
+| Fast | GLM-4.7-Flash (Z AI) | GPT-5.4 nano (OpenAI) | Gemini 3.1 Flash-Lite (Google) | — |
+
+## Risk-Tiered Failure Policy
+
+| Risk Level | Examples | On Failure |
+|-----------|---------|-----------|
+| **Low** | Format, translate, simple query | Fall back to default model silently |
+| **Medium** | Code changes, research | Fall back to next benchmark-ranked model, log routing event |
+| **High** | Infrastructure commands, cron with side effects | Do NOT auto-route. Use default model only. Log warning. |
+
+High-risk detection: keywords `deploy`, `delete`, `drop`, `rm`, `production`, `credentials`, `destroy`, `force-push` cause the plugin to skip routing entirely and stay on the default model.
+
+## Observability
+
+Plugin logs all routing decisions to `~/.openclaw/logs/zeroapi-routing.log`:
+
 ```
-Main Agent ──┬── Code Agent (approach A)
-             └── Research Agent (approach B)
-Then: Main merges and picks the best parts.
+2026-04-05T10:30:15Z agent=senti category=code model=openai-codex/gpt-5.4 reason=keyword:refactor
+2026-04-05T10:30:45Z agent=main category=default model=google-gemini-cli/gemini-3.1-pro-preview reason=no_match
+2026-04-05T10:31:02Z agent=senti category=research model=google-gemini-cli/gemini-3.1-pro-preview reason=keyword:analyze
 ```
-Choose this when exploring multiple solutions or under time pressure.
 
-### Adversarial Review
-```
-Code Agent writes → Main Agent critiques → Code Agent revises
-```
-Choose this for security-sensitive code or production-critical changes.
+## Staleness Policy
 
-### Orchestrated (Kimi-led)
-```
-/agent kimi-orchestrator Plan and execute: <complex multi-agent task>
-```
-Choose this for tasks requiring 3+ agents in complex dependency graphs. Caution: Kimi is slowest (39 tok/s) but best at tool orchestration (TAU-2: 0.959).
+`benchmarks.json` contains a `fetched` date. Check this during setup:
 
-## Fallback Chains
+| Age | Action |
+|-----|--------|
+| < 30 days | Proceed normally |
+| 30-60 days | Warn user, suggest updating ZeroAPI |
+| > 60 days | Require explicit override to proceed |
 
-When a model is unavailable or rate-limited, fall through in reliability order.
+Update process: repo maintainer runs AA API fetch script, commits new `benchmarks.json`, pushes release.
 
-### Full Stack (4 providers)
-| Task Type | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
-|-----------|---------|------------|------------|------------|
-| Reasoning | Opus | Codex | Gemini Pro | Kimi K2.5 |
-| Code | Codex | Opus | Gemini Pro | Kimi K2.5 |
-| Research | Gemini Pro | Opus | Codex | Kimi K2.5 |
-| Fast tasks | Flash-Lite | Flash | Opus | Codex |
-| Agentic | Kimi K2.5 | Codex | Gemini Pro | Opus |
+## Re-run Behavior
 
-**Important**: Always use cross-provider fallbacks. Same-provider fallbacks (e.g., Gemini Pro → Flash) help with model-specific issues but not provider outages. Every fallback chain should span at least 2 different providers.
+Safe to re-run `/zeroapi` at any time:
 
-### Claude + Gemini (2 providers)
-| Task Type | Primary | Fallback 1 | Fallback 2 |
-|-----------|---------|------------|------------|
-| Reasoning | Opus | Gemini Pro | — |
-| Code | Opus | Gemini Pro | — |
-| Research | Gemini Pro | Opus | — |
-| Fast tasks | Flash-Lite | Flash | Opus |
+- `zeroapi-config.json` is the single source of truth — overwritten on re-run
+- `openclaw.json` changes are backed up (`openclaw.json.bak-zeroapi-<timestamp>`) before modification
+- Cron model changes require explicit opt-in each time
+- Plugin auto-reloads config on gateway restart
+- No AGENTS.md modifications — plugin-based routing does not touch workspace files
+- Show diff of changes before applying
 
-### Claude + Codex (2 providers)
-| Task Type | Primary | Fallback 1 |
-|-----------|---------|------------|
-| Reasoning | Opus | Codex |
-| Code | Codex | Opus |
-| Everything else | Opus | Codex |
+## What ZeroAPI Does NOT Do
 
-### Claude Only (1 provider)
-All tasks route to Opus. No fallback needed.
-
-## Provider Setup
-
-For auth setup, OAuth flows (including headless VPS), and multi-device safety details, consult `references/oauth-setup.md` (in the same directory as this SKILL.md).
-
-For provider configuration (openclaw.json, per-agent models.json, Google Gemini workarounds), consult `references/provider-config.md`.
-
-Quick reference:
-
-| Provider | Auth Method | Maintenance |
-|----------|-----------|-------------|
-| Anthropic | Setup-token (OAuth) | Low — auto-refresh |
-| Google Gemini | OAuth (CLI plugin) | Very low — long-lived tokens |
-| OpenAI Codex | OAuth (ChatGPT PKCE) | Low — auto-refresh |
-| Kimi | Static API key | None — never expires |
+- Does NOT run an LLM for classification — pure keyword/regex/heuristic
+- Does NOT call external APIs at runtime
+- Does NOT modify workspace files (AGENTS.md, MEMORY.md, etc.)
+- Does NOT override explicit user model selections (`/model`, `#model:` directive)
+- Does NOT route specialist agents that already have dedicated models
+- Does NOT route cron-triggered messages — cron models are set in openclaw.json
+- Does NOT include Anthropic/Claude — subscription no longer covers OpenClaw
+- Does NOT implement retry/failover — OpenClaw's built-in system handles this
 
 ## Troubleshooting
 
-For detailed troubleshooting, consult `references/troubleshooting.md` (in the same directory as this SKILL.md). Common issues:
-
-- **"No API provider registered for api: undefined"** → Missing `api` field in provider config
-- **"API key not valid" with Gemini subscription** → Wrong API type; use `google-gemini-cli` not `google-generative-ai`
-- **Model shows `missing`** → Model ID mismatch; `gemini-2.5-flash-lite` (no `-preview` suffix)
-- **Codex 401 Unauthorized** → Token expired; re-run OAuth flow via `references/oauth-setup.md`
-- **Sub-agent "Unknown model"** → Provider missing from sub-agent's auth-profile
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Plugin not routing | Plugin not installed or gateway not restarted | Run `openclaw plugins install zeroapi-router` and restart gateway |
+| Wrong model selected | Keyword matched unexpected category | Check `~/.openclaw/logs/zeroapi-routing.log` for `reason:` field. Adjust keywords in `zeroapi-config.json` |
+| "No API provider registered" | Missing `api` field in provider config | See `references/provider-config.md` |
+| Model shows `missing` | Model ID mismatch in config | Verify model slugs with `openclaw models list` |
+| Auth error (401/403) | Token expired | Re-authenticate provider. See `references/oauth-setup.md` |
+| High-risk task gets routed | Missing keyword in `high_risk_keywords` | Add the keyword to `high_risk_keywords` array in `zeroapi-config.json` |
+| Stale benchmark warning | `benchmarks.json` older than 30 days | Update ZeroAPI repo (`git pull`) for fresh benchmark data |
+| Config not loading | JSON syntax error in config | Validate `zeroapi-config.json` with `cat ~/.openclaw/zeroapi-config.json \| python3 -m json.tool` |
 
 ## Cost Summary
 
-| Setup | Monthly | Notes |
-|-------|---------|-------|
-| **Claude only** (Max 5x) | $100 | No routing, Opus handles everything |
-| **Claude only** (Max 20x) | $200 | No routing, 20x rate limits |
-| **Balanced** (Max 20x + Gemini) | $220 | Adds Flash speed + Pro research |
-| **Code-focused** (+ ChatGPT Plus) | $240 | Adds Codex for code + math |
-| **Full stack** (all 4, ChatGPT Plus) | $250 | Full specialization |
-| **Full stack Pro** (all 4, ChatGPT Pro) | $430 | Maximum rate limits |
-
-Source: Artificial Analysis API v4, February 2026. Codex scores estimated (*) from OpenAI blog data. Structured benchmark data available in `benchmarks.json`.
+| Setup | Monthly | Annual (eff/mo) | Providers |
+|-------|---------|----------------|-----------|
+| Google only | $20 | $17 | 1 |
+| Google + OpenAI | $40 | $37 | 2 |
+| Google + OpenAI + GLM | $50 | $44 | 3 |
+| Google + OpenAI + GLM + Kimi | $69 | $59 | 4 |
+| + MiniMax | $79 | $67 | 5 |
+| + Qwen | $129 | $117 | 6 |
