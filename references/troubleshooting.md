@@ -1,71 +1,178 @@
 # Troubleshooting
 
-## Gateway crashes with "No API provider registered for api: undefined"
+## ZeroAPI Plugin Errors
 
-**Cause**: The `api` field is missing from a custom provider.
+### "zeroapi-config.json not found"
 
-**Fix**: Add the correct `api` field:
-- OpenAI Codex (in `openclaw.json`): `"api": "openai-responses"`
-- Kimi (in `openclaw.json`): `"api": "openai-completions"`
-- Google Gemini (in per-agent `models.json` ONLY): `"api": "google-gemini-cli"`
+**Cause**: The plugin loaded but the config file does not exist yet.
 
-Do NOT use `"api": "google-generative-ai"` for subscription OAuth — that type sends auth via `x-goog-api-key` header which rejects OAuth tokens. Use `"google-gemini-cli"` instead.
+**Fix**: Run `/zeroapi` to configure routing. The skill generates `~/.openclaw/zeroapi-config.json`.
 
-## Google Gemini returns "API key not valid" with subscription
-
-**Cause**: Gemini provider is using the wrong API type.
-
-Two possible causes:
-1. Provider is in `openclaw.json` with `"api": "google-generative-ai"` — move it to per-agent `models.json` with `"api": "google-gemini-cli"` instead.
-2. Provider has a `baseUrl` set — remove it entirely. The `google-gemini-cli` stream function has the correct endpoint hardcoded.
-
-See `references/provider-config.md` for the correct setup.
-
-## Model shows `missing` in `openclaw models status`
-
-**Cause**: The model ID does not match the provider's catalog.
-
-For `gemini-2.5-flash-lite`: use the ID **without** `-preview` suffix (the `-preview` alias was deprecated Aug 2025). The model may show as `configured,missing` because OpenClaw's catalog hasn't added it yet (issue #10284, PR #10984 pending) — but it still works for API calls. The `normalizeGoogleModelId()` function only normalizes Gemini 3 model IDs — Gemini 2.5 IDs must match exactly.
-
-## Codex stops working (401 Unauthorized)
-
-**Cause**: The Codex OAuth token has expired and auto-refresh failed. This can happen if the refresh token itself expired (typically after 10+ days without use).
-
-**Fix**: Guide the user through the OAuth flow described in `references/oauth-setup.md`. Use the tmux method to run `openclaw onboard --auth-choice openai-codex`, extract the URL, send it to the user, and paste back the redirect URL.
-
-OpenClaw 2026.2.6+ auto-refreshes tokens automatically — this manual flow is only needed when auto-refresh fails. Note: the user's normal ChatGPT usage (web, mobile, Codex CLI, Codex app) does NOT cause this — tested Feb 2026.
-
-## Sub-agent returns "Unknown model"
-
-**Cause**: The model is registered in the main agent context but not available in sub-agent context.
-
-**Fix**: Check that the model's provider has a valid auth-profile. Run `openclaw models status` to verify. Ensure the sub-agent's `models.json` includes the provider (see `references/provider-config.md` for Google Gemini's special per-agent setup).
-
-## Token works for some agents but not others after manual renewal
-
-**Cause**: OAuth tokens are stored in 3 locations that do NOT auto-sync. Manual renewal (tmux OAuth flow) only writes to `auth-profiles.json`. Other agents may still reference the old token from `openclaw.json` or `credentials/oauth.json`.
-
-**Fix**: After manual renewal, sync the new token to all locations. See `references/oauth-setup.md` → "Token Storage Architecture" for the sync script and details.
-
-## systemd ExecStartPre fails with "too many arguments"
-
-**Cause**: `ExecStartPre` does NOT run through a shell. Common shell syntax like `|| true` or `&&` is interpreted literally as arguments, not operators.
-
-**Fix**: Use systemd's `-` prefix for error tolerance:
-
-```ini
-# WRONG — systemd passes "||" and "true" as arguments to fuser:
-ExecStartPre=/usr/bin/fuser -k 8787/tcp || true
-
-# CORRECT — "-" prefix means "ignore exit code":
-ExecStartPre=-/usr/bin/fuser -k 8787/tcp
+```bash
+# After running /zeroapi, verify the file exists
+ls ~/.openclaw/zeroapi-config.json
 ```
 
-Note: OpenClaw runs as a user service (`systemctl --user`), not a system service.
+---
 
-## MEMORY.md or skill content is silently truncated
+### "ZeroAPI Router not loaded"
 
-**Cause**: OpenClaw has per-file and total bootstrap character limits. Files exceeding the limit are truncated without warning.
+**Cause**: The plugin is not installed or failed to load at gateway start.
+
+**Fix**:
+
+```bash
+# Check if plugin is installed
+openclaw plugins list | grep zeroapi-router
+
+# If missing, install it
+openclaw plugins install zeroapi-router
+
+# Then restart the gateway
+systemctl --user restart openclaw-gateway.service
+```
+
+If installed but still not loading, check `~/.openclaw/logs/openclaw-gateway.log` for plugin load errors.
+
+---
+
+### Routing not triggering (model not switching as expected)
+
+**Cause**: No keyword match — the message did not contain signals for any routing category.
+
+**Check the routing log**:
+
+```bash
+tail -f ~/.openclaw/logs/zeroapi-routing.log
+```
+
+Log format:
+```
+2026-04-05T10:30:15Z agent=senti category=code model=openai-codex/gpt-5.4 reason=keyword:refactor
+2026-04-05T10:30:45Z agent=main category=default model=google-gemini-cli/gemini-3.1-pro-preview reason=no_match
+```
+
+`reason=no_match` means no category was detected — the default model was used. If this is unexpected, re-run `/zeroapi` to review keyword configuration.
+
+**Note**: The plugin never overrides explicit user model selections (`/model` or `#model:` directives). It also does not route messages from specialist agents (codex, gemini, glm) or cron jobs.
+
+---
+
+### Benchmark data is outdated
+
+**Cause**: `benchmarks.json` has a `fetched` date older than 30 days.
+
+| Age | Action |
+|-----|--------|
+| < 30 days | Proceed normally |
+| 30–60 days | Warning shown — update recommended |
+| > 60 days | Explicit override required to proceed |
+
+**Fix**: Pull the latest release from the ZeroAPI repo. The repo maintainer runs the AA API fetch script and commits updated `benchmarks.json` with each release. After pulling, re-run `/zeroapi` to regenerate config.
+
+---
+
+## OpenClaw Gateway Errors
+
+### "No API provider registered for api: undefined"
+
+**Cause**: The `api` field is missing from a custom provider entry.
+
+**Fix**: Add the correct `api` field to each provider:
+
+| Provider | Config location | Correct `api` value |
+|----------|----------------|---------------------|
+| `openai-codex` | `openclaw.json` | `"openai-responses"` |
+| `kimi-coding` | `openclaw.json` | `"openai-completions"` |
+| `zai` | `openclaw.json` | `"openai-completions"` |
+| `minimax` | `openclaw.json` | `"openai-completions"` |
+| `modelstudio` | `openclaw.json` | `"openai-completions"` |
+| `google-gemini-cli` | per-agent `models.json` ONLY | `"google-gemini-cli"` |
+
+The `api` field is required for every custom provider (OpenClaw 2026.2.6+).
+
+---
+
+### Google Gemini returns "API key not valid" with OAuth subscription
+
+**Cause**: Wrong API type or wrong config location.
+
+Two possible causes:
+
+1. Provider is in `openclaw.json` with `"api": "google-generative-ai"` — this sends auth via `x-goog-api-key` header, which rejects OAuth tokens.
+2. A `baseUrl` is set on the google-gemini-cli provider — remove it. The stream function has the correct endpoint hardcoded (`cloudcode-pa.googleapis.com`).
+
+**Fix**: Move the google-gemini-cli provider to per-agent `models.json` with `"api": "google-gemini-cli"`. Do not set `baseUrl` or `apiKey`. See `references/provider-config.md`.
+
+---
+
+### Model unavailable / "model not found"
+
+**Cause**: Model ID mismatch or provider catalog issue.
+
+**Check available models**:
+
+```bash
+openclaw models status
+```
+
+Ensure the model ID in your config exactly matches the provider's catalog. Some model IDs are case-sensitive. If the model shows `configured,missing`, it may still work for API calls even if not in OpenClaw's local catalog.
+
+---
+
+### Auth expired (provider returns 401 Unauthorized)
+
+**Cause**: OAuth token expired and auto-refresh failed (typically after 10+ days without use for Codex).
+
+**By provider**:
+
+- **Google**: Run `openclaw onboard --auth-choice google-gemini-cli` again. On headless VPS, use the tmux flow in `references/oauth-setup.md`.
+- **OpenAI Codex**: Use the tmux OAuth flow to run `openclaw onboard --auth-choice openai-codex`. See `references/oauth-setup.md`.
+- **Kimi / GLM / Qwen**: API keys do not expire. If failing, verify the subscription is still active at the provider portal.
+- **MiniMax**: Use the tmux OAuth flow with `--auth-choice minimax-portal`.
+
+After manual renewal, sync the new token across all locations. See `references/oauth-setup.md` → "Token Storage Architecture".
+
+---
+
+### Rate limited (429 Too Many Requests)
+
+**Cause**: Subscription tier quota exceeded for the current billing period.
+
+**Fix**: ZeroAPI's fallback chains automatically route around rate-limited providers. If a provider is persistently rate-limited:
+
+1. Check quota usage at the provider portal
+2. The plugin marks the provider as rate-limited and skips it for subsequent messages (cooldown state)
+3. Upgrade subscription tier or wait for quota reset
+
+---
+
+### Token works for some agents but not others after manual renewal
+
+**Cause**: Manual OAuth renewal (tmux flow) writes only to `auth-profiles.json`. Other agents may reference stale tokens from `openclaw.json`.
+
+**Fix**: After manual renewal, sync the token across all locations. See `references/oauth-setup.md` → "Token Storage Architecture" for the sync script.
+
+---
+
+## OpenClaw Config Errors
+
+### Config shows "invalid" after editing openclaw.json
+
+**Cause**: OpenClaw uses strict Zod schema validation. Any unrecognized key in `openclaw.json` causes the entire config to be rejected.
+
+**Fix**:
+
+1. Remove keys not in the schema
+2. Validate JSON syntax: `python3 -c "import json; json.load(open('openclaw.json'))"`
+3. Always backup before editing: `cp openclaw.json openclaw.json.bak`
+4. Do a full gateway restart after schema changes — hot-reload may not pick up all changes
+
+---
+
+### MEMORY.md or skill content is silently truncated
+
+**Cause**: Bootstrap character limits. Files exceeding the per-file or total limit are truncated without warning.
 
 **Fix**: Adjust the bootstrap budget in `openclaw.json`:
 
@@ -80,19 +187,33 @@ Note: OpenClaw runs as a user service (`systemctl --user`), not a system service
 }
 ```
 
-- `bootstrapMaxChars`: Maximum characters per single file (default: 20000)
-- `bootstrapTotalMaxChars`: Total budget across all bootstrap files (default: varies)
+- `bootstrapMaxChars`: Max characters per single file (default: 20000)
+- `bootstrapTotalMaxChars`: Total budget across all bootstrap files
 
-These count **characters**, not bytes. UTF-8 characters (Turkish İ, ş, ç etc.) are 1 character but 2 bytes. Requires OpenClaw 2026.2.14+.
+Bootstrap load order: AGENTS → SOUL → TOOLS → IDENTITY → USER → HEARTBEAT → BOOTSTRAP → MEMORY. Earlier files consume budget first. Requires OpenClaw 2026.2.14+.
 
-**Tip**: Keep pre-MEMORY files small (AGENTS.md, TOOLS.md, etc.). Bootstrap load order: AGENTS → SOUL → TOOLS → IDENTITY → USER → HEARTBEAT → BOOTSTRAP → MEMORY. Earlier files consume budget first.
+---
 
-## Config shows "invalid" after editing openclaw.json
+### systemd ExecStartPre fails with "too many arguments"
 
-**Cause**: OpenClaw uses strict Zod schema validation. Any unrecognized key in `openclaw.json` causes the ENTIRE config to be rejected as invalid — not just the unknown field.
+**Cause**: `ExecStartPre` does not run through a shell — shell operators like `|| true` are passed as literal arguments.
 
-**Fix**:
-1. Remove any keys not in the schema (e.g., `autoCapture` was mentioned in changelogs but has no schema key)
-2. After editing, validate JSON syntax: `python3 -c "import json; json.load(open('openclaw.json'))"`
-3. Hot-reload may reject keys from a newer OpenClaw version — do a full restart with the new binary instead
-4. Always backup before editing: `cp openclaw.json openclaw.json.bak`
+**Fix**: Use systemd's `-` prefix for error tolerance:
+
+```ini
+# WRONG
+ExecStartPre=/usr/bin/fuser -k 8787/tcp || true
+
+# CORRECT — "-" prefix ignores non-zero exit codes
+ExecStartPre=-/usr/bin/fuser -k 8787/tcp
+```
+
+OpenClaw runs as a user service (`systemctl --user`), not a system service.
+
+---
+
+### Sub-agent returns "Unknown model"
+
+**Cause**: Model is registered in main agent context but not available in sub-agent context.
+
+**Fix**: Run `openclaw models status` to verify provider auth. Ensure the sub-agent's `models.json` includes the provider. For Google Gemini, each agent needs its own `models.json` entry — see `references/provider-config.md`.
