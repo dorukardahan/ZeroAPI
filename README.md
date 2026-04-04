@@ -1,228 +1,127 @@
 # ZeroAPI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.2.6+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-2.3.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v2.3.0)
+[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
+[![Version](https://img.shields.io/badge/version-3.0.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.0.0)
 
-**You pay $200-430/mo for AI subscriptions. Your agent should use ALL of them.**
+**Your AI subscriptions. One plugin. Every message routed to the best model.**
 
-ZeroAPI is a routing skill for [OpenClaw](https://openclaw.ai) that turns your existing AI subscriptions into a unified model fleet. No per-token API costs. No proxy servers. Just benchmark-driven task routing across 4 providers, 6 model tiers, and 5 specialized agents.
+ZeroAPI is an OpenClaw plugin that intercepts every message at the gateway level and routes it to the benchmark-optimal model from your active subscriptions. No manual `/model` switching, no latency penalty, no context loss — the session stays open and the right model handles each turn automatically.
 
-## Repository Structure
+## Anthropic Notice
 
-> **For AI agents**: Start with `SKILL.md` — it contains the complete routing logic. Read `references/` files only when you need provider setup, OAuth flows, or troubleshooting details. Config examples are in `examples/`.
+Claude subscriptions no longer cover OpenClaw as of April 4, 2026. ([source](https://x.com/bcherny/status/2040206440556826908))
 
-```
-ZeroAPI/
-├── SKILL.md                          # Core routing skill (load this into your agent)
-├── benchmarks.json                   # Structured benchmark data for all 6 models
-├── README.md                         # This file — overview and setup guide
-├── references/
-│   ├── provider-config.md            # Full openclaw.json setup, per-agent config, Google Gemini workarounds
-│   ├── oauth-setup.md                # OAuth flows (headless VPS, multi-device safety, token sync)
-│   └── troubleshooting.md            # Error messages and production gotchas
-├── examples/
-│   ├── README.md                     # Setup guide for each config
-│   ├── claude-only/openclaw.json     # 1 provider, 1 agent
-│   ├── claude-codex/openclaw.json    # 2 providers, 2 agents
-│   ├── claude-gemini/openclaw.json   # 2 providers, 3 agents
-│   │   └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
-│   ├── full-stack/
-│   │   ├── openclaw.json             # 4 providers, 5 agents
-│   │   └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
-│   └── specialist-agents/
-│       ├── openclaw.json             # 4 providers, 9 agents (domain specialists)
-│       └── gemini-models.json        # Per-agent Gemini provider (schema workaround)
-└── content/
-    └── x-thread.md                   # Launch thread draft
-```
-
-## Model Tiers & Benchmarks
-
-6 model tiers across 4 providers. Each model is best at something different — that's why routing matters.
-
-| Tier | Model | Provider | Speed | Intelligence | Best At |
-|------|-------|----------|-------|-------------|---------|
-| **SIMPLE** | Gemini 2.5 Flash-Lite | Google | 495 tok/s | 21.6 | Sub-second responses, trivial tasks |
-| **FAST** | Gemini 3 Flash | Google | 206 tok/s | 46.4 | Instruction following (IFBench: 0.780), heartbeats |
-| **RESEARCH** | Gemini 3 Pro | Google | 131 tok/s | 48.4 | Scientific research (GPQA: 0.908), 1M context |
-| **CODE** | GPT-5.3 Codex | OpenAI | 113 tok/s | 51.5 | Code (SWE: 49.3), math (AIME: 99.0) |
-| **DEEP** | Claude Opus 4.6 | Anthropic | 67 tok/s | 53.0 | Reasoning, planning, judgment |
-| **ORCHESTRATE** | Kimi K2.5 | Kimi | 39 tok/s | 46.7 | Multi-agent orchestration (TAU-2: 0.959) |
-
-*Source: Artificial Analysis API v4, February 2026. Codex scores estimated from vendor reports. Full data in [`benchmarks.json`](benchmarks.json).*
+ZeroAPI v3 routes exclusively across subscription-covered providers: Google, OpenAI, Kimi, Z AI (GLM), MiniMax, and Alibaba (Qwen).
 
 ## How It Works
 
-A 9-step decision tree routes every task to the best model. First match wins:
-
 ```
-INCOMING TASK
-│
-├─ 1. Context > 100k tokens?  → RESEARCH  (Gemini Pro, 1M context)
-├─ 2. Math / proof?           → CODE      (Codex, 99.0 math score)
-├─ 3. Write code?             → CODE      (Codex, 49.3 coding)
-├─ 4. Review / architecture?  → DEEP      (Opus, intelligence 53.0)
-├─ 5. Speed critical?         → FAST      (Flash, 206 tok/s)
-├─ 6. Research / factual?     → RESEARCH  (Gemini Pro, GPQA 0.908)
-├─ 7. Multi-step pipeline?    → ORCHESTRATE (Kimi, TAU-2 0.959)
-├─ 8. Structured output?      → FAST      (Flash, IFBench 0.780)
-└─ 9. Default                 → DEEP      (Opus, safest all-rounder)
+Message → Plugin (before_model_resolve) → Classify task → Filter capable models → Select best → Model processes message
 ```
 
-Missing a provider? The tree skips unavailable tiers and falls back to Opus.
+The plugin fires before every message via OpenClaw's `before_model_resolve` hook. It runs a two-stage decision in under 1ms:
 
-## Cross-Provider Fallback Chains
+1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
+2. **Benchmark ranking** — from surviving models, pick the benchmark leader for the detected task category
 
-Every agent must have fallbacks spanning **multiple providers**. Same-provider fallbacks (e.g., Gemini Pro → Flash) don't help when the provider itself is down.
+The model is switched for that turn only. The session, conversation history, and all workspace files remain intact.
 
-### Full Stack (4 providers, 5 agents)
+## Supported Providers
 
-| Agent | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
-|-------|---------|------------|------------|------------|
-| main | Opus (Anthropic) | Codex (OpenAI) | Pro (Google) | K2.5 (Kimi) |
-| codex | Codex (OpenAI) | Opus (Anthropic) | Pro (Google) | K2.5 (Kimi) |
-| gemini-researcher | Pro (Google) | Flash (Google) | Opus (Anthropic) | Codex (OpenAI) |
-| gemini-fast | Flash (Google) | Pro (Google) | Opus (Anthropic) | Codex (OpenAI) |
-| kimi-orchestrator | K2.5 (Kimi) | K2 Think (Kimi) | Pro (Google) | Opus (Anthropic) |
+| Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
+|----------|------------|--------------|---------|-----------------|--------|
+| Google | `google-gemini-cli` | AI Pro | $20 | $17 | Gemini 3.1 Pro, Flash, Flash-Lite |
+| OpenAI | `openai-codex` | ChatGPT Plus / Pro | $20–$200 | $17–$167 | GPT-5.4, GPT-5.3 Codex, GPT-5.4 mini |
+| Kimi | `kimi-coding` | Moderato–Vivace | $19–$199 | $15–$159 | Kimi K2.5, K2 Thinking |
+| Z AI (GLM) | `zai` | Lite–Max | $10–$80 | $7–$56 | GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
+| MiniMax | `minimax` | Starter–Max | $10–$50 | $8–$42 | MiniMax-M2.7 |
+| Alibaba (Qwen) | `modelstudio` | Pro | $50 | $42 | Qwen3.5 397B |
 
-## Providers
+## Task Categories
 
-| Provider | Auth | Models | Maintenance |
-|----------|------|--------|-------------|
-| **Anthropic** | Setup-token (auto-refresh) | Opus 4.6 | Low — ~8hr access token, auto-refreshed |
-| **Google Gemini** | OAuth via CLI plugin | Pro, Flash, Flash-Lite | Very low — long-lived refresh tokens |
-| **OpenAI Codex** | OAuth PKCE via ChatGPT | Codex 5.3 | Low — ~10d token, auto-refreshed |
-| **Kimi** | Static API key | K2.5, K2 Thinking | None — never expires |
+The plugin matches keywords in each message to one of five routing categories. No match stays on the default model.
 
-**Google Gemini special handling**: The `google-gemini-cli` API type is NOT in OpenClaw's config schema. It must go in per-agent `models.json` files, not in `openclaw.json`. See [`references/provider-config.md`](references/provider-config.md) for details.
-
-**Token storage warning**: OAuth tokens exist in 3 locations that do NOT auto-sync. After manual renewal, only `auth-profiles.json` gets the new token. See [`references/oauth-setup.md`](references/oauth-setup.md) → "Token Storage Architecture" for the sync procedure.
-
-## Prerequisites
-
-- [OpenClaw](https://openclaw.ai) v2026.2.6+ installed and running (v2026.2.14+ recommended for bootstrap budget config)
-- At least one AI subscription (Claude Max is the minimum)
-- Providers authenticated via `openclaw onboard`
-
-## Installation
-
-### Option A: Shared skill (all agents on the machine)
-
-```bash
-git clone https://github.com/dorukardahan/ZeroAPI.git ~/.openclaw/skills/zeroapi
-```
-
-### Option B: Workspace skill (single agent)
-
-```bash
-git clone https://github.com/dorukardahan/ZeroAPI.git
-cp -r ZeroAPI ~/.openclaw/workspace/skills/zeroapi
-```
-
-### Option C: Claude Code skill
-
-```bash
-git clone https://github.com/dorukardahan/ZeroAPI.git ~/.claude/skills/zeroapi
-```
-
-### Option D: Extra directory
-
-```json
-{
-  "skills": {
-    "load": {
-      "extraDirs": ["/path/to/ZeroAPI"]
-    }
-  }
-}
-```
+| Category | Primary Benchmark | Routing Signals | Example Prompts |
+|----------|------------------|-----------------|-----------------|
+| **Code** | `0.85×terminalbench + 0.15×scicode` | implement, function, class, refactor, fix, test, debug, PR, diff, migration | "Refactor this auth module", "Write unit tests for..." |
+| **Research** | `gpqa`, `hle` | research, analyze, explain, compare, paper, evidence, investigate | "Compare these two papers", "Explain the mechanism of..." |
+| **Orchestration** | `0.6×tau2 + 0.4×ifbench` | orchestrate, coordinate, pipeline, workflow, sequence, parallel | "Set up a fan-out pipeline", "Coordinate these 3 agents" |
+| **Math** | `aime_25` | calculate, solve, equation, proof, integral, probability, optimize | "Solve this integral", "Prove that..." |
+| **Fast** | speed (t/s), TTFT < 5s | quick, simple, format, convert, translate, rename, one-liner | "Rename these files", "Format this JSON" |
+| **Default** | `intelligence` | (no match) | Any task not matching above |
 
 ## Quick Start
 
-**1. Copy a config** that matches your subscriptions:
-
-```bash
-# Pick: claude-only, claude-codex, claude-gemini, or full-stack
-cp ~/.openclaw/skills/zeroapi/examples/full-stack/openclaw.json ~/.openclaw/openclaw.json
+```
+1. Install:   openclaw plugins install zeroapi-router
+2. Configure: /zeroapi   (in any OpenClaw session)
+3. Done — routing is automatic
 ```
 
-**2. For Gemini users** — copy the per-agent models.json:
+The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. The plugin reads that config at gateway startup and routes every subsequent message.
 
-```bash
-cp ~/.openclaw/skills/zeroapi/examples/full-stack/gemini-models.json \
-   ~/.openclaw/agents/gemini-researcher/agent/models.json
-cp ~/.openclaw/skills/zeroapi/examples/full-stack/gemini-models.json \
-   ~/.openclaw/agents/gemini-fast/agent/models.json
+## Repository Structure
+
+```
+ZeroAPI/
+├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
+├── benchmarks.json                       # 201 models, 15 benchmarks, 6 providers (AA API v2)
+├── plugin/
+│   ├── index.ts                          # before_model_resolve hook
+│   ├── classifier.ts                     # Keyword/regex task classification
+│   ├── capability-filter.ts              # Stage 1: context window, vision, auth checks
+│   └── package.json
+├── examples/
+│   ├── README.md
+│   ├── zeroapi-config-2-providers.json
+│   ├── zeroapi-config-4-providers.json
+│   └── zeroapi-config-full-stack.json
+└── references/
+    ├── provider-config.md
+    ├── oauth-setup.md
+    └── troubleshooting.md
 ```
 
-**3. Authenticate** each provider:
+## Benchmark Leaders
 
-```bash
-openclaw onboard --auth-choice setup-token          # Anthropic
-openclaw onboard --auth-choice openai-codex          # OpenAI Codex
-openclaw onboard --auth-choice kimi-code-api-key     # Kimi
-openclaw plugins enable google-gemini-cli-auth       # Gemini (step 1)
-openclaw models auth login --provider google-gemini-cli  # Gemini (step 2)
-```
+Current leaders per category from `benchmarks.json` (fetched 2026-04-04):
 
-**4. Verify:**
+| Category | Leader | Score | Provider |
+|----------|--------|-------|----------|
+| **Code** (terminalbench) | GPT-5.4 | 0.576 | OpenAI |
+| **Research** (gpqa) | Gemini 3.1 Pro Preview | 0.941 | Google |
+| **Orchestration** (0.6×tau2 + 0.4×ifbench) | Qwen3.5 397B A17B | 0.889 | Alibaba |
+| **Math** (aime_25) | GPT-5.2 | 0.990 | OpenAI |
+| **Fast** (speed, TTFT < 5s) | Gemini 2.5 Flash-Lite | 265 t/s | Google |
+| **Default** (intelligence) | GPT-5.4 / Gemini 3.1 Pro | 57.2 | OpenAI / Google |
 
-```bash
-openclaw models status
-```
+Routes use whichever leader is available in your subscription. If the top model is unavailable, the plugin falls back to the next benchmark-ranked model from a different provider.
 
-All models should show as available. See [`examples/README.md`](examples/README.md) for per-config details.
+## Cost Summary
 
-## Subscription Options
+| Setup | Providers | Monthly | Annual (eff/mo) |
+|-------|-----------|---------|-----------------|
+| Google only | 1 | $20 | $17 |
+| Google + OpenAI | 2 | $40 | $37 |
+| Google + OpenAI + GLM | 3 | $50 | $44 |
+| Google + OpenAI + GLM + Kimi | 4 | $69 | $59 |
+| + MiniMax | 5 | $79 | $67 |
+| + Qwen (full stack) | 6 | $129 | $117 |
 
-| Setup | Monthly | Providers | Agents | What You Get |
-|-------|---------|-----------|--------|-------------|
-| **Claude only** | $100-200 | Anthropic | 1 | Max 5x or 20x. Opus handles everything. |
-| **Claude + Codex** | $220 | + OpenAI | 2 | Specialist code + math via Codex. |
-| **Claude + Gemini** | $220 | + Google | 3 | Flash speed + Pro research + 1M context. |
-| **Full stack** | $250-430 | + Kimi | 5 | Full specialization across all tiers. |
-| **Specialist agents** | $250-430 | All 4 | 9 | Full stack + domain-specific agents (devops, research, content, community). |
+## FAQ
 
-## Cost Comparison
+**Why no Anthropic?**
+Claude subscriptions no longer cover third-party tools like OpenClaw as of April 4, 2026. See the [announcement](https://x.com/bcherny/status/2040206440556826908).
 
-Running Opus 4.6 through the Anthropic API at moderate usage (~500K tokens/day):
+**How accurate is routing?**
+Around 60-70% of messages match a keyword and get routed. The rest stay on your default model. You can inspect every routing decision in `~/.openclaw/logs/zeroapi-routing.log`.
 
-| | Per-Token API | Subscriptions (ZeroAPI) |
-|---|---|---|
-| Monthly cost | ~$675 (Opus only) | $250 (all 4 providers) |
-| Models available | 1 | 6 |
-| Rate limits | Pay-per-use | Subscription limits (generous) |
-| Multi-model routing | Extra cost per model | Included |
+**Does it add latency?**
+No. Classification is pure keyword/regex — under 1ms. No LLM call, no external API.
 
-**2.7x cheaper** with better results because each task goes to the specialist model. Your cost stays flat regardless of usage.
-
-## Collaboration Patterns
-
-ZeroAPI supports 4 delegation patterns via OpenClaw sub-agents:
-
-| Pattern | Flow | Use When |
-|---------|------|----------|
-| **Pipeline** | Research → Plan → Implement | Facts needed before code |
-| **Parallel + Merge** | Agent A ∥ Agent B → merge | Exploring multiple solutions |
-| **Adversarial Review** | Code Agent writes → Opus critiques → revise | Security-critical code |
-| **Orchestrated** | Kimi coordinates 3+ agents | Complex dependency graphs |
-
-## Troubleshooting
-
-Common issues and fixes are in [`references/troubleshooting.md`](references/troubleshooting.md):
-
-- **"No API provider registered for api: undefined"** → Missing `api` field in provider config
-- **"API key not valid" with Gemini** → Wrong API type; use `google-gemini-cli` not `google-generative-ai`
-- **Model shows `missing`** → Model ID mismatch; use `gemini-2.5-flash-lite` (no `-preview`)
-- **Codex 401** → Token expired; re-run OAuth flow
-- **Token works for some agents but not others** → Token desync; see token sync procedure
-- **MEMORY.md silently truncated** → Increase `bootstrapMaxChars` (v2026.2.14+)
-- **Config "invalid" after editing** → Zod strict mode rejects unknown keys
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=dorukardahan/ZeroAPI&type=Date)](https://star-history.com/#dorukardahan/ZeroAPI&Date)
+**Can I override routing?**
+Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your message. The plugin never overrides explicit model selections.
 
 ## License
 
