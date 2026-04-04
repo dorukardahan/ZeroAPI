@@ -115,7 +115,7 @@ openclaw models status | grep openai-codex
 
 For Google OAuth, replace `--auth-choice openai-codex` with `--auth-choice google-gemini-cli`. The flow is identical.
 
-### If you are Claude Code (SSH from local machine)
+### If running from a local CLI (SSH to VPS)
 
 ```bash
 ssh YOUR_VPS 'tmux new-session -d -s oauth "openclaw onboard --auth-choice openai-codex --accept-risk"'
