@@ -1,146 +1,116 @@
-# ZeroAPI Configuration Examples
+# ZeroAPI v3 Configuration Examples
 
-Pick the example that matches your subscription setup. Each directory contains a ready-to-use `openclaw.json` fragment.
+Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` — copy it to `~/.openclaw/zeroapi-config.json`.
 
-## Setup Options
+## Example Files
 
-| Directory | Subscriptions | Monthly Cost | Agents |
-|-----------|--------------|-------------|--------|
-| `claude-only/` | Claude Max 5x/20x | $100-200 | 1 (main) |
-| `claude-codex/` | Claude Max + ChatGPT Plus | $220 | 2 (main, codex) |
-| `claude-gemini/` | Claude Max + Gemini Advanced | $220 | 3 (main, gemini-researcher, gemini-fast) |
-| `full-stack/` | Claude Max + ChatGPT + Gemini + Kimi | $250-430 | 5 (main, codex, gemini-researcher, gemini-fast, kimi-orchestrator) |
-| `specialist-agents/` | Claude Max + ChatGPT + Gemini + Kimi | $250-430 | 9 (full-stack + devops, researcher, content-writer, community) |
+| File | Providers | Monthly Cost | Best For |
+|------|-----------|-------------|----------|
+| `google-only.json` | Google Gemini Advanced | ~$20 | Getting started, Google-only setup |
+| `google-openai.json` | Google + OpenAI Codex | ~$220 | Strongest code + research combo |
+| `google-openai-glm.json` | Google + OpenAI + Z AI GLM | ~$250 | Add fast orchestration with GLM-5 |
+| `google-openai-glm-kimi.json` | Google + OpenAI + Z AI + Kimi | ~$270 | Deep orchestration fallback coverage |
+| `full-stack.json` | All 6 providers | ~$310-$370 | Maximum resilience, longest fallback chains |
+
+## Pricing Reference (per 1M tokens, 3:1 blended)
+
+| Model | Provider | Blended Price |
+|-------|----------|--------------|
+| Gemini 3.1 Pro Preview | google-gemini-cli | $4.50 |
+| Gemini 3 Flash Preview | google-gemini-cli | $1.13 |
+| Gemini 3.1 Flash-Lite Preview | google-gemini-cli | $0.56 |
+| GPT-5.4 | openai-codex | $5.63 |
+| GLM-5 (Reasoning) | zai | $1.55 |
+| Kimi K2.5 (Reasoning) | kimi-coding | $1.20 |
+| MiniMax-M2.7 | minimax | $0.53 |
+| Qwen3.5 397B A17B (Reasoning) | modelstudio | $1.35 |
 
 ## How to Use
 
 ### 1. Copy the config
 
 ```bash
-cp examples/<your-setup>/openclaw.json ~/.openclaw/openclaw.json
+cp examples/<file>.json ~/.openclaw/zeroapi-config.json
 ```
 
-If you already have an `openclaw.json`, merge the `agents` and `models` sections into your existing config.
-
-### 2. Set up Gemini provider (if using Gemini)
-
-Google Gemini with subscription OAuth requires a per-agent `models.json` file (not in `openclaw.json`). Copy `gemini-models.json` to each agent that uses Gemini:
+### 2. Authenticate providers
 
 ```bash
-# For each Gemini-using agent:
-cp examples/<your-setup>/gemini-models.json ~/.openclaw/agents/gemini-researcher/agent/models.json
-cp examples/<your-setup>/gemini-models.json ~/.openclaw/agents/gemini-fast/agent/models.json
-```
-
-**Why?** The `google-gemini-cli` API type is not in OpenClaw's config schema validator. Putting it in `openclaw.json` crashes the gateway. Per-agent `models.json` files bypass schema validation.
-
-### 3. Authenticate providers
-
-```bash
-# Anthropic (always needed)
-openclaw onboard --auth-choice setup-token
-
 # Google Gemini (subscription OAuth)
-openclaw plugins enable google-gemini-cli-auth
 openclaw models auth login --provider google-gemini-cli
 
 # OpenAI Codex (ChatGPT OAuth)
 openclaw onboard --auth-choice openai-codex
 
+# Z AI GLM (API key)
+openclaw onboard --auth-choice zai
+
 # Kimi (API key)
 openclaw onboard --auth-choice kimi-code-api-key
+
+# MiniMax (OAuth portal)
+openclaw onboard --auth-choice minimax
+
+# Alibaba ModelStudio (API key)
+openclaw onboard --auth-choice modelstudio
 ```
 
-### 4. Add the ZeroAPI skill
-
-```json
-{
-  "skills": ["path/to/ZeroAPI/SKILL.md"]
-}
-```
-
-### 5. Verify
+### 3. Verify
 
 ```bash
 openclaw models status
 ```
 
-All models should show as available. Any model showing `missing` or `auth_expired` needs fixing before routing will work.
+All models in your config should show as available.
 
-## Specialist Agents (specialist-agents/)
+### 4. Add workspace hints (optional)
 
-The `specialist-agents/` example extends `full-stack/` with domain-specific agents. Each specialist has its own workspace and is optimized for a particular task type:
-
-| Agent | Primary Model | Role |
-|-------|--------------|------|
-| `devops` | Codex | Infrastructure, deployment, shell scripts, monitoring |
-| `researcher` | Gemini Pro | Deep research, fact-checking, long-context analysis |
-| `content-writer` | Opus | Blog posts, documentation, copywriting |
-| `community` | Flash | Community management, moderation, quick responses |
-
-**When to use specialists vs core agents:**
-- Core agents (codex, gemini-researcher, gemini-fast, kimi-orchestrator) are model-optimized — they pick the best model for a task type
-- Specialist agents are domain-optimized — they have workspace isolation, custom skills, and context relevant to their domain
-- Use specialists when you have distinct workspaces with different files, skills, or AGENTS.md instructions per domain
-
-**Workspace isolation:** Each specialist gets its own workspace directory. This means separate MEMORY.md, AGENTS.md, and skill files per domain. The main orchestrator delegates to specialists via `sessions_spawn`.
-
-This example also includes `imageModel` configuration (see below).
-
-### Image Model Routing
-
-The `specialist-agents/` example includes `imageModel` in the defaults block:
+Edit `workspace_hints` in your config to bias routing per agent workspace:
 
 ```json
-"imageModel": {
-  "primary": "google-gemini-cli/gemini-3-pro-preview",
-  "fallbacks": [
-    "google-gemini-cli/gemini-3-flash-preview",
-    "anthropic/claude-opus-4-6"
-  ]
+"workspace_hints": {
+  "codex-workspace": ["code"],
+  "gemini-workspace": ["research"],
+  "main-workspace": null
 }
 ```
 
-This routes image analysis (vision) tasks to Gemini Pro first (multimodal, 1M context), with Flash and Opus as fallbacks. Set this in `agents.defaults` to apply to all agents, or per-agent for fine-grained control.
+A `null` value means no hint — routing falls back to keyword matching only.
 
-**Gemini setup for specialists:** Copy `gemini-models.json` to every agent that uses Gemini models:
+## Routing Logic
 
-```bash
-# Core agents
-cp examples/specialist-agents/gemini-models.json ~/.openclaw/agents/gemini-researcher/agent/models.json
-cp examples/specialist-agents/gemini-models.json ~/.openclaw/agents/gemini-fast/agent/models.json
+ZeroAPI classifies each task into one of six categories based on keywords in the prompt:
 
-# Specialists that fall back to Gemini
-cp examples/specialist-agents/gemini-models.json ~/.openclaw/agents/devops/agent/models.json
-cp examples/specialist-agents/gemini-models.json ~/.openclaw/agents/researcher/agent/models.json
-cp examples/specialist-agents/gemini-models.json ~/.openclaw/agents/content-writer/agent/models.json
-cp examples/specialist-agents/gemini-models.json ~/.openclaw/agents/community/agent/models.json
-```
+| Category | Typical Keywords | Example |
+|----------|-----------------|---------|
+| `code` | implement, refactor, debug, test | "refactor the auth module" |
+| `research` | analyze, explain, compare, investigate | "explain the tradeoffs between X and Y" |
+| `orchestration` | orchestrate, pipeline, workflow, coordinate | "coordinate a 3-step data pipeline" |
+| `math` | solve, calculate, equation, proof | "solve this integral" |
+| `fast` | quick, format, convert, translate | "quickly format this list as CSV" |
+| `default` | (no keyword match) | "bunu düzelt" |
+
+High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc.) block automatic routing regardless of category.
 
 ## Customizing
 
-- **Workspace paths**: Change `~/.openclaw/workspace-*` to your preferred directories
-- **Fallback chains**: Edit the `fallbacks` arrays to match your provider preference
-- **Heartbeat model**: Set `agents.defaults.heartbeat.model` to a fast, cheap model
-- **Agent names**: The `id` field can be anything — just update SKILL.md references to match
+- **Keywords**: Add domain-specific terms to the `keywords` object
+- **Fallback chains**: Reorder or add models in `fallbacks` arrays
+- **Fast TTFT threshold**: Adjust `fast_ttft_max_seconds` (default: 5s) — only models with `ttft_seconds` below this are eligible for `fast` tasks
+- **Default model**: Change `default_model` to whichever model you want as the always-on fallback
 
-## Important: Per-Agent Fallback Behavior
+## Benchmark Scores Reference
 
-In OpenClaw, when an agent uses the **object form** for model config:
-```json
-"model": { "primary": "openai-codex/gpt-5.3-codex" }
-```
-This **replaces** global fallbacks entirely. The agent has NO fallbacks unless you explicitly add them:
-```json
-"model": {
-  "primary": "openai-codex/gpt-5.3-codex",
-  "fallbacks": ["anthropic/claude-opus-4-6"]
-}
-```
+All benchmark values in these configs are sourced from `benchmarks.json` (date: 2026-04-04).
 
-The **string form** inherits global fallbacks:
-```json
-"model": "anthropic/claude-opus-4-6"
-```
-
-All examples in this directory use the object form with explicit fallbacks to avoid silent failures.
+| Benchmark | What It Measures |
+|-----------|-----------------|
+| `intelligence` | General reasoning composite |
+| `coding` | Code generation and repair (SWE-bench style) |
+| `tau2` | Tool-use and agentic task completion (tau2-bench) |
+| `terminalbench` | Terminal/shell command accuracy |
+| `ifbench` | Instruction following |
+| `gpqa` | Graduate-level science QA |
+| `lcr` | Long-context retrieval |
+| `hle` | Humanity's Last Exam |
+| `scicode` | Scientific coding tasks |
