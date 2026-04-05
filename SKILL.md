@@ -59,7 +59,7 @@ The plugin classifies each message into one of 6 categories using keyword/regex 
 
 | Category | Primary Benchmark | Secondary | Routing Keywords |
 |----------|------------------|-----------|-----------------|
-| **Code** | `coding_index` (reweighted: 0.85*terminalbench + 0.15*scicode) | `terminalbench` | implement, function, class, refactor, fix, test, PR, diff, migration, debug, component, endpoint, deploy |
+| **Code** | `coding_index` (reweighted: 0.85*terminalbench + 0.15*scicode) | `terminalbench` | implement, function, class, refactor, fix, test, PR, diff, migration, debug, component, endpoint |
 | **Research** | `gpqa`, `hle` | `lcr`, `scicode` | research, analyze, explain, compare, paper, evidence, deep dive, investigate, study |
 | **Orchestration** | composite: 0.6*tau2 + 0.4*ifbench | — | orchestrate, coordinate, pipeline, workflow, sequence, parallel, fan-out |
 | **Math** | `math_index` | `aime_25` | calculate, solve, equation, proof, integral, probability, optimize, formula |
@@ -197,13 +197,13 @@ Write `~/.openclaw/zeroapi-config.json` with this structure:
     "<specialist-agent>": null
   },
   "keywords": {
-    "code": ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint", "deploy"],
+    "code": ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint"],
     "research": ["research", "analyze", "explain", "compare", "paper", "evidence", "investigate", "study"],
     "orchestration": ["orchestrate", "coordinate", "pipeline", "workflow", "sequence", "parallel", "fan-out"],
     "math": ["calculate", "solve", "equation", "proof", "integral", "probability", "optimize", "formula"],
     "fast": ["quick", "simple", "format", "convert", "translate", "rename", "one-liner", "list"]
   },
-  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "destroy", "force-push"]
+  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"]
 }
 ```
 
@@ -251,14 +251,17 @@ Verify with: `openclaw models status`
 
 Current leaders per category from benchmarks.json (fetched 2026-04-04):
 
-| Category | Leader | Score | Provider |
-|----------|--------|-------|----------|
-| Intelligence | GPT-5.4 / Gemini 3.1 Pro | 57.2 | OpenAI / Google |
-| Coding | GPT-5.4 | 57.3 | OpenAI |
-| TAU-2 | GLM-4.7-Flash | 99% | Z AI |
-| IFBench | Qwen3.5 397B | 79% | Alibaba |
-| GPQA | Gemini 3.1 Pro | 94% | Google |
-| Speed | GPT-5.4 nano | 206 t/s | OpenAI |
+| Category | Leader | Score | Provider | Notes |
+|----------|--------|-------|----------|-------|
+| Intelligence | GPT-5.4 / Gemini 3.1 Pro | 57.2 | OpenAI / Google | |
+| Coding | GPT-5.4 | 57.3 | OpenAI | |
+| TAU-2 (raw) | GLM-4.7-Flash | 0.988 | Z AI | Raw TAU-2 leader, but composite ranking differs |
+| Orchestration (composite) | Qwen3.5 397B | 0.889 | Alibaba | 0.6*tau2 + 0.4*ifbench. Qwen Lite plan closed to new subs; GLM-5 (0.878) is best switchable option |
+| IFBench | Qwen3.5 397B | 79% | Alibaba | |
+| GPQA | Gemini 3.1 Pro | 94% | Google | |
+| Speed | GPT-5.4 nano | 206 t/s | OpenAI | |
+
+**Orchestration composite ranking** (0.6*tau2 + 0.4*ifbench): Qwen3.5 397B (0.889) > Gemini 3.1 Pro (0.882) > GLM-5 (0.878) > Kimi K2.5 (0.856). This differs from raw TAU-2 ranking where GLM-4.7-Flash leads. GLM-5 remains the practical orchestration recommendation because Qwen's Lite plan is closed to new subscribers and Gemini 3.1 Pro is typically the default model (no switch needed).
 
 **Key model profiles** (top models by intelligence):
 
@@ -326,7 +329,7 @@ Example fallback chains (6-provider setup):
 | **Medium** | Code changes, research | Fall back to next benchmark-ranked model, log routing event |
 | **High** | Infrastructure commands, cron with side effects | Do NOT auto-route. Use default model only. Log warning. |
 
-High-risk detection: keywords `deploy`, `delete`, `drop`, `rm`, `production`, `credentials`, `destroy`, `force-push` cause the plugin to skip routing entirely and stay on the default model.
+High-risk detection: keywords `deploy`, `delete`, `drop`, `rm`, `production`, `credentials`, `secret`, `password` cause the plugin to skip routing entirely and stay on the default model.
 
 ## Observability
 

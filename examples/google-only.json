@@ -90,6 +90,7 @@
     "math": ["calculate", "solve", "equation", "proof", "compute", "formula"],
     "fast": ["quick", "simple", "format", "convert", "translate", "list", "rename"]
   },
-  "high_risk_keywords": ["deploy", "delete", "drop", "production", "credentials", "secret", "password", "rm -rf"],
-  "fast_ttft_max_seconds": 5
+  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"],
+  "_fast_ttft_note": "Google models have higher TTFT than multi-provider setups. Flash-Lite (7.17s) and Flash (5.47s) need a relaxed threshold to pass the fast filter.",
+  "fast_ttft_max_seconds": 10
 }

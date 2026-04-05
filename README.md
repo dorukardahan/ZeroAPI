@@ -68,15 +68,29 @@ ZeroAPI/
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── benchmarks.json                       # 201 models, 15 benchmarks, 6 providers (AA API v2)
 ├── plugin/
-│   ├── index.ts                          # before_model_resolve hook
+│   ├── index.ts                          # Plugin entry, before_model_resolve hook
 │   ├── classifier.ts                     # Keyword/regex task classification
-│   ├── capability-filter.ts              # Stage 1: context window, vision, auth checks
-│   └── package.json
+│   ├── filter.ts                         # Capability filter (context window, vision, TTFT)
+│   ├── selector.ts                       # Benchmark-based model selection
+│   ├── config.ts                         # Config loader + cache
+│   ├── logger.ts                         # Routing log writer
+│   ├── types.ts                          # TypeScript types
+│   ├── package.json
+│   ├── vitest.config.ts
+│   └── __tests__/
+│       ├── classifier.test.ts
+│       ├── config.test.ts
+│       ├── filter.test.ts
+│       ├── selector.test.ts
+│       ├── logger.test.ts
+│       └── integration.test.ts
 ├── examples/
 │   ├── README.md
-│   ├── zeroapi-config-2-providers.json
-│   ├── zeroapi-config-4-providers.json
-│   └── zeroapi-config-full-stack.json
+│   ├── google-only.json
+│   ├── google-openai.json
+│   ├── google-openai-glm.json
+│   ├── google-openai-glm-kimi.json
+│   └── full-stack.json
 └── references/
     ├── provider-config.md
     ├── oauth-setup.md

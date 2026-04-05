@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { classifyTask } from "../classifier.js";
 
 const defaultKeywords = {
-  code: ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint", "deploy"],
+  code: ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint"],
   research: ["research", "analyze", "explain", "compare", "paper", "evidence", "investigate", "study"],
   orchestration: ["orchestrate", "coordinate", "pipeline", "workflow", "sequence", "parallel", "fan-out"],
   math: ["calculate", "solve", "equation", "proof", "integral", "probability", "optimize", "formula"],

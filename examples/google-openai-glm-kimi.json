@@ -101,7 +101,7 @@
     },
     "orchestration": {
       "primary": "zai/glm-5",
-      "fallbacks": ["kimi-coding/kimi-k2.5", "google-gemini-cli/gemini-3.1-pro-preview", "openai-codex/gpt-5.4"]
+      "fallbacks": ["kimi-coding/kimi-k2.5", "google-gemini-cli/gemini-3.1-pro-preview"]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
@@ -113,7 +113,7 @@
     },
     "default": {
       "primary": "google-gemini-cli/gemini-3.1-pro-preview",
-      "fallbacks": ["openai-codex/gpt-5.4", "zai/glm-5", "kimi-coding/kimi-k2.5", "google-gemini-cli/gemini-3.1-flash-lite-preview"]
+      "fallbacks": ["openai-codex/gpt-5.4", "zai/glm-5", "kimi-coding/kimi-k2.5"]
     }
   },
   "workspace_hints": {},
@@ -124,6 +124,6 @@
     "math": ["calculate", "solve", "equation", "proof", "compute", "formula"],
     "fast": ["quick", "simple", "format", "convert", "translate", "list", "rename"]
   },
-  "high_risk_keywords": ["deploy", "delete", "drop", "production", "credentials", "secret", "password", "rm -rf"],
+  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"],
   "fast_ttft_max_seconds": 5
 }
