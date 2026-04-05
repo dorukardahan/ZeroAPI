@@ -93,4 +93,21 @@ describe("classifyTask", () => {
     const result = classifyTask("enter the contest today", defaultKeywords, highRisk);
     expect(result.category).toBe("default"); // NOT "code"
   });
+
+  it("high-risk uses word boundary — 'endpoint' should not trigger 'deploy'", () => {
+    const result = classifyTask("add a new endpoint for the API", defaultKeywords, highRisk);
+    expect(result.category).toBe("code"); // "endpoint" matches code
+    expect(result.risk).toBe("medium"); // NOT high — "endpoint" does not contain "deploy" as a word
+  });
+
+  it("high-risk uses word boundary — 'production' triggers high risk", () => {
+    const result = classifyTask("fix the production database", defaultKeywords, highRisk);
+    expect(result.risk).toBe("high");
+  });
+
+  it("high-risk uses word boundary — 'token' in normal context should not trigger if not in high_risk list", () => {
+    const result = classifyTask("parse the JSON token from the response", defaultKeywords, highRisk);
+    // "token" is NOT in our default highRisk list (only deploy, delete, drop, rm, production, credentials, secret, password)
+    expect(result.risk).not.toBe("high");
+  });
 });

@@ -21,8 +21,11 @@ export function classifyTask(
     return { category: "default", model: null, provider: null, reason: "empty_prompt", risk: "low" };
   }
 
-  // Check high-risk keywords first
-  const isHighRisk = highRiskKeywords.some((kw) => lower.includes(kw.toLowerCase()));
+  // Check high-risk keywords first (word boundary to prevent false positives)
+  const isHighRisk = highRiskKeywords.some((kw) => {
+    const regex = new RegExp(`\\b${kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+    return regex.test(lower);
+  });
 
   // Scan for category keywords — first match wins (by position in prompt)
   let matchedCategory: TaskCategory = "default";

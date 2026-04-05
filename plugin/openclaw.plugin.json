@@ -1,0 +1,11 @@
+{
+  "id": "zeroapi-router",
+  "name": "ZeroAPI Router",
+  "description": "Benchmark-driven model routing across subscription providers",
+  "version": "3.0.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
