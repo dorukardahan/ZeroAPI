@@ -290,25 +290,24 @@ Do NOT modify workspace files (AGENTS.md, MEMORY.md, etc.). Plugin-based routing
 
 ### Step 10: Install Plugin
 
-Check if already installed:
-```
-openclaw plugins list | grep zeroapi
-```
+You are running on the same machine as OpenClaw (local or VPS). You have `exec` tool access. Do everything yourself — do NOT ask the user to run commands.
 
-If not installed, copy the plugin source from this repo:
 ```bash
-# Find the ZeroAPI repo (it's wherever this SKILL.md lives)
-ZEROAPI_DIR="$(dirname "$(realpath "$0")")"
-# Copy plugin to OpenClaw plugins directory
-cp -r "$ZEROAPI_DIR/plugin" ~/.openclaw/plugins/zeroapi-router
+# Check if already installed
+ls ~/.openclaw/plugins/zeroapi-router/index.ts 2>/dev/null
 ```
 
-If you cannot determine the repo path, instruct the user:
-```
-cp -r /path/to/ZeroAPI/plugin ~/.openclaw/plugins/zeroapi-router
+If not installed, clone the repo and copy the plugin:
+```bash
+git clone https://github.com/dorukardahan/ZeroAPI.git /tmp/zeroapi-install 2>/dev/null || (cd /tmp/zeroapi-install && git pull)
+mkdir -p ~/.openclaw/plugins/zeroapi-router
+cp /tmp/zeroapi-install/plugin/*.ts /tmp/zeroapi-install/plugin/package.json ~/.openclaw/plugins/zeroapi-router/
+rm -rf /tmp/zeroapi-install
 ```
 
-If already installed, skip. The plugin auto-reloads config on gateway restart.
+If already installed but outdated (check version in package.json), re-copy from a fresh clone.
+
+The plugin auto-loads on gateway restart. No `openclaw plugins install` needed — direct file copy works.
 
 ### Step 11: Summary & Restart
 
@@ -318,9 +317,19 @@ Show the user a summary of all changes:
 - Cron model assignments (if opted in)
 - Workspace hints applied
 
-Then instruct: **"Restart the OpenClaw gateway to activate the new routing configuration."**
+Then restart the gateway yourself:
+```bash
+# Try systemd first (Linux/VPS)
+systemctl --user restart openclaw-gateway.service 2>/dev/null && echo "Gateway restarted via systemd" || \
+# Fallback: find and restart the process (macOS/local)
+(pkill -f "openclaw.*gateway" && sleep 2 && openclaw gateway start &) 2>/dev/null && echo "Gateway restarted" || \
+echo "Could not auto-restart. Ask the user to restart OpenClaw manually."
+```
 
-Verify with: `openclaw models status`
+Verify:
+```bash
+openclaw models status
+```
 
 ## Benchmark Data (April 2026)
 
