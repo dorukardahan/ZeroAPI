@@ -207,6 +207,22 @@ Write `~/.openclaw/zeroapi-config.json` with this structure:
 }
 ```
 
+**Notes on fields not in benchmarks.json:**
+- `context_window` and `supports_vision` are NOT in benchmarks.json (AA API doesn't provide them). Use these known values:
+
+| Model | Context Window | Vision |
+|-------|---------------|--------|
+| Gemini 3.1 Pro / Flash / Flash-Lite | 1,000,000 | true |
+| GPT-5.4 / 5.4 mini / 5.4 nano | 1,050,000 | false |
+| GPT-5.3 Codex | 400,000 | false |
+| Kimi K2.5 | 256,000 | true |
+| GLM-5 / GLM-5-Turbo | 128,000 | false |
+| GLM-4.7-Flash | 128,000 | false |
+| MiniMax-M2.7 | 205,000 | false |
+| Qwen3.5 397B | 262,000 | false |
+
+- `fast_ttft_max_seconds`: default 5. If the user's only fast-capable models have TTFT > 5s (e.g., Google-only setup where Flash-Lite is 7.2s), raise to 10.
+
 **Fallback chain rules for routing_rules:**
 - Every category's fallback chain must span **multiple providers** (cross-provider)
 - Fallback order follows benchmark ranking within the category
@@ -226,12 +242,23 @@ Do NOT modify workspace files (AGENTS.md, MEMORY.md, etc.). Plugin-based routing
 
 ### Step 10: Install Plugin
 
-If the plugin is not already installed:
+Check if already installed:
 ```
-openclaw plugins install zeroapi-router
+openclaw plugins list | grep zeroapi
 ```
 
-Or manual installation: copy `plugin/` directory to `~/.openclaw/plugins/zeroapi-router/`.
+If not installed, copy the plugin source from this repo:
+```bash
+# Find the ZeroAPI repo (it's wherever this SKILL.md lives)
+ZEROAPI_DIR="$(dirname "$(realpath "$0")")"
+# Copy plugin to OpenClaw plugins directory
+cp -r "$ZEROAPI_DIR/plugin" ~/.openclaw/plugins/zeroapi-router
+```
+
+If you cannot determine the repo path, instruct the user:
+```
+cp -r /path/to/ZeroAPI/plugin ~/.openclaw/plugins/zeroapi-router
+```
 
 If already installed, skip. The plugin auto-reloads config on gateway restart.
 

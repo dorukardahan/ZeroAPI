@@ -8,6 +8,8 @@
 
 ZeroAPI is an OpenClaw plugin that intercepts every message at the gateway level and routes it to the benchmark-optimal model from your active subscriptions. No manual `/model` switching, no latency penalty, no context loss — the session stays open and the right model handles each turn automatically.
 
+> **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
+
 ## Anthropic Notice
 
 Claude subscriptions no longer cover OpenClaw as of April 4, 2026. ([source](https://x.com/bcherny/status/2040206440556826908))
