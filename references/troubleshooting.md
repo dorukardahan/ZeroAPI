@@ -15,6 +15,32 @@ ls ~/.openclaw/zeroapi-config.json
 
 ---
 
+### Anthropic OAuth profiles still in config (Extra Usage billing risk)
+
+**Cause**: Legacy Anthropic OAuth profiles (`anthropic:user@email.com` with `mode: "oauth"`) remain in `openclaw.json` after the April 4, 2026 billing change. These profiles still work but now incur Extra Usage (per-token) charges instead of being covered by your Claude subscription.
+
+**Check**:
+```bash
+cat ~/.openclaw/openclaw.json | grep -A2 '"anthropic'
+```
+
+**Fix**: Run `/zeroapi` — the setup wizard detects Anthropic OAuth profiles and offers three options: remove, keep, or migrate to API key. If you want to remove manually:
+
+```bash
+# 1. Open openclaw.json
+# 2. Remove all "anthropic:*" entries from auth.profiles
+# 3. Remove "anthropic" array from auth.order
+# 4. Remove any anthropic/* model refs from agents.defaults.model.primary and fallbacks
+# 5. Check each agent in agents.list for anthropic/* model assignments
+# 6. Restart gateway
+systemctl --user restart openclaw-gateway.service
+# 7. Verify
+openclaw models status | grep anthropic
+# Should return nothing
+```
+
+---
+
 ### "ZeroAPI Router not loaded"
 
 **Cause**: The plugin is not installed or failed to load at gateway start.

@@ -99,6 +99,54 @@ Check if `~/.openclaw/zeroapi-config.json` exists.
 - **Re-run**: Read existing config, show current subscriptions and routing rules. Ask: "What changed? New subscription, dropped provider, or full reconfiguration?"
 - **First run**: Continue to Step 2.
 
+### Step 1b: Detect Anthropic OAuth Profiles
+
+Check the user's `openclaw.json` for Anthropic OAuth profiles:
+```bash
+cat ~/.openclaw/openclaw.json | grep -A2 '"anthropic'
+```
+
+If `auth.profiles` contains entries like `"anthropic:user@email.com"` with `"mode": "oauth"`, these are **subscription-based Anthropic tokens** that no longer cover OpenClaw usage (as of April 4, 2026). They will incur Extra Usage (per-token) charges if left active.
+
+**If Anthropic OAuth profiles are found, ask the user:**
+
+> "I found Anthropic OAuth profiles in your config. Since April 4, 2026, Claude subscriptions no longer cover OpenClaw — these profiles will bill Extra Usage (per-token) if used. What would you like to do?
+>
+> A) **Remove them** — I'll clean up all Anthropic OAuth profiles and remove Anthropic from your fallback chains. Recommended if you don't want per-token billing.
+>
+> B) **Keep them** — They still work but will bill separately from your subscription. Choose this if you have an Anthropic API key or want to pay Extra Usage.
+>
+> C) **Migrate to API key** — Remove OAuth profiles and set up an Anthropic API key instead (standard per-token billing, cleaner setup)."
+
+**If user chooses A (Remove):**
+
+1. Remove all `anthropic:*` entries from `auth.profiles`
+2. Remove `"anthropic"` from `auth.order`
+3. Remove any `anthropic/*` model refs from `agents.defaults.model.primary` and `fallbacks`
+4. For each agent in `agents.list`: if `model.primary` is `anthropic/*`, switch to the best available subscription model
+5. Remove `anthropic/*` from all cron job model assignments
+6. Show summary of what was removed
+
+```bash
+# Verify removal
+openclaw models status | grep anthropic
+# Should return nothing
+```
+
+**If user chooses B (Keep):** Proceed. Note that Anthropic models will NOT be included in ZeroAPI routing (plugin skips them) but they remain available for manual `/model anthropic/claude-opus-4-6` use.
+
+**If user chooses C (Migrate to API key):** Guide the user:
+```bash
+# Remove old OAuth profiles
+# Then set up API key:
+openclaw onboard --auth-choice anthropic-api-key
+# Or for Claude CLI backend:
+openclaw onboard --auth-choice anthropic-cli
+```
+Note: Even with an API key, Anthropic is NOT included in ZeroAPI routing. The API key enables manual use only.
+
+**If no Anthropic profiles found:** Skip this step silently.
+
 ### Step 2: Ask Subscriptions
 
 Ask the user: **"Which AI subscriptions do you have?"**
