@@ -4,7 +4,7 @@
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
   "fetched": "2026-04-04",
   "methodology": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
-  "note": "Anthropic excluded: Claude subscriptions no longer cover third-party tools as of April 4, 2026. Source: https://x.com/bcherny/status/2040206440556826908",
+  "note": "Anthropic excluded: Claude subscriptions no longer cover third-party tools as of April 4, 2026. Google excluded: CLI OAuth with third-party tools declared ToS violation as of March 25, 2026. Sources: https://x.com/bcherny/status/2040206440556826908",
   "benchmark_categories": {
     "intelligence": {
       "key": "artificial_analysis_intelligence_index",
@@ -83,11 +83,6 @@
     }
   },
   "providers": {
-    "Google": {
-      "openclaw_id": "google-gemini-cli",
-      "auth": "OAuth via gemini-cli plugin",
-      "subscription": "Gemini Advanced / AI Pro / AI Ultra"
-    },
     "OpenAI": {
       "openclaw_id": "openai-codex",
       "auth": "OAuth PKCE via ChatGPT",
@@ -140,33 +135,6 @@
         "lcr": 0.74,
         "hle": 0.416,
         "scicode": 0.566
-      }
-    },
-    {
-      "name": "Gemini 3.1 Pro Preview",
-      "slug": "gemini-3-1-pro-preview",
-      "id": "bbd93ebe-80da-4594-bb19-61e69d0331df",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2026-02-19",
-      "speed_tps": 122.2,
-      "ttft_seconds": 19.97,
-      "ttfa_seconds": 19.97,
-      "pricing": {
-        "price_1m_blended_3_to_1": 4.5,
-        "price_1m_input_tokens": 2,
-        "price_1m_output_tokens": 12
-      },
-      "benchmarks": {
-        "intelligence": 57.2,
-        "coding": 55.5,
-        "tau2": 0.956,
-        "terminalbench": 0.538,
-        "ifbench": 0.771,
-        "gpqa": 0.941,
-        "lcr": 0.727,
-        "hle": 0.447,
-        "scicode": 0.589
       }
     },
     {
@@ -306,37 +274,6 @@
         "lcr": 0.757,
         "hle": 0.335,
         "scicode": 0.546
-      }
-    },
-    {
-      "name": "Gemini 3 Pro Preview (high)",
-      "slug": "gemini-3-pro",
-      "id": "d1122eff-ee85-4fdc-8a9f-23bee6590667",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-11-18",
-      "speed_tps": 128.7,
-      "ttft_seconds": 18.87,
-      "ttfa_seconds": 18.87,
-      "pricing": {
-        "price_1m_blended_3_to_1": 4.5,
-        "price_1m_input_tokens": 2,
-        "price_1m_output_tokens": 12
-      },
-      "benchmarks": {
-        "intelligence": 48.4,
-        "coding": 46.5,
-        "math": 95.7,
-        "tau2": 0.871,
-        "terminalbench": 0.417,
-        "ifbench": 0.704,
-        "gpqa": 0.908,
-        "lcr": 0.707,
-        "hle": 0.372,
-        "scicode": 0.561,
-        "livecodebench": 0.917,
-        "mmlu_pro": 0.898,
-        "aime_25": 0.957
       }
     },
     {
@@ -480,37 +417,6 @@
         "livecodebench": 0.894,
         "mmlu_pro": 0.859,
         "aime_25": 0.967
-      }
-    },
-    {
-      "name": "Gemini 3 Flash Preview (Reasoning)",
-      "slug": "gemini-3-flash-reasoning",
-      "id": "7c73c3be-7f51-4d14-bec8-d5789488df25",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-12-17",
-      "speed_tps": 189.4,
-      "ttft_seconds": 5.47,
-      "ttfa_seconds": 5.47,
-      "pricing": {
-        "price_1m_blended_3_to_1": 1.125,
-        "price_1m_input_tokens": 0.5,
-        "price_1m_output_tokens": 3
-      },
-      "benchmarks": {
-        "intelligence": 46.4,
-        "coding": 42.6,
-        "math": 97,
-        "tau2": 0.804,
-        "terminalbench": 0.386,
-        "ifbench": 0.78,
-        "gpqa": 0.898,
-        "lcr": 0.663,
-        "hle": 0.347,
-        "scicode": 0.506,
-        "livecodebench": 0.908,
-        "mmlu_pro": 0.89,
-        "aime_25": 0.97
       }
     },
     {
@@ -835,37 +741,6 @@
       }
     },
     {
-      "name": "Gemini 3 Pro Preview (low)",
-      "slug": "gemini-3-pro-low",
-      "id": "b2f3191f-77d6-4155-8be6-330f0baa1ae5",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-11-18",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 4.5,
-        "price_1m_input_tokens": 2,
-        "price_1m_output_tokens": 12
-      },
-      "benchmarks": {
-        "intelligence": 41.3,
-        "coding": 39.4,
-        "math": 86.7,
-        "tau2": 0.681,
-        "terminalbench": 0.341,
-        "ifbench": 0.497,
-        "gpqa": 0.887,
-        "lcr": 0.673,
-        "hle": 0.276,
-        "scicode": 0.499,
-        "livecodebench": 0.857,
-        "mmlu_pro": 0.895,
-        "aime_25": 0.867
-      }
-    },
-    {
       "name": "GPT-5 mini (high)",
       "slug": "gpt-5-mini",
       "id": "29855680-7469-43eb-8b88-cd3fb1d99da3",
@@ -1057,33 +932,6 @@
         "livecodebench": 0.81,
         "mmlu_pro": 0.875,
         "aime_25": 0.827
-      }
-    },
-    {
-      "name": "Gemma 4 31B (Reasoning)",
-      "slug": "gemma-4-31b",
-      "id": "cd26a386-4873-46ff-b853-d239050025a2",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2026-04-02",
-      "speed_tps": 35.8,
-      "ttft_seconds": 0.85,
-      "ttfa_seconds": 56.71,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 39.2,
-        "coding": 38.7,
-        "tau2": 0.599,
-        "terminalbench": 0.364,
-        "ifbench": 0.756,
-        "gpqa": 0.857,
-        "lcr": 0.62,
-        "hle": 0.227,
-        "scicode": 0.434
       }
     },
     {
@@ -1462,70 +1310,6 @@
       }
     },
     {
-      "name": "Gemini 3 Flash Preview (Non-reasoning)",
-      "slug": "gemini-3-flash",
-      "id": "783a0ea2-1eef-422a-8c3d-f6d40d943f54",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-12-17",
-      "speed_tps": 169.9,
-      "ttft_seconds": 6.66,
-      "ttfa_seconds": 6.66,
-      "pricing": {
-        "price_1m_blended_3_to_1": 1.125,
-        "price_1m_input_tokens": 0.5,
-        "price_1m_output_tokens": 3
-      },
-      "benchmarks": {
-        "intelligence": 35,
-        "coding": 37.8,
-        "math": 55.7,
-        "tau2": 0.433,
-        "terminalbench": 0.318,
-        "ifbench": 0.551,
-        "gpqa": 0.812,
-        "lcr": 0.48,
-        "hle": 0.141,
-        "scicode": 0.499,
-        "livecodebench": 0.797,
-        "mmlu_pro": 0.882,
-        "aime_25": 0.557
-      }
-    },
-    {
-      "name": "Gemini 2.5 Pro",
-      "slug": "gemini-2-5-pro",
-      "id": "27202e5f-c82d-4710-92e9-4317877d4883",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-06-05",
-      "speed_tps": 130.9,
-      "ttft_seconds": 21.25,
-      "ttfa_seconds": 21.25,
-      "pricing": {
-        "price_1m_blended_3_to_1": 3.438,
-        "price_1m_input_tokens": 1.25,
-        "price_1m_output_tokens": 10
-      },
-      "benchmarks": {
-        "intelligence": 34.6,
-        "coding": 31.9,
-        "math": 87.7,
-        "tau2": 0.541,
-        "terminalbench": 0.265,
-        "ifbench": 0.487,
-        "gpqa": 0.844,
-        "lcr": 0.66,
-        "hle": 0.211,
-        "scicode": 0.428,
-        "livecodebench": 0.801,
-        "mmlu_pro": 0.862,
-        "aime_25": 0.877,
-        "math_500": 0.967,
-        "aime": 0.887
-      }
-    },
-    {
       "name": "GLM-4.7 (Non-reasoning)",
       "slug": "glm-4-7-non-reasoning",
       "id": "81b6ddfc-111e-4422-bd44-42ee6165b699",
@@ -1585,33 +1369,6 @@
         "livecodebench": 0.669,
         "mmlu_pro": 0.814,
         "aime_25": 0.51
-      }
-    },
-    {
-      "name": "Gemini 3.1 Flash-Lite Preview",
-      "slug": "gemini-3-1-flash-lite-preview",
-      "id": "598190f8-dc9c-4fea-a7ea-4b81c402ab18",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2026-03-03",
-      "speed_tps": 198.4,
-      "ttft_seconds": 7.17,
-      "ttfa_seconds": 7.17,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.563,
-        "price_1m_input_tokens": 0.25,
-        "price_1m_output_tokens": 1.5
-      },
-      "benchmarks": {
-        "intelligence": 33.5,
-        "coding": 30.1,
-        "tau2": 0.313,
-        "terminalbench": 0.242,
-        "ifbench": 0.772,
-        "gpqa": 0.822,
-        "lcr": 0.653,
-        "hle": 0.162,
-        "scicode": 0.419
       }
     },
     {
@@ -1799,64 +1556,6 @@
       }
     },
     {
-      "name": "Gemma 4 26B A4B (Reasoning)",
-      "slug": "gemma-4-26b-a4b",
-      "id": "6e1b44ff-c227-496b-aef4-19b70cd18c76",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2026-04-02",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.198,
-        "price_1m_input_tokens": 0.13,
-        "price_1m_output_tokens": 0.4
-      },
-      "benchmarks": {
-        "intelligence": 31.2,
-        "coding": 22.4,
-        "tau2": 0.436,
-        "terminalbench": 0.136,
-        "ifbench": 0.724,
-        "gpqa": 0.792,
-        "lcr": 0.557,
-        "hle": 0.183,
-        "scicode": 0.4
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash Preview (Sep '25) (Reasoning)",
-      "slug": "gemini-2-5-flash-preview-09-2025-reasoning",
-      "id": "c7667559-d9b6-43f1-8cd8-8bdbc78d190b",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-09-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 31.1,
-        "coding": 24.6,
-        "math": 78.3,
-        "tau2": 0.456,
-        "terminalbench": 0.167,
-        "ifbench": 0.523,
-        "gpqa": 0.793,
-        "lcr": 0.643,
-        "hle": 0.127,
-        "scicode": 0.405,
-        "livecodebench": 0.713,
-        "mmlu_pro": 0.842,
-        "aime_25": 0.783
-      }
-    },
-    {
       "name": "Kimi K2 0905",
       "slug": "kimi-k2-0905",
       "id": "66445f84-b2e3-4202-afdc-92ba0f0e5f36",
@@ -1946,33 +1645,6 @@
       }
     },
     {
-      "name": "Gemini 2.5 Pro Preview (Mar' 25)",
-      "slug": "gemini-2-5-pro-03-25",
-      "id": "62de31e8-a1a3-429c-b634-a2afccfd9363",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-03-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 30.3,
-        "coding": 46.7,
-        "gpqa": 0.836,
-        "hle": 0.171,
-        "scicode": 0.395,
-        "livecodebench": 0.778,
-        "mmlu_pro": 0.858,
-        "math_500": 0.98,
-        "aime": 0.87
-      }
-    },
-    {
       "name": "GLM-4.6 (Non-reasoning)",
       "slug": "glm-4-6",
       "id": "946e7aab-db1c-4c3f-b0b3-7720d0cff187",
@@ -2028,32 +1700,6 @@
         "lcr": 0.35,
         "hle": 0.071,
         "scicode": 0.337
-      }
-    },
-    {
-      "name": "Gemini 2.5 Pro Preview (May' 25)",
-      "slug": "gemini-2-5-pro-05-06",
-      "id": "073b5329-c4b3-4f1f-8f97-4753aadf4398",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-05-06",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 3.438,
-        "price_1m_input_tokens": 1.25,
-        "price_1m_output_tokens": 10
-      },
-      "benchmarks": {
-        "intelligence": 29.5,
-        "gpqa": 0.822,
-        "hle": 0.154,
-        "scicode": 0.416,
-        "livecodebench": 0.77,
-        "mmlu_pro": 0.837,
-        "math_500": 0.986,
-        "aime": 0.843
       }
     },
     {
@@ -2230,39 +1876,6 @@
         "lcr": 0.557,
         "hle": 0.078,
         "scicode": 0.161
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash (Reasoning)",
-      "slug": "gemini-2-5-flash-reasoning",
-      "id": "219ed587-60c5-4a48-9517-8480e08d0ca1",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-05-20",
-      "speed_tps": 215.0,
-      "ttft_seconds": 11.89,
-      "ttfa_seconds": 11.89,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.85,
-        "price_1m_input_tokens": 0.3,
-        "price_1m_output_tokens": 2.5
-      },
-      "benchmarks": {
-        "intelligence": 27,
-        "coding": 22.2,
-        "math": 73.3,
-        "tau2": 0.316,
-        "terminalbench": 0.136,
-        "ifbench": 0.503,
-        "gpqa": 0.79,
-        "lcr": 0.617,
-        "hle": 0.111,
-        "scicode": 0.394,
-        "livecodebench": 0.695,
-        "mmlu_pro": 0.832,
-        "aime_25": 0.733,
-        "math_500": 0.981,
-        "aime": 0.823
       }
     },
     {
@@ -2537,37 +2150,6 @@
       }
     },
     {
-      "name": "Gemini 2.5 Flash Preview (Sep '25) (Non-reasoning)",
-      "slug": "gemini-2-5-flash-preview-09-2025",
-      "id": "877fdfc9-2026-477a-af96-e4fd602c0131",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-09-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 25.7,
-        "coding": 22.1,
-        "math": 56.7,
-        "tau2": 0.284,
-        "terminalbench": 0.144,
-        "ifbench": 0.435,
-        "gpqa": 0.766,
-        "lcr": 0.567,
-        "hle": 0.078,
-        "scicode": 0.375,
-        "livecodebench": 0.625,
-        "mmlu_pro": 0.836,
-        "aime_25": 0.567
-      }
-    },
-    {
       "name": "o3-mini (high)",
       "slug": "o3-mini-high",
       "id": "076f2674-bc4b-4925-be59-50832eb8c090",
@@ -2815,32 +2397,6 @@
         "aime_25": 0.61,
         "math_500": 0.98,
         "aime": 0.847
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash Preview (Reasoning)",
-      "slug": "gemini-2-5-flash-reasoning-04-2025",
-      "id": "68c89ebf-779c-4445-9241-de964cd17355",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-04-17",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 24.3,
-        "gpqa": 0.698,
-        "hle": 0.116,
-        "scicode": 0.359,
-        "livecodebench": 0.505,
-        "mmlu_pro": 0.8,
-        "math_500": 0.981,
-        "aime": 0.843
       }
     },
     {
@@ -3140,37 +2696,6 @@
       }
     },
     {
-      "name": "Gemini 2.5 Flash-Lite Preview (Sep '25) (Reasoning)",
-      "slug": "gemini-2-5-flash-lite-preview-09-2025-reasoning",
-      "id": "84922739-425f-46e1-87ac-bb4268dcacbb",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-09-08",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.175,
-        "price_1m_input_tokens": 0.1,
-        "price_1m_output_tokens": 0.4
-      },
-      "benchmarks": {
-        "intelligence": 21.6,
-        "coding": 18.1,
-        "math": 68.7,
-        "tau2": 0.307,
-        "terminalbench": 0.129,
-        "ifbench": 0.526,
-        "gpqa": 0.709,
-        "lcr": 0.59,
-        "hle": 0.066,
-        "scicode": 0.287,
-        "livecodebench": 0.688,
-        "mmlu_pro": 0.808,
-        "aime_25": 0.687
-      }
-    },
-    {
       "name": "MiniMax M1 40k",
       "slug": "minimax-m1-40k",
       "id": "385376b1-9815-47dd-83cc-85aac34f247d",
@@ -3294,39 +2819,6 @@
         "livecodebench": 0.545,
         "mmlu_pro": 0.775,
         "aime_25": 0.467
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash (Non-reasoning)",
-      "slug": "gemini-2-5-flash",
-      "id": "6afbfb62-27e4-435e-9c85-d9fe1b92519e",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-05-20",
-      "speed_tps": 212.5,
-      "ttft_seconds": 0.45,
-      "ttfa_seconds": 0.45,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.85,
-        "price_1m_input_tokens": 0.3,
-        "price_1m_output_tokens": 2.5
-      },
-      "benchmarks": {
-        "intelligence": 20.6,
-        "coding": 17.8,
-        "math": 60.3,
-        "tau2": 0.149,
-        "terminalbench": 0.121,
-        "ifbench": 0.39,
-        "gpqa": 0.683,
-        "lcr": 0.459,
-        "hle": 0.051,
-        "scicode": 0.291,
-        "livecodebench": 0.495,
-        "mmlu_pro": 0.809,
-        "aime_25": 0.603,
-        "math_500": 0.932,
-        "aime": 0.5
       }
     },
     {
@@ -3533,91 +3025,6 @@
       }
     },
     {
-      "name": "Gemini 2.0 Flash Thinking Experimental (Jan '25)",
-      "slug": "gemini-2-0-flash-thinking-exp-0121",
-      "id": "0399e614-5d46-484f-9183-e4f32d74e1c6",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-01-21",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 19.6,
-        "coding": 24.1,
-        "gpqa": 0.701,
-        "hle": 0.071,
-        "scicode": 0.329,
-        "livecodebench": 0.321,
-        "mmlu_pro": 0.798,
-        "math_500": 0.944,
-        "aime": 0.5
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash-Lite Preview (Sep '25) (Non-reasoning)",
-      "slug": "gemini-2-5-flash-lite-preview-09-2025",
-      "id": "71f51ea9-94fe-4635-a80d-4cfffbb685f4",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-09-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.175,
-        "price_1m_input_tokens": 0.1,
-        "price_1m_output_tokens": 0.4
-      },
-      "benchmarks": {
-        "intelligence": 19.4,
-        "coding": 14.5,
-        "math": 46.7,
-        "tau2": 0.304,
-        "terminalbench": 0.076,
-        "ifbench": 0.418,
-        "gpqa": 0.651,
-        "lcr": 0.48,
-        "hle": 0.046,
-        "scicode": 0.285,
-        "livecodebench": 0.641,
-        "mmlu_pro": 0.796,
-        "aime_25": 0.467
-      }
-    },
-    {
-      "name": "Gemma 4 E4B",
-      "slug": "gemma-4-e4b",
-      "id": "d80eb0f1-f62e-4d31-99d2-7a925eb126b0",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2026-04-03",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 18.8,
-        "coding": 13.7,
-        "tau2": 0.208,
-        "terminalbench": 0.083,
-        "ifbench": 0.442,
-        "gpqa": 0.576,
-        "lcr": 0.307,
-        "hle": 0.037,
-        "scicode": 0.244
-      }
-    },
-    {
       "name": "GPT-4o (Aug '24)",
       "slug": "gpt-4o-2024-08-06",
       "id": "8c1be908-67b6-4cf4-ba08-83ddbe44fde3",
@@ -3676,39 +3083,6 @@
       }
     },
     {
-      "name": "Gemini 2.0 Flash (Feb '25)",
-      "slug": "gemini-2-0-flash",
-      "id": "bcca0e70-7e80-4c07-b1fa-b33bcfb19e51",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-02-05",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.263,
-        "price_1m_input_tokens": 0.15,
-        "price_1m_output_tokens": 0.6
-      },
-      "benchmarks": {
-        "intelligence": 18.5,
-        "coding": 13.6,
-        "math": 21.7,
-        "tau2": 0.295,
-        "terminalbench": 0.038,
-        "ifbench": 0.402,
-        "gpqa": 0.623,
-        "lcr": 0.283,
-        "hle": 0.053,
-        "scicode": 0.333,
-        "livecodebench": 0.334,
-        "mmlu_pro": 0.779,
-        "aime_25": 0.217,
-        "math_500": 0.93,
-        "aime": 0.33
-      }
-    },
-    {
       "name": "Qwen3 4B 2507 (Reasoning)",
       "slug": "qwen3-4b-2507-instruct-reasoning",
       "id": "2aacdc07-5f4e-4ab9-8ea5-5f7ab93f9eeb",
@@ -3737,92 +3111,6 @@
         "livecodebench": 0.641,
         "mmlu_pro": 0.743,
         "aime_25": 0.827
-      }
-    },
-    {
-      "name": "Gemini 2.0 Pro Experimental (Feb '25)",
-      "slug": "gemini-2-0-pro-experimental-02-05",
-      "id": "c6a47d8a-7517-46e2-8383-329fe7241725",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-02-05",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 18.1,
-        "coding": 25.5,
-        "gpqa": 0.622,
-        "hle": 0.068,
-        "scicode": 0.312,
-        "livecodebench": 0.347,
-        "mmlu_pro": 0.805,
-        "math_500": 0.923,
-        "aime": 0.36
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash Preview (Non-reasoning)",
-      "slug": "gemini-2-5-flash-04-2025",
-      "id": "55a3ebf6-6117-4cc1-8596-c6de6e552fd4",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-04-17",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 17.8,
-        "gpqa": 0.594,
-        "hle": 0.05,
-        "scicode": 0.233,
-        "livecodebench": 0.406,
-        "mmlu_pro": 0.783,
-        "math_500": 0.926,
-        "aime": 0.433
-      }
-    },
-    {
-      "name": "Gemini 2.5 Flash-Lite (Reasoning)",
-      "slug": "gemini-2-5-flash-lite-reasoning",
-      "id": "f4e8194a-d0e6-48eb-92be-4307de5aeeec",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-06-17",
-      "speed_tps": 329.6,
-      "ttft_seconds": 18.95,
-      "ttfa_seconds": 18.95,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.175,
-        "price_1m_input_tokens": 0.1,
-        "price_1m_output_tokens": 0.4
-      },
-      "benchmarks": {
-        "intelligence": 17.6,
-        "coding": 9.5,
-        "math": 53.3,
-        "tau2": 0.184,
-        "terminalbench": 0.045,
-        "ifbench": 0.499,
-        "gpqa": 0.625,
-        "lcr": 0.513,
-        "hle": 0.064,
-        "scicode": 0.193,
-        "livecodebench": 0.593,
-        "mmlu_pro": 0.759,
-        "aime_25": 0.533,
-        "math_500": 0.969,
-        "aime": 0.703
       }
     },
     {
@@ -3951,32 +3239,6 @@
         "aime_25": 0.237,
         "math_500": 0.902,
         "aime": 0.327
-      }
-    },
-    {
-      "name": "Gemini 2.0 Flash (experimental)",
-      "slug": "gemini-2-0-flash-experimental",
-      "id": "fddb72bd-60d3-41af-acc5-3df9a290eb8e",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-12-11",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 16.8,
-        "gpqa": 0.636,
-        "hle": 0.047,
-        "scicode": 0.34,
-        "livecodebench": 0.21,
-        "mmlu_pro": 0.782,
-        "math_500": 0.911,
-        "aime": 0.3
       }
     },
     {
@@ -4161,33 +3423,6 @@
       }
     },
     {
-      "name": "Gemini 1.5 Pro (Sep '24)",
-      "slug": "gemini-1-5-pro",
-      "id": "2ac96b67-f4f8-4c8c-ac08-c7510faa7bb9",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-09-24",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 16,
-        "coding": 23.6,
-        "gpqa": 0.589,
-        "hle": 0.049,
-        "scicode": 0.295,
-        "livecodebench": 0.316,
-        "mmlu_pro": 0.75,
-        "math_500": 0.876,
-        "aime": 0.23
-      }
-    },
-    {
       "name": "Qwen3 Omni 30B A3B (Reasoning)",
       "slug": "qwen3-omni-30b-a3b-reasoning",
       "id": "b97ef678-2d31-4375-9416-67ea97f87204",
@@ -4282,33 +3517,6 @@
         "aime_25": 0.723,
         "math_500": 0.959,
         "aime": 0.753
-      }
-    },
-    {
-      "name": "Gemma 4 E2B",
-      "slug": "gemma-4-e2b",
-      "id": "b07aef0a-b192-46a1-b1c9-40b06d1b9061",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2026-04-02",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 15.2,
-        "coding": 9,
-        "tau2": 0.208,
-        "terminalbench": 0.03,
-        "ifbench": 0.38,
-        "gpqa": 0.433,
-        "lcr": 0.15,
-        "hle": 0.048,
-        "scicode": 0.209
       }
     },
     {
@@ -4429,32 +3637,6 @@
       }
     },
     {
-      "name": "Gemini 2.0 Flash-Lite (Feb '25)",
-      "slug": "gemini-2-0-flash-lite-001",
-      "id": "7b269763-ecc0-41ef-aa29-47ef632ac065",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-02-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 14.7,
-        "gpqa": 0.535,
-        "hle": 0.036,
-        "scicode": 0.25,
-        "livecodebench": 0.185,
-        "mmlu_pro": 0.724,
-        "math_500": 0.873,
-        "aime": 0.277
-      }
-    },
-    {
       "name": "GPT-4o (May '24)",
       "slug": "gpt-4o-2024-05-13",
       "id": "e98e911e-9fb2-4a9a-826e-3d681d0cdca8",
@@ -4479,31 +3661,6 @@
         "mmlu_pro": 0.74,
         "math_500": 0.791,
         "aime": 0.11
-      }
-    },
-    {
-      "name": "Gemini 2.0 Flash-Lite (Preview)",
-      "slug": "gemini-2-0-flash-lite-preview",
-      "id": "3de55b83-e02b-412e-8211-315bbebe3e94",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-02-05",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 14.5,
-        "gpqa": 0.542,
-        "hle": 0.044,
-        "scicode": 0.247,
-        "livecodebench": 0.179,
-        "math_500": 0.873,
-        "aime": 0.303
       }
     },
     {
@@ -4684,32 +3841,6 @@
         "livecodebench": 0.47,
         "mmlu_pro": 0.556,
         "aime_25": 0.273
-      }
-    },
-    {
-      "name": "Gemini 1.5 Flash (Sep '24)",
-      "slug": "gemini-1-5-flash",
-      "id": "41faf421-118b-465b-b170-d200776580d1",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-09-24",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 13.8,
-        "gpqa": 0.463,
-        "hle": 0.035,
-        "scicode": 0.267,
-        "livecodebench": 0.273,
-        "mmlu_pro": 0.68,
-        "math_500": 0.827,
-        "aime": 0.18
       }
     },
     {
@@ -4972,39 +4103,6 @@
       }
     },
     {
-      "name": "Gemini 2.5 Flash-Lite (Non-reasoning)",
-      "slug": "gemini-2-5-flash-lite",
-      "id": "1d81aa1c-64c8-442a-9c41-81b37e407b91",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-06-17",
-      "speed_tps": 265.1,
-      "ttft_seconds": 0.31,
-      "ttfa_seconds": 0.31,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.175,
-        "price_1m_input_tokens": 0.1,
-        "price_1m_output_tokens": 0.4
-      },
-      "benchmarks": {
-        "intelligence": 12.7,
-        "coding": 7.4,
-        "math": 35.3,
-        "tau2": 0.19,
-        "terminalbench": 0.023,
-        "ifbench": 0.315,
-        "gpqa": 0.474,
-        "lcr": 0.313,
-        "hle": 0.037,
-        "scicode": 0.177,
-        "livecodebench": 0.4,
-        "mmlu_pro": 0.724,
-        "aime_25": 0.353,
-        "math_500": 0.926,
-        "aime": 0.5
-      }
-    },
-    {
       "name": "GLM-4.5V (Non-reasoning)",
       "slug": "glm-4-5v",
       "id": "0081ab31-d10a-44a0-a10d-eee5533fec65",
@@ -5124,53 +4222,6 @@
       }
     },
     {
-      "name": "Gemini 2.0 Flash Thinking Experimental (Dec '24)",
-      "slug": "gemini-2-0-flash-thinking-exp-1219",
-      "id": "dfeeb904-e784-4d5c-ad66-9400146b150b",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-12-19",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 12.3,
-        "math_500": 0.48
-      }
-    },
-    {
-      "name": "Gemini 1.5 Pro (May '24)",
-      "slug": "gemini-1-5-pro-may-2024",
-      "id": "16f2578b-1b28-4be3-b371-700c2677bcd6",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-05-15",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 12,
-        "coding": 19.8,
-        "gpqa": 0.371,
-        "hle": 0.039,
-        "scicode": 0.274,
-        "livecodebench": 0.244,
-        "mmlu_pro": 0.657,
-        "math_500": 0.673,
-        "aime": 0.08
-      }
-    },
-    {
       "name": "Qwen2.5 Turbo",
       "slug": "qwen-turbo",
       "id": "352f834f-a03c-4117-8a29-c3ccd8a568ce",
@@ -5220,32 +4271,6 @@
         "mmlu_pro": 0.622,
         "math_500": 0.701,
         "aime": 0.147
-      }
-    },
-    {
-      "name": "Gemini 1.5 Flash-8B",
-      "slug": "gemini-1-5-flash-8b",
-      "id": "94229066-9381-4ee1-bf70-a16d63756a6e",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-10-03",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 11.1,
-        "gpqa": 0.359,
-        "hle": 0.045,
-        "scicode": 0.229,
-        "livecodebench": 0.217,
-        "mmlu_pro": 0.569,
-        "math_500": 0.689,
-        "aime": 0.033
       }
     },
     {
@@ -5337,111 +4362,6 @@
         "lcr": 0.053,
         "hle": 0.012,
         "scicode": 0
-      }
-    },
-    {
-      "name": "Gemini 1.5 Flash (May '24)",
-      "slug": "gemini-1-5-flash-may-2024",
-      "id": "ac48c49d-9e77-4394-ac4e-d1ee51fd5fee",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2024-05-14",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 10.5,
-        "gpqa": 0.324,
-        "hle": 0.042,
-        "scicode": 0.181,
-        "livecodebench": 0.196,
-        "mmlu_pro": 0.574,
-        "math_500": 0.554,
-        "aime": 0.093
-      }
-    },
-    {
-      "name": "Gemma 3 27B Instruct",
-      "slug": "gemma-3-27b",
-      "id": "2bfdd17a-e027-4068-a54e-b0e90a6df118",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-03-12",
-      "speed_tps": 32.2,
-      "ttft_seconds": 1.5,
-      "ttfa_seconds": 1.5,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 10.3,
-        "coding": 9.6,
-        "math": 20.7,
-        "tau2": 0.105,
-        "terminalbench": 0.038,
-        "ifbench": 0.318,
-        "gpqa": 0.428,
-        "lcr": 0.057,
-        "hle": 0.047,
-        "scicode": 0.212,
-        "livecodebench": 0.137,
-        "mmlu_pro": 0.669,
-        "aime_25": 0.207,
-        "math_500": 0.883,
-        "aime": 0.253
-      }
-    },
-    {
-      "name": "Gemma 3n E4B Instruct Preview (May '25)",
-      "slug": "gemma-3n-e4b-preview-0520",
-      "id": "bd2c3517-00d8-4ba5-a989-1f1e52f3ffab",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-05-20",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 10.1,
-        "gpqa": 0.278,
-        "hle": 0.049,
-        "scicode": 0.086,
-        "livecodebench": 0.138,
-        "mmlu_pro": 0.483,
-        "math_500": 0.749,
-        "aime": 0.107
-      }
-    },
-    {
-      "name": "Gemini 1.0 Ultra",
-      "slug": "gemini-1-0-ultra",
-      "id": "2ae624ca-25b4-4cc8-8970-cdfdd3320691",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2023-12-06",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 10.1,
-        "coding": 17.6
       }
     },
     {
@@ -5572,39 +4492,6 @@
       }
     },
     {
-      "name": "Gemma 3 12B Instruct",
-      "slug": "gemma-3-12b",
-      "id": "2e6400f5-85ca-4ebc-ba8f-c2811a631138",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-03-12",
-      "speed_tps": 32.0,
-      "ttft_seconds": 12.99,
-      "ttfa_seconds": 12.99,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 8.8,
-        "coding": 6.3,
-        "math": 18.3,
-        "tau2": 0.108,
-        "terminalbench": 0.008,
-        "ifbench": 0.367,
-        "gpqa": 0.349,
-        "lcr": 0.067,
-        "hle": 0.048,
-        "scicode": 0.174,
-        "livecodebench": 0.137,
-        "mmlu_pro": 0.595,
-        "aime_25": 0.183,
-        "math_500": 0.853,
-        "aime": 0.22
-      }
-    },
-    {
       "name": "Qwen Chat 72B",
       "slug": "qwen-chat-72b",
       "id": "41f73c27-880c-4f30-8b07-9999ce89a4ae",
@@ -5621,52 +4508,6 @@
       },
       "benchmarks": {
         "intelligence": 8.8
-      }
-    },
-    {
-      "name": "PALM-2",
-      "slug": "palm-2",
-      "id": "515852e7-ba9c-4571-8cf9-82ad6b45f22f",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2023-05-10",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 8.6,
-        "coding": 4.6
-      }
-    },
-    {
-      "name": "Gemini 1.0 Pro",
-      "slug": "gemini-1-0-pro",
-      "id": "8ddacd41-bf43-411b-aa30-43ebf0567dd8",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2023-12-06",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 8.5,
-        "gpqa": 0.277,
-        "hle": 0.046,
-        "scicode": 0.117,
-        "livecodebench": 0.116,
-        "mmlu_pro": 0.431,
-        "math_500": 0.403,
-        "aime": 0.007
       }
     },
     {
@@ -5700,37 +4541,6 @@
         "aime_25": 0.387,
         "math_500": 0.894,
         "aime": 0.51
-      }
-    },
-    {
-      "name": "Gemma 3 270M",
-      "slug": "gemma-3-270m",
-      "id": "04781a0e-40f0-4e2a-a4e5-18e389364a79",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-08-14",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 7.7,
-        "coding": 0,
-        "math": 2.3,
-        "tau2": 0.091,
-        "terminalbench": 0,
-        "ifbench": 0.121,
-        "gpqa": 0.224,
-        "lcr": 0,
-        "hle": 0.042,
-        "scicode": 0,
-        "livecodebench": 0.003,
-        "mmlu_pro": 0.055,
-        "aime_25": 0.023
       }
     },
     {
@@ -5819,72 +4629,6 @@
       }
     },
     {
-      "name": "Gemma 3n E4B Instruct",
-      "slug": "gemma-3n-e4b",
-      "id": "a797eaf3-6d75-4f29-86a8-e1243ce52d43",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-06-26",
-      "speed_tps": 31.0,
-      "ttft_seconds": 0.29,
-      "ttfa_seconds": 0.29,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.025,
-        "price_1m_input_tokens": 0.02,
-        "price_1m_output_tokens": 0.04
-      },
-      "benchmarks": {
-        "intelligence": 6.4,
-        "coding": 4.2,
-        "math": 14.3,
-        "tau2": 0.05,
-        "terminalbench": 0.023,
-        "ifbench": 0.279,
-        "gpqa": 0.296,
-        "lcr": 0,
-        "hle": 0.044,
-        "scicode": 0.081,
-        "livecodebench": 0.146,
-        "mmlu_pro": 0.488,
-        "aime_25": 0.143,
-        "math_500": 0.771,
-        "aime": 0.137
-      }
-    },
-    {
-      "name": "Gemma 3 4B Instruct",
-      "slug": "gemma-3-4b",
-      "id": "222fb320-6e55-4672-846a-b6d5a24a45f4",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-03-12",
-      "speed_tps": 33.6,
-      "ttft_seconds": 1.05,
-      "ttfa_seconds": 1.05,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 6.3,
-        "coding": 2.9,
-        "math": 12.7,
-        "tau2": 0.05,
-        "terminalbench": 0.008,
-        "ifbench": 0.283,
-        "gpqa": 0.291,
-        "lcr": 0.057,
-        "hle": 0.052,
-        "scicode": 0.073,
-        "livecodebench": 0.112,
-        "mmlu_pro": 0.417,
-        "aime_25": 0.127,
-        "math_500": 0.766,
-        "aime": 0.063
-      }
-    },
-    {
       "name": "Qwen3 0.6B (Non-reasoning)",
       "slug": "qwen3-0.6b-instruct",
       "id": "0e5f6140-1154-4583-a3e0-8c032a338892",
@@ -5915,72 +4659,6 @@
         "aime_25": 0.103,
         "math_500": 0.521,
         "aime": 0.017
-      }
-    },
-    {
-      "name": "Gemma 3 1B Instruct",
-      "slug": "gemma-3-1b",
-      "id": "d1720545-d0a8-4c15-a53e-ef5ca99ac7ea",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-03-13",
-      "speed_tps": 52.1,
-      "ttft_seconds": 0.57,
-      "ttfa_seconds": 0.57,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 5.5,
-        "coding": 0.2,
-        "math": 3.3,
-        "tau2": 0.105,
-        "terminalbench": 0,
-        "ifbench": 0.199,
-        "gpqa": 0.237,
-        "lcr": 0,
-        "hle": 0.052,
-        "scicode": 0.007,
-        "livecodebench": 0.017,
-        "mmlu_pro": 0.135,
-        "aime_25": 0.033,
-        "math_500": 0.484,
-        "aime": 0
-      }
-    },
-    {
-      "name": "Gemma 3n E2B Instruct",
-      "slug": "gemma-3n-e2b",
-      "id": "a8c67863-9d66-44dd-8d27-f58654ecde03",
-      "creator": "Google",
-      "openclaw_provider": "google-gemini-cli",
-      "release_date": "2025-06-26",
-      "speed_tps": 49.9,
-      "ttft_seconds": 0.43,
-      "ttfa_seconds": 0.43,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0,
-        "price_1m_input_tokens": 0,
-        "price_1m_output_tokens": 0
-      },
-      "benchmarks": {
-        "intelligence": 4.8,
-        "coding": 2.2,
-        "math": 10.3,
-        "tau2": 0,
-        "terminalbench": 0.008,
-        "ifbench": 0.22,
-        "gpqa": 0.229,
-        "lcr": 0,
-        "hle": 0.04,
-        "scicode": 0.052,
-        "livecodebench": 0.095,
-        "mmlu_pro": 0.378,
-        "aime_25": 0.103,
-        "math_500": 0.691,
-        "aime": 0.09
       }
     }
   ]

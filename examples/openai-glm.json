@@ -37,83 +37,32 @@
         "hle": 0.272,
         "scicode": 0.462
       }
-    },
-    "kimi-coding/kimi-k2.5": {
-      "context_window": 128000,
-      "supports_vision": false,
-      "speed_tps": 31.6,
-      "ttft_seconds": 2.41,
-      "benchmarks": {
-        "intelligence": 46.8,
-        "coding": 39.5,
-        "tau2": 0.959,
-        "terminalbench": 0.348,
-        "ifbench": 0.702,
-        "gpqa": 0.879,
-        "lcr": 0.653,
-        "hle": 0.294,
-        "scicode": 0.49
-      }
-    },
-    "minimax/minimax-m2.7": {
-      "context_window": 1000000,
-      "supports_vision": false,
-      "speed_tps": 41.2,
-      "ttft_seconds": 1.75,
-      "benchmarks": {
-        "intelligence": 49.6,
-        "coding": 41.9,
-        "tau2": 0.848,
-        "terminalbench": 0.394,
-        "ifbench": 0.757,
-        "gpqa": 0.874,
-        "lcr": 0.687,
-        "hle": 0.281,
-        "scicode": 0.47
-      }
-    },
-    "modelstudio/qwen3.5-397b-a17b": {
-      "context_window": 131072,
-      "supports_vision": false,
-      "speed_tps": 58.9,
-      "ttft_seconds": 1.38,
-      "benchmarks": {
-        "intelligence": 45.0,
-        "coding": 41.3,
-        "tau2": 0.956,
-        "terminalbench": 0.409,
-        "ifbench": 0.788,
-        "gpqa": 0.893,
-        "lcr": 0.657,
-        "hle": 0.273,
-        "scicode": 0.42
-      }
     }
   },
   "routing_rules": {
     "code": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["zai/glm-5", "kimi-coding/kimi-k2.5"]
+      "fallbacks": ["zai/glm-5"]
     },
     "research": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["kimi-coding/kimi-k2.5", "minimax/minimax-m2.7"]
+      "fallbacks": ["zai/glm-5"]
     },
     "orchestration": {
       "primary": "zai/glm-5",
-      "fallbacks": ["kimi-coding/kimi-k2.5", "modelstudio/qwen3.5-397b-a17b"]
+      "fallbacks": ["openai-codex/gpt-5.4"]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["modelstudio/qwen3.5-397b-a17b", "zai/glm-5"]
+      "fallbacks": ["zai/glm-5"]
     },
     "fast": {
       "primary": "zai/glm-5",
-      "fallbacks": ["minimax/minimax-m2.7", "modelstudio/qwen3.5-397b-a17b"]
+      "fallbacks": ["openai-codex/gpt-5.4"]
     },
     "default": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["zai/glm-5", "minimax/minimax-m2.7"]
+      "fallbacks": ["zai/glm-5"]
     }
   },
   "workspace_hints": {},

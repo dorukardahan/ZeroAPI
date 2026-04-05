@@ -1,31 +1,22 @@
 # OAuth & Provider Auth Setup
 
+## Provider Exclusions
+
+**Google (Gemini):** Removed in v3.1. Google declared CLI OAuth with third-party tools a ToS violation as of March 25, 2026. Do not set up Google OAuth for use with OpenClaw.
+
+**Anthropic (Claude):** Removed in v3.0. Subscriptions no longer cover OpenClaw as of April 4, 2026.
+
 ## Provider Auth Summary
 
 | Provider | Auth Method | Setup Command | Token Lifetime |
 |----------|-------------|---------------|----------------|
-| Google | OAuth (gemini-cli auto-load) | `openclaw onboard --auth-choice google-gemini-cli` | Long-lived refresh token |
 | OpenAI | OAuth PKCE via ChatGPT | `openclaw onboard --auth-choice openai-codex` | ~10 days without use |
 | Kimi | Static API key | `openclaw onboard --auth-choice kimi-coding` | Never expires |
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
 | MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-portal` | Long-lived refresh token |
 | Alibaba (Qwen) | Static API key | `openclaw onboard --auth-choice modelstudio` | Never expires |
 
-**Reliability ranking**: Kimi / GLM / Qwen (static key, never expires) ≈ Google OAuth (auto-refresh, very stable) > MiniMax OAuth (auto-refresh) > Codex OAuth (auto-refresh works; see notes below).
-
----
-
-## Google OAuth
-
-Google OAuth issues long-lived refresh tokens. Auto-refresh is reliable — manual re-auth is rarely needed.
-
-```bash
-openclaw onboard --auth-choice google-gemini-cli
-```
-
-The wizard opens a browser OAuth flow. On headless VPS, use the tmux method below.
-
-**Note**: The `google-gemini-cli-auth` plugin ID was removed in OpenClaw 2026.2.22. The provider auto-loads — no separate plugin enable step is needed.
+**Reliability ranking**: Kimi / GLM / Qwen (static key, never expires) > MiniMax OAuth (auto-refresh) > Codex OAuth (auto-refresh works; see notes below).
 
 ---
 
@@ -69,7 +60,7 @@ The wizard prompts for the API key and saves it to auth-profiles. No browser flo
 
 ## MiniMax OAuth
 
-MiniMax uses an OAuth portal flow similar to Google. Setup:
+MiniMax uses an OAuth portal flow. Setup:
 
 ```bash
 openclaw onboard --auth-choice minimax-portal
@@ -112,8 +103,6 @@ tmux send-keys -t oauth C-c
 # Step 7: Verify
 openclaw models status | grep openai-codex
 ```
-
-For Google OAuth, replace `--auth-choice openai-codex` with `--auth-choice google-gemini-cli`. The flow is identical.
 
 ### If running from a local CLI (SSH to VPS)
 

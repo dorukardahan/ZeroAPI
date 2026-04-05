@@ -1,5 +1,11 @@
 # Troubleshooting
 
+## Provider Exclusions
+
+**Google (Gemini):** Removed in v3.1. Google declared CLI OAuth with third-party tools a ToS violation as of March 25, 2026. If you have Google OAuth profiles in your config, run `/zeroapi` to clean them up.
+
+**Anthropic (Claude):** Removed in v3.0. Subscriptions no longer cover OpenClaw as of April 4, 2026.
+
 ## ZeroAPI Plugin Errors
 
 ### "zeroapi-config.json not found"
@@ -41,6 +47,33 @@ openclaw models status | grep anthropic
 
 ---
 
+### Google OAuth profiles still in config (ToS violation risk)
+
+**Cause**: Legacy Google OAuth profiles (`google-gemini-cli`) remain in `openclaw.json` after the March 25, 2026 ToS change. Continued use risks account suspension.
+
+**Check**:
+```bash
+cat ~/.openclaw/openclaw.json | grep -A2 '"google'
+```
+
+**Fix**: Run `/zeroapi` — the setup wizard detects Google OAuth profiles and offers removal. If you want to remove manually:
+
+```bash
+# 1. Open openclaw.json
+# 2. Remove all "google*" entries from auth.profiles
+# 3. Remove "google-gemini-cli" from auth.order
+# 4. Remove any google-gemini-cli/* model refs from agents.defaults.model.primary and fallbacks
+# 5. Check each agent in agents.list for google-gemini-cli/* model assignments
+# 6. Remove per-agent models.json entries for google-gemini-cli
+# 7. Restart gateway
+systemctl --user restart openclaw-gateway.service
+# 8. Verify
+openclaw models status | grep google
+# Should return nothing
+```
+
+---
+
 ### "ZeroAPI Router not loaded"
 
 **Cause**: The plugin is not installed or failed to load at gateway start.
@@ -75,12 +108,12 @@ tail -f ~/.openclaw/logs/zeroapi-routing.log
 Log format:
 ```
 2026-04-05T10:30:15Z agent=senti category=code model=openai-codex/gpt-5.4 reason=keyword:refactor
-2026-04-05T10:30:45Z agent=main category=default model=google-gemini-cli/gemini-3.1-pro-preview reason=no_match
+2026-04-05T10:30:45Z agent=main category=default model=openai-codex/gpt-5.4 reason=no_match
 ```
 
 `reason=no_match` means no category was detected — the default model was used. If this is unexpected, re-run `/zeroapi` to review keyword configuration.
 
-**Note**: The plugin never overrides explicit user model selections (`/model` or `#model:` directives). It also does not route messages from specialist agents (codex, gemini, glm) or cron jobs.
+**Note**: The plugin never overrides explicit user model selections (`/model` or `#model:` directives). It also does not route messages from specialist agents (codex, glm) or cron jobs.
 
 ---
 
@@ -91,7 +124,7 @@ Log format:
 | Age | Action |
 |-----|--------|
 | < 30 days | Proceed normally |
-| 30–60 days | Warning shown — update recommended |
+| 30-60 days | Warning shown — update recommended |
 | > 60 days | Explicit override required to proceed |
 
 **Fix**: Pull the latest release from the ZeroAPI repo. The repo maintainer runs the AA API fetch script and commits updated `benchmarks.json` with each release. After pulling, re-run `/zeroapi` to regenerate config.
@@ -113,22 +146,8 @@ Log format:
 | `zai` | `openclaw.json` | `"openai-completions"` |
 | `minimax` | `openclaw.json` | `"openai-completions"` |
 | `modelstudio` | `openclaw.json` | `"openai-completions"` |
-| `google-gemini-cli` | per-agent `models.json` ONLY | `"google-gemini-cli"` |
 
 The `api` field is required for every custom provider (OpenClaw 2026.2.6+).
-
----
-
-### Google Gemini returns "API key not valid" with OAuth subscription
-
-**Cause**: Wrong API type or wrong config location.
-
-Two possible causes:
-
-1. Provider is in `openclaw.json` with `"api": "google-generative-ai"` — this sends auth via `x-goog-api-key` header, which rejects OAuth tokens.
-2. A `baseUrl` is set on the google-gemini-cli provider — remove it. The stream function has the correct endpoint hardcoded (`cloudcode-pa.googleapis.com`).
-
-**Fix**: Move the google-gemini-cli provider to per-agent `models.json` with `"api": "google-gemini-cli"`. Do not set `baseUrl` or `apiKey`. See `references/provider-config.md`.
 
 ---
 
@@ -152,7 +171,6 @@ Ensure the model ID in your config exactly matches the provider's catalog. Some 
 
 **By provider**:
 
-- **Google**: Run `openclaw onboard --auth-choice google-gemini-cli` again. On headless VPS, use the tmux flow in `references/oauth-setup.md`.
 - **OpenAI Codex**: Use the tmux OAuth flow to run `openclaw onboard --auth-choice openai-codex`. See `references/oauth-setup.md`.
 - **Kimi / GLM / Qwen**: API keys do not expire. If failing, verify the subscription is still active at the provider portal.
 - **MiniMax**: Use the tmux OAuth flow with `--auth-choice minimax-portal`.
@@ -242,4 +260,4 @@ OpenClaw runs as a user service (`systemctl --user`), not a system service.
 
 **Cause**: Model is registered in main agent context but not available in sub-agent context.
 
-**Fix**: Run `openclaw models status` to verify provider auth. Ensure the sub-agent's `models.json` includes the provider. For Google Gemini, each agent needs its own `models.json` entry — see `references/provider-config.md`.
+**Fix**: Run `openclaw models status` to verify provider auth. Ensure the sub-agent's config includes the provider. See `references/provider-config.md`.

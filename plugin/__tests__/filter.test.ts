@@ -3,10 +3,6 @@ import { filterCapableModels, estimateTokens } from "../filter.js";
 import type { ModelCapabilities } from "../types.js";
 
 const models: Record<string, ModelCapabilities> = {
-  "google/gemini-3.1-pro": {
-    context_window: 1000000, supports_vision: true, speed_tps: 120, ttft_seconds: 20,
-    benchmarks: { intelligence: 57.2, coding: 55.5 },
-  },
   "openai-codex/gpt-5.4": {
     context_window: 1050000, supports_vision: false, speed_tps: 72, ttft_seconds: 163,
     benchmarks: { intelligence: 57.2, coding: 57.3 },
@@ -14,6 +10,10 @@ const models: Record<string, ModelCapabilities> = {
   "zai/glm-5": {
     context_window: 200000, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9,
     benchmarks: { intelligence: 49.8, tau2: 0.982 },
+  },
+  "kimi-coding/kimi-k2.5": {
+    context_window: 128000, supports_vision: true, speed_tps: 32, ttft_seconds: 2.4,
+    benchmarks: { intelligence: 46.8, coding: 39.5 },
   },
 };
 
@@ -25,20 +25,22 @@ describe("filterCapableModels", () => {
 
   it("filters by context window", () => {
     const result = filterCapableModels(models, { estimatedTokens: 500000 });
-    expect(Object.keys(result)).toHaveLength(2);
+    expect(Object.keys(result)).toHaveLength(1);
     expect(result["zai/glm-5"]).toBeUndefined();
+    expect(result["kimi-coding/kimi-k2.5"]).toBeUndefined();
   });
 
   it("filters by vision requirement", () => {
     const result = filterCapableModels(models, { estimatedTokens: 1000, requiresVision: true });
     expect(Object.keys(result)).toHaveLength(1);
-    expect(result["google/gemini-3.1-pro"]).toBeDefined();
+    expect(result["kimi-coding/kimi-k2.5"]).toBeDefined();
   });
 
   it("filters by TTFT for fast tasks", () => {
     const result = filterCapableModels(models, { estimatedTokens: 1000, maxTtftSeconds: 5 });
-    expect(Object.keys(result)).toHaveLength(1);
+    expect(Object.keys(result)).toHaveLength(2);
     expect(result["zai/glm-5"]).toBeDefined();
+    expect(result["kimi-coding/kimi-k2.5"]).toBeDefined();
   });
 
   it("returns empty when nothing fits", () => {

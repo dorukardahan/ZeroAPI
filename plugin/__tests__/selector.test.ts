@@ -7,9 +7,9 @@ const models: Record<string, ModelCapabilities> = {
     context_window: 1050000, supports_vision: false, speed_tps: 72, ttft_seconds: 163,
     benchmarks: { intelligence: 57.2, coding: 57.3, terminalbench: 0.576, tau2: 0.915, ifbench: 0.739 },
   },
-  "google/gemini-3.1-pro": {
-    context_window: 1000000, supports_vision: true, speed_tps: 120, ttft_seconds: 20,
-    benchmarks: { intelligence: 57.2, coding: 55.5, terminalbench: 0.538, tau2: 0.956, ifbench: 0.771 },
+  "minimax/minimax-m2.7": {
+    context_window: 1000000, supports_vision: false, speed_tps: 41, ttft_seconds: 1.75,
+    benchmarks: { intelligence: 49.6, coding: 41.9, terminalbench: 0.394, tau2: 0.848, ifbench: 0.757 },
   },
   "zai/glm-5": {
     context_window: 200000, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9,
@@ -18,11 +18,11 @@ const models: Record<string, ModelCapabilities> = {
 };
 
 const rules: Record<string, RoutingRule> = {
-  code: { primary: "openai-codex/gpt-5.4", fallbacks: ["google/gemini-3.1-pro", "zai/glm-5"] },
-  research: { primary: "google/gemini-3.1-pro", fallbacks: ["openai-codex/gpt-5.4"] },
-  orchestration: { primary: "zai/glm-5", fallbacks: ["google/gemini-3.1-pro"] },
-  fast: { primary: "zai/glm-5", fallbacks: ["google/gemini-3.1-pro"] },
-  default: { primary: "google/gemini-3.1-pro", fallbacks: ["openai-codex/gpt-5.4", "zai/glm-5"] },
+  code: { primary: "openai-codex/gpt-5.4", fallbacks: ["minimax/minimax-m2.7", "zai/glm-5"] },
+  research: { primary: "minimax/minimax-m2.7", fallbacks: ["openai-codex/gpt-5.4"] },
+  orchestration: { primary: "zai/glm-5", fallbacks: ["minimax/minimax-m2.7"] },
+  fast: { primary: "zai/glm-5", fallbacks: ["minimax/minimax-m2.7"] },
+  default: { primary: "openai-codex/gpt-5.4", fallbacks: ["minimax/minimax-m2.7", "zai/glm-5"] },
 };
 
 describe("selectModel", () => {
@@ -31,7 +31,7 @@ describe("selectModel", () => {
   });
 
   it("selects primary for research tasks", () => {
-    expect(selectModel("research", models, rules, null)).toBe("google/gemini-3.1-pro");
+    expect(selectModel("research", models, rules, null)).toBe("minimax/minimax-m2.7");
   });
 
   it("selects primary for orchestration tasks", () => {
@@ -39,17 +39,17 @@ describe("selectModel", () => {
   });
 
   it("returns null when selected model equals current default", () => {
-    expect(selectModel("research", models, rules, "google/gemini-3.1-pro")).toBeNull();
+    expect(selectModel("research", models, rules, "minimax/minimax-m2.7")).toBeNull();
   });
 
   it("falls back when primary not in available models", () => {
     const limited = { ...models };
     delete limited["openai-codex/gpt-5.4"];
-    expect(selectModel("code", limited, rules, null)).toBe("google/gemini-3.1-pro");
+    expect(selectModel("code", limited, rules, null)).toBe("minimax/minimax-m2.7");
   });
 
   it("returns default rule when category has no specific rule", () => {
-    expect(selectModel("math" as TaskCategory, models, rules, null)).toBe("google/gemini-3.1-pro");
+    expect(selectModel("math" as TaskCategory, models, rules, null)).toBe("openai-codex/gpt-5.4");
   });
 
   it("returns null when no candidates available", () => {

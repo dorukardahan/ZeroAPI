@@ -6,19 +6,15 @@ Pick the example that matches your provider subscriptions. Each file is a ready-
 
 | File | Providers | Monthly Cost | Best For |
 |------|-----------|-------------|----------|
-| `google-only.json` | Google Gemini Advanced | ~$20 | Getting started, Google-only setup |
-| `google-openai.json` | Google + OpenAI Codex | ~$220 | Strongest code + research combo |
-| `google-openai-glm.json` | Google + OpenAI + Z AI GLM | ~$250 | Add fast orchestration with GLM-5 |
-| `google-openai-glm-kimi.json` | Google + OpenAI + Z AI + Kimi | ~$270 | Deep orchestration fallback coverage |
-| `full-stack.json` | All 6 providers | ~$310-$370 | Maximum resilience, longest fallback chains |
+| `openai-only.json` | OpenAI Codex | ~$20 | Getting started, OpenAI-only setup |
+| `openai-glm.json` | OpenAI + Z AI GLM | ~$30 | Add fast orchestration with GLM-5 |
+| `openai-glm-kimi.json` | OpenAI + Z AI + Kimi | ~$49 | Deep orchestration fallback coverage |
+| `full-stack.json` | All 5 providers | ~$109-$170 | Maximum resilience, longest fallback chains |
 
 ## Pricing Reference (per 1M tokens, 3:1 blended)
 
 | Model | Provider | Blended Price |
 |-------|----------|--------------|
-| Gemini 3.1 Pro Preview | google-gemini-cli | $4.50 |
-| Gemini 3 Flash Preview | google-gemini-cli | $1.13 |
-| Gemini 3.1 Flash-Lite Preview | google-gemini-cli | $0.56 |
 | GPT-5.4 | openai-codex | $5.63 |
 | GLM-5 (Reasoning) | zai | $1.55 |
 | Kimi K2.5 (Reasoning) | kimi-coding | $1.20 |
@@ -36,9 +32,6 @@ cp examples/<file>.json ~/.openclaw/zeroapi-config.json
 ### 2. Authenticate providers
 
 ```bash
-# Google Gemini (subscription OAuth)
-openclaw models auth login --provider google-gemini-cli
-
 # OpenAI Codex (ChatGPT OAuth)
 openclaw onboard --auth-choice openai-codex
 
@@ -70,7 +63,7 @@ Edit `workspace_hints` in your config to bias routing per agent workspace:
 ```json
 "workspace_hints": {
   "codex-workspace": ["code"],
-  "gemini-workspace": ["research"],
+  "glm-workspace": ["orchestration"],
   "main-workspace": null
 }
 ```

@@ -2,42 +2,8 @@
   "version": "3.0.0",
   "generated": "2026-04-05T00:00:00Z",
   "benchmarks_date": "2026-04-04",
-  "default_model": "google-gemini-cli/gemini-3.1-pro-preview",
+  "default_model": "openai-codex/gpt-5.4",
   "models": {
-    "google-gemini-cli/gemini-3.1-pro-preview": {
-      "context_window": 1000000,
-      "supports_vision": true,
-      "speed_tps": 122.2,
-      "ttft_seconds": 19.97,
-      "benchmarks": {
-        "intelligence": 57.2,
-        "coding": 55.5,
-        "tau2": 0.956,
-        "terminalbench": 0.538,
-        "ifbench": 0.771,
-        "gpqa": 0.941,
-        "lcr": 0.727,
-        "hle": 0.447,
-        "scicode": 0.589
-      }
-    },
-    "google-gemini-cli/gemini-3.1-flash-lite-preview": {
-      "context_window": 1000000,
-      "supports_vision": true,
-      "speed_tps": 198.4,
-      "ttft_seconds": 7.17,
-      "benchmarks": {
-        "intelligence": 33.5,
-        "coding": 30.1,
-        "tau2": 0.313,
-        "terminalbench": 0.242,
-        "ifbench": 0.772,
-        "gpqa": 0.822,
-        "lcr": 0.653,
-        "hle": 0.162,
-        "scicode": 0.419
-      }
-    },
     "openai-codex/gpt-5.4": {
       "context_window": 1050000,
       "supports_vision": false,
@@ -71,32 +37,49 @@
         "hle": 0.272,
         "scicode": 0.462
       }
+    },
+    "kimi-coding/kimi-k2.5": {
+      "context_window": 128000,
+      "supports_vision": false,
+      "speed_tps": 31.6,
+      "ttft_seconds": 2.41,
+      "benchmarks": {
+        "intelligence": 46.8,
+        "coding": 39.5,
+        "tau2": 0.959,
+        "terminalbench": 0.348,
+        "ifbench": 0.702,
+        "gpqa": 0.879,
+        "lcr": 0.653,
+        "hle": 0.294,
+        "scicode": 0.49
+      }
     }
   },
   "routing_rules": {
     "code": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["google-gemini-cli/gemini-3.1-pro-preview", "zai/glm-5"]
+      "fallbacks": ["zai/glm-5", "kimi-coding/kimi-k2.5"]
     },
     "research": {
-      "primary": "google-gemini-cli/gemini-3.1-pro-preview",
-      "fallbacks": ["openai-codex/gpt-5.4", "zai/glm-5"]
+      "primary": "openai-codex/gpt-5.4",
+      "fallbacks": ["kimi-coding/kimi-k2.5", "zai/glm-5"]
     },
     "orchestration": {
       "primary": "zai/glm-5",
-      "fallbacks": ["google-gemini-cli/gemini-3.1-pro-preview", "openai-codex/gpt-5.4"]
+      "fallbacks": ["kimi-coding/kimi-k2.5", "openai-codex/gpt-5.4"]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["google-gemini-cli/gemini-3.1-pro-preview", "zai/glm-5"]
+      "fallbacks": ["kimi-coding/kimi-k2.5", "zai/glm-5"]
     },
     "fast": {
       "primary": "zai/glm-5",
-      "fallbacks": ["google-gemini-cli/gemini-3.1-flash-lite-preview"]
+      "fallbacks": ["kimi-coding/kimi-k2.5", "openai-codex/gpt-5.4"]
     },
     "default": {
-      "primary": "google-gemini-cli/gemini-3.1-pro-preview",
-      "fallbacks": ["openai-codex/gpt-5.4", "zai/glm-5", "google-gemini-cli/gemini-3.1-flash-lite-preview"]
+      "primary": "openai-codex/gpt-5.4",
+      "fallbacks": ["zai/glm-5", "kimi-coding/kimi-k2.5"]
     }
   },
   "workspace_hints": {},

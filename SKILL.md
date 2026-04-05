@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.0.0
+version: 3.1.0
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -12,15 +12,19 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.0 — Plugin-Based Model Routing
+# ZeroAPI v3.1 — Plugin-Based Model Routing
 
 You are an OpenClaw setup agent. ZeroAPI routes every message to the optimal AI model using an OpenClaw **gateway plugin** (`before_model_resolve` hook). You do NOT route messages yourself — the plugin does it at runtime with <1ms latency, zero token overhead, and full session context. Your job is to **configure** the plugin: scan the user's setup, generate `zeroapi-config.json`, update `openclaw.json`, and install the plugin.
 
 This is NOT prompt-based routing. The plugin intercepts messages at the gateway level using keyword/regex matching. No LLM call, no context serialization, no sub-agent spawning.
 
-## Anthropic Notice
+## Provider Exclusions
 
-As of April 4, 2026, Anthropic Claude subscriptions no longer cover third-party tools like OpenClaw ([source](https://x.com/bcherny/status/2040206440556826908)). Users who relied on Claude as their default model need a migration path. ZeroAPI configures routing across subscription-covered alternatives only. No Anthropic/Claude models are included in routing.
+**Anthropic (Claude):** As of April 4, 2026, Anthropic Claude subscriptions no longer cover third-party tools like OpenClaw ([source](https://x.com/bcherny/status/2040206440556826908)). Users who relied on Claude as their default model need a migration path.
+
+**Google (Gemini):** As of March 25, 2026, Google declared CLI OAuth usage with third-party tools a ToS violation. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key usage (AI Studio/Vertex) is separate billing, not subscription-covered.
+
+ZeroAPI configures routing across subscription-covered alternatives only. No Anthropic/Claude or Google/Gemini models are included in routing.
 
 ## How It Works
 
@@ -28,7 +32,7 @@ Three layers:
 
 ```
 Layer 1: benchmarks.json (embedded in repo, updated by maintainer)
-  201 models, 6 providers, 15 benchmarks from Artificial Analysis API v2
+  155 models, 5 providers, 15 benchmarks from Artificial Analysis API v2
 
 Layer 2: SKILL.md (this file — runs once via /zeroapi)
   Scans OpenClaw → asks subscriptions → generates plugin config
@@ -42,11 +46,10 @@ Layer 3: Plugin (before_model_resolve hook — runs every message)
 
 ## Supported Providers
 
-Six subscription-based providers. Anthropic excluded.
+Five subscription-based providers. Anthropic and Google excluded.
 
 | Provider | OpenClaw ID | Auth | Tiers (Monthly) | Annual |
 |----------|------------|------|-----------------|--------|
-| Google | `google-gemini-cli` | OAuth via gemini-cli plugin | AI Pro $20/mo | $200/yr |
 | OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus $20/mo, Pro $200/mo | — |
 | Kimi | `kimi-coding` | API key | Moderato $19, Allegretto $39, Allegro $99, Vivace $199 | ~20% off |
 | Z AI (GLM) | `zai` | API key (zai-coding-global) | Lite $10, Pro $30, Max $80 | 30% off |
@@ -147,6 +150,43 @@ Note: Even with an API key, Anthropic is NOT included in ZeroAPI routing. The AP
 
 **If no Anthropic profiles found:** Skip this step silently.
 
+### Step 1c: Detect Google OAuth Profiles
+
+Check the user's `openclaw.json` for Google OAuth profiles:
+```bash
+cat ~/.openclaw/openclaw.json | grep -A2 '"google'
+```
+
+If `auth.profiles` contains entries with `google-gemini-cli` or similar Google OAuth tokens, these profiles now violate Google's ToS for third-party CLI OAuth usage (as of March 25, 2026).
+
+**If Google OAuth profiles are found, ask the user:**
+
+> "I found Google OAuth profiles in your config. Since March 25, 2026, Google declared CLI OAuth with third-party tools a ToS violation — continued use risks account suspension. What would you like to do?
+>
+> A) **Remove them** — I'll clean up all Google OAuth profiles and remove Google from your fallback chains. Recommended.
+>
+> B) **Keep them** — They may still work but violate Google's ToS and risk account suspension."
+
+**If user chooses A (Remove):**
+
+1. Remove all `google*` entries from `auth.profiles`
+2. Remove `"google-gemini-cli"` from `auth.order`
+3. Remove any `google-gemini-cli/*` model refs from `agents.defaults.model.primary` and `fallbacks`
+4. For each agent in `agents.list`: if `model.primary` is `google-gemini-cli/*`, switch to the best available subscription model
+5. Remove `google-gemini-cli/*` from all cron job model assignments
+6. Remove per-agent `models.json` entries for `google-gemini-cli`
+7. Show summary of what was removed
+
+```bash
+# Verify removal
+openclaw models status | grep google
+# Should return nothing
+```
+
+**If user chooses B (Keep):** Proceed with warning. Google models will NOT be included in ZeroAPI routing.
+
+**If no Google profiles found:** Skip this step silently.
+
 ### Step 2: Ask Subscriptions
 
 Ask the user: **"Which AI subscriptions do you have?"**
@@ -154,7 +194,6 @@ Ask the user: **"Which AI subscriptions do you have?"**
 Present the provider table (see Supported Providers above). Record which providers and tiers the user has. If re-run, show current subscriptions and ask for confirmation or changes.
 
 Map subscriptions to available model pools:
-- Google AI Pro → all Gemini models (3.1 Pro, 3.1 Flash-Lite, etc.)
 - OpenAI Plus → GPT-5.4, GPT-5.4 mini, GPT-5.4 nano, etc.
 - OpenAI Pro → same models with higher rate limits
 - Kimi any tier → Kimi K2.5
@@ -177,7 +216,7 @@ Read all workspace directories under `~/.openclaw/`:
 - Find each workspace's `AGENTS.md` to understand its purpose
 - Detect the workspace's likely task categories (code, research, orchestration, etc.)
 - Record agent IDs and current model assignments
-- Specialist agents (codex, gemini, glm, etc.) get `null` workspace hints — they already have the right model and the plugin will not route them
+- Specialist agents (codex, glm, etc.) get `null` workspace hints — they already have the right model and the plugin will not route them
 
 ### Step 5: Scan Cron Jobs
 
@@ -213,23 +252,23 @@ Write `~/.openclaw/zeroapi-config.json` with this structure:
 
 ```json
 {
-  "version": "3.0.0",
+  "version": "3.1.0",
   "generated": "<ISO 8601 timestamp>",
   "benchmarks_date": "<fetched date from benchmarks.json>",
   "default_model": "<provider/model with highest intelligence>",
   "models": {
     "<provider/model-slug>": {
-      "context_window": 1000000,
-      "supports_vision": true,
-      "speed_tps": 122.2,
-      "ttft_seconds": 19.97,
+      "context_window": 1050000,
+      "supports_vision": false,
+      "speed_tps": 71.9,
+      "ttft_seconds": 170.4,
       "benchmarks": {
         "intelligence": 57.2,
-        "coding": 55.5,
-        "tau2": 0.956,
-        "terminalbench": 0.538,
-        "ifbench": 0.771,
-        "gpqa": 0.941
+        "coding": 57.3,
+        "tau2": 0.915,
+        "terminalbench": 0.576,
+        "ifbench": 0.739,
+        "gpqa": 0.920
       }
     }
   },
@@ -260,7 +299,6 @@ Write `~/.openclaw/zeroapi-config.json` with this structure:
 
 | Model | Context Window | Vision |
 |-------|---------------|--------|
-| Gemini 3.1 Pro / Flash / Flash-Lite | 1,000,000 | true |
 | GPT-5.4 / 5.4 mini / 5.4 nano | 1,050,000 | false |
 | GPT-5.3 Codex | 400,000 | false |
 | Kimi K2.5 | 256,000 | true |
@@ -269,7 +307,7 @@ Write `~/.openclaw/zeroapi-config.json` with this structure:
 | MiniMax-M2.7 | 205,000 | false |
 | Qwen3.5 397B | 262,000 | false |
 
-- `fast_ttft_max_seconds`: default 5. If the user's only fast-capable models have TTFT > 5s (e.g., Google-only setup where Flash-Lite is 7.2s), raise to 10.
+- `fast_ttft_max_seconds`: default 5.
 
 **Fallback chain rules for routing_rules:**
 - Every category's fallback chain must span **multiple providers** (cross-provider)
@@ -337,22 +375,22 @@ Current leaders per category from benchmarks.json (fetched 2026-04-04):
 
 | Category | Leader | Score | Provider | Notes |
 |----------|--------|-------|----------|-------|
-| Intelligence | GPT-5.4 / Gemini 3.1 Pro | 57.2 | OpenAI / Google | |
+| Intelligence | GPT-5.4 | 57.2 | OpenAI | |
 | Coding | GPT-5.4 | 57.3 | OpenAI | |
 | TAU-2 (raw) | GLM-4.7-Flash | 0.988 | Z AI | Raw TAU-2 leader, but composite ranking differs |
 | Orchestration (composite) | Qwen3.5 397B | 0.889 | Alibaba | 0.6*tau2 + 0.4*ifbench. Qwen Lite plan closed to new subs; GLM-5 (0.878) is best switchable option |
 | IFBench | Qwen3.5 397B | 79% | Alibaba | |
-| GPQA | Gemini 3.1 Pro | 94% | Google | |
+| GPQA | GPT-5.4 | 92% | OpenAI | |
 | Speed | GPT-5.4 nano | 206 t/s | OpenAI | |
+| Research/HLE | GPT-5.4 | 0.416 | OpenAI | |
 
-**Orchestration composite ranking** (0.6*tau2 + 0.4*ifbench): Qwen3.5 397B (0.889) > Gemini 3.1 Pro (0.882) > GLM-5 (0.878) > Kimi K2.5 (0.856). This differs from raw TAU-2 ranking where GLM-4.7-Flash leads. GLM-5 remains the practical orchestration recommendation because Qwen's Lite plan is closed to new subscribers and Gemini 3.1 Pro is typically the default model (no switch needed).
+**Orchestration composite ranking** (0.6*tau2 + 0.4*ifbench): Qwen3.5 397B (0.889) > GLM-5 (0.878) > Kimi K2.5 (0.856). GLM-5 remains the practical orchestration recommendation because Qwen's Lite plan is closed to new subscribers.
 
 **Key model profiles** (top models by intelligence):
 
 | Model | Provider | Intelligence | Coding | Speed | TTFT | Context |
 |-------|----------|-------------|--------|-------|------|---------|
 | GPT-5.4 | OpenAI | 57.2 | 57.3 | 72 t/s | 170s | 266K |
-| Gemini 3.1 Pro | Google | 57.2 | 55.5 | 122 t/s | 20s | 1M |
 | GPT-5.3 Codex | OpenAI | 54.0 | 53.1 | 77 t/s | 60s | 266K |
 | GLM-5 | Z AI | 49.8 | 44.2 | 63 t/s | 0.9s | 128K |
 | MiniMax-M2.7 | MiniMax | 49.6 | 41.9 | 41 t/s | 1.8s | 128K |
@@ -368,7 +406,7 @@ What happens for different prompts:
 | Prompt | Category | Routed To | Reason |
 |--------|----------|-----------|--------|
 | "refactor the auth module" | CODE | GPT-5.4 | coding 57.3 (keyword: refactor) |
-| "research the differences between WAL modes" | RESEARCH | Gemini 3.1 Pro | GPQA 94% (keyword: research) |
+| "research the differences between WAL modes" | RESEARCH | GPT-5.4 | GPQA 92% (keyword: research) |
 | "coordinate a 3-service pipeline" | ORCHESTRATE | GLM-5 | 0.6*tau2 + 0.4*ifbench composite (keyword: coordinate, pipeline) |
 | "quickly format this as markdown" | FAST | GLM-4.7-Flash | 85 t/s, TTFT 0.9s (keyword: quickly, format) |
 | "deploy to production" | HIGH RISK | stays on default | high_risk_keyword: deploy, production |
@@ -395,15 +433,15 @@ Per-job assignment, not per-workspace. Detected from cron job commands/descripti
 3. Maximum 3 fallbacks per category (primary + 3 = 4 candidates)
 4. Plugin does NOT implement retry logic — OpenClaw's built-in failover handles exponential backoff, auth rotation, and cross-provider failover
 
-Example fallback chains (6-provider setup):
+Example fallback chains (5-provider setup):
 
 | Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |----------|---------|------------|------------|------------|
-| Code | GPT-5.4 (OpenAI) | Gemini 3.1 Pro (Google) | GLM-5 (Z AI) | Kimi K2.5 (Kimi) |
-| Research | Gemini 3.1 Pro (Google) | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Qwen3.5 (Alibaba) |
-| Orchestration | GLM-5 (Z AI) | Kimi K2.5 (Kimi) | Gemini 3.1 Pro (Google) | — |
-| Math | GPT-5.4 (OpenAI) | Gemini 3.1 Pro (Google) | GLM-5 (Z AI) | — |
-| Fast | GLM-4.7-Flash (Z AI) | GPT-5.4 nano (OpenAI) | Gemini 3.1 Flash-Lite (Google) | — |
+| Code | GPT-5.4 (OpenAI) | GLM-5 (Z AI) | Kimi K2.5 (Kimi) | MiniMax-M2.7 (MiniMax) |
+| Research | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) |
+| Orchestration | GLM-5 (Z AI) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) | — |
+| Math | GPT-5.4 (OpenAI) | GLM-5 (Z AI) | Qwen3.5 (Alibaba) | — |
+| Fast | GLM-4.7-Flash (Z AI) | GPT-5.4 nano (OpenAI) | MiniMax-M2.7 (MiniMax) | — |
 
 ## Risk-Tiered Failure Policy
 
@@ -421,8 +459,8 @@ Plugin logs all routing decisions to `~/.openclaw/logs/zeroapi-routing.log`:
 
 ```
 2026-04-05T10:30:15Z agent=senti category=code model=openai-codex/gpt-5.4 reason=keyword:refactor
-2026-04-05T10:30:45Z agent=main category=default model=google-gemini-cli/gemini-3.1-pro-preview reason=no_match
-2026-04-05T10:31:02Z agent=senti category=research model=google-gemini-cli/gemini-3.1-pro-preview reason=keyword:analyze
+2026-04-05T10:30:45Z agent=main category=default model=openai-codex/gpt-5.4 reason=no_match
+2026-04-05T10:31:02Z agent=senti category=research model=openai-codex/gpt-5.4 reason=keyword:analyze
 ```
 
 ## Staleness Policy
@@ -457,6 +495,7 @@ Safe to re-run `/zeroapi` at any time:
 - Does NOT route specialist agents that already have dedicated models
 - Does NOT route cron-triggered messages — cron models are set in openclaw.json
 - Does NOT include Anthropic/Claude — subscription no longer covers OpenClaw
+- Does NOT include Google/Gemini — CLI OAuth declared ToS violation
 - Does NOT implement retry/failover — OpenClaw's built-in system handles this
 
 ## Troubleshooting
@@ -476,9 +515,8 @@ Safe to re-run `/zeroapi` at any time:
 
 | Setup | Monthly | Annual (eff/mo) | Providers |
 |-------|---------|----------------|-----------|
-| Google only | $20 | $17 | 1 |
-| Google + OpenAI | $40 | $37 | 2 |
-| Google + OpenAI + GLM | $50 | $44 | 3 |
-| Google + OpenAI + GLM + Kimi | $69 | $59 | 4 |
-| + MiniMax | $79 | $67 | 5 |
-| + Qwen | $129 | $117 | 6 |
+| OpenAI only | $20 | $17 | 1 |
+| OpenAI + GLM | $30 | $24 | 2 |
+| OpenAI + GLM + Kimi | $49 | $39 | 3 |
+| + MiniMax | $59 | $47 | 4 |
+| + Qwen | $109 | $89 | 5 |
