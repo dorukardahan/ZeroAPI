@@ -40,7 +40,7 @@ The model is switched for that turn only. The session, conversation history, and
 
 ## Task Categories
 
-The plugin matches keywords in each message to one of five routing categories. No match stays on the default model.
+The plugin matches keywords in each message to one of six routing categories. No match stays on the default model.
 
 | Category | Primary Benchmark | Routing Signals | Example Prompts |
 |----------|------------------|-----------------|-----------------|
