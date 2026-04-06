@@ -63,17 +63,19 @@ The plugin classifies each message into one of 6 categories using keyword/regex 
 
 | Category | Primary Benchmark | Secondary | Routing Keywords |
 |----------|------------------|-----------|-----------------|
-| **Code** | `coding_index` (reweighted: 0.85*terminalbench + 0.15*scicode) | `terminalbench` | implement, function, class, refactor, fix, test, PR, diff, migration, debug, component, endpoint |
+| **Code** | `coding_index` (reweighted: 0.85\*terminalbench + 0.15\*scicode) | `terminalbench` | implement, function, class, refactor, fix, test, PR, diff, migration, debug, component, endpoint |
 | **Research** | `gpqa`, `hle` | `lcr`, `scicode` | research, analyze, explain, compare, paper, evidence, deep dive, investigate, study |
-| **Orchestration** | composite: 0.6*tau2 + 0.4*ifbench | — | orchestrate, coordinate, pipeline, workflow, sequence, parallel, fan-out |
+| **Orchestration** | composite: 0.6\*tau2 + 0.4\*ifbench | — | orchestrate, coordinate, pipeline, workflow, sequence, parallel, fan-out |
 | **Math** | `math_index` | `aime_25` | calculate, solve, equation, proof, integral, probability, optimize, formula |
 | **Fast** | speed (t/s), TTFT hard filter: <5s | — | quick, simple, format, convert, translate, rename, one-liner, list |
 | **Default** | `intelligence` index | — | No keyword match → best overall model |
 
 **Benchmark composite adjustments:**
-- **coding_index**: Original AA composite is 66.7% terminalbench + 33.3% scicode. SciCode measures scientific coding, not software engineering. Plugin uses: `0.85 * terminalbench + 0.15 * scicode`.
-- **orchestration**: TAU-2 alone measures telecom tool sequences, not multi-agent coordination. Plugin uses: `0.6 * tau2 + 0.4 * ifbench`.
-- **fast TTFT filter**: GPT-5.4 has 170s TTFT. Fast category hard-filters any model with TTFT > 5s regardless of speed score.
+- **coding_index**: `0.85 * terminalbench + 0.15 * scicode` (AA's 66.7/33.3 split overweights SciCode for software engineering).
+- **orchestration**: `0.6 * tau2 + 0.4 * ifbench` (TAU-2 alone measures telecom tool sequences, not multi-agent coordination).
+- **fast TTFT filter**: Hard-filters any model with TTFT > 5s regardless of speed score.
+
+See `references/benchmarks.md` for current leaders and full model profiles.
 
 ## Two-Stage Routing
 
@@ -94,332 +96,89 @@ From models that passed Stage 1, pick the benchmark leader for the detected task
 
 ## Setup Flow
 
-This is the wizard that runs when `/zeroapi` is invoked. Follow these steps in order.
+Follow these steps in order when `/zeroapi` is invoked.
 
 ### Step 1: Detect Existing Setup
 
-Check if `~/.openclaw/zeroapi-config.json` exists.
+Check for `~/.openclaw/zeroapi-config.json`, Anthropic OAuth profiles, and Google Gemini CLI profiles in `openclaw.json`.
 
-- **Re-run**: Read existing config, show current subscriptions and routing rules. Ask: "What changed? New subscription, dropped provider, or full reconfiguration?"
-- **First run**: Continue to Step 2.
-
-### Step 1b: Detect Anthropic OAuth Profiles
-
-Check the user's `openclaw.json` for Anthropic OAuth profiles.
-
-If `auth.profiles` contains entries like `"anthropic:user@email.com"` with `"mode": "oauth"`, these are **subscription-based Anthropic tokens** that no longer cover OpenClaw usage (as of April 4, 2026). They will incur Extra Usage charges if left active.
-
-**If Anthropic OAuth profiles are found:** Warn the user and offer to remove them. Clean up all `anthropic/*` refs from config if they agree.
-
-**If no Anthropic profiles found:** Skip this step silently.
-
-### Step 1c: Detect Google OAuth Profiles
-
-Check the user's `openclaw.json` for Google OAuth profiles.
-
-If `auth.profiles` contains entries with `google-gemini-cli` or similar, these violate Google's ToS for third-party CLI OAuth usage (as of March 25, 2026).
-
-**If Google OAuth profiles are found:** Warn the user and offer to remove them. Clean up all `google-gemini-cli/*` refs if they agree.
-
-**If no Google profiles found:** Skip this step silently.
+- **Re-run**: Read existing config, show current state. Ask: "What changed?"
+- **Anthropic OAuth found**: Warn user (subscription no longer covers OpenClaw). Offer to clean up `anthropic/*` refs.
+- **Google Gemini CLI OAuth found**: Warn user (ToS violation). Offer to clean up `google-gemini-cli/*` refs.
+- **First run / nothing to clean**: Continue to Step 2.
 
 ### Step 2: Ask Subscriptions
 
-Ask the user: **"Which AI subscriptions do you have?"**
+Present the Supported Providers table. Record which providers and tiers the user has.
 
-Present the provider table (see Supported Providers above). Record which providers and tiers the user has. If re-run, show current subscriptions and ask for confirmation or changes.
+Map to model pools: OpenAI → GPT-5.4 family; Kimi → K2.5; Z AI → GLM-5.1/5/Turbo/4.7-Flash; MiniMax → M2.7; Alibaba → Qwen3.5 397B.
 
-Map subscriptions to available model pools:
-- OpenAI Plus → GPT-5.4, GPT-5.4 mini, GPT-5.4 nano, etc.
-- OpenAI Pro → same models with higher rate limits
-- Kimi any tier → Kimi K2.5
-- Z AI any tier → GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7, GLM-4.7-Flash
-- MiniMax any tier → MiniMax-M2.7
-- Alibaba Pro → Qwen3.5 397B
+Ask user to run `openclaw models status`. Remove any `missing`/`auth_expired` models.
 
-### Step 3: Verify Providers
+### Step 3: Generate Config
 
-Ask the user to run:
-```
-openclaw models status
-```
+Scan workspaces (read `AGENTS.md` for purpose, detect task categories, record agent IDs and current models; specialist agents get `null` hints). Scan cron jobs (detect task types, map to model criteria — preview only, user opts in).
 
-Any model showing `missing` or `auth_expired` is not usable. Remove it from available pools. Models showing `ready` or `healthy` are confirmed.
+Read `benchmarks.json`, check `fetched` date (< 30d: proceed; 30-60d: warn; > 60d: require override). Filter to subscribed + authenticated models only.
 
-### Step 4: Scan Workspaces
-
-Read all workspace directories under `~/.openclaw/`:
-- Find each workspace's `AGENTS.md` to understand its purpose
-- Detect the workspace's likely task categories (code, research, orchestration, etc.)
-- Record agent IDs and current model assignments
-- Specialist agents (codex, glm, etc.) get `null` workspace hints — they already have the right model and the plugin will not route them
-
-### Step 5: Scan Cron Jobs
-
-Read the user's cron configuration from `openclaw.json`:
-- For each cron job, detect the task type from its command/description
-- Map to model criteria (see Cron Model Assignment section below)
-- First run: preview-only, do not auto-assign. User must explicitly opt in per job.
-- Re-run: show diff against current assignments, require confirmation.
-
-### Step 6: Read Benchmarks
-
-Read `benchmarks.json` from the skill repo. Filter to models available through the user's subscriptions only.
-
-Check the `fetched` date:
-- < 30 days old: proceed normally
-- 30-60 days old: warn user ("Benchmark data is {N} days old. Consider updating ZeroAPI for fresh data.")
-- \> 60 days old: require explicit override to proceed ("Benchmark data is {N} days old. Type 'proceed anyway' to continue with stale data.")
-
-### Step 7: Select Category Leaders
-
-For each task category, pick the benchmark leader from available (subscribed + authenticated) models:
-
-- **Code**: highest `coding_index` (reweighted) among available
-- **Research**: highest `gpqa` among available
-- **Orchestration**: highest `0.6*tau2 + 0.4*ifbench` among available
-- **Math**: highest `math_index` among available (fallback: `aime_25`)
-- **Fast**: highest speed (t/s) among available models with TTFT < 5s
-- **Default**: highest `intelligence` among available
-
-### Step 8: Generate zeroapi-config.json
-
-Write `~/.openclaw/zeroapi-config.json` with this structure:
+Select category leaders by benchmark ranking. Generate `~/.openclaw/zeroapi-config.json`:
 
 ```json
 {
   "version": "3.1.0",
-  "generated": "<ISO 8601 timestamp>",
-  "benchmarks_date": "<fetched date from benchmarks.json>",
-  "default_model": "<provider/model with highest intelligence>",
-  "models": {
-    "<provider/model-slug>": {
-      "context_window": 1050000,
-      "supports_vision": false,
-      "speed_tps": 71.9,
-      "ttft_seconds": 170.4,
-      "benchmarks": {
-        "intelligence": 57.2,
-        "coding": 57.3,
-        "tau2": 0.915,
-        "terminalbench": 0.576,
-        "ifbench": 0.739,
-        "gpqa": 0.920
-      }
-    }
-  },
+  "generated": "<ISO 8601>",
+  "benchmarks_date": "<fetched date>",
+  "default_model": "<highest intelligence>",
+  "models": { "<provider/model>": { "context_window": ..., "supports_vision": ..., "speed_tps": ..., "ttft_seconds": ..., "benchmarks": { ... } } },
   "routing_rules": {
-    "code": { "primary": "<best coding model>", "fallbacks": ["<2nd>", "<3rd>"] },
-    "research": { "primary": "<best research model>", "fallbacks": [...] },
-    "orchestration": { "primary": "<best orchestration model>", "fallbacks": [...] },
-    "math": { "primary": "<best math model>", "fallbacks": [...] },
-    "fast": { "primary": "<fastest model with TTFT<5s>", "fallbacks": [...] }
+    "code": { "primary": "...", "fallbacks": ["..."] },
+    "research": { ... }, "orchestration": { ... }, "math": { ... }, "fast": { ... }
   },
-  "workspace_hints": {
-    "<agent-id>": ["code", "research"],
-    "<specialist-agent>": null
-  },
-  "keywords": {
-    "code": ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint"],
-    "research": ["research", "analyze", "explain", "compare", "paper", "evidence", "investigate", "study"],
-    "orchestration": ["orchestrate", "coordinate", "pipeline", "workflow", "sequence", "parallel", "fan-out"],
-    "math": ["calculate", "solve", "equation", "proof", "integral", "probability", "optimize", "formula"],
-    "fast": ["quick", "simple", "format", "convert", "translate", "rename", "one-liner", "list"]
-  },
+  "workspace_hints": { "<agent-id>": ["code", "research"], "<specialist>": null },
+  "keywords": { "code": [...], "research": [...], ... },
   "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"]
 }
 ```
 
-**Notes on fields not in benchmarks.json:**
-- `context_window` and `supports_vision` are NOT in benchmarks.json (AA API doesn't provide them). Use these known values:
+Model metadata (context_window, supports_vision) is NOT in benchmarks.json. Use hardcoded values from `references/benchmarks.md`. Fallback chains must be cross-provider, benchmark-ordered, max 3 per category.
 
-| Model | Context Window | Vision |
-|-------|---------------|--------|
-| GPT-5.4 / 5.4 mini / 5.4 nano | 1,050,000 | false |
-| GPT-5.3 Codex | 400,000 | false |
-| Kimi K2.5 | 256,000 | true |
-| GLM-5.1 / GLM-5 / GLM-5-Turbo | 128,000 | false |
-| GLM-4.7-Flash | 128,000 | false |
-| MiniMax-M2.7 | 205,000 | false |
-| Qwen3.5 397B | 262,000 | false |
+Back up `openclaw.json` first (`openclaw.json.bak-zeroapi-<timestamp>`). Set default model and fallback chain. Do NOT modify workspace files.
 
-- `fast_ttft_max_seconds`: default 5.
-
-**Fallback chain rules for routing_rules:**
-- Every category's fallback chain must span **multiple providers** (cross-provider)
-- Fallback order follows benchmark ranking within the category
-- Maximum 3 fallbacks per category (primary + 3 = 4 candidates max)
-
-### Step 9: Update openclaw.json
-
-Back up first: `cp openclaw.json openclaw.json.bak-zeroapi-<timestamp>`
-
-Then update:
-
-1. **Default model**: Set to the highest-intelligence model from available subscriptions
-2. **Fallback chain**: Cross-provider, benchmark-ordered (set in `agents.defaults.model.fallbacks`)
-3. **Cron models**: Per-job assignment (conservative — preview first, user opts in)
-
-Do NOT modify workspace files (AGENTS.md, MEMORY.md, etc.). Plugin-based routing does not touch workspace files.
-
-### Step 10: Install Plugin
-
-You are running on the same machine as OpenClaw (local or VPS). You have `exec` tool access. Do everything yourself — do NOT ask the user to run commands.
+### Step 4: Install Plugin
 
 ```bash
-# Check if already installed
 ls ~/.openclaw/plugins/zeroapi-router/index.ts 2>/dev/null
-```
-
-If not installed, clone the repo and copy the plugin:
-```bash
+# If missing or outdated:
 git clone https://github.com/dorukardahan/ZeroAPI.git /tmp/zeroapi-install 2>/dev/null || (cd /tmp/zeroapi-install && git pull)
 mkdir -p ~/.openclaw/plugins/zeroapi-router
 cp /tmp/zeroapi-install/plugin/*.ts /tmp/zeroapi-install/plugin/package.json ~/.openclaw/plugins/zeroapi-router/
 rm -rf /tmp/zeroapi-install
 ```
 
-If already installed but outdated (check version in package.json), re-copy from a fresh clone.
+Plugin auto-loads on gateway restart.
 
-The plugin auto-loads on gateway restart. No `openclaw plugins install` needed — direct file copy works.
+### Step 5: Summary & Restart
 
-### Step 11: Summary & Restart
+Show summary: default model, routing rules per category, cron assignments (if opted in), workspace hints.
 
-Show the user a summary of all changes:
-- Default model set to: `<model>`
-- Routing rules per category (primary + fallbacks)
-- Cron model assignments (if opted in)
-- Workspace hints applied
-
-Then restart the gateway yourself:
+Restart gateway:
 ```bash
-# Try systemd first (Linux/VPS)
 systemctl --user restart openclaw-gateway.service 2>/dev/null && echo "Gateway restarted via systemd" || \
-# Fallback: find and restart the process (macOS/local)
 (pkill -f "openclaw.*gateway" && sleep 2 && openclaw gateway start &) 2>/dev/null && echo "Gateway restarted" || \
 echo "Could not auto-restart. Ask the user to restart OpenClaw manually."
 ```
 
-Verify:
-```bash
-openclaw models status
-```
-
-## Benchmark Data (April 2026)
-
-Current leaders per category from benchmarks.json (fetched 2026-04-04):
-
-| Category | Leader | Score | Provider | Notes |
-|----------|--------|-------|----------|-------|
-| Intelligence | GPT-5.4 | 57.2 | OpenAI | |
-| Coding | GPT-5.4 | 57.3 | OpenAI | |
-| TAU-2 (raw) | GLM-4.7-Flash | 0.988 | Z AI | Raw TAU-2 leader, but composite ranking differs |
-| Orchestration (composite) | Qwen3.5 397B | 0.889 | Alibaba | 0.6*tau2 + 0.4*ifbench. Qwen Lite plan closed to new subs; GLM-5.1 (0.88+) is best switchable option |
-| IFBench | Qwen3.5 397B | 79% | Alibaba | |
-| GPQA | GPT-5.4 | 92% | OpenAI | |
-| Speed | GPT-5.4 nano | 206 t/s | OpenAI | |
-| Research/HLE | GPT-5.4 | 0.416 | OpenAI | |
-
-**Orchestration composite ranking** (0.6*tau2 + 0.4*ifbench): Qwen3.5 397B (0.889) > GLM-5.1 (0.88+) > GLM-5 (0.878) > Kimi K2.5 (0.856). GLM-5.1 is the practical orchestration recommendation because Qwen's Lite plan is closed to new subscribers.
-
-**Key model profiles** (top models by intelligence):
-
-| Model | Provider | Intelligence | Coding | Speed | TTFT | Context |
-|-------|----------|-------------|--------|-------|------|---------|
-| GPT-5.4 | OpenAI | 57.2 | 57.3 | 72 t/s | 170s | 266K |
-| GPT-5.3 Codex | OpenAI | 54.0 | 53.1 | 77 t/s | 60s | 266K |
- GLM-5.1 | Z AI | 49.8 | 44.2 | 63 t/s | 0.9s | 128K |
-| MiniMax-M2.7 | MiniMax | 49.6 | 41.9 | 41 t/s | 1.8s | 128K |
-| Kimi K2.5 | Kimi | 46.8 | 39.5 | 32 t/s | 2.4s | 128K |
-| Qwen3.5 397B | Alibaba | 45.0 | 41.3 | 59 t/s | 1.4s | 128K |
-
-Source: Artificial Analysis Intelligence Index v4.0.4, fetched 2026-04-04. Full data in `benchmarks.json`.
-
-## Routing Examples
-
-What happens for different prompts:
-
-| Prompt | Category | Routed To | Reason |
-|--------|----------|-----------|--------|
-| "refactor the auth module" | CODE | GPT-5.4 | coding 57.3 (keyword: refactor) |
-| "research the differences between WAL modes" | RESEARCH | GPT-5.4 | GPQA 92% (keyword: research) |
-| "coordinate a 3-service pipeline" | ORCHESTRATE  GLM-5.1 | 0.6*tau2 + 0.4*ifbench composite (keyword: coordinate, pipeline) |
-| "quickly format this as markdown" | FAST | GLM-4.7-Flash | 85 t/s, TTFT 0.9s (keyword: quickly, format) |
-| "deploy to production" | HIGH RISK | stays on default | high_risk_keyword: deploy, production |
-| "buna bi bak" | DEFAULT | stays on default | no keyword match |
-
-## Cron Model Assignment
-
-Per-job assignment, not per-workspace. Detected from cron job commands/descriptions.
-
-| Cron Task Type | Detection Signal | Model Criteria |
-|---------------|-----------------|---------------|
-| Health check / status | Reads file, checks thresholds | Cheapest fast model (high ifbench, low cost) |
-| Content generation | Writes creative content | Highest intelligence |
-| Code sync / CI | Checks repos, runs scripts | Highest coding_index |
-| System monitoring | Shell commands, thresholds | Moderate ifbench, fast TTFT |
-| Engagement / moderation | Social media, judgment | High intelligence, moderate speed |
-
-**Conservative defaults**: First run is preview-only. User explicitly opts in per job. Re-run shows diff and requires confirmation for changes.
-
-## Fallback Chain Rules
-
-1. Every chain spans **multiple providers** (cross-provider required)
-2. Fallback order follows benchmark ranking within the category
-3. Maximum 3 fallbacks per category (primary + 3 = 4 candidates)
-4. Plugin does NOT implement retry logic — OpenClaw's built-in failover handles exponential backoff, auth rotation, and cross-provider failover
-
-Example fallback chains (5-provider setup):
-
-| Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
-|----------|---------|------------|------------|------------|
-| Code | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | MiniMax-M2.7 (MiniMax) |
-| Research | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) |
-| Orchestration | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) | — |
-| Math | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Qwen3.5 (Alibaba) | — |
-| Fast | GLM-4.7-Flash (Z AI) | GPT-5.4 nano (OpenAI) | MiniMax-M2.7 (MiniMax) | — |
-
-## Risk-Tiered Failure Policy
-
-| Risk Level | Examples | On Failure |
-|-----------|---------|-----------|
-| **Low** | Format, translate, simple query | Fall back to default model silently |
-| **Medium** | Code changes, research | Fall back to next benchmark-ranked model, log routing event |
-| **High** | Infrastructure commands, cron with side effects | Do NOT auto-route. Use default model only. Log warning. |
-
-High-risk detection: keywords `deploy`, `delete`, `drop`, `rm`, `production`, `credentials`, `secret`, `password` cause the plugin to skip routing entirely and stay on the default model.
-
-## Observability
-
-Plugin logs all routing decisions to `~/.openclaw/logs/zeroapi-routing.log`:
-
-```
-2026-04-05T10:30:15Z agent=senti category=code model=openai-codex/gpt-5.4 reason=keyword:refactor
-2026-04-05T10:30:45Z agent=main category=default model=openai-codex/gpt-5.4 reason=no_match
-2026-04-05T10:31:02Z agent=senti category=research model=openai-codex/gpt-5.4 reason=keyword:analyze
-```
-
-## Staleness Policy
-
-`benchmarks.json` contains a `fetched` date. Check this during setup:
-
-| Age | Action |
-|-----|--------|
-| < 30 days | Proceed normally |
-| 30-60 days | Warn user, suggest updating ZeroAPI |
-| > 60 days | Require explicit override to proceed |
-
-Update process: repo maintainer runs AA API fetch script, commits new `benchmarks.json`, pushes release.
+Verify with `openclaw models status`.
 
 ## Re-run Behavior
 
 Safe to re-run `/zeroapi` at any time:
 
-- `zeroapi-config.json` is the single source of truth — overwritten on re-run
-- `openclaw.json` changes are backed up (`openclaw.json.bak-zeroapi-<timestamp>`) before modification
+- `zeroapi-config.json` is overwritten on re-run
+- `openclaw.json` changes are backed up before modification
 - Cron model changes require explicit opt-in each time
 - Plugin auto-reloads config on gateway restart
-- No AGENTS.md modifications — plugin-based routing does not touch workspace files
+- No workspace file modifications
 - Show diff of changes before applying
 
 ## What ZeroAPI Does NOT Do
@@ -435,25 +194,15 @@ Safe to re-run `/zeroapi` at any time:
 - Does NOT implement retry/failover — OpenClaw's built-in system handles this
 - Includes a repo-side self-check helper: `bash scripts-zeroapi-doctor.sh`
 
-## Troubleshooting
+## References
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Plugin not routing | Plugin not installed or gateway not restarted | Run `openclaw plugins install zeroapi-router` and restart gateway |
-| Wrong model selected | Keyword matched unexpected category | Check `~/.openclaw/logs/zeroapi-routing.log` for `reason:` field. Adjust keywords in `zeroapi-config.json` |
-| "No API provider registered" | Missing `api` field in provider config | See `references/provider-config.md` |
-| Model shows `missing` | Model ID mismatch in config | Verify model slugs with `openclaw models list` |
-| Auth error (401/403) | Token expired | Re-authenticate provider. See `references/oauth-setup.md` |
-| High-risk task gets routed | Missing keyword in `high_risk_keywords`, weak conservative classification, or runtime/config drift | Add the keyword to `high_risk_keywords`, inspect routing logs, and verify `zeroapi-config.json` vs `openclaw.json` |
-| Stale benchmark warning | `benchmarks.json` older than 30 days | Update ZeroAPI repo (`git pull`) for fresh benchmark data |
-| Config not loading | JSON syntax error in config | Validate `zeroapi-config.json` with `cat ~/.openclaw/zeroapi-config.json \| python3 -m json.tool` |
-
-## Cost Summary
-
-| Setup | Monthly | Annual (eff/mo) | Providers |
-|-------|---------|----------------|-----------|
-| OpenAI only | $20 | $17 | 1 |
-| OpenAI + GLM | $30 | $24 | 2 |
-| OpenAI + GLM + Kimi | $49 | $39 | 3 |
-| + MiniMax | $59 | $47 | 4 |
-| + Qwen | $109 | $89 | 5 |
+| File | Contents |
+|------|----------|
+| `references/benchmarks.md` | Current benchmark leaders, model profiles, context window / vision metadata |
+| `references/routing-examples.md` | Example prompts with routing decisions |
+| `references/cron-config.md` | Cron model assignment rules, fallback chain rules, example chains |
+| `references/risk-policy.md` | Risk-tiered failure policy, observability/log format, staleness policy |
+| `references/cost-summary.md` | Subscription cost comparison table |
+| `references/troubleshooting.md` | Common issues and fixes |
+| `references/provider-config.md` | Provider-specific configuration details |
+| `references/oauth-setup.md` | OAuth setup instructions per provider |

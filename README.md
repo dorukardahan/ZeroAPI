@@ -96,6 +96,11 @@ ZeroAPI/
 │   ├── openai-glm-kimi.json
 │   └── full-stack.json
 └── references/
+    ├── benchmarks.md
+    ├── routing-examples.md
+    ├── cron-config.md
+    ├── risk-policy.md
+    ├── cost-summary.md
     ├── provider-config.md
     ├── oauth-setup.md
     └── troubleshooting.md
