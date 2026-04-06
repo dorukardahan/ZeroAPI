@@ -14,195 +14,238 @@ metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"
 
 # ZeroAPI v3.1 — Plugin-Based Model Routing
 
-You are an OpenClaw setup agent. ZeroAPI routes eligible messages to a policy-selected AI model using an OpenClaw **gateway plugin** (`before_model_resolve` hook). You do NOT route messages yourself — the plugin does it at runtime as a lightweight policy layer on top of OpenClaw. Your job is to **configure** the plugin: scan the user's setup, generate `zeroapi-config.json`, update `openclaw.json`, and install the plugin.
+You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
-This is NOT prompt-based routing. The plugin intercepts eligible messages at the gateway level using keyword/regex matching and conservative skip rules. No LLM call, no context serialization, no sub-agent spawning.
+This is **not prompt-based routing**. There is no extra LLM routing call, no context serialization, and no sub-agent layer in the runtime path.
 
-## Provider Exclusions
+## Provider exclusions
 
-**Anthropic (Claude):** As of April 4, 2026, Anthropic Claude subscriptions no longer cover third-party tools like OpenClaw ([source](https://x.com/bcherny/status/2040206440556826908)). Users who relied on Claude as their default model need a migration path.
+ZeroAPI only routes across subscription-covered alternatives.
 
-**Google (Gemini):** As of March 25, 2026, Google declared CLI OAuth usage with third-party tools a ToS violation. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key usage (AI Studio/Vertex) is separate billing, not subscription-covered.
+- **Anthropic (Claude):** as of 2026-04-04, Claude subscriptions no longer cover OpenClaw usage in third-party tools. Anthropic models should not be included in ZeroAPI routing.
+- **Google (Gemini):** CLI OAuth usage with third-party tools is a ToS violation as of 2026-03-25. Google/Gemini should not be included in ZeroAPI routing.
 
-ZeroAPI configures routing across subscription-covered alternatives only. No Anthropic/Claude or Google/Gemini models are included in routing.
-
-## How It Works
+## How it works
 
 Three layers:
 
-```
-Layer 1: benchmarks.json (embedded in repo, updated by maintainer)
-  155 models, 5 providers, 15 benchmarks from Artificial Analysis API v2
+```text
+Layer 1: benchmarks.json
+  Embedded benchmark data maintained in the repo.
 
-Layer 2: SKILL.md (this file — runs once via /zeroapi)
-  Scans OpenClaw → asks subscriptions → generates plugin config
-  Writes ~/.openclaw/zeroapi-config.json + updates openclaw.json
-  Note: zeroapi-config.json is policy config; openclaw.json remains runtime authority
+Layer 2: SKILL.md (/zeroapi runs once)
+  Scans setup, chooses model pools, writes config, installs plugin.
 
-Layer 3: Plugin (before_model_resolve hook — runs on eligible messages)
-  Two-stage routing: capability filter → benchmark ranking
-  Returns modelOverride → OpenClaw may switch model for this turn
-  Same session, full context, no extra LLM routing call, low overhead
+Layer 3: Plugin runtime (before_model_resolve)
+  Capability filter -> conservative classification -> category leader selection.
 ```
 
-## Supported Providers
+Important authority order:
 
-Five subscription-based providers. Anthropic and Google excluded.
+1. **OpenClaw runtime** (`openclaw.json`) is the runtime authority.
+2. **ZeroAPI config** (`zeroapi-config.json`) is policy/config input for the plugin.
+3. Plugin may suggest a `modelOverride` on eligible turns only.
 
-| Provider | OpenClaw ID | Auth | Tiers (Monthly) | Annual |
-|----------|------------|------|-----------------|--------|
-| OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus $20/mo, Pro $200/mo | — |
-| Kimi | `kimi-coding` | API key | Moderato $19, Allegretto $39, Allegro $99, Vivace $199 | ~20% off |
-| Z AI (GLM) | `zai` | API key (zai-coding-global) | Lite $10, Pro $30, Max $80 | 30% off |
-| MiniMax | `minimax` | OAuth portal | Starter $10, Plus $20, Max $50, Ultra-HS $150 | 17% off |
-| Alibaba (Qwen) | `modelstudio` | API key (coding plan) | Pro $50 (Lite $10 closed to new subs) | — |
+## Supported providers
 
-## Task Categories & Benchmark Mapping
+Five subscription-based providers are currently supported by the routing policy.
 
-The plugin classifies each message into one of 6 categories using keyword/regex matching, then selects the benchmark leader from available models.
+| Provider | OpenClaw ID | Auth | Tiers |
+|----------|-------------|------|-------|
+| OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus, Pro |
+| Kimi | `kimi-coding` | API key | Moderato, Allegretto, Allegro, Vivace |
+| Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
+| MiniMax | `minimax` | OAuth portal | Starter, Plus, Max, Ultra-HS |
+| Alibaba (Qwen) | `modelstudio` | API key | Pro |
 
-| Category | Primary Benchmark | Secondary | Routing Keywords |
-|----------|------------------|-----------|-----------------|
-| **Code** | `coding_index` (reweighted: 0.85\*terminalbench + 0.15\*scicode) | `terminalbench` | implement, function, class, refactor, fix, test, PR, diff, migration, debug, component, endpoint |
-| **Research** | `gpqa`, `hle` | `lcr`, `scicode` | research, analyze, explain, compare, paper, evidence, deep dive, investigate, study |
-| **Orchestration** | composite: 0.6\*tau2 + 0.4\*ifbench | — | orchestrate, coordinate, pipeline, workflow, sequence, parallel, fan-out |
-| **Math** | `math_index` | `aime_25` | calculate, solve, equation, proof, integral, probability, optimize, formula |
-| **Fast** | speed (t/s), TTFT hard filter: <5s | — | quick, simple, format, convert, translate, rename, one-liner, list |
-| **Default** | `intelligence` index | — | No keyword match → best overall model |
+See `references/cost-summary.md` for bundle examples.
 
-**Benchmark composite adjustments:**
-- **coding_index**: `0.85 * terminalbench + 0.15 * scicode` (AA's 66.7/33.3 split overweights SciCode for software engineering).
-- **orchestration**: `0.6 * tau2 + 0.4 * ifbench` (TAU-2 alone measures telecom tool sequences, not multi-agent coordination).
-- **fast TTFT filter**: Hard-filters any model with TTFT > 5s regardless of speed score.
+## Task categories and routing basis
 
-See `references/benchmarks.md` for current leaders and full model profiles.
+ZeroAPI classifies each eligible message into one of six categories, then picks the best available model for that category.
 
-## Two-Stage Routing
+| Category | Primary Basis | Secondary | Typical Keywords |
+|----------|---------------|-----------|------------------|
+| Code | `coding_index` (reweighted) | `terminalbench` | implement, function, class, refactor, fix, test, debug, diff |
+| Research | `gpqa`, `hle` | `lcr`, `scicode` | research, analyze, explain, compare, investigate |
+| Orchestration | `0.6*tau2 + 0.4*ifbench` | — | orchestrate, coordinate, pipeline, workflow, parallel |
+| Math | `math_index` | `aime_25` | calculate, solve, proof, optimize, formula |
+| Fast | speed + TTFT hard filter | — | quick, simple, format, convert, rename, one-liner |
+| Default | intelligence index | — | no keyword match |
 
-### Stage 1: Capability Filter (hard requirements)
+Conservative adjustments:
 
-Before any benchmark comparison, eliminate models that cannot handle the task:
+- **Coding:** weight software engineering more heavily than scientific coding.
+- **Orchestration:** use a composite, not raw TAU-2 alone.
+- **Fast:** hard-filter slow-TTFT models even if throughput is high.
+- **High-risk prompts:** skip routing entirely and stay on default.
 
-| Check | Method | On Failure |
-|-------|--------|------------|
-| Context window | Estimate tokens (chars / 4), compare to model's `max_context_tokens` | Skip model |
-| Vision/multimodal | Detect image attachments in message | Skip text-only models |
-| Provider auth | Check auth profile status from OpenClaw runtime | Skip unauthenticated providers |
-| Rate limit | Check cooldown state | Skip rate-limited models |
+See `references/benchmarks.md`, `references/routing-examples.md`, and `references/risk-policy.md` for the detailed tables.
 
-### Stage 2: Benchmark Ranking (among survivors)
+## Two-stage runtime routing
 
-From models that passed Stage 1, pick the benchmark leader for the detected task category. If the selected model equals the current default, skip (no unnecessary switch). If no keyword matched, stay on default (no override returned).
+### Stage 1: capability filter
 
-## Setup Flow
+Eliminate models that cannot handle the request:
 
-Follow these steps in order when `/zeroapi` is invoked.
+- context window too small
+- vision required but unsupported
+- provider auth missing/expired
+- provider unavailable or cooling down
 
-### Step 1: Detect Existing Setup
+### Stage 2: category selection
 
-Check for `~/.openclaw/zeroapi-config.json`, Anthropic OAuth profiles, and Google Gemini CLI profiles in `openclaw.json`.
+Among surviving models:
 
-- **Re-run**: Read existing config, show current state. Ask: "What changed?"
-- **Anthropic OAuth found**: Warn user (subscription no longer covers OpenClaw). Offer to clean up `anthropic/*` refs.
-- **Google Gemini CLI OAuth found**: Warn user (ToS violation). Offer to clean up `google-gemini-cli/*` refs.
-- **First run / nothing to clean**: Continue to Step 2.
+- classify the task conservatively
+- rank by the category's benchmark basis
+- if the chosen model equals the current default, return no override
+- if there is no good match, stay on default
 
-### Step 2: Ask Subscriptions
+## Setup flow
 
-Present the Supported Providers table. Record which providers and tiers the user has.
+When `/zeroapi` is invoked, follow this flow.
 
-Map to model pools: OpenAI → GPT-5.4 family; Kimi → K2.5; Z AI → GLM-5.1/5/Turbo/4.7-Flash; MiniMax → M2.7; Alibaba → Qwen3.5 397B.
+### Step 1: detect existing state
 
-Ask user to run `openclaw models status`. Remove any `missing`/`auth_expired` models.
+Inspect:
 
-### Step 3: Generate Config
+- `~/.openclaw/zeroapi-config.json`
+- `~/.openclaw/openclaw.json`
+- auth profiles for excluded providers (Anthropic OAuth, Google/Gemini OAuth)
 
-Scan workspaces (read `AGENTS.md` for purpose, detect task categories, record agent IDs and current models; specialist agents get `null` hints). Scan cron jobs (detect task types, map to model criteria — preview only, user opts in).
+Rules:
 
-Read `benchmarks.json`, check `fetched` date (< 30d: proceed; 30-60d: warn; > 60d: require override). Filter to subscribed + authenticated models only.
+- If existing ZeroAPI config is present, treat this as a re-run and show current subscriptions + routing rules before changing anything.
+- If Anthropic OAuth profiles exist, warn that they are not subscription-covered for OpenClaw and offer cleanup.
+- If Google/Gemini OAuth profiles exist, warn that they violate Google's ToS for third-party CLI OAuth and offer cleanup.
 
-Select category leaders by benchmark ranking. Generate `~/.openclaw/zeroapi-config.json`:
+### Step 2: collect available subscriptions
+
+Ask which subscriptions the user actively wants included.
+
+Then verify the live runtime with:
+
+```bash
+openclaw models status
+```
+
+Only keep models/providers that are actually usable (`ready` / `healthy`). Remove models showing `missing`, `auth_expired`, or equivalent failure states.
+
+Practical subscription mapping:
+
+- OpenAI -> GPT-5.4 family
+- Kimi -> K2.5
+- Z AI -> GLM-5.1 / GLM-5 / GLM-5-Turbo / GLM-4.7 family
+- MiniMax -> MiniMax-M2.7
+- Alibaba -> Qwen3.5 397B
+
+### Step 3: generate config
+
+Build `~/.openclaw/zeroapi-config.json` from live availability + repo benchmarks.
+
+Do all of the following:
+
+1. Read `benchmarks.json`
+2. Check benchmark freshness
+3. Scan workspaces and infer broad workspace hints
+4. Scan cron jobs conservatively (preview-first)
+5. Select category leaders and cross-provider fallbacks
+6. Write `zeroapi-config.json`
+7. Back up and align `openclaw.json`
+
+Required config shape:
 
 ```json
 {
   "version": "3.1.0",
-  "generated": "<ISO 8601>",
+  "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
-  "default_model": "<highest intelligence>",
-  "models": { "<provider/model>": { "context_window": ..., "supports_vision": ..., "speed_tps": ..., "ttft_seconds": ..., "benchmarks": { ... } } },
-  "routing_rules": {
-    "code": { "primary": "...", "fallbacks": ["..."] },
-    "research": { ... }, "orchestration": { ... }, "math": { ... }, "fast": { ... }
-  },
-  "workspace_hints": { "<agent-id>": ["code", "research"], "<specialist>": null },
-  "keywords": { "code": [...], "research": [...], ... },
-  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"]
+  "default_model": "<best overall available model>",
+  "models": {},
+  "routing_rules": {},
+  "workspace_hints": {},
+  "keywords": {},
+  "high_risk_keywords": []
 }
 ```
 
-Model metadata (context_window, supports_vision) is NOT in benchmarks.json. Use hardcoded values from `references/benchmarks.md`. Fallback chains must be cross-provider, benchmark-ordered, max 3 per category.
+Important rules:
 
-Back up `openclaw.json` first (`openclaw.json.bak-zeroapi-<timestamp>`). Set default model and fallback chain. Do NOT modify workspace files.
+- `zeroapi-config.json` is **policy config**, not the runtime source of truth.
+- Default model should be the best overall available model for the user's chosen pool.
+- Fallback chains must span multiple providers when possible.
+- Specialist agents should generally get `null` workspace hints.
+- Cron changes are preview-first unless the user explicitly opts in.
+- Do not modify workspace memory/docs files as part of routing setup.
 
-### Step 4: Install Plugin
+For detailed cron, fallback, risk, and benchmark guidance see:
 
-```bash
-ls ~/.openclaw/plugins/zeroapi-router/index.ts 2>/dev/null
-# If missing or outdated:
-git clone https://github.com/dorukardahan/ZeroAPI.git /tmp/zeroapi-install 2>/dev/null || (cd /tmp/zeroapi-install && git pull)
-mkdir -p ~/.openclaw/plugins/zeroapi-router
-cp /tmp/zeroapi-install/plugin/*.ts /tmp/zeroapi-install/plugin/package.json ~/.openclaw/plugins/zeroapi-router/
-rm -rf /tmp/zeroapi-install
+- `references/cron-config.md`
+- `references/risk-policy.md`
+- `references/benchmarks.md`
+
+### Step 4: install or update plugin
+
+Do the work yourself on the machine. Do **not** ask the user to run commands if you have tool access.
+
+Install/update the plugin under:
+
+```text
+~/.openclaw/plugins/zeroapi-router/
 ```
 
-Plugin auto-loads on gateway restart.
+Recommended approach:
 
-### Step 5: Summary & Restart
+1. Check whether the plugin already exists.
+2. If missing or outdated, copy the current repo's `plugin/` files into the OpenClaw plugin directory.
+3. Ensure `package.json` and runtime files are aligned.
 
-Show summary: default model, routing rules per category, cron assignments (if opted in), workspace hints.
+Direct file copy is sufficient; no separate plugin installer is required.
 
-Restart gateway:
-```bash
-systemctl --user restart openclaw-gateway.service 2>/dev/null && echo "Gateway restarted via systemd" || \
-(pkill -f "openclaw.*gateway" && sleep 2 && openclaw gateway start &) 2>/dev/null && echo "Gateway restarted" || \
-echo "Could not auto-restart. Ask the user to restart OpenClaw manually."
-```
+### Step 5: summarize and restart
 
-Verify with `openclaw models status`.
+Before restart:
 
-## Re-run Behavior
+- summarize the default model
+- summarize routing rules by category
+- summarize any cleanup of excluded providers
+- summarize any cron preview or applied changes
 
-Safe to re-run `/zeroapi` at any time:
+Then restart the gateway and verify the runtime state.
 
-- `zeroapi-config.json` is overwritten on re-run
-- `openclaw.json` changes are backed up before modification
-- Cron model changes require explicit opt-in each time
-- Plugin auto-reloads config on gateway restart
-- No workspace file modifications
-- Show diff of changes before applying
+Use the workspace-safe restart pattern if messaging continuity matters.
 
-## What ZeroAPI Does NOT Do
+## Re-run behavior
 
-- Does NOT run an LLM for classification — pure keyword/regex/heuristic
-- Does NOT call external APIs at runtime
-- Does NOT modify workspace files (AGENTS.md, MEMORY.md, etc.)
-- Does NOT override explicit user model selections (`/model`, `#model:` directive)
-- Does NOT route specialist agents that already have dedicated models
-- Does NOT route cron-triggered or heartbeat-triggered messages — those remain under OpenClaw/runtime control
-- Does NOT include Anthropic/Claude — subscription no longer covers OpenClaw
-- Does NOT include Google/Gemini — CLI OAuth declared ToS violation
-- Does NOT implement retry/failover — OpenClaw's built-in system handles this
-- Includes a repo-side self-check helper: `bash scripts-zeroapi-doctor.sh`
+Re-running `/zeroapi` is safe.
+
+- `zeroapi-config.json` is overwritten on each successful run
+- `openclaw.json` must be backed up before edits
+- plugin reload happens on gateway restart
+- diffs should be shown before risky changes
+- cron changes remain opt-in unless explicitly approved
+
+## What ZeroAPI does **not** do
+
+- does **not** run another LLM at runtime for classification
+- does **not** call external APIs at runtime
+- does **not** override explicit user model choices
+- does **not** route specialist agents that already have dedicated models
+- does **not** route cron-triggered or heartbeat-triggered messages
+- does **not** include Anthropic/Claude in routing policy
+- does **not** include Google/Gemini in routing policy
+- does **not** replace OpenClaw's built-in retry/failover system
 
 ## References
 
-| File | Contents |
-|------|----------|
-| `references/benchmarks.md` | Current benchmark leaders, model profiles, context window / vision metadata |
-| `references/routing-examples.md` | Example prompts with routing decisions |
-| `references/cron-config.md` | Cron model assignment rules, fallback chain rules, example chains |
-| `references/risk-policy.md` | Risk-tiered failure policy, observability/log format, staleness policy |
-| `references/cost-summary.md` | Subscription cost comparison table |
-| `references/troubleshooting.md` | Common issues and fixes |
-| `references/provider-config.md` | Provider-specific configuration details |
-| `references/oauth-setup.md` | OAuth setup instructions per provider |
+Use these only when needed:
+
+- `references/benchmarks.md` — current category leaders and key model profiles
+- `references/routing-examples.md` — example prompt -> routing outcomes
+- `references/cron-config.md` — cron heuristics and fallback chain policy
+- `references/risk-policy.md` — risk, logging, staleness policy
+- `references/oauth-setup.md` — provider auth notes
+- `references/provider-config.md` — provider/model ID notes
+- `references/troubleshooting.md` — common runtime issues
+- `references/cost-summary.md` — bundle planning examples
