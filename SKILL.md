@@ -14,9 +14,9 @@ metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"
 
 # ZeroAPI v3.1 — Plugin-Based Model Routing
 
-You are an OpenClaw setup agent. ZeroAPI routes every message to the optimal AI model using an OpenClaw **gateway plugin** (`before_model_resolve` hook). You do NOT route messages yourself — the plugin does it at runtime with <1ms latency, zero token overhead, and full session context. Your job is to **configure** the plugin: scan the user's setup, generate `zeroapi-config.json`, update `openclaw.json`, and install the plugin.
+You are an OpenClaw setup agent. ZeroAPI routes eligible messages to a policy-selected AI model using an OpenClaw **gateway plugin** (`before_model_resolve` hook). You do NOT route messages yourself — the plugin does it at runtime as a lightweight policy layer on top of OpenClaw. Your job is to **configure** the plugin: scan the user's setup, generate `zeroapi-config.json`, update `openclaw.json`, and install the plugin.
 
-This is NOT prompt-based routing. The plugin intercepts messages at the gateway level using keyword/regex matching. No LLM call, no context serialization, no sub-agent spawning.
+This is NOT prompt-based routing. The plugin intercepts eligible messages at the gateway level using keyword/regex matching and conservative skip rules. No LLM call, no context serialization, no sub-agent spawning.
 
 ## Provider Exclusions
 
@@ -37,11 +37,12 @@ Layer 1: benchmarks.json (embedded in repo, updated by maintainer)
 Layer 2: SKILL.md (this file — runs once via /zeroapi)
   Scans OpenClaw → asks subscriptions → generates plugin config
   Writes ~/.openclaw/zeroapi-config.json + updates openclaw.json
+  Note: zeroapi-config.json is policy config; openclaw.json remains runtime authority
 
-Layer 3: Plugin (before_model_resolve hook — runs every message)
+Layer 3: Plugin (before_model_resolve hook — runs on eligible messages)
   Two-stage routing: capability filter → benchmark ranking
-  Returns modelOverride → OpenClaw switches model for this turn
-  Same session, full context, zero token overhead, <1ms latency
+  Returns modelOverride → OpenClaw may switch model for this turn
+  Same session, full context, no extra LLM routing call, low overhead
 ```
 
 ## Supported Providers
@@ -493,10 +494,11 @@ Safe to re-run `/zeroapi` at any time:
 - Does NOT modify workspace files (AGENTS.md, MEMORY.md, etc.)
 - Does NOT override explicit user model selections (`/model`, `#model:` directive)
 - Does NOT route specialist agents that already have dedicated models
-- Does NOT route cron-triggered messages — cron models are set in openclaw.json
+- Does NOT route cron-triggered or heartbeat-triggered messages — those remain under OpenClaw/runtime control
 - Does NOT include Anthropic/Claude — subscription no longer covers OpenClaw
 - Does NOT include Google/Gemini — CLI OAuth declared ToS violation
 - Does NOT implement retry/failover — OpenClaw's built-in system handles this
+- Includes a repo-side self-check helper: `bash scripts-zeroapi-doctor.sh`
 
 ## Troubleshooting
 
@@ -507,7 +509,7 @@ Safe to re-run `/zeroapi` at any time:
 | "No API provider registered" | Missing `api` field in provider config | See `references/provider-config.md` |
 | Model shows `missing` | Model ID mismatch in config | Verify model slugs with `openclaw models list` |
 | Auth error (401/403) | Token expired | Re-authenticate provider. See `references/oauth-setup.md` |
-| High-risk task gets routed | Missing keyword in `high_risk_keywords` | Add the keyword to `high_risk_keywords` array in `zeroapi-config.json` |
+| High-risk task gets routed | Missing keyword in `high_risk_keywords`, weak conservative classification, or runtime/config drift | Add the keyword to `high_risk_keywords`, inspect routing logs, and verify `zeroapi-config.json` vs `openclaw.json` |
 | Stale benchmark warning | `benchmarks.json` older than 30 days | Update ZeroAPI repo (`git pull`) for fresh benchmark data |
 | Config not loading | JSON syntax error in config | Validate `zeroapi-config.json` with `cat ~/.openclaw/zeroapi-config.json \| python3 -m json.tool` |
 

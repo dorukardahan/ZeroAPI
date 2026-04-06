@@ -76,7 +76,7 @@ openclaw models status | grep google
 
 ### "ZeroAPI Router not loaded"
 
-**Cause**: The plugin is not installed or failed to load at gateway start.
+**Cause**: The plugin is not installed, failed to load at gateway start, or the install path/runtime load path is not what you expect.
 
 **Fix**:
 
@@ -91,13 +91,25 @@ openclaw plugins install zeroapi-router
 systemctl --user restart openclaw-gateway.service
 ```
 
-If installed but still not loading, check `~/.openclaw/logs/openclaw-gateway.log` for plugin load errors.
+Then verify runtime load explicitly:
+
+```bash
+grep -Rni "ZeroAPI Router" /tmp/openclaw /root/.openclaw/logs 2>/dev/null | tail -n 20
+```
+
+If config says the plugin is enabled but you cannot identify where it was loaded from, treat that as an install-path mismatch and fix it before debugging routing behavior.
+
+For a quick end-to-end sanity check from the repo checkout:
+
+```bash
+bash scripts-zeroapi-doctor.sh
+```
 
 ---
 
 ### Routing not triggering (model not switching as expected)
 
-**Cause**: No keyword match — the message did not contain signals for any routing category.
+**Cause**: No keyword match, conservative skip, explicit user model selection, specialist-agent skip, trigger skip, or runtime/config mismatch.
 
 **Check the routing log**:
 
@@ -111,9 +123,9 @@ Log format:
 2026-04-05T10:30:45Z agent=main category=default model=openai-codex/gpt-5.4 reason=no_match
 ```
 
-`reason=no_match` means no category was detected — the default model was used. If this is unexpected, re-run `/zeroapi` to review keyword configuration.
+`reason=no_match` means no category was detected — the current runtime default/current model was used. Other skip reasons may appear as `skip:*` or `default_mismatch:*`.
 
-**Note**: The plugin never overrides explicit user model selections (`/model` or `#model:` directives). It also does not route messages from specialist agents (codex, glm) or cron jobs.
+**Note**: The plugin never overrides explicit user model selections (`/model` or `#model:` directives). It also does not route messages from specialist agents (codex, glm) or cron/heartbeat triggers.
 
 ---
 
@@ -200,6 +212,25 @@ After manual renewal, sync the new token across all locations. See `references/o
 ---
 
 ## OpenClaw Config Errors
+
+### zeroapi-config.json and openclaw.json disagree
+
+**Cause**: ZeroAPI policy config drifted away from OpenClaw runtime config.
+
+**Check**:
+```bash
+python3 - <<'PY'
+import json, pathlib
+zcfg=json.loads(pathlib.Path.home().joinpath('.openclaw/zeroapi-config.json').read_text())
+ocfg=json.loads(pathlib.Path.home().joinpath('.openclaw/openclaw.json').read_text())
+print('zeroapi default:', zcfg.get('default_model'))
+print('openclaw default:', ocfg.get('agents',{}).get('defaults',{}).get('model',{}).get('primary'))
+PY
+```
+
+**Fix**: Decide which one is intended, then regenerate `/zeroapi` config or update `openclaw.json` so runtime and policy agree.
+
+---
 
 ### Config shows "invalid" after editing openclaw.json
 

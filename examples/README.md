@@ -1,6 +1,8 @@
 # ZeroAPI v3 Configuration Examples
 
-Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` — copy it to `~/.openclaw/zeroapi-config.json`.
+Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` policy snapshot — copy it to `~/.openclaw/zeroapi-config.json`.
+
+Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw runtime defaults, provider wiring, and per-agent model state still live there.
 
 ## Example Files
 
@@ -56,6 +58,12 @@ openclaw models status
 
 All models in your config should show as available.
 
+Then check runtime/policy alignment:
+
+```bash
+bash scripts-zeroapi-doctor.sh
+```
+
 ### 4. Add workspace hints (optional)
 
 Edit `workspace_hints` in your config to bias routing per agent workspace:
@@ -68,7 +76,7 @@ Edit `workspace_hints` in your config to bias routing per agent workspace:
 }
 ```
 
-A `null` value means no hint — routing falls back to keyword matching only.
+A `null` value means no hint — routing falls back to keyword matching only. Hints should be treated as a weak bias, not as the primary routing signal.
 
 ## Routing Logic
 
@@ -83,14 +91,14 @@ ZeroAPI classifies each task into one of six categories based on keywords in the
 | `fast` | quick, format, convert, translate | "quickly format this list as CSV" |
 | `default` | (no keyword match) | "bunu düzelt" |
 
-High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc.) block automatic routing regardless of category.
+High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc.) block automatic routing regardless of category. Conservative skips are expected; not every message should switch models.
 
 ## Customizing
 
 - **Keywords**: Add domain-specific terms to the `keywords` object
 - **Fallback chains**: Reorder or add models in `fallbacks` arrays
 - **Fast TTFT threshold**: Adjust `fast_ttft_max_seconds` (default: 5s) — only models with `ttft_seconds` below this are eligible for `fast` tasks
-- **Default model**: Change `default_model` to whichever model you want as the always-on fallback
+- **Default model**: Change `default_model` to whichever model you want as ZeroAPI's policy default target, then make sure `openclaw.json` agrees if you want runtime default behavior to match
 
 ## Benchmark Scores Reference
 

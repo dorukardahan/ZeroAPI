@@ -39,7 +39,7 @@ Complete architecture rewrite. Skill-based routing replaced with OpenClaw plugin
 - Minimum OpenClaw version raised to 2026.4.2+ (was 2026.2.6+)
 
 ### Added
-- **Plugin-based routing** via OpenClaw `before_model_resolve` hook (<1ms, same session, zero token overhead)
+- **Plugin-based routing** via OpenClaw `before_model_resolve` hook (same session, low overhead, no extra LLM routing call)
 - **Two-stage routing**: capability filter (context window, vision, TTFT) → benchmark ranking
 - **6 subscription providers** (initially): Google, OpenAI, Kimi, Z AI (GLM), MiniMax, Alibaba (Qwen) — Google removed in v3.1
 - **201 models** with 15 benchmark categories from Artificial Analysis API v2

@@ -18,18 +18,18 @@ const config: ZeroAPIConfig = {
       context_window: 200000, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9,
       benchmarks: { intelligence: 49.8, coding: 44.2, tau2: 0.982 },
     },
-    "kimi-coding/kimi-k2.5": {
+    "kimi-coding/k2p5": {
       context_window: 128000, supports_vision: false, speed_tps: 32, ttft_seconds: 2.4,
       benchmarks: { intelligence: 46.8, coding: 39.5, tau2: 0.959 },
     },
   },
   routing_rules: {
-    code: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "kimi-coding/kimi-k2.5"] },
+    code: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "kimi-coding/k2p5"] },
     research: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5"] },
-    orchestration: { primary: "zai/glm-5", fallbacks: ["kimi-coding/kimi-k2.5", "openai-codex/gpt-5.4"] },
+    orchestration: { primary: "zai/glm-5", fallbacks: ["kimi-coding/k2p5", "openai-codex/gpt-5.4"] },
     math: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5"] },
-    fast: { primary: "zai/glm-5", fallbacks: ["kimi-coding/kimi-k2.5"] },
-    default: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "kimi-coding/kimi-k2.5"] },
+    fast: { primary: "zai/glm-5", fallbacks: ["kimi-coding/k2p5"] },
+    default: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "kimi-coding/k2p5"] },
   },
   workspace_hints: { codex: null, glm: null, senti: ["code", "research"] },
   keywords: {
@@ -75,13 +75,13 @@ describe("full routing pipeline", () => {
     });
     expect(capable["zai/glm-5"]).toBeDefined();
     expect(capable["openai-codex/gpt-5.4"]).toBeUndefined();
-    expect(capable["kimi-coding/kimi-k2.5"]).toBeDefined();
+    expect(capable["kimi-coding/k2p5"]).toBeDefined();
   });
 
   it("large context filters out small-window models", () => {
     const capable = filterCapableModels(config.models, { estimatedTokens: 500000 });
     expect(capable["zai/glm-5"]).toBeUndefined();
-    expect(capable["kimi-coding/kimi-k2.5"]).toBeUndefined();
+    expect(capable["kimi-coding/k2p5"]).toBeUndefined();
     expect(Object.keys(capable)).toHaveLength(1);
   });
 

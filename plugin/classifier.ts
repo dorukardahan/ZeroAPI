@@ -21,42 +21,49 @@ export function classifyTask(
     return { category: "default", model: null, provider: null, reason: "empty_prompt", risk: "low" };
   }
 
-  // Check high-risk keywords first (word boundary to prevent false positives)
-  const isHighRisk = highRiskKeywords.some((kw) => {
-    const regex = new RegExp(`\\b${kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
-    return regex.test(lower);
-  });
+  const escapedHighRisk = highRiskKeywords.map((kw) => kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const matchedHighRisk = escapedHighRisk.find((kw) => new RegExp(`\\b${kw}\\b`).test(lower));
+  const isHighRisk = Boolean(matchedHighRisk);
 
-  // Scan for category keywords — first match wins (by position in prompt)
-  let matchedCategory: TaskCategory = "default";
-  let matchedKeyword = "";
-  let earliestIndex = Infinity;
+  let bestCategory: TaskCategory = "default";
+  let bestReason = "no_match";
+  let bestScore = 0;
 
   for (const [category, kws] of Object.entries(keywords)) {
+    let categoryScore = 0;
+    let firstKeyword = "";
+
     for (const kw of kws) {
-      const regex = new RegExp(`\\b${kw.toLowerCase()}\\b`);
-      const match = regex.exec(lower);
-      if (match && match.index < earliestIndex) {
-        earliestIndex = match.index;
-        matchedCategory = category as TaskCategory;
-        matchedKeyword = kw;
+      const escaped = kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`\\b${escaped}\\b`, "g");
+      const matches = lower.match(regex);
+      if (matches?.length) {
+        categoryScore += matches.length;
+        if (!firstKeyword) firstKeyword = kw;
       }
+    }
+
+    if (categoryScore > bestScore) {
+      bestScore = categoryScore;
+      bestCategory = category as TaskCategory;
+      bestReason = firstKeyword ? `keyword:${firstKeyword}` : "no_match";
     }
   }
 
-  // If no keyword match, try workspace hints
-  if (matchedCategory === "default" && workspaceHints?.length) {
-    matchedCategory = workspaceHints[0];
-    matchedKeyword = `workspace_hint:${workspaceHints[0]}`;
+  const hasStrongKeywordSignal = bestScore > 0;
+
+  if (!hasStrongKeywordSignal && workspaceHints?.length === 1 && !isHighRisk) {
+    bestCategory = workspaceHints[0];
+    bestReason = `workspace_hint:${workspaceHints[0]}`;
   }
 
-  const risk: RiskLevel = isHighRisk ? "high" : RISK_MAP[matchedCategory];
+  const risk: RiskLevel = isHighRisk ? "high" : RISK_MAP[bestCategory];
 
   return {
-    category: matchedCategory,
+    category: bestCategory,
     model: null,
     provider: null,
-    reason: matchedKeyword ? `keyword:${matchedKeyword}` : "no_match",
+    reason: isHighRisk && matchedHighRisk ? `${bestReason}:high_risk_keyword:${matchedHighRisk}` : bestReason,
     risk,
   };
 }

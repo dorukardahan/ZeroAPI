@@ -3,7 +3,9 @@ import { loadConfig } from "./config.js";
 import { classifyTask } from "./classifier.js";
 import { filterCapableModels, estimateTokens } from "./filter.js";
 import { selectModel } from "./selector.js";
-import { initLogger, logRouting } from "./logger.js";
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
+import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 
 export default definePluginEntry({
   id: "zeroapi-router",
@@ -16,23 +18,49 @@ export default definePluginEntry({
       : "/root/.openclaw";
 
     const config = loadConfig(openclawDir);
+    initLogger(openclawDir);
+
     if (!config) {
       api.logger.warn("zeroapi-config.json not found. Run /zeroapi to configure.");
+      logRoutingEvent({ category: "system", reason: "config_missing" });
       return;
     }
 
-    initLogger(openclawDir);
     api.logger.info(`ZeroAPI Router v${config.version} loaded (${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`);
+
+    try {
+      const openclawConfigPath = join(openclawDir, "openclaw.json");
+      if (existsSync(openclawConfigPath)) {
+        const openclawConfig = JSON.parse(readFileSync(openclawConfigPath, "utf-8"));
+        const runtimeDefault = openclawConfig?.agents?.defaults?.model?.primary;
+        if (typeof runtimeDefault === "string" && runtimeDefault !== config.default_model) {
+          api.logger.warn(
+            `ZeroAPI default_model (${config.default_model}) does not match openclaw.json runtime default (${runtimeDefault}). Routing policy and runtime default are out of sync.`
+          );
+          logRoutingEvent({
+            category: "system",
+            reason: `default_mismatch:${config.default_model}->${runtimeDefault}`,
+            model: runtimeDefault,
+          });
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      api.logger.warn(`ZeroAPI runtime config check failed: ${message}`);
+      logRoutingEvent({ category: "system", reason: `runtime_config_check_failed:${message}` });
+    }
 
     api.on("before_model_resolve", (event, ctx) => {
       // Skip routing for specialist agents (null = don't route)
       const agentId = ctx.agentId;
       if (agentId && config.workspace_hints[agentId] === null) {
+        logRoutingEvent({ agentId, category: "system", reason: "skip:specialist_agent" });
         return;
       }
 
       // Skip routing for cron/heartbeat triggers
       if (ctx.trigger === "cron" || ctx.trigger === "heartbeat") {
+        logRoutingEvent({ agentId, category: "system", reason: `skip:trigger:${ctx.trigger}` });
         return;
       }
 
@@ -51,7 +79,7 @@ export default definePluginEntry({
         return;
       }
 
-      // No category detected — stay on default
+      // No category detected — stay on runtime default / current model
       if (decision.category === "default") {
         logRouting(agentId, decision);
         return;

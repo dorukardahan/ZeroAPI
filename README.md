@@ -4,9 +4,9 @@
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
 [![Version](https://img.shields.io/badge/version-3.1.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.1.0)
 
-**Your AI subscriptions. One plugin. Every message routed to the best model.**
+**Your AI subscriptions. One plugin. Eligible messages routed to the best available policy match.**
 
-ZeroAPI is an OpenClaw plugin that intercepts every message at the gateway level and routes it to the benchmark-optimal model from your active subscriptions. No manual `/model` switching, no latency penalty, no context loss — the session stays open and the right model handles each turn automatically.
+ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior — not a replacement for OpenClaw's own model defaults, explicit `/model` choices, or per-agent configuration.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
@@ -24,12 +24,12 @@ ZeroAPI routes exclusively across subscription-covered providers: OpenAI, Kimi, 
 Message → Plugin (before_model_resolve) → Classify task → Filter capable models → Select best → Model processes message
 ```
 
-The plugin fires before every message via OpenClaw's `before_model_resolve` hook. It runs a two-stage decision in under 1ms:
+The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight two-stage decision:
 
 1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
 2. **Benchmark ranking** — from surviving models, pick the benchmark leader for the detected task category
 
-The model is switched for that turn only. The session, conversation history, and all workspace files remain intact.
+When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
 ## Supported Providers
 
@@ -59,10 +59,11 @@ The plugin matches keywords in each message to one of six routing categories. No
 ```
 1. Install:   openclaw plugins install zeroapi-router
 2. Configure: /zeroapi   (in any OpenClaw session)
-3. Done — routing is automatic
+3. Verify:    bash scripts-zeroapi-doctor.sh
+4. Done — conservative routing policy is active for eligible messages
 ```
 
-The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. The plugin reads that config at gateway startup and routes every subsequent message.
+The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
 
 ## Repository Structure
 
@@ -70,6 +71,7 @@ The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you hav
 ZeroAPI/
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── benchmarks.json                       # 155 models, 15 benchmarks, 5 providers (AA API v2)
+├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── plugin/
 │   ├── index.ts                          # Plugin entry, before_model_resolve hook
 │   ├── classifier.ts                     # Keyword/regex task classification
@@ -133,10 +135,10 @@ Claude subscriptions no longer cover third-party tools like OpenClaw as of April
 Google declared CLI OAuth usage with third-party tools a ToS violation as of March 25, 2026. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key access (AI Studio/Vertex) is separate billing, not subscription-covered.
 
 **How accurate is routing?**
-Around 60-70% of messages match a keyword and get routed. The rest stay on your default model. You can inspect every routing decision in `~/.openclaw/logs/zeroapi-routing.log`.
+Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. You should inspect `~/.openclaw/logs/zeroapi-routing.log` and treat routing as a policy hint layer, not as a guarantee that every message will switch models.
 
 **Does it add latency?**
-No. Classification is pure keyword/regex — under 1ms. No LLM call, no external API.
+Very little in normal operation. Classification is local (keyword/regex + config lookups) and does not call an external LLM, but actual end-to-end behavior still depends on OpenClaw runtime state and the selected provider.
 
 **Can I override routing?**
 Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your message. The plugin never overrides explicit model selections.

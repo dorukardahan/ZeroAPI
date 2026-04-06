@@ -38,7 +38,7 @@
         "scicode": 0.462
       }
     },
-    "kimi-coding/kimi-k2.5": {
+    "kimi-coding/k2p5": {
       "context_window": 128000,
       "supports_vision": false,
       "speed_tps": 31.6,
@@ -93,15 +93,15 @@
   "routing_rules": {
     "code": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["zai/glm-5", "kimi-coding/kimi-k2.5"]
+      "fallbacks": ["zai/glm-5", "kimi-coding/k2p5"]
     },
     "research": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["kimi-coding/kimi-k2.5", "minimax/minimax-m2.7"]
+      "fallbacks": ["kimi-coding/k2p5", "minimax/minimax-m2.7"]
     },
     "orchestration": {
       "primary": "zai/glm-5",
-      "fallbacks": ["kimi-coding/kimi-k2.5", "modelstudio/qwen3.5-397b-a17b"]
+      "fallbacks": ["kimi-coding/k2p5", "modelstudio/qwen3.5-397b-a17b"]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
