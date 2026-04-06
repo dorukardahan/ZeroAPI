@@ -37,7 +37,7 @@ When the hook returns an override, the model is switched for that turn only. The
 |----------|------------|--------------|---------|-----------------|--------|
 | OpenAI | `openai-codex` | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.4, GPT-5.3 Codex, GPT-5.4 mini |
 | Kimi | `kimi-coding` | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.5, K2 Thinking |
-| Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
+| Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
 | MiniMax | `minimax` | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
 | Alibaba (Qwen) | `modelstudio` | Pro | $50 | $42 | Qwen3.5 397B |
 
@@ -110,7 +110,7 @@ Current leaders per category from `benchmarks.json` (fetched 2026-04-04):
 | **Code** (terminalbench) | GPT-5.4 | 0.576 | OpenAI |
 | **Research** (gpqa) | GPT-5.4 | 0.920 | OpenAI |
 | **Orchestration** (0.6*tau2 + 0.4*ifbench) | Qwen3.5 397B A17B | 0.889 | Alibaba |
-| **Math** (aime_25) | GPT-5.2 | 0.990 | OpenAI |
+| **Math** (aime_25) | GPT-5.4 | 0.990 | OpenAI |
 | **Fast** (speed, TTFT < 5s) | GPT-5.4 nano | 206 t/s | OpenAI |
 | **Default** (intelligence) | GPT-5.4 | 57.2 | OpenAI |
 

@@ -198,7 +198,7 @@ Map subscriptions to available model pools:
 - OpenAI Plus → GPT-5.4, GPT-5.4 mini, GPT-5.4 nano, etc.
 - OpenAI Pro → same models with higher rate limits
 - Kimi any tier → Kimi K2.5
-- Z AI any tier → GLM-5, GLM-5-Turbo, GLM-4.7, GLM-4.7-Flash
+- Z AI any tier → GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7, GLM-4.7-Flash
 - MiniMax any tier → MiniMax-M2.7
 - Alibaba Pro → Qwen3.5 397B
 
@@ -303,7 +303,7 @@ Write `~/.openclaw/zeroapi-config.json` with this structure:
 | GPT-5.4 / 5.4 mini / 5.4 nano | 1,050,000 | false |
 | GPT-5.3 Codex | 400,000 | false |
 | Kimi K2.5 | 256,000 | true |
-| GLM-5 / GLM-5-Turbo | 128,000 | false |
+| GLM-5.1 / GLM-5 / GLM-5-Turbo | 128,000 | false |
 | GLM-4.7-Flash | 128,000 | false |
 | MiniMax-M2.7 | 205,000 | false |
 | Qwen3.5 397B | 262,000 | false |
@@ -379,13 +379,13 @@ Current leaders per category from benchmarks.json (fetched 2026-04-04):
 | Intelligence | GPT-5.4 | 57.2 | OpenAI | |
 | Coding | GPT-5.4 | 57.3 | OpenAI | |
 | TAU-2 (raw) | GLM-4.7-Flash | 0.988 | Z AI | Raw TAU-2 leader, but composite ranking differs |
-| Orchestration (composite) | Qwen3.5 397B | 0.889 | Alibaba | 0.6*tau2 + 0.4*ifbench. Qwen Lite plan closed to new subs; GLM-5 (0.878) is best switchable option |
+| Orchestration (composite) | Qwen3.5 397B | 0.889 | Alibaba | 0.6*tau2 + 0.4*ifbench. Qwen Lite plan closed to new subs; GLM-5.1 (0.88+) is best switchable option |
 | IFBench | Qwen3.5 397B | 79% | Alibaba | |
 | GPQA | GPT-5.4 | 92% | OpenAI | |
 | Speed | GPT-5.4 nano | 206 t/s | OpenAI | |
 | Research/HLE | GPT-5.4 | 0.416 | OpenAI | |
 
-**Orchestration composite ranking** (0.6*tau2 + 0.4*ifbench): Qwen3.5 397B (0.889) > GLM-5 (0.878) > Kimi K2.5 (0.856). GLM-5 remains the practical orchestration recommendation because Qwen's Lite plan is closed to new subscribers.
+**Orchestration composite ranking** (0.6*tau2 + 0.4*ifbench): Qwen3.5 397B (0.889) > GLM-5.1 (0.88+) > GLM-5 (0.878) > Kimi K2.5 (0.856). GLM-5.1 is the practical orchestration recommendation because Qwen's Lite plan is closed to new subscribers.
 
 **Key model profiles** (top models by intelligence):
 
@@ -393,7 +393,7 @@ Current leaders per category from benchmarks.json (fetched 2026-04-04):
 |-------|----------|-------------|--------|-------|------|---------|
 | GPT-5.4 | OpenAI | 57.2 | 57.3 | 72 t/s | 170s | 266K |
 | GPT-5.3 Codex | OpenAI | 54.0 | 53.1 | 77 t/s | 60s | 266K |
-| GLM-5 | Z AI | 49.8 | 44.2 | 63 t/s | 0.9s | 128K |
+ GLM-5.1 | Z AI | 49.8 | 44.2 | 63 t/s | 0.9s | 128K |
 | MiniMax-M2.7 | MiniMax | 49.6 | 41.9 | 41 t/s | 1.8s | 128K |
 | Kimi K2.5 | Kimi | 46.8 | 39.5 | 32 t/s | 2.4s | 128K |
 | Qwen3.5 397B | Alibaba | 45.0 | 41.3 | 59 t/s | 1.4s | 128K |
@@ -408,7 +408,7 @@ What happens for different prompts:
 |--------|----------|-----------|--------|
 | "refactor the auth module" | CODE | GPT-5.4 | coding 57.3 (keyword: refactor) |
 | "research the differences between WAL modes" | RESEARCH | GPT-5.4 | GPQA 92% (keyword: research) |
-| "coordinate a 3-service pipeline" | ORCHESTRATE | GLM-5 | 0.6*tau2 + 0.4*ifbench composite (keyword: coordinate, pipeline) |
+| "coordinate a 3-service pipeline" | ORCHESTRATE  GLM-5.1 | 0.6*tau2 + 0.4*ifbench composite (keyword: coordinate, pipeline) |
 | "quickly format this as markdown" | FAST | GLM-4.7-Flash | 85 t/s, TTFT 0.9s (keyword: quickly, format) |
 | "deploy to production" | HIGH RISK | stays on default | high_risk_keyword: deploy, production |
 | "buna bi bak" | DEFAULT | stays on default | no keyword match |
@@ -438,10 +438,10 @@ Example fallback chains (5-provider setup):
 
 | Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |----------|---------|------------|------------|------------|
-| Code | GPT-5.4 (OpenAI) | GLM-5 (Z AI) | Kimi K2.5 (Kimi) | MiniMax-M2.7 (MiniMax) |
+| Code | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | MiniMax-M2.7 (MiniMax) |
 | Research | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) |
-| Orchestration | GLM-5 (Z AI) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) | — |
-| Math | GPT-5.4 (OpenAI) | GLM-5 (Z AI) | Qwen3.5 (Alibaba) | — |
+| Orchestration | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) | — |
+| Math | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Qwen3.5 (Alibaba) | — |
 | Fast | GLM-4.7-Flash (Z AI) | GPT-5.4 nano (OpenAI) | MiniMax-M2.7 (MiniMax) | — |
 
 ## Risk-Tiered Failure Policy

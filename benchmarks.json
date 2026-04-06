@@ -4660,6 +4660,33 @@
         "math_500": 0.521,
         "aime": 0.017
       }
+    },
+    {
+      "name": "GLM-5.1",
+      "slug": "glm-5.1",
+      "id": "40663ad2-b218-471e-bdd4-a1e0c2360e2b",
+      "creator": "Z AI",
+      "openclaw_provider": "zai",
+      "release_date": "2026-02-11",
+      "speed_tps": 62.8,
+      "ttft_seconds": 0.9,
+      "ttfa_seconds": 50.36,
+      "pricing": {
+        "price_1m_blended_3_to_1": 1.55,
+        "price_1m_input_tokens": 1,
+        "price_1m_output_tokens": 3.2
+      },
+      "benchmarks": {
+        "intelligence": 49.8,
+        "coding": 44.2,
+        "tau2": 0.982,
+        "terminalbench": 0.432,
+        "ifbench": 0.723,
+        "gpqa": 0.82,
+        "lcr": 0.633,
+        "hle": 0.272,
+        "scicode": 0.462
+      }
     }
   ]
 }

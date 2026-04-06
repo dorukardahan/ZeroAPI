@@ -2,7 +2,7 @@
   "version": "3.0.0",
   "generated": "2026-04-05T00:00:00Z",
   "benchmarks_date": "2026-04-04",
-  "default_model": "openai-codex/gpt-5.4",
+  "default_model": "zai/glm-5.1",
   "models": {
     "openai-codex/gpt-5.4": {
       "context_window": 1050000,
@@ -21,7 +21,7 @@
         "scicode": 0.566
       }
     },
-    "zai/glm-5": {
+    "zai/glm-5.1": {
       "context_window": 200000,
       "supports_vision": false,
       "speed_tps": 62.8,
@@ -93,37 +93,104 @@
   "routing_rules": {
     "code": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["zai/glm-5", "kimi-coding/k2p5"]
+      "fallbacks": [
+        "zai/glm-5.1",
+        "kimi-coding/k2p5"
+      ]
     },
     "research": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["kimi-coding/k2p5", "minimax/minimax-m2.7"]
+      "fallbacks": [
+        "kimi-coding/k2p5",
+        "minimax/minimax-m2.7"
+      ]
     },
     "orchestration": {
-      "primary": "zai/glm-5",
-      "fallbacks": ["kimi-coding/k2p5", "modelstudio/qwen3.5-397b-a17b"]
+      "primary": "zai/glm-5.1",
+      "fallbacks": [
+        "kimi-coding/k2p5",
+        "modelstudio/qwen3.5-397b-a17b"
+      ]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["modelstudio/qwen3.5-397b-a17b", "zai/glm-5"]
+      "fallbacks": [
+        "modelstudio/qwen3.5-397b-a17b",
+        "zai/glm-5.1"
+      ]
     },
     "fast": {
-      "primary": "zai/glm-5",
-      "fallbacks": ["minimax/minimax-m2.7", "modelstudio/qwen3.5-397b-a17b"]
+      "primary": "zai/glm-5.1",
+      "fallbacks": [
+        "minimax/minimax-m2.7",
+        "modelstudio/qwen3.5-397b-a17b"
+      ]
     },
     "default": {
-      "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["zai/glm-5", "minimax/minimax-m2.7"]
+      "primary": "zai/glm-5.1",
+      "fallbacks": [
+        "zai/glm-5.1",
+        "minimax/minimax-m2.7"
+      ]
     }
   },
   "workspace_hints": {},
   "keywords": {
-    "code": ["implement", "function", "class", "refactor", "fix", "test", "debug", "build", "write"],
-    "research": ["research", "analyze", "explain", "compare", "investigate", "summarize", "review"],
-    "orchestration": ["orchestrate", "coordinate", "pipeline", "workflow", "plan", "manage"],
-    "math": ["calculate", "solve", "equation", "proof", "compute", "formula"],
-    "fast": ["quick", "simple", "format", "convert", "translate", "list", "rename"]
+    "code": [
+      "implement",
+      "function",
+      "class",
+      "refactor",
+      "fix",
+      "test",
+      "debug",
+      "build",
+      "write"
+    ],
+    "research": [
+      "research",
+      "analyze",
+      "explain",
+      "compare",
+      "investigate",
+      "summarize",
+      "review"
+    ],
+    "orchestration": [
+      "orchestrate",
+      "coordinate",
+      "pipeline",
+      "workflow",
+      "plan",
+      "manage"
+    ],
+    "math": [
+      "calculate",
+      "solve",
+      "equation",
+      "proof",
+      "compute",
+      "formula"
+    ],
+    "fast": [
+      "quick",
+      "simple",
+      "format",
+      "convert",
+      "translate",
+      "list",
+      "rename"
+    ]
   },
-  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"],
+  "high_risk_keywords": [
+    "deploy",
+    "delete",
+    "drop",
+    "rm",
+    "production",
+    "credentials",
+    "secret",
+    "password"
+  ],
   "fast_ttft_max_seconds": 5
 }
