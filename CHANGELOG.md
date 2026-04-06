@@ -1,6 +1,33 @@
 # Changelog
 
-## [3.1.0] — 2026-04-05
+## [3.1.0] — 2026-04-06
+
+Routing diagnostics, conservative classification, and docs alignment with OpenClaw runtime.
+
+### Added
+- Runtime/config drift detection at plugin startup — warns if `zeroapi-config.json` default differs from `openclaw.json` runtime default
+- Skip reason logging — cron, heartbeat, specialist agent skips, config missing, and default mismatch now logged with clear reasons
+- `logRoutingEvent()` API for system-level log entries
+- `scripts-zeroapi-doctor.sh` — self-check helper for runtime/policy alignment
+- GLM-5.1 model entry in benchmarks.json
+
+### Changed
+- Classification engine: first-match keyword → score-based weighted matching
+- Workspace hints: now act as weak bias only (single-hint only, suppressed by high-risk or strong keyword signals)
+- High-risk keyword context included in routing reason
+- Model naming standardized: `kimi-coding/k2p5` (was `kimi-coding/kimi-k2.5` or `kimi/k2p5` in various files)
+- Plugin version aligned: `package.json` + `openclaw.plugin.json` both at 3.1.0
+- Default model in all examples updated to `zai/glm-5.1`
+
+### Fixed
+- Docs/claims aligned with actual runtime behavior — "eligible messages", "policy layer", "conservative routing" replace "every message", "best model", "zero token overhead"
+- `zeroapi-config.json` documented as policy config, not runtime source of truth
+- README, SKILL.md, CHANGELOG.md, examples/README.md, references/ updated for accuracy
+- Troubleshooting guide expanded: config drift, install/load path, runtime verification
+
+---
+
+## [3.0.0] — 2026-04-05
 
 Google provider removed. CLI OAuth with third-party tools declared ToS violation by Google as of March 25, 2026.
 
