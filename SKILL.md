@@ -187,21 +187,19 @@ For detailed cron, fallback, risk, and benchmark guidance see:
 
 ### Step 4: install or update plugin
 
-Do the work yourself on the machine. Do **not** ask the user to run commands if you have tool access.
+Preferred method:
 
-Install/update the plugin under:
-
-```text
-~/.openclaw/plugins/zeroapi-router/
+```bash
+openclaw plugins install /tmp/ZeroAPI-audit/plugin
 ```
 
-Recommended approach:
+Or if the repo is already cloned on the machine, point to the plugin directory directly.
 
-1. Check whether the plugin already exists.
-2. If missing or outdated, copy the current repo's `plugin/` files into the OpenClaw plugin directory.
-3. Ensure `package.json` and runtime files are aligned.
+The plugin auto-loads on gateway restart. Verify with:
 
-Direct file copy is sufficient; no separate plugin installer is required.
+```bash
+openclaw plugins list
+```
 
 ### Step 5: summarize and restart
 

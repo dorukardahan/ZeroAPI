@@ -108,7 +108,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-04):
+Current leaders per category from `benchmarks.json` (fetched 2026-04-04). For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|
@@ -122,6 +122,8 @@ Current leaders per category from `benchmarks.json` (fetched 2026-04-04):
 Routes use whichever leader is available in your subscription. If the top model is unavailable, the plugin falls back to the next benchmark-ranked model from a different provider.
 
 ## Cost Summary
+
+For bundle planning details, see [`references/cost-summary.md`](references/cost-summary.md).
 
 | Setup | Providers | Monthly | Annual (eff/mo) |
 |-------|-----------|---------|-----------------|
