@@ -9,7 +9,7 @@ Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw r
 | File | Providers | Monthly Cost | Best For |
 |------|-----------|-------------|----------|
 | `openai-only.json` | OpenAI Codex | ~$20 | Getting started, OpenAI-only setup |
-| `openai-glm.json` | OpenAI + Z AI GLM | ~$30 | Add fast orchestration with GLM-5 |
+| `openai-glm.json` | OpenAI + Z AI GLM | ~$30 | Add fast orchestration with GLM-5.1 |
 | `openai-glm-kimi.json` | OpenAI + Z AI + Kimi | ~$49 | Deep orchestration fallback coverage |
 | `full-stack.json` | All 5 providers | ~$109-$170 | Maximum resilience, longest fallback chains |
 
@@ -18,7 +18,7 @@ Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw r
 | Model | Provider | Blended Price |
 |-------|----------|--------------|
 | GPT-5.4 | openai-codex | $5.63 |
-| GLM-5 (Reasoning) | zai | $1.55 |
+| GLM-5.1 | zai | $1.55 |
 | Kimi K2.5 (Reasoning) | kimi-coding | $1.20 |
 | MiniMax-M2.7 | minimax | $0.53 |
 | Qwen3.5 397B A17B (Reasoning) | modelstudio | $1.35 |
