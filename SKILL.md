@@ -46,6 +46,12 @@ Important authority order:
 2. **ZeroAPI config** (`zeroapi-config.json`) is policy/config input for the plugin.
 3. Plugin may suggest a `modelOverride` on eligible turns only.
 
+ZeroAPI also supports a **subscription-aware foundation**:
+- a fixed provider tier catalog
+- a persistent global subscription profile
+- optional agent-level partial overrides
+- subscription-weighted candidate ordering without exposing private usage data
+
 ## Supported providers
 
 Five subscription-based providers are currently supported by the routing policy.
@@ -58,7 +64,7 @@ Five subscription-based providers are currently supported by the routing policy.
 | MiniMax | `minimax` | OAuth portal | Starter, Plus, Max, Ultra-HS |
 | Alibaba (Qwen) | `modelstudio` | API key | Pro |
 
-See `references/cost-summary.md` for bundle examples.
+See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
 
 ## Task categories and routing basis
 
@@ -92,6 +98,7 @@ Eliminate models that cannot handle the request:
 - vision required but unsupported
 - provider auth missing/expired
 - provider unavailable or cooling down
+- subscription profile disallows the provider/model for this agent
 
 ### Stage 2: category selection
 
@@ -99,6 +106,7 @@ Among surviving models:
 
 - classify the task conservatively
 - rank by the category's benchmark basis
+- apply subscription-weighted ordering across benchmark-ranked candidates
 - if the chosen model equals the current default, return no override
 - if there is no good match, stay on default
 
@@ -123,6 +131,7 @@ Rules:
 ### Step 2: collect available subscriptions
 
 Ask which subscriptions the user actively wants included.
+Use the fixed provider-tier catalog, not free-text plans.
 
 Then verify the live runtime with:
 
@@ -139,6 +148,12 @@ Practical subscription mapping:
 - Z AI -> GLM-5.1 / GLM-5 / GLM-5-Turbo / GLM-4.7 family
 - MiniMax -> MiniMax-M2.7
 - Alibaba -> Qwen3.5 397B
+
+Persist the result into a subscription profile with:
+- `global` provider selections
+- optional `agentOverrides`
+
+The user declares what subscriptions they have. ZeroAPI decides routing.
 
 ### Step 3: generate config
 
@@ -161,6 +176,12 @@ Required config shape:
   "version": "3.1.0",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
+  "subscription_catalog_version": "1.0.0",
+  "subscription_profile": {
+    "version": "1.0.0",
+    "global": {},
+    "agentOverrides": {}
+  },
   "default_model": "<best overall available model>",
   "models": {},
   "routing_rules": {},
@@ -190,10 +211,10 @@ For detailed cron, fallback, risk, and benchmark guidance see:
 Preferred method:
 
 ```bash
-openclaw plugins install /tmp/ZeroAPI-audit/plugin
+openclaw plugins install /tmp/ZeroAPI/plugin
 ```
 
-Or if the repo is already cloned on the machine, point to the plugin directory directly.
+If the repo is already cloned elsewhere on the machine, the local plugin directory is also fine.
 
 The plugin auto-loads on gateway restart. Verify with:
 
@@ -247,3 +268,4 @@ Use these only when needed:
 - `references/provider-config.md` — provider/model ID notes
 - `references/troubleshooting.md` — common runtime issues
 - `references/cost-summary.md` — bundle planning examples
+- `references/subscription-catalog.md` — provider tiers and public catalog version

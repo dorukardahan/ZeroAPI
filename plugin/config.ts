@@ -8,6 +8,10 @@ let configPath: string | null = null;
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   if (typeof obj !== "object" || obj === null) return false;
   const cfg = obj as Record<string, unknown>;
+  const subscriptionProfileValid =
+    cfg.subscription_profile === undefined ||
+    (typeof cfg.subscription_profile === "object" && cfg.subscription_profile !== null);
+
   return (
     typeof cfg.version === "string" &&
     typeof cfg.default_model === "string" &&
@@ -15,7 +19,8 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     typeof cfg.routing_rules === "object" && cfg.routing_rules !== null &&
     typeof cfg.keywords === "object" && cfg.keywords !== null &&
     Array.isArray(cfg.high_risk_keywords) &&
-    typeof cfg.fast_ttft_max_seconds === "number"
+    typeof cfg.fast_ttft_max_seconds === "number" &&
+    subscriptionProfileValid
   );
 }
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { classifyTask } from "../classifier.js";
 import { filterCapableModels, estimateTokens } from "../filter.js";
 import { selectModel } from "../selector.js";
+import { isModelAllowedBySubscriptionProfile } from "../profile.js";
 import type { ZeroAPIConfig } from "../types.js";
 
 const config: ZeroAPIConfig = {
@@ -41,6 +42,20 @@ const config: ZeroAPIConfig = {
   },
   high_risk_keywords: ["deploy", "delete", "drop", "production", "credentials"],
   fast_ttft_max_seconds: 5,
+  subscription_catalog_version: "1.0.0",
+  subscription_profile: {
+    version: "1.0.0",
+    global: {
+      "openai-codex": { enabled: true, tierId: "plus" },
+      "zai": { enabled: true, tierId: "max" },
+      "kimi-coding": { enabled: false, tierId: null },
+    },
+    agentOverrides: {
+      constrained: {
+        "openai-codex": { enabled: false, tierId: null },
+      },
+    },
+  },
 };
 
 describe("full routing pipeline", () => {
@@ -115,5 +130,16 @@ describe("full routing pipeline", () => {
     const model = selectModel(decision.category, capable, config.routing_rules, config.default_model);
     // GPT-5.4 is both default and math primary — no switch needed
     expect(model).toBeNull();
+  });
+
+  it("subscription profile can remove a provider from the candidate pool", () => {
+    const capable = filterCapableModels(config.models, { estimatedTokens: 1000 });
+    const filtered = Object.fromEntries(
+      Object.entries(capable).filter(([modelKey]) =>
+        isModelAllowedBySubscriptionProfile(config.subscription_profile, "constrained", modelKey),
+      ),
+    );
+    expect(filtered["openai-codex/gpt-5.4"]).toBeUndefined();
+    expect(filtered["zai/glm-5"]).toBeDefined();
   });
 });

@@ -15,6 +15,17 @@ export type RoutingRule = {
   fallbacks: string[];
 };
 
+export type ProviderSubscriptionSelection = {
+  enabled?: boolean;
+  tierId?: string | null;
+};
+
+export type SubscriptionProfile = {
+  version: string;
+  global: Record<string, ProviderSubscriptionSelection>;
+  agentOverrides?: Record<string, Record<string, ProviderSubscriptionSelection>>;
+};
+
 export type ZeroAPIConfig = {
   version: string;
   generated: string;
@@ -26,6 +37,8 @@ export type ZeroAPIConfig = {
   keywords: Record<string, string[]>;
   high_risk_keywords: string[];
   fast_ttft_max_seconds: number;
+  subscription_catalog_version?: string;
+  subscription_profile?: SubscriptionProfile;
 };
 
 export type RoutingDecision = {

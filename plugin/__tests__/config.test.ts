@@ -69,6 +69,13 @@ describe("config", () => {
       keywords: { code: ["implement"] },
       high_risk_keywords: ["deploy"],
       fast_ttft_max_seconds: 5,
+      subscription_catalog_version: "1.0.0",
+      subscription_profile: {
+        version: "1.0.0",
+        global: {
+          "openai-codex": { enabled: true, tierId: "plus" },
+        },
+      },
     };
     writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(valid));
     const { loadConfig, getConfig } = await import("../config.js");

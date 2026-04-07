@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "global": {
+    "openai-codex": { "enabled": true, "tierId": "plus" },
+    "kimi-coding": { "enabled": false, "tierId": null },
+    "zai": { "enabled": true, "tierId": "max" },
+    "minimax": { "enabled": false, "tierId": null },
+    "modelstudio": { "enabled": false, "tierId": null }
+  },
+  "agentOverrides": {
+    "research-agent": {
+      "openai-codex": { "enabled": false, "tierId": null }
+    },
+    "cost-optimized-agent": {
+      "zai": { "enabled": true, "tierId": "pro" }
+    }
+  }
+}

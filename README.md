@@ -27,7 +27,9 @@ Message → Plugin (before_model_resolve) → Classify task → Filter capable m
 The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight two-stage decision:
 
 1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
-2. **Benchmark ranking** — from surviving models, pick the benchmark leader for the detected task category
+2. **Subscription filter** — eliminate models not allowed by the user's global profile or agent-level override
+3. **Subscription-weighted ranking** — among the benchmark-ranked survivors, prefer providers whose subscription tier and provider bias make them more appropriate for routine use
+4. **Benchmark-preserving fallback order** — keep the remaining candidates in benchmark order when weights tie
 
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
@@ -64,6 +66,14 @@ The plugin matches keywords in each message to one of six routing categories. No
 ```
 
 The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
+
+As of the new subscription-aware foundation, the config can include:
+- a public subscription catalog version reference
+- a persistent global subscription profile
+- agent-level partial overrides for provider availability
+- subscription-weighted routing that can bias toward high-headroom providers like GLM Max without exposing private usage data
+
+The user declares what subscriptions they have. ZeroAPI decides the route.
 
 ## Repository Structure
 
@@ -103,6 +113,7 @@ ZeroAPI/
     ├── cost-summary.md
     ├── provider-config.md
     ├── oauth-setup.md
+    ├── subscription-catalog.md
     └── troubleshooting.md
 ```
 
@@ -149,6 +160,9 @@ Very little in normal operation. Classification is local (keyword/regex + config
 
 **Can I override routing?**
 Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your message. The plugin never overrides explicit model selections.
+
+**Can routing differ by agent?**
+Yes. ZeroAPI now has a foundation for a global subscription profile plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
 
 ## License
 

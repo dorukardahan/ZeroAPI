@@ -6,6 +6,8 @@ import { selectModel } from "./selector.js";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
+import { isModelAllowedBySubscriptionProfile } from "./profile.js";
+import { getSubscriptionWeightedCandidates } from "./router.js";
 
 export default definePluginEntry({
   id: "zeroapi-router",
@@ -51,20 +53,17 @@ export default definePluginEntry({
     }
 
     api.on("before_model_resolve", (event, ctx) => {
-      // Skip routing for specialist agents (null = don't route)
       const agentId = ctx.agentId;
       if (agentId && config.workspace_hints[agentId] === null) {
         logRoutingEvent({ agentId, category: "system", reason: "skip:specialist_agent" });
         return;
       }
 
-      // Skip routing for cron/heartbeat triggers
       if (ctx.trigger === "cron" || ctx.trigger === "heartbeat") {
         logRoutingEvent({ agentId, category: "system", reason: `skip:trigger:${ctx.trigger}` });
         return;
       }
 
-      // Classify the task
       const workspaceHints = agentId ? config.workspace_hints[agentId] : undefined;
       const decision = classifyTask(
         event.prompt,
@@ -73,48 +72,65 @@ export default definePluginEntry({
         workspaceHints,
       );
 
-      // High-risk tasks stay on default model
       if (decision.risk === "high") {
         logRouting(agentId, { ...decision, model: null, reason: `high_risk:${decision.reason}` });
         return;
       }
 
-      // No category detected — stay on runtime default / current model
       if (decision.category === "default") {
         logRouting(agentId, decision);
         return;
       }
 
-      // Detect likely vision tasks from prompt keywords
       const visionSignals = ["image", "screenshot", "photo", "picture", "diagram", "chart", "graph", "visual", "logo", "icon", "UI", "mockup", "design"];
       const likelyVision = visionSignals.some(s => event.prompt.toLowerCase().includes(s.toLowerCase()));
 
-      // Stage 1: Capability filter
       const tokenEstimate = estimateTokens(event.prompt);
       const isFast = decision.category === "fast";
-      const capable = filterCapableModels(config.models, {
-        estimatedTokens: tokenEstimate,
-        maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
-        requiresVision: likelyVision,
-      });
+      const capable = Object.fromEntries(
+        Object.entries(
+          filterCapableModels(config.models, {
+            estimatedTokens: tokenEstimate,
+            maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
+            requiresVision: likelyVision,
+          }),
+        ).filter(([modelKey]) =>
+          isModelAllowedBySubscriptionProfile(config.subscription_profile, agentId, modelKey),
+        ),
+      );
 
-      // Stage 2: Select best model from capable survivors
       const currentModel = ctx.modelId
         ? `${ctx.modelProviderId}/${ctx.modelId}`
         : config.default_model;
-      const selectedModel = selectModel(
+
+      const weightedCandidates = getSubscriptionWeightedCandidates(
         decision.category,
         capable,
         config.routing_rules,
-        currentModel,
+        config.subscription_profile,
+        agentId,
       );
+
+      const selectedModel = weightedCandidates.length > 0
+        ? selectModel(
+            decision.category,
+            Object.fromEntries(weightedCandidates.map((candidate) => [candidate, capable[candidate]])),
+            {
+              ...config.routing_rules,
+              [decision.category]: {
+                primary: weightedCandidates[0],
+                fallbacks: weightedCandidates.slice(1),
+              },
+            },
+            currentModel,
+          )
+        : null;
 
       if (!selectedModel) {
         logRouting(agentId, { ...decision, model: null, reason: `${decision.reason}:no_switch_needed` });
         return;
       }
 
-      // Parse provider/model
       const slashIdx = selectedModel.indexOf("/");
       const provider = selectedModel.substring(0, slashIdx);
       const model = selectedModel.substring(slashIdx + 1);
