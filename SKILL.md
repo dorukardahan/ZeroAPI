@@ -187,9 +187,14 @@ Required config shape:
   "routing_rules": {},
   "workspace_hints": {},
   "keywords": {},
-  "high_risk_keywords": []
+  "high_risk_keywords": [],
+  "fast_ttft_max_seconds": 5,
+  "vision_keywords": [],
+  "risk_levels": {}
 }
 ```
+
+`vision_keywords` and `risk_levels` are optional overrides. Omit them to use the built-in plugin defaults.
 
 Important rules:
 
@@ -244,6 +249,45 @@ Re-running `/zeroapi` is safe.
 - plugin reload happens on gateway restart
 - diffs should be shown before risky changes
 - cron changes remain opt-in unless explicitly approved
+
+## Policy Tuning
+
+ZeroAPI logs every routing decision to `~/.openclaw/logs/zeroapi-routing.log`. Use the eval script plus the raw log to tune routing policy from observed traffic.
+
+### Eval
+
+Run:
+
+```bash
+npx tsx scripts/eval.ts
+```
+
+Optional filters:
+
+```bash
+npx tsx scripts/eval.ts --since 2026-04-01
+npx tsx scripts/eval.ts --last 500
+```
+
+### Tunable constants
+
+| Field | What it controls | Tune when |
+|-------|------------------|-----------|
+| `keywords` | Category classification triggers | Too many prompts land in `default` |
+| `high_risk_keywords` | High-risk blocking triggers | Risk blocking is too aggressive or too weak |
+| `vision_keywords` | Vision/multimodal detection triggers | Vision routing has false positives or misses |
+| `risk_levels` | Per-category non-high-risk defaults | A category should default to a different risk level |
+| `fast_ttft_max_seconds` | Fast-category TTFT ceiling | Fast prompts still hit slow models |
+| `routing_rules` | Primary/fallback ordering per category | The wrong provider wins after filtering |
+
+### Tune loop
+
+1. Run eval: `npx tsx scripts/eval.ts`
+2. Edit one constant in `~/.openclaw/zeroapi-config.json`
+3. Restart the gateway so the plugin reloads the config
+4. Re-run eval on fresh traffic
+
+Tune one constant at a time. Compare before/after and keep only the changes that improve the report.
 
 ## What ZeroAPI does **not** do
 

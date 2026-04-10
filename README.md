@@ -84,6 +84,8 @@ ZeroAPI/
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── benchmarks.json                       # 155 models, 15 benchmarks, 5 providers (AA API v2)
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
+├── scripts/
+│   └── eval.ts                           # Routing log analyzer
 ├── plugin/
 │   ├── index.ts                          # Plugin entry, before_model_resolve hook
 │   ├── classifier.ts                     # Keyword/regex task classification
@@ -91,6 +93,9 @@ ZeroAPI/
 │   ├── selector.ts                       # Benchmark-based model selection
 │   ├── config.ts                         # Config loader + cache
 │   ├── logger.ts                         # Routing log writer
+│   ├── profile.ts                        # Subscription profile filtering
+│   ├── router.ts                         # Subscription-weighted candidate ordering
+│   ├── subscriptions.ts                  # Provider subscription catalog
 │   ├── types.ts                          # TypeScript types
 │   ├── package.json
 │   ├── vitest.config.ts
@@ -100,7 +105,9 @@ ZeroAPI/
 │       ├── filter.test.ts
 │       ├── selector.test.ts
 │       ├── logger.test.ts
-│       └── integration.test.ts
+│       ├── integration.test.ts
+│       ├── profile.test.ts
+│       └── router.test.ts
 ├── examples/
 │   ├── README.md
 │   ├── openai-only.json
@@ -156,7 +163,7 @@ Claude subscriptions no longer cover third-party tools like OpenClaw as of April
 Google declared CLI OAuth usage with third-party tools a ToS violation as of March 25, 2026. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key access (AI Studio/Vertex) is separate billing, not subscription-covered.
 
 **How accurate is routing?**
-Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. You should inspect `~/.openclaw/logs/zeroapi-routing.log` and treat routing as a policy hint layer, not as a guarantee that every message will switch models.
+Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. Inspect `~/.openclaw/logs/zeroapi-routing.log` for raw decisions or run `npx tsx scripts/eval.ts` for a tuning report, and treat routing as a policy hint layer rather than a guarantee that every message will switch models.
 
 **Does it add latency?**
 Very little in normal operation. Classification is local (keyword/regex + config lookups) and does not call an external LLM, but actual end-to-end behavior still depends on OpenClaw runtime state and the selected provider.

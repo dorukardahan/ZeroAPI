@@ -9,6 +9,16 @@ import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { isModelAllowedBySubscriptionProfile } from "./profile.js";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 
+const DEFAULT_VISION_KEYWORDS = ["image", "screenshot", "photo", "picture", "diagram", "chart", "graph", "visual", "logo", "icon", "UI", "mockup", "design"];
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildKeywordRegex(keyword: string): RegExp {
+  return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`);
+}
+
 export default definePluginEntry({
   id: "zeroapi-router",
   name: "ZeroAPI Router",
@@ -70,6 +80,7 @@ export default definePluginEntry({
         config.keywords,
         config.high_risk_keywords,
         workspaceHints,
+        config.risk_levels,
       );
 
       if (decision.risk === "high") {
@@ -82,8 +93,9 @@ export default definePluginEntry({
         return;
       }
 
-      const visionSignals = ["image", "screenshot", "photo", "picture", "diagram", "chart", "graph", "visual", "logo", "icon", "UI", "mockup", "design"];
-      const likelyVision = visionSignals.some(s => event.prompt.toLowerCase().includes(s.toLowerCase()));
+      const visionKeywords = config.vision_keywords ?? DEFAULT_VISION_KEYWORDS;
+      const promptLower = event.prompt.toLowerCase();
+      const likelyVision = visionKeywords.some((keyword) => buildKeywordRegex(keyword).test(promptLower));
 
       const tokenEstimate = estimateTokens(event.prompt);
       const isFast = decision.category === "fast";

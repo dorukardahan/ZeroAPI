@@ -1,6 +1,14 @@
 import type { TaskCategory, RiskLevel, RoutingDecision } from "./types.js";
 
-const RISK_MAP: Record<TaskCategory, RiskLevel> = {
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildKeywordRegex(keyword: string, flags?: string): RegExp {
+  return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`, flags);
+}
+
+const DEFAULT_RISK_LEVELS: Record<TaskCategory, RiskLevel> = {
   code: "medium",
   research: "low",
   orchestration: "medium",
@@ -14,6 +22,7 @@ export function classifyTask(
   keywords: Record<string, string[]>,
   highRiskKeywords: string[],
   workspaceHints?: TaskCategory[] | null,
+  riskLevels?: Partial<Record<TaskCategory, RiskLevel>>,
 ): RoutingDecision {
   const lower = prompt.toLowerCase();
 
@@ -21,8 +30,7 @@ export function classifyTask(
     return { category: "default", model: null, provider: null, reason: "empty_prompt", risk: "low" };
   }
 
-  const escapedHighRisk = highRiskKeywords.map((kw) => kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const matchedHighRisk = escapedHighRisk.find((kw) => new RegExp(`\\b${kw}\\b`).test(lower));
+  const matchedHighRisk = highRiskKeywords.find((kw) => buildKeywordRegex(kw).test(lower));
   const isHighRisk = Boolean(matchedHighRisk);
 
   let bestCategory: TaskCategory = "default";
@@ -34,8 +42,7 @@ export function classifyTask(
     let firstKeyword = "";
 
     for (const kw of kws) {
-      const escaped = kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(`\\b${escaped}\\b`, "g");
+      const regex = buildKeywordRegex(kw, "g");
       const matches = lower.match(regex);
       if (matches?.length) {
         categoryScore += matches.length;
@@ -57,7 +64,8 @@ export function classifyTask(
     bestReason = `workspace_hint:${workspaceHints[0]}`;
   }
 
-  const risk: RiskLevel = isHighRisk ? "high" : RISK_MAP[bestCategory];
+  const effectiveRiskLevels = { ...DEFAULT_RISK_LEVELS, ...riskLevels };
+  const risk: RiskLevel = isHighRisk ? "high" : effectiveRiskLevels[bestCategory];
 
   return {
     category: bestCategory,

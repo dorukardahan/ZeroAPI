@@ -11,6 +11,11 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   const subscriptionProfileValid =
     cfg.subscription_profile === undefined ||
     (typeof cfg.subscription_profile === "object" && cfg.subscription_profile !== null);
+  const visionKeywordsValid =
+    cfg.vision_keywords === undefined || Array.isArray(cfg.vision_keywords);
+  const riskLevelsValid =
+    cfg.risk_levels === undefined ||
+    (typeof cfg.risk_levels === "object" && cfg.risk_levels !== null && !Array.isArray(cfg.risk_levels));
 
   return (
     typeof cfg.version === "string" &&
@@ -20,6 +25,8 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     typeof cfg.keywords === "object" && cfg.keywords !== null &&
     Array.isArray(cfg.high_risk_keywords) &&
     typeof cfg.fast_ttft_max_seconds === "number" &&
+    visionKeywordsValid &&
+    riskLevelsValid &&
     subscriptionProfileValid
   );
 }
