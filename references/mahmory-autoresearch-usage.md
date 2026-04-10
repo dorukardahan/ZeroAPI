@@ -1,12 +1,11 @@
-# Mahmory Autoresearch in Production
+# Routing Autoresearch Pattern
 
 This document describes how the broader OpenClaw stack uses autoresearch in a real production repository, beyond ZeroAPI's own routing policy layer.
 
-The concrete reference implementation lives in `mahobrain/scripts/autoresearch/` and currently runs three distinct optimization lanes:
+The concrete reference implementation lives in `mahobrain/scripts/autoresearch/` and currently runs multiple optimization lanes:
 
-1. `mahmory` — recall quality tuning for the Mahmory memory system
-2. `skill-routing` — keyword + semantic threshold tuning for skill dispatch
-3. `tweet-quality` — offline scoring and parameter search for generated tweet drafts
+1. `skill-routing` — keyword + semantic threshold tuning for skill dispatch
+2. other lanes for unrelated product surfaces
 
 ZeroAPI does not run this framework itself today, but the pattern is directly relevant because it shows how policy-heavy model routing systems can be improved with offline experiment loops instead of intuition-driven config edits.
 
@@ -40,9 +39,7 @@ scripts/autoresearch/
 ├── framework.py              # generic experiment loop
 ├── autoresearch_loop.py      # target entrypoint
 ├── rollout_state.py          # progressive promotion state
-├── mahmory_tuner.py          # memory retrieval lane
 ├── skill_router_tuner.py     # skill routing lane
-├── tweet_tuner.py            # content quality lane
 ├── run-overnight.sh          # scheduled multi-phase runner
 └── results/                  # latest_run, leaderboards, rollout state
 ```
@@ -53,28 +50,9 @@ The key design choice is separation:
 - autoresearch stays offline, file-backed, and repeatable
 - only winners are promoted into live config or rollout state
 
-## The relevant targets
+## The relevant target
 
-### 1. Mahmory
-
-Goal: improve recall quality for memory search.
-
-Tuned parameters include:
-
-- semantic / BM25 / recency / strength / importance weights
-- RRF constants
-- temporal-profile half-life and profile-specific blend weights
-
-Artifacts:
-
-- `results/latest_run.json`
-- `results/leaderboard_phase1.json`
-- `results/leaderboard_phase2.json`
-- `results/rollout_state.json`
-
-This is the primary live lane. On April 10, 2026, the latest Mahmory run completed successfully in phase 2 and its rollout state was already operating at a promoted live stage.
-
-### 2. Skill routing
+### Skill routing
 
 Goal: improve the accuracy of selecting the right skill for a user message.
 
@@ -109,12 +87,11 @@ Mahobrain runs two modes:
 
 ### Direct/manual run
 
-Run a specific target explicitly:
+Run the routing target explicitly:
 
 ```bash
 cd scripts/autoresearch
 python3 autoresearch_loop.py 24 --target skill-routing --phase 1
-python3 autoresearch_loop.py 12 --target mahmory --phase 2
 ```
 
 ### Scheduled run
@@ -144,9 +121,6 @@ Examples from the production lanes:
 - `skill-routing`
   - reject if accuracy drops below floor
   - reject if false-positive rate rises above cap
-- `mahmory`
-  - cap p95 latency
-  - reject retrieval-quality regressions by query class
 
 This is the operationally useful part. The loop is not "search until score goes up"; it is "search inside a safety box."
 
@@ -196,7 +170,7 @@ Good fit:
 
 Bad fit:
 
-- memory-recall objectives that belong to Mahmory, not ZeroAPI
+- unrelated non-routing eval targets
 - any runtime dependence on the autoresearch loop
 
 ZeroAPI should use autoresearch to refine policy, not to make routing depend on a background optimizer.
@@ -212,4 +186,4 @@ Mahobrain proves that autoresearch is useful when:
 
 That is the practical takeaway for ZeroAPI.
 
-ZeroAPI already has the right architectural boundary for this style of optimization. If and when policy tuning becomes noisy enough to justify automation, the Mahobrain workflow is a solid template.
+ZeroAPI already has the right architectural boundary for this style of optimization. If and when policy tuning becomes noisy enough to justify automation, this routing-oriented workflow is a solid template.

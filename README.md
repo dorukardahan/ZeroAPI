@@ -10,7 +10,7 @@ ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway l
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
-For a real production example of offline policy tuning around OpenClaw routing and memory systems, see [`references/mahmory-autoresearch-usage.md`](references/mahmory-autoresearch-usage.md).
+For a real production example of offline policy tuning around OpenClaw routing, see [`references/mahmory-autoresearch-usage.md`](references/mahmory-autoresearch-usage.md).
 
 ## Provider Exclusions
 
