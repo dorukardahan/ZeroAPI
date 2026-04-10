@@ -1,0 +1,26 @@
+title: "Show your config"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your ZeroAPI routing config! What subscriptions do you use? What categories do you tune? Any custom keywords?
+  - type: textarea
+    id: subscriptions
+    attributes:
+      label: Subscriptions
+      description: Which providers do you have?
+      placeholder: "e.g., OpenAI Pro + GLM Max + Kimi Allegro"
+    validations:
+      required: true
+  - type: textarea
+    id: config-tweaks
+    attributes:
+      label: Config tweaks
+      description: Any custom keywords, risk levels, or vision keywords you've added?
+      placeholder: "e.g., added 'deploy-preview' to fast keywords"
+  - type: textarea
+    id: eval-output
+    attributes:
+      label: Eval output
+      description: Paste your `npx tsx scripts/eval.ts` output if you have routing data
