@@ -4,13 +4,18 @@
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
 [![Version](https://img.shields.io/badge/version-3.1.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.1.0)
 
-**Your AI subscriptions. One plugin. Eligible messages routed to the best available policy match.**
+**Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
 ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior — not a replacement for OpenClaw's own model defaults, explicit `/model` choices, or per-agent configuration.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
-For a real production example of offline policy tuning around OpenClaw routing, see [`references/mahmory-autoresearch-usage.md`](references/mahmory-autoresearch-usage.md).
+**What makes it different:**
+- **Benchmark-driven** — routes by real benchmark scores (Artificial Analysis), not vibes
+- **Subscription-aware** — respects your provider tiers and biases toward high-headroom plans
+- **Data-driven tuning** — built-in eval script analyzes routing logs and suggests config improvements
+- **Zero runtime cost** — keyword classification under 1ms, no LLM call, no external API
+- **Cross-provider fallback** — every category has fallbacks spanning multiple providers
 
 ## Provider Exclusions
 
@@ -76,6 +81,22 @@ As of the new subscription-aware foundation, the config can include:
 - subscription-weighted routing that can bias toward high-headroom providers like GLM Max without exposing private usage data
 
 The user declares what subscriptions they have. ZeroAPI decides the route.
+
+## Policy Tuning
+
+Most routing plugins are set-and-forget. ZeroAPI is set-and-improve.
+
+Every routing decision is logged to `~/.openclaw/logs/zeroapi-routing.log`. The built-in eval script analyzes this data and tells you what to tune:
+
+```bash
+npx tsx scripts/eval.ts --last 500
+```
+
+The report shows category distribution, risk override rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants — keywords, risk levels, vision detection, TTFT thresholds, fallback ordering — live in `zeroapi-config.json` and can be changed without touching code.
+
+**The loop:** run eval, change one constant, restart gateway, wait for traffic, re-run eval. Keep what improves routing, revert what doesn't.
+
+This pattern is inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — the same measure-experiment-promote cycle, applied to routing policy instead of model training. For a production example of this pattern in the broader OpenClaw stack, see [`references/mahmory-autoresearch-usage.md`](references/mahmory-autoresearch-usage.md).
 
 ## Repository Structure
 
