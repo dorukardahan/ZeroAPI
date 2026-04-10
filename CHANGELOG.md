@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.2.0] — 2026-04-10
+
+Config-driven policy tuning, subscription-aware routing, and autoresearch-inspired eval workflow.
+
+### Added
+- **Policy tuning workflow** — `scripts/eval.ts` analyzes routing logs and reports category distribution, risk rate, provider diversity, keyword hits, and tuning suggestions
+- **Config-driven vision keywords** — `vision_keywords` field in config, word-boundary regex matching (fixes false positives like "UI" matching "CLI")
+- **Config-driven risk levels** — `risk_levels` field in config, per-category risk assignment without code changes
+- **Subscription-aware routing** — global subscription profile + agent-level overrides, subscription-weighted candidate ordering
+- **Autoresearch reference doc** — production pattern for offline policy tuning (contributed by @AytuncYildizli)
+- CI test workflow (Node 20 + 22) with GitHub Actions
+- Discussion template for sharing routing configs
+
+### Changed
+- Category and vision keywords now regex-escaped (prevents crash on keywords like `c++`)
+- README restructured: feature highlights, dedicated Policy Tuning section, Karpathy autoresearch credit
+- SKILL.md streamlined, detailed docs moved to `references/`
+- Repo description and topics updated for discoverability
+
+### New files
+- `plugin/profile.ts` — subscription profile filtering
+- `plugin/router.ts` — subscription-weighted candidate ordering
+- `plugin/subscriptions.ts` — provider subscription catalog
+- `scripts/eval.ts` — routing log analyzer
+- `references/mahmory-autoresearch-usage.md` — autoresearch pattern reference
+
+---
+
 ## [3.1.0] — 2026-04-06
 
 Routing diagnostics, conservative classification, and docs alignment with OpenClaw runtime.
