@@ -53,7 +53,7 @@ The key design choice is separation:
 - autoresearch stays offline, file-backed, and repeatable
 - only winners are promoted into live config or rollout state
 
-## The three targets
+## The relevant targets
 
 ### 1. Mahmory
 
@@ -72,7 +72,7 @@ Artifacts:
 - `results/leaderboard_phase2.json`
 - `results/rollout_state.json`
 
-This is the primary live lane. On April 10, 2026, the latest Mahmory run completed successfully in phase 2.
+This is the primary live lane. On April 10, 2026, the latest Mahmory run completed successfully in phase 2 and its rollout state was already operating at a promoted live stage.
 
 ### 2. Skill routing
 
@@ -94,27 +94,14 @@ Artifacts:
 
 This lane is effectively a routing-policy tuner. Conceptually it is the closest sibling to ZeroAPI.
 
-### 3. Tweet quality
+In production this lane is optimized against a fixed eval corpus and guardrailed before promotion. A recent real run looked like this in practice:
 
-Goal: optimize generation parameters for short-form social output against an offline judge.
+- baseline score around `0.892`
+- best score around `0.908`
+- false-positive guardrail enforced
+- p95 kept around `90ms`
 
-Tuned parameters include:
-
-- formality / provocative tone
-- personal-story ratio
-- hook / CTA strength
-- tech depth
-- emoji density / hashtag count
-- topic weights
-- phase-2 style variables such as question ratio, contrast ratio, specificity, sentence count, and code-switch ratio
-
-Artifacts:
-
-- `results/tweet-quality/latest_run.json`
-- `results/tweet-quality/leaderboard_phase1.json`
-- `results/tweet-quality/leaderboard_phase2.json`
-
-This lane shows the same framework working on subjective output quality, not just routing or retrieval.
+That is exactly the kind of loop ZeroAPI would benefit from if routing thresholds, provider bias, or override confidence start drifting away from real user outcomes.
 
 ## Execution model
 
@@ -127,7 +114,6 @@ Run a specific target explicitly:
 ```bash
 cd scripts/autoresearch
 python3 autoresearch_loop.py 24 --target skill-routing --phase 1
-python3 autoresearch_loop.py 24 --target tweet-quality --phase 1
 python3 autoresearch_loop.py 12 --target mahmory --phase 2
 ```
 
@@ -161,9 +147,6 @@ Examples from the production lanes:
 - `mahmory`
   - cap p95 latency
   - reject retrieval-quality regressions by query class
-- `tweet-quality`
-  - keep generation fast
-  - preserve minimum quality dimensions while optimizing composite score
 
 This is the operationally useful part. The loop is not "search until score goes up"; it is "search inside a safety box."
 
@@ -213,7 +196,6 @@ Good fit:
 
 Bad fit:
 
-- content-quality judging inside the plugin repo
 - memory-recall objectives that belong to Mahmory, not ZeroAPI
 - any runtime dependence on the autoresearch loop
 
