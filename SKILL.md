@@ -8,7 +8,7 @@ description: >
   Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
-compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription.
+compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Same-provider account steering via `authProfile` needs an OpenClaw runtime that supports `authProfileOverride` from `before_model_resolve`.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
@@ -154,7 +154,7 @@ Persist the result into a subscription profile with:
 - `global` provider selections
 - optional `agentOverrides`
 
-If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` only as metadata for alignment with OpenClaw `auth.order`; do not assume ZeroAPI can directly force that auth profile yet.
+If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on compatible OpenClaw runtimes; older runtimes still treat it as metadata and continue to rely on `auth.order`.
 
 The user declares what subscriptions they have. ZeroAPI decides routing.
 

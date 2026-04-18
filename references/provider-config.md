@@ -311,7 +311,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 | `benchmarks_date` | Date of the embedded benchmarks.json used to generate this config |
 | `subscription_catalog_version` | Public tier catalog version used when the config was generated |
 | `subscription_profile.global` | Enabled providers and selected subscription tiers. Missing or empty values can filter out all routing candidates. |
-| `subscription_inventory.accounts` | Preferred same-provider multi-account pool. Each account can declare `provider`, `tierId`, `authProfile`, `usagePriority`, and `intendedUse`. Winning accounts pass `authProfile` through as OpenClaw `authProfileOverride`. |
+| `subscription_inventory.accounts` | Preferred same-provider multi-account pool. Each account can declare `provider`, `tierId`, `authProfile`, `usagePriority`, and `intendedUse`. Winning accounts pass `authProfile` through as OpenClaw `authProfileOverride` on compatible runtimes; older runtimes ignore that field and keep using `auth.order`. |
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
 | `external_model_policy` | How ZeroAPI behaves when the active current model is outside its own `models` pool. `stay` keeps that foreign or external model. `allow` lets ZeroAPI re-enter and route back into its subscription pool. |
 | `models.<id>.context_window` | Maximum tokens the model can accept |

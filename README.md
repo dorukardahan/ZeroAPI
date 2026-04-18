@@ -120,7 +120,9 @@ It lets ZeroAPI model that provider as an account pool instead of a single tier:
 }
 ```
 
-When the winning inventory account has an `authProfile`, ZeroAPI now returns `authProfileOverride` alongside `providerOverride` and `modelOverride`. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
+When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride`. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
+
+Important: same-provider account steering only becomes active on OpenClaw builds that support `authProfileOverride` from `before_model_resolve` hooks. On older builds, the extra field is ignored, so `subscription_inventory` still improves provider weighting but the final same-provider account choice falls back to OpenClaw `auth.order`.
 
 Before turning routing loose on real traffic, inspect a sample decision:
 
@@ -261,7 +263,7 @@ Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your me
 Yes. ZeroAPI keeps a legacy global `subscription_profile` plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
 
 **Can ZeroAPI pick between multiple accounts for the same provider?**
-Yes. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI returns it as `authProfileOverride`. OpenClaw then treats it as the preferred profile for the run, while still handling cooldowns, failover, and session stickiness.
+Yes, with one runtime caveat. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI returns it as `authProfileOverride`. OpenClaw builds that support that hook field can then prefer the right account for the run, while still handling cooldowns, failover, and session stickiness. Older builds ignore the field and keep relying on `auth.order` inside that provider.
 
 ## License
 
