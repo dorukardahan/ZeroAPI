@@ -43,6 +43,13 @@ describe("profile", () => {
     expect(resolved?.tierId).toBeNull();
   });
 
+  it("resolves the current OpenClaw Kimi Coding provider alias", () => {
+    const resolved = resolveProviderSubscription(profile, undefined, "kimi");
+    expect(resolved).not.toBeNull();
+    expect(resolved?.enabled).toBe(false);
+    expect(resolved?.tierId).toBeNull();
+  });
+
   it("allows legacy provider ids when the canonical provider is enabled", () => {
     const aliasProfile: SubscriptionProfile = {
       version: "1.0.0",

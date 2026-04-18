@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.2.3] — 2026-04-18
+
+Kimi Coding alias follow-up after checking current OpenClaw provider docs and Asuman's runtime config.
+
+### Fixed
+- Added `kimi` as a Kimi provider alias alongside legacy `kimi-coding`, while keeping `moonshot` as the canonical Moonshot/Kimi K2 provider id
+- Documented Kimi aliases in the README and skill setup table
+
+---
+
 ## [3.2.2] — 2026-04-18
 
 Provider alias compatibility patch for OpenClaw deployments that still use legacy provider ids.

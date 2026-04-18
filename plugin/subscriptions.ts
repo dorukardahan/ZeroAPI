@@ -62,7 +62,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     providerId: "kimi",
     label: "Kimi",
     openclawProviderId: "moonshot",
-    openclawProviderAliases: ["kimi-coding"],
+    openclawProviderAliases: ["kimi", "kimi-coding"],
     status: "active",
     authMode: "api_key",
     selectionMode: "single_tier",
