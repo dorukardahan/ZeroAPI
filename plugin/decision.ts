@@ -1,6 +1,6 @@
 import { classifyTask } from "./classifier.js";
 import { filterCapableModels, estimateTokens } from "./filter.js";
-import { isModelAllowedBySubscriptionProfile } from "./profile.js";
+import { isModelAllowedBySubscriptions } from "./inventory.js";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 import { selectModel } from "./selector.js";
 import type { RoutingDecision, TaskCategory, ZeroAPIConfig } from "./types.js";
@@ -207,9 +207,12 @@ export function resolveRoutingDecision(
         maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
         requiresVision: likelyVision,
       }),
-    ).filter(([modelKey]) =>
-      isModelAllowedBySubscriptionProfile(config.subscription_profile, agentId, modelKey),
-    ),
+    ).filter(([modelKey]) => isModelAllowedBySubscriptions({
+      profile: config.subscription_profile,
+      inventory: config.subscription_inventory,
+      agentId,
+      modelKey,
+    })),
   );
 
   const weightedCandidates = getSubscriptionWeightedCandidates(
@@ -217,6 +220,7 @@ export function resolveRoutingDecision(
     capable,
     config.routing_rules,
     config.subscription_profile,
+    config.subscription_inventory,
     agentId,
   );
 

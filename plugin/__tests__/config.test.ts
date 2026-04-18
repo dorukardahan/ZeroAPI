@@ -116,7 +116,7 @@ describe("config", () => {
 
   it("loads and caches valid config", async () => {
     const valid = {
-      version: "3.0.0",
+      version: "3.3.0",
       generated: "2026-04-05",
       benchmarks_date: "2026-04-04",
       default_model: "openai-codex/gpt-5.4",
@@ -134,13 +134,46 @@ describe("config", () => {
           "openai-codex": { enabled: true, tierId: "plus" },
         },
       },
+      subscription_inventory: {
+        version: "1.0.0",
+        accounts: {
+          "openai-work-max": {
+            provider: "openai-codex",
+            tierId: "pro",
+            authProfile: "openai:work",
+            usagePriority: 2,
+            intendedUse: ["code", "research"],
+          },
+        },
+      },
     };
     writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(valid));
     const { loadConfig, getConfig } = await import("../config.js");
     const result = loadConfig(testDir);
     expect(result).not.toBeNull();
-    expect(result!.version).toBe("3.0.0");
+    expect(result!.version).toBe("3.3.0");
     expect(result!.external_model_policy).toBe("allow");
+    expect(result!.subscription_inventory?.accounts["openai-work-max"]?.provider).toBe("openai-codex");
     expect(getConfig()).toBe(result);
+  });
+
+  it("returns null when subscription_inventory is invalid", async () => {
+    const bad = {
+      version: "3.3.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "foo/bar",
+      models: {},
+      routing_rules: {},
+      workspace_hints: {},
+      keywords: {},
+      high_risk_keywords: [],
+      fast_ttft_max_seconds: 5,
+      subscription_inventory: [],
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(bad));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
   });
 });

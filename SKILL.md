@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.2.4
+version: 3.3.0
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -49,6 +49,7 @@ Important authority order:
 ZeroAPI also supports a **subscription-aware foundation**:
 - a fixed provider tier catalog
 - a persistent global subscription profile
+- an optional same-provider `subscription_inventory` for multi-account setups
 - optional agent-level partial overrides
 - benchmark-frontier candidate ordering without exposing private usage data
 
@@ -153,6 +154,8 @@ Persist the result into a subscription profile with:
 - `global` provider selections
 - optional `agentOverrides`
 
+If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` only as metadata for alignment with OpenClaw `auth.order`; do not assume ZeroAPI can directly force that auth profile yet.
+
 The user declares what subscriptions they have. ZeroAPI decides routing.
 
 ### Step 3: generate config
@@ -173,7 +176,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.2.4",
+  "version": "3.3.0",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",
@@ -181,6 +184,10 @@ Required config shape:
     "version": "1.0.0",
     "global": {},
     "agentOverrides": {}
+  },
+  "subscription_inventory": {
+    "version": "1.0.0",
+    "accounts": {}
   },
   "default_model": "<best overall available model>",
   "external_model_policy": "stay",

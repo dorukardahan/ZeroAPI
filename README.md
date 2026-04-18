@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.2.4-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.4)
+[![Version](https://img.shields.io/badge/version-3.3.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.3.0)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -39,7 +39,7 @@ Message → Plugin (before_model_resolve) → Classify task → Filter capable m
 The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight two-stage decision:
 
 1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
-2. **Subscription filter** — eliminate models not allowed by the user's global profile or agent-level override
+2. **Subscription filter** — eliminate models not allowed by the user's legacy profile or preferred account inventory
 3. **Benchmark frontier** — keep only candidates that stay close enough to the category leader for their subscription/headroom profile
 4. **Subscription pressure ordering** — inside that frontier, prefer providers whose tier and provider bias make them more appropriate for routine use
 5. **Benchmark fallback order** — outside the frontier, fall back in benchmark strength order
@@ -86,10 +86,41 @@ The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you hav
 As of the new subscription-aware foundation, the config can include:
 - a public subscription catalog version reference
 - a persistent global subscription profile
+- a preferred `subscription_inventory` for same-provider multi-account setups
 - agent-level partial overrides for provider availability
 - benchmark-frontier routing that can bias toward high-headroom providers like GLM Max without letting weak candidates jump the queue
 
 The user declares what subscriptions they have. ZeroAPI decides the route.
+
+## Same-Provider Multi-Account
+
+If you have multiple subscriptions under the same provider - for example one OpenAI Pro account and two OpenAI Plus accounts - prefer `subscription_inventory`.
+
+It lets ZeroAPI model that provider as an account pool instead of a single tier:
+
+```json
+"subscription_inventory": {
+  "version": "1.0.0",
+  "accounts": {
+    "openai-work-pro": {
+      "provider": "openai-codex",
+      "tierId": "pro",
+      "authProfile": "openai:work",
+      "usagePriority": 2,
+      "intendedUse": ["code", "research"]
+    },
+    "openai-personal-plus-1": {
+      "provider": "openai-codex",
+      "tierId": "plus",
+      "authProfile": "openai:personal-1",
+      "usagePriority": 1,
+      "intendedUse": ["default", "fast"]
+    }
+  }
+}
+```
+
+Current limitation: ZeroAPI still returns only `providerOverride` and `modelOverride`. OpenClaw remains responsible for real auth profile rotation inside that provider via `auth.order`, cooldowns, and session pinning. For best results, keep your OpenClaw `auth.order` aligned with the priorities in `subscription_inventory`.
 
 Before turning routing loose on real traffic, inspect a sample decision:
 
@@ -144,6 +175,7 @@ ZeroAPI/
 │   ├── filter.ts                         # Capability filter (context window, vision, TTFT)
 │   ├── selector.ts                       # Benchmark-based model selection
 │   ├── config.ts                         # Config loader + cache
+│   ├── inventory.ts                      # Same-provider account inventory + capacity resolver
 │   ├── logger.ts                         # Routing log writer
 │   ├── profile.ts                        # Subscription profile filtering
 │   ├── router.ts                         # Benchmark-frontier + subscription-pressure ordering
@@ -159,6 +191,7 @@ ZeroAPI/
 │       ├── selector.test.ts
 │       ├── logger.test.ts
 │       ├── integration.test.ts
+│       ├── inventory.test.ts
 │       ├── profile.test.ts
 │       └── router.test.ts
 ├── examples/
@@ -225,7 +258,10 @@ Very little in normal operation. Classification is local (keyword/regex + config
 Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your message. The plugin never overrides explicit model selections.
 
 **Can routing differ by agent?**
-Yes. ZeroAPI now has a foundation for a global subscription profile plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
+Yes. ZeroAPI keeps a legacy global `subscription_profile` plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
+
+**Can ZeroAPI pick between multiple accounts for the same provider?**
+Partially. ZeroAPI can now score the provider as a pool with `subscription_inventory`, but the real per-turn account selection still belongs to OpenClaw runtime. OpenClaw rotates auth profiles with `auth.order`, cooldowns, and session stickiness. For best results, keep the account priorities in both places aligned.
 
 ## License
 

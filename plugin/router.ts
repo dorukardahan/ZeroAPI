@@ -1,6 +1,7 @@
 import { getProviderCatalogEntry } from "./subscriptions.js";
-import type { ModelCapabilities, RoutingRule, TaskCategory } from "./types.js";
-import { resolveProviderSubscription, type SubscriptionProfile } from "./profile.js";
+import type { ModelCapabilities, RoutingRule, SubscriptionInventory, TaskCategory } from "./types.js";
+import { resolveProviderCapacity } from "./inventory.js";
+import type { SubscriptionProfile } from "./profile.js";
 
 function normalizeBenchmarkValue(value: number | null | undefined): number | null {
   if (value == null) return null;
@@ -91,6 +92,7 @@ export function getSubscriptionWeightedCandidates(
   availableModels: Record<string, ModelCapabilities>,
   rules: Record<string, RoutingRule>,
   profile: SubscriptionProfile | undefined,
+  inventory: SubscriptionInventory | undefined,
   agentId: string | undefined,
 ): string[] {
   const rule = rules[category] ?? rules["default"];
@@ -101,7 +103,13 @@ export function getSubscriptionWeightedCandidates(
     .map((candidate, index) => {
       const providerId = candidate.split("/")[0] ?? "";
       const catalog = getProviderCatalogEntry(providerId);
-      const resolved = resolveProviderSubscription(profile, agentId, providerId);
+      const resolved = resolveProviderCapacity({
+        profile,
+        inventory,
+        agentId,
+        providerId,
+        category,
+      });
       const tierWeight = resolved?.routingWeight ?? 0;
       const providerBias = catalog?.benchmarkRoutingBias ?? 1;
       const benchmarkStrength = getCategoryBenchmarkStrength(category, availableModels[candidate]);

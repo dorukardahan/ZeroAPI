@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getSubscriptionWeightedCandidates } from "../router.js";
-import type { ModelCapabilities, RoutingRule, SubscriptionProfile } from "../types.js";
+import type { ModelCapabilities, RoutingRule, SubscriptionInventory, SubscriptionProfile } from "../types.js";
 
 const models: Record<string, ModelCapabilities> = {
   "openai-codex/gpt-5.4": {
@@ -99,26 +99,26 @@ const profile: SubscriptionProfile = {
 
 describe("router weighting", () => {
   it("keeps the benchmark leader first when subscription pressure cannot justify the quality drop", () => {
-    const candidates = getSubscriptionWeightedCandidates("code", models, rules, profile, undefined);
+    const candidates = getSubscriptionWeightedCandidates("code", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("openai-codex/gpt-5.4");
     expect(candidates[1]).toBe("zai/glm-5.1");
   });
 
   it("allows high-headroom providers to lead when they stay within the benchmark frontier", () => {
-    const candidates = getSubscriptionWeightedCandidates("default", models, rules, profile, undefined);
+    const candidates = getSubscriptionWeightedCandidates("default", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("zai/glm-5.1");
     expect(candidates).toContain("openai-codex/gpt-5.4");
   });
 
   it("preserves the orchestration leader while keeping benchmark-near fallbacks in pressure order", () => {
-    const candidates = getSubscriptionWeightedCandidates("orchestration", models, rules, profile, undefined);
+    const candidates = getSubscriptionWeightedCandidates("orchestration", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("zai/glm-5.1");
     expect(candidates[1]).toBe("moonshot/kimi-k2.5");
     expect(candidates).toContain("openai-codex/gpt-5.4");
   });
 
   it("lets low-latency models win fast tasks when they remain in the configured pool", () => {
-    const candidates = getSubscriptionWeightedCandidates("fast", models, rules, profile, undefined);
+    const candidates = getSubscriptionWeightedCandidates("fast", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("zai/glm-5.1");
   });
 
@@ -130,7 +130,7 @@ describe("router weighting", () => {
         "zai": { enabled: false, tierId: null },
       },
     };
-    const candidates = getSubscriptionWeightedCandidates("default", models, rules, constrained, undefined);
+    const candidates = getSubscriptionWeightedCandidates("default", models, rules, constrained, undefined, undefined);
     expect(candidates).not.toContain("zai/glm-5.1");
     expect(candidates[0]).toBe("openai-codex/gpt-5.4");
   });
@@ -142,7 +142,55 @@ describe("router weighting", () => {
         fallbacks: ["openai-codex/gpt-5.4"],
       },
     };
-    const candidates = getSubscriptionWeightedCandidates("default", models, aliasRules, profile, undefined);
+    const candidates = getSubscriptionWeightedCandidates("default", models, aliasRules, profile, undefined, undefined);
     expect(candidates).toContain("kimi-coding/k2p5");
+  });
+
+  it("lets inventory override a legacy-disabled provider and feed the router", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "openai-work-max": {
+          provider: "openai-codex",
+          tierId: "pro",
+          authProfile: "openai:work",
+          usagePriority: 2,
+          intendedUse: ["code", "research"],
+        },
+        "openai-personal-plus-1": {
+          provider: "openai-codex",
+          tierId: "plus",
+          authProfile: "openai:personal-1",
+          usagePriority: 1,
+          intendedUse: ["default", "fast"],
+        },
+        "openai-personal-plus-2": {
+          provider: "openai-codex",
+          tierId: "plus",
+          authProfile: "openai:personal-2",
+          usagePriority: 1,
+          intendedUse: ["default", "fast"],
+        },
+      },
+    };
+    const legacyDisabledOpenAI: SubscriptionProfile = {
+      ...profile,
+      global: {
+        ...profile.global,
+        "openai-codex": { enabled: false, tierId: null },
+      },
+    };
+
+    const candidates = getSubscriptionWeightedCandidates(
+      "code",
+      models,
+      rules,
+      legacyDisabledOpenAI,
+      inventory,
+      undefined,
+    );
+
+    expect(candidates).toContain("openai-codex/gpt-5.4");
+    expect(candidates[0]).toBe("openai-codex/gpt-5.4");
   });
 });

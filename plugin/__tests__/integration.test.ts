@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { classifyTask } from "../classifier.js";
 import { filterCapableModels, estimateTokens } from "../filter.js";
+import { isModelAllowedBySubscriptions } from "../inventory.js";
 import { selectModel } from "../selector.js";
-import { isModelAllowedBySubscriptionProfile } from "../profile.js";
 import type { ZeroAPIConfig } from "../types.js";
 
 const config: ZeroAPIConfig = {
-  version: "3.2.1",
+  version: "3.3.0",
   generated: "2026-04-05",
   benchmarks_date: "2026-04-04",
   default_model: "openai-codex/gpt-5.4",
@@ -136,9 +136,12 @@ describe("full routing pipeline", () => {
   it("subscription profile can remove a provider from the candidate pool", () => {
     const capable = filterCapableModels(config.models, { estimatedTokens: 1000 });
     const filtered = Object.fromEntries(
-      Object.entries(capable).filter(([modelKey]) =>
-        isModelAllowedBySubscriptionProfile(config.subscription_profile, "constrained", modelKey),
-      ),
+      Object.entries(capable).filter(([modelKey]) => isModelAllowedBySubscriptions({
+        profile: config.subscription_profile,
+        inventory: config.subscription_inventory,
+        agentId: "constrained",
+        modelKey,
+      })),
     );
     expect(filtered["openai-codex/gpt-5.4"]).toBeUndefined();
     expect(filtered["zai/glm-5"]).toBeDefined();

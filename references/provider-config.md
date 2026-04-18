@@ -240,7 +240,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.2.4",
+  "version": "3.3.0",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",
@@ -248,6 +248,18 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
     "version": "1.0.0",
     "global": {
       "openai-codex": { "enabled": true, "tierId": "plus" }
+    }
+  },
+  "subscription_inventory": {
+    "version": "1.0.0",
+    "accounts": {
+      "openai-work-pro": {
+        "provider": "openai-codex",
+        "tierId": "pro",
+        "authProfile": "openai:work",
+        "usagePriority": 2,
+        "intendedUse": ["code", "research"]
+      }
     }
   },
   "default_model": "<provider>/<model-id>",
@@ -299,6 +311,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 | `benchmarks_date` | Date of the embedded benchmarks.json used to generate this config |
 | `subscription_catalog_version` | Public tier catalog version used when the config was generated |
 | `subscription_profile.global` | Enabled providers and selected subscription tiers. Missing or empty values can filter out all routing candidates. |
+| `subscription_inventory.accounts` | Preferred same-provider multi-account pool. Each account can declare `provider`, `tierId`, `authProfile`, `usagePriority`, and `intendedUse`. |
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
 | `external_model_policy` | How ZeroAPI behaves when the active current model is outside its own `models` pool. `stay` keeps that foreign or external model. `allow` lets ZeroAPI re-enter and route back into its subscription pool. |
 | `models.<id>.context_window` | Maximum tokens the model can accept |

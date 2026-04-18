@@ -14,7 +14,18 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     cfg.external_model_policy === "allow";
   const subscriptionProfileValid =
     cfg.subscription_profile === undefined ||
-    (typeof cfg.subscription_profile === "object" && cfg.subscription_profile !== null);
+    (
+      typeof cfg.subscription_profile === "object" &&
+      cfg.subscription_profile !== null &&
+      !Array.isArray(cfg.subscription_profile)
+    );
+  const subscriptionInventoryValid =
+    cfg.subscription_inventory === undefined ||
+    (
+      typeof cfg.subscription_inventory === "object" &&
+      cfg.subscription_inventory !== null &&
+      !Array.isArray(cfg.subscription_inventory)
+    );
   const visionKeywordsValid =
     cfg.vision_keywords === undefined || Array.isArray(cfg.vision_keywords);
   const workspaceHintsValid =
@@ -36,7 +47,8 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     workspaceHintsValid &&
     visionKeywordsValid &&
     riskLevelsValid &&
-    subscriptionProfileValid
+    subscriptionProfileValid &&
+    subscriptionInventoryValid
   );
 }
 

@@ -94,6 +94,8 @@ Each tier should define:
 
 Users do not describe strategy in free text. They only declare which provider tiers they have.
 
+For same-provider multi-account setups, ZeroAPI can also store an account inventory so one provider is not collapsed into a single tier.
+
 ### Global Profile
 
 One persistent global profile stores the user's default subscription state.
@@ -102,6 +104,18 @@ One persistent global profile stores the user's default subscription state.
 
 Agent-level partial overrides may override only changed providers.
 Unspecified providers inherit from the global profile.
+
+### Account Inventory
+
+`subscription_inventory` is the preferred shape when a user has multiple accounts under the same provider.
+
+Each account can carry:
+
+- `provider`
+- `tierId`
+- `authProfile` (metadata only for now)
+- `usagePriority`
+- `intendedUse`
 
 Example:
 
@@ -158,7 +172,7 @@ The router uses two layers:
 The effective pressure signal is:
 
 - provider enabled
-- tier selected
+- tier selected or account pool composition
 - tier routing weight
 - provider benchmark bias
 
@@ -167,6 +181,7 @@ This stays heuristic in v1. Real usage telemetry comes later, but the frontier r
 ## Files to Add in v1
 
 - `references/subscription-catalog.md`, human-readable design/source-of-truth notes
+- `plugin/inventory.ts`, same-provider account inventory resolution
 - `plugin/subscriptions.ts`, typed built-in catalog data
 - `plugin/profile.ts`, profile resolution logic for global + agent partial override
 - `examples/subscription-profile.json`, public example config fragment

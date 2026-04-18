@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.3.0] — 2026-04-18
+
+### Added
+- `subscription_inventory` config block for account-aware subscription routing, including multiple accounts under the same provider
+- Inventory-aware routing resolver that aggregates same-provider account capacity with support for optional `authProfile`, `usagePriority`, and `intendedUse`
+- Inventory tests covering provider precedence, disabled-account behavior, and legacy profile fallback
+
+### Changed
+- Routing eligibility and subscription pressure can now come from `subscription_inventory` when it exists for a provider, while `subscription_profile` remains supported as the legacy/global-agent policy layer
+- Config validation now rejects array-shaped `subscription_profile` and `subscription_inventory` payloads instead of silently accepting malformed structures
+
+### Notes
+- ZeroAPI still selects `providerOverride` and `modelOverride` only. OpenClaw remains responsible for the actual auth profile rotation inside a provider via `auth.order`, cooldowns, and session pinning.
+
 ## [3.2.4] — 2026-04-18
 
 ### Added

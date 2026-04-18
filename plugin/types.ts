@@ -26,6 +26,20 @@ export type SubscriptionProfile = {
   agentOverrides?: Record<string, Record<string, ProviderSubscriptionSelection>>;
 };
 
+export type SubscriptionAccount = {
+  provider: string;
+  tierId?: string | null;
+  enabled?: boolean;
+  authProfile?: string | null;
+  usagePriority?: number;
+  intendedUse?: TaskCategory[];
+};
+
+export type SubscriptionInventory = {
+  version: string;
+  accounts: Record<string, SubscriptionAccount>;
+};
+
 export type ZeroAPIConfig = {
   version: string;
   generated: string;
@@ -42,6 +56,7 @@ export type ZeroAPIConfig = {
   risk_levels?: Partial<Record<TaskCategory, RiskLevel>>;
   subscription_catalog_version?: string;
   subscription_profile?: SubscriptionProfile;
+  subscription_inventory?: SubscriptionInventory;
 };
 
 export type RoutingDecision = {
