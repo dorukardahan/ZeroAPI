@@ -113,7 +113,7 @@ Each account can carry:
 
 - `provider`
 - `tierId`
-- `authProfile` (metadata only for now)
+- `authProfile` (preferred OpenClaw auth profile id when that account wins)
 - `usagePriority`
 - `intendedUse`
 

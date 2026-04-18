@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 
-const PLUGIN_VERSION = "3.3.0";
+const PLUGIN_VERSION = "3.4.0";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -99,6 +99,9 @@ export default definePluginEntry({
         return {
           providerOverride: resolution.providerOverride!,
           modelOverride: resolution.modelOverride!,
+          ...(resolution.authProfileOverride
+            ? { authProfileOverride: resolution.authProfileOverride }
+            : {}),
         };
       }
     });

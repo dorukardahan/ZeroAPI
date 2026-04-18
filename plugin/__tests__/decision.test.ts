@@ -63,6 +63,24 @@ const config: ZeroAPIConfig = {
       },
     },
   },
+  subscription_inventory: {
+    version: "1.0.0",
+    accounts: {
+      "zai-max-work": {
+        provider: "zai",
+        tierId: "max",
+        authProfile: "zai:work",
+        usagePriority: 3,
+        intendedUse: ["orchestration", "fast", "default"],
+      },
+      "openai-plus-personal": {
+        provider: "openai-codex",
+        tierId: "plus",
+        authProfile: "openai:personal",
+        usagePriority: 1,
+      },
+    },
+  },
 };
 
 describe("resolveRoutingDecision", () => {
@@ -96,6 +114,8 @@ describe("resolveRoutingDecision", () => {
     expect(result.selectedModel).toBe("zai/glm-5");
     expect(result.providerOverride).toBe("zai");
     expect(result.modelOverride).toBe("glm-5");
+    expect(result.authProfileOverride).toBe("zai:work");
+    expect(result.selectedAccountId).toBe("zai-max-work");
     expect(result.weightedCandidates).toEqual(["zai/glm-5", "openai-codex/gpt-5.4"]);
     expect(result.tokenEstimate).toBeGreaterThan(0);
   });
@@ -136,11 +156,17 @@ describe("resolveRoutingDecision", () => {
   });
 
   it("returns a clear stay reason when no eligible candidate remains", () => {
-    const result = resolveRoutingDecision(config, {
-      prompt: "quickly format this payload",
-      agentId: "constrained",
-      currentModel: config.default_model,
-    });
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        subscription_inventory: undefined,
+      },
+      {
+        prompt: "quickly format this payload",
+        agentId: "constrained",
+        currentModel: config.default_model,
+      },
+    );
     expect(result.action).toBe("stay");
     expect(result.reason).toContain("no_eligible_candidate");
     expect(result.capableModels).toHaveLength(0);

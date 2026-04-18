@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.4.0] — 2026-04-18
+
+### Added
+- Inventory-backed routing now returns `authProfileOverride` when the winning same-provider account declares an `authProfile`
+- Routing logs now include the selected account id and auth profile when ZeroAPI makes an account-aware decision
+- Decision tests cover the new account-level selection output
+
+### Changed
+- OpenClaw now receives a preferred auth profile together with `providerOverride` and `modelOverride`, so same-provider multi-account routing can steer actual account choice instead of only provider-level scoring
+
 ## [3.3.0] — 2026-04-18
 
 ### Added
@@ -10,9 +20,6 @@
 ### Changed
 - Routing eligibility and subscription pressure can now come from `subscription_inventory` when it exists for a provider, while `subscription_profile` remains supported as the legacy/global-agent policy layer
 - Config validation now rejects array-shaped `subscription_profile` and `subscription_inventory` payloads instead of silently accepting malformed structures
-
-### Notes
-- ZeroAPI still selects `providerOverride` and `modelOverride` only. OpenClaw remains responsible for the actual auth profile rotation inside a provider via `auth.order`, cooldowns, and session pinning.
 
 ## [3.2.4] — 2026-04-18
 
