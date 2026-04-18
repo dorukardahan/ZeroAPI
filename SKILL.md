@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.4.0
+version: 3.4.1
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",

@@ -145,14 +145,35 @@ describe("resolveRoutingDecision", () => {
     expect(result.selectedModel).toBe("zai/glm-5");
   });
 
-  it("stays on current model when the selected candidate already matches runtime state", () => {
+  it("reissues the current model when the winning account needs an auth profile override", () => {
     const result = resolveRoutingDecision(config, {
       prompt: "coordinate a workflow across 3 services",
       currentModel: "zai/glm-5",
     });
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("zai/glm-5");
+    expect(result.providerOverride).toBe("zai");
+    expect(result.modelOverride).toBe("glm-5");
+    expect(result.authProfileOverride).toBe("zai:work");
+    expect(result.selectedAccountId).toBe("zai-max-work");
+    expect(result.finalDecision?.category).toBe("orchestration");
+  });
+
+  it("still stays on the current model when no auth profile override is needed", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        subscription_inventory: undefined,
+      },
+      {
+        prompt: "coordinate a workflow across 3 services",
+        currentModel: "zai/glm-5",
+      },
+    );
     expect(result.action).toBe("stay");
     expect(result.reason).toContain("no_switch_needed");
-    expect(result.finalDecision?.category).toBe("orchestration");
+    expect(result.authProfileOverride).toBeNull();
+    expect(result.selectedAccountId).toBeNull();
   });
 
   it("returns a clear stay reason when no eligible candidate remains", () => {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.4.1] - 2026-04-18
+
+### Fixed
+- Same-provider multi-account routing now still returns `authProfileOverride` when the winning account keeps the same provider/model pair, so OpenClaw can move onto the right auth profile instead of treating it as a no-op
+- Added decision coverage for same-model auth-profile reroutes and the no-auth-profile fallback stay path
+
 ## [3.4.0] — 2026-04-18
 
 ### Added

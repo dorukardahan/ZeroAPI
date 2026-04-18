@@ -279,7 +279,20 @@ export function resolveRoutingDecision(
       )
     : null;
 
-  if (!selectedModel) {
+  const preferredCurrentModel =
+    selectedModel === null && weightedCandidates[0] === currentModel ? weightedCandidates[0] : null;
+  const targetModel = selectedModel ?? preferredCurrentModel;
+  const resolvedCapacity = targetModel
+    ? resolveProviderCapacity({
+        profile: config.subscription_profile,
+        inventory: config.subscription_inventory,
+        agentId,
+        providerId: splitModelKey(targetModel).provider,
+        category: rawDecision.category,
+      })
+    : null;
+
+  if (!targetModel) {
     const finalDecision = {
       ...rawDecision,
       model: null,
@@ -307,17 +320,42 @@ export function resolveRoutingDecision(
     };
   }
 
-  const { provider, model } = splitModelKey(selectedModel);
-  const resolvedCapacity = resolveProviderCapacity({
-    profile: config.subscription_profile,
-    inventory: config.subscription_inventory,
-    agentId,
-    providerId: provider,
-    category: rawDecision.category,
-  });
+  if (
+    selectedModel === null &&
+    currentModel === preferredCurrentModel &&
+    !resolvedCapacity?.preferredAuthProfile
+  ) {
+    const finalDecision = {
+      ...rawDecision,
+      model: null,
+      provider: null,
+      reason: `${rawDecision.reason}:no_switch_needed`,
+    };
+    return {
+      action: "stay",
+      reason: finalDecision.reason,
+      agentId,
+      trigger: options.trigger,
+      currentModel,
+      workspaceHints,
+      tokenEstimate,
+      likelyVision,
+      capableModels: Object.keys(capable),
+      weightedCandidates,
+      rawDecision,
+      finalDecision,
+      selectedModel: null,
+      providerOverride: null,
+      modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
+    };
+  }
+
+  const { provider, model } = splitModelKey(targetModel);
   const finalDecision = {
     ...rawDecision,
-    model: selectedModel,
+    model: targetModel,
     provider,
   };
 
@@ -334,7 +372,7 @@ export function resolveRoutingDecision(
     weightedCandidates,
     rawDecision,
     finalDecision,
-    selectedModel,
+    selectedModel: targetModel,
     providerOverride: provider,
     modelOverride: model,
     authProfileOverride: resolvedCapacity?.preferredAuthProfile ?? null,
