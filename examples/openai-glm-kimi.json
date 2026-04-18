@@ -1,8 +1,9 @@
 {
-  "version": "3.2.3",
+  "version": "3.2.4",
   "generated": "2026-04-18T00:00:00Z",
   "benchmarks_date": "2026-04-18",
   "subscription_catalog_version": "1.0.0",
+  "external_model_policy": "stay",
   "subscription_profile": {
     "version": "1.0.0",
     "global": {

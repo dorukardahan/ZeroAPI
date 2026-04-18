@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.2.3
+version: 3.2.4
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -173,7 +173,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.2.3",
+  "version": "3.2.4",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",
@@ -183,6 +183,7 @@ Required config shape:
     "agentOverrides": {}
   },
   "default_model": "<best overall available model>",
+  "external_model_policy": "stay",
   "models": {},
   "routing_rules": {},
   "workspace_hints": {},
@@ -194,7 +195,7 @@ Required config shape:
 }
 ```
 
-`vision_keywords` and `risk_levels` are optional overrides. Omit them to use the built-in plugin defaults.
+`vision_keywords` and `risk_levels` are optional overrides. Omit them to use the built-in plugin defaults. `external_model_policy` should usually stay at `"stay"` unless the user explicitly wants ZeroAPI to reclaim turns from non-ZeroAPI current models.
 
 Important rules:
 
@@ -278,6 +279,7 @@ npx tsx scripts/eval.ts --last 500
 | `vision_keywords` | Vision/multimodal detection triggers | Vision routing has false positives or misses |
 | `risk_levels` | Per-category non-high-risk defaults | A category should default to a different risk level |
 | `fast_ttft_max_seconds` | Fast-category TTFT ceiling | Fast prompts still hit slow models |
+| `external_model_policy` | Whether ZeroAPI should leave foreign current models alone | User runs extra API-key providers outside the ZeroAPI pool |
 | `routing_rules` | Primary/fallback ordering per category | The wrong provider wins after filtering |
 
 ### Tune loop

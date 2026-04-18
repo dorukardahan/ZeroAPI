@@ -3,11 +3,11 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.2.3-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.3)
+[![Version](https://img.shields.io/badge/version-3.2.4-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.4)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
-ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior — not a replacement for OpenClaw's own model defaults, explicit `/model` choices, or per-agent configuration.
+ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior - not a replacement for OpenClaw's own model defaults, per-agent configuration, or unrelated provider/API-key setups. By default, it stays on current models that sit outside the ZeroAPI policy pool.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
@@ -45,6 +45,8 @@ The plugin fires before eligible messages via OpenClaw's `before_model_resolve` 
 5. **Benchmark fallback order** — outside the frontier, fall back in benchmark strength order
 
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
+
+If the current runtime model is outside `zeroapi-config.json`'s `models` pool, ZeroAPI now defaults to `stay` instead of forcefully re-entering. This keeps subscription routing from hijacking unrelated API-key providers. Advanced users can opt back in with `"external_model_policy": "allow"`.
 
 ## Supported Providers
 
@@ -107,7 +109,11 @@ Every routing decision is logged to `~/.openclaw/logs/zeroapi-routing.log`. The 
 npx tsx scripts/eval.ts --last 500
 ```
 
-The report shows category distribution, risk override rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants — keywords, risk levels, vision detection, TTFT thresholds, fallback ordering — live in `zeroapi-config.json` and can be changed without touching code.
+The report shows category distribution, risk override rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants - keywords, risk levels, vision detection, TTFT thresholds, fallback ordering, and external-model handling - live in `zeroapi-config.json` and can be changed without touching code.
+
+One important knob is `external_model_policy`:
+- `"stay"` (default) - if the current runtime model is outside ZeroAPI's configured pool, do not override it
+- `"allow"` - let ZeroAPI pull traffic back into its subscription-managed pool even when the current model came from somewhere else
 
 For one-off sanity checks before changing production traffic, use the simulator instead of waiting for live logs:
 

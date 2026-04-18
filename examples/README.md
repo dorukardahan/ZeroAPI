@@ -4,6 +4,7 @@ Pick the example that matches your provider subscriptions. Each file is a ready-
 
 Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw runtime defaults, provider wiring, and per-agent model state still live there.
 These examples now include `subscription_profile` data. If that block is missing or empty, ZeroAPI may silently filter out every configured provider.
+These examples also set `external_model_policy` to `stay`, which is the safe default when you use extra OpenClaw providers outside the ZeroAPI pool.
 These examples are intentionally conservative starter pools. `benchmarks.json` tracks a wider 162-model benchmark reference snapshot, but the canned configs keep a smaller, easier-to-operate subset. That practical subset is now documented in `policy-families.json`.
 
 ## Example Files

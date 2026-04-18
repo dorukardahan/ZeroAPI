@@ -8,6 +8,10 @@ let configPath: string | null = null;
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   if (typeof obj !== "object" || obj === null) return false;
   const cfg = obj as Record<string, unknown>;
+  const externalModelPolicyValid =
+    cfg.external_model_policy === undefined ||
+    cfg.external_model_policy === "stay" ||
+    cfg.external_model_policy === "allow";
   const subscriptionProfileValid =
     cfg.subscription_profile === undefined ||
     (typeof cfg.subscription_profile === "object" && cfg.subscription_profile !== null);
@@ -23,6 +27,7 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   return (
     typeof cfg.version === "string" &&
     typeof cfg.default_model === "string" &&
+    externalModelPolicyValid &&
     typeof cfg.models === "object" && cfg.models !== null &&
     typeof cfg.routing_rules === "object" && cfg.routing_rules !== null &&
     typeof cfg.keywords === "object" && cfg.keywords !== null &&
@@ -51,6 +56,7 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
     }
     cachedConfig = {
       ...parsed,
+      external_model_policy: parsed.external_model_policy ?? "stay",
       workspace_hints: parsed.workspace_hints ?? {},
     };
     return cachedConfig;

@@ -62,6 +62,15 @@ function splitModelKey(modelKey: string): { provider: string; model: string } {
   };
 }
 
+function shouldStayOnExternalCurrentModel(
+  config: ZeroAPIConfig,
+  currentModel: string | null,
+): boolean {
+  if (!currentModel) return false;
+  if (currentModel in config.models) return false;
+  return (config.external_model_policy ?? "stay") !== "allow";
+}
+
 export function resolveRoutingDecision(
   config: ZeroAPIConfig,
   options: ResolveRoutingOptions,
@@ -94,6 +103,26 @@ export function resolveRoutingDecision(
     return {
       action: "skip",
       reason: `skip:trigger:${options.trigger}`,
+      agentId,
+      trigger: options.trigger,
+      currentModel,
+      workspaceHints,
+      tokenEstimate: null,
+      likelyVision: false,
+      capableModels: [],
+      weightedCandidates: [],
+      rawDecision: null,
+      finalDecision: null,
+      selectedModel: null,
+      providerOverride: null,
+      modelOverride: null,
+    };
+  }
+
+  if (shouldStayOnExternalCurrentModel(config, currentModel)) {
+    return {
+      action: "stay",
+      reason: "stay:external_current_model",
       agentId,
       trigger: options.trigger,
       currentModel,

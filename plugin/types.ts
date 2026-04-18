@@ -31,6 +31,7 @@ export type ZeroAPIConfig = {
   generated: string;
   benchmarks_date: string;
   default_model: string;
+  external_model_policy?: "stay" | "allow";
   models: Record<string, ModelCapabilities>;
   routing_rules: Record<string, RoutingRule>;
   workspace_hints: Record<string, TaskCategory[] | null>;

@@ -240,7 +240,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.2.3",
+  "version": "3.2.4",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",
@@ -251,6 +251,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
     }
   },
   "default_model": "<provider>/<model-id>",
+  "external_model_policy": "stay",
   "models": {
     "<provider>/<model-id>": {
       "context_window": 272000,
@@ -299,6 +300,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 | `subscription_catalog_version` | Public tier catalog version used when the config was generated |
 | `subscription_profile.global` | Enabled providers and selected subscription tiers. Missing or empty values can filter out all routing candidates. |
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
+| `external_model_policy` | How ZeroAPI behaves when the active current model is outside its own `models` pool. `stay` keeps that foreign or external model. `allow` lets ZeroAPI re-enter and route back into its subscription pool. |
 | `models.<id>.context_window` | Maximum tokens the model can accept |
 | `models.<id>.supports_vision` | Whether image attachments can be sent |
 | `models.<id>.speed_tps` | Output tokens per second (for fast-path TTFT filtering) |

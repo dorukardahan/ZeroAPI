@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.2.4] — 2026-04-18
+
+### Added
+- `external_model_policy` config knob so operators can choose whether ZeroAPI should stay on current models outside its own pool or re-enter and override them
+
+### Changed
+- Default behavior now stays on current models that are not part of `zeroapi-config.json`, which avoids hijacking unrelated API-key providers unless the operator explicitly opts in
+
+---
+
 ## [3.2.3] — 2026-04-18
 
 Kimi Coding alias follow-up after checking current OpenClaw provider docs and Asuman's runtime config.

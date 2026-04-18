@@ -7,6 +7,7 @@ const config: ZeroAPIConfig = {
   generated: "2026-04-05",
   benchmarks_date: "2026-04-04",
   default_model: "openai-codex/gpt-5.4",
+  external_model_policy: "stay",
   models: {
     "openai-codex/gpt-5.4": {
       context_window: 272000,
@@ -97,6 +98,31 @@ describe("resolveRoutingDecision", () => {
     expect(result.modelOverride).toBe("glm-5");
     expect(result.weightedCandidates).toEqual(["zai/glm-5", "openai-codex/gpt-5.4"]);
     expect(result.tokenEstimate).toBeGreaterThan(0);
+  });
+
+  it("stays on external current models by default", () => {
+    const result = resolveRoutingDecision(config, {
+      prompt: "coordinate a workflow across 3 services",
+      currentModel: "openrouter/anthropic/claude-opus-4",
+    });
+    expect(result.action).toBe("stay");
+    expect(result.reason).toBe("stay:external_current_model");
+    expect(result.finalDecision).toBeNull();
+  });
+
+  it("can re-enter from an external current model when policy allows it", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        external_model_policy: "allow",
+      },
+      {
+        prompt: "coordinate a workflow across 3 services",
+        currentModel: "openrouter/anthropic/claude-opus-4",
+      },
+    );
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("zai/glm-5");
   });
 
   it("stays on current model when the selected candidate already matches runtime state", () => {
