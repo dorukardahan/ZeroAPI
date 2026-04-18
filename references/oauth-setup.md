@@ -11,10 +11,10 @@
 | Provider | Auth Method | Setup Command | Token Lifetime |
 |----------|-------------|---------------|----------------|
 | OpenAI | OAuth PKCE via ChatGPT | `openclaw onboard --auth-choice openai-codex` | ~10 days without use |
-| Kimi | Static API key | `openclaw onboard --auth-choice kimi-coding` | Never expires |
+| Kimi | Static API key | `openclaw onboard --auth-choice moonshot-api-key` | Never expires |
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
-| MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-portal` | Long-lived refresh token |
-| Alibaba (Qwen) | Static API key | `openclaw onboard --auth-choice modelstudio` | Never expires |
+| MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-global-oauth` | Long-lived refresh token |
+| Alibaba (Qwen) | Static API key | `openclaw onboard --auth-choice qwen-standard-api-key` | Never expires |
 
 **Reliability ranking**: Kimi / GLM / Qwen (static key, never expires) > MiniMax OAuth (auto-refresh) > Codex OAuth (auto-refresh works; see notes below).
 
@@ -45,13 +45,13 @@ These providers use static API keys that never expire. Setup is simpler:
 
 ```bash
 # Kimi
-openclaw onboard --auth-choice kimi-coding
+openclaw onboard --auth-choice moonshot-api-key
 
 # Z AI / GLM (Coding Plan endpoint)
 openclaw onboard --auth-choice zai-coding-global
 
 # Alibaba Qwen (Coding Plan endpoint)
-openclaw onboard --auth-choice modelstudio
+openclaw onboard --auth-choice qwen-standard-api-key
 ```
 
 The wizard prompts for the API key and saves it to auth-profiles. No browser flow needed. If a provider with a static key stops working, check that the subscription is still active — the key itself does not expire.
@@ -63,10 +63,10 @@ The wizard prompts for the API key and saves it to auth-profiles. No browser flo
 MiniMax uses an OAuth portal flow. Setup:
 
 ```bash
-openclaw onboard --auth-choice minimax-portal
+openclaw onboard --auth-choice minimax-global-oauth
 ```
 
-On headless VPS, use the tmux method below (change `--auth-choice` to `minimax-portal`).
+On headless VPS, use the tmux method below (change `--auth-choice` to `minimax-global-oauth`).
 
 ---
 

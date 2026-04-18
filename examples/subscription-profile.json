@@ -2,10 +2,10 @@
   "version": "1.0.0",
   "global": {
     "openai-codex": { "enabled": true, "tierId": "plus" },
-    "kimi-coding": { "enabled": false, "tierId": null },
+    "moonshot": { "enabled": false, "tierId": null },
     "zai": { "enabled": true, "tierId": "max" },
-    "minimax": { "enabled": false, "tierId": null },
-    "modelstudio": { "enabled": false, "tierId": null }
+    "minimax-portal": { "enabled": false, "tierId": null },
+    "qwen": { "enabled": false, "tierId": null }
   },
   "agentOverrides": {
     "research-agent": {

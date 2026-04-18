@@ -131,10 +131,10 @@ The router should decide using this order:
 This means the user says what they have, not how to route.
 ZeroAPI decides the route.
 
-## Weighting Principle
+## Frontier Principle
 
 Subscription-aware routing should not replace benchmark leadership with arbitrary preference.
-It should only shape selection among benchmark-ranked candidates.
+It should only shape selection among benchmark-near candidates.
 
 Practical intent:
 
@@ -143,14 +143,25 @@ Practical intent:
 - Lower-headroom subscriptions should not dominate every task just because they benchmark slightly higher
 
 That is why catalog entries can carry a provider-level routing bias, while tiers carry a tier-level routing weight.
-The effective routing pressure is:
+The router uses two layers:
+
+1. Benchmark frontier:
+   - every category computes a benchmark strength from the relevant metrics
+   - each candidate gets a maximum allowed benchmark drop based on tier weight + provider bias
+   - only candidates inside that drop window can compete for first place
+
+2. Subscription pressure ordering:
+   - inside the frontier, higher headroom providers sort earlier
+   - outside the frontier, candidates stay in benchmark order
+
+The effective pressure signal is:
 
 - provider enabled
 - tier selected
 - tier routing weight
 - provider benchmark bias
 
-This stays heuristic in v1. Real usage telemetry comes later.
+This stays heuristic in v1. Real usage telemetry comes later, but the frontier rule keeps the heuristic from overwhelming benchmark quality.
 
 ## Files to Add in v1
 

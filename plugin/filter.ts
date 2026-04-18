@@ -16,7 +16,8 @@ export function filterCapableModels(
   for (const [modelId, caps] of Object.entries(models)) {
     if (caps.context_window < options.estimatedTokens) continue;
     if (options.requiresVision && !caps.supports_vision) continue;
-    if (options.maxTtftSeconds != null && caps.ttft_seconds != null) {
+    if (options.maxTtftSeconds != null) {
+      if (caps.ttft_seconds == null) continue;
       if (caps.ttft_seconds > options.maxTtftSeconds) continue;
     }
     if (options.excludeProviders?.length) {

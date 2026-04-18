@@ -1,22 +1,23 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { loadConfig } from "./config.js";
-import { classifyTask } from "./classifier.js";
-import { filterCapableModels, estimateTokens } from "./filter.js";
-import { selectModel } from "./selector.js";
+import { resolveRoutingDecision } from "./decision.js";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
-import { isModelAllowedBySubscriptionProfile } from "./profile.js";
-import { getSubscriptionWeightedCandidates } from "./router.js";
 
-const DEFAULT_VISION_KEYWORDS = ["image", "screenshot", "photo", "picture", "diagram", "chart", "graph", "visual", "logo", "icon", "UI", "mockup", "design"];
+const PLUGIN_VERSION = "3.2.1";
+const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+type RegisterState = {
+  registered: boolean;
+};
 
-function buildKeywordRegex(keyword: string): RegExp {
-  return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`);
+function getRegisterState(): RegisterState {
+  const globalStore = globalThis as typeof globalThis & {
+    [REGISTER_STATE_KEY]?: RegisterState;
+  };
+  globalStore[REGISTER_STATE_KEY] ??= { registered: false };
+  return globalStore[REGISTER_STATE_KEY];
 }
 
 export default definePluginEntry({
@@ -38,7 +39,14 @@ export default definePluginEntry({
       return;
     }
 
-    api.logger.info(`ZeroAPI Router v${config.version} loaded (${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`);
+    const registerState = getRegisterState();
+    if (registerState.registered) {
+      return;
+    }
+
+    api.logger.info(
+      `ZeroAPI Router v${PLUGIN_VERSION} loaded (policy config v${config.version}, ${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`
+    );
 
     try {
       const openclawConfigPath = join(openclawDir, "openclaw.json");
@@ -63,98 +71,37 @@ export default definePluginEntry({
     }
 
     api.on("before_model_resolve", (event, ctx) => {
-      const agentId = ctx.agentId;
-      if (agentId && config.workspace_hints[agentId] === null) {
-        logRoutingEvent({ agentId, category: "system", reason: "skip:specialist_agent" });
-        return;
-      }
-
-      if (ctx.trigger === "cron" || ctx.trigger === "heartbeat") {
-        logRoutingEvent({ agentId, category: "system", reason: `skip:trigger:${ctx.trigger}` });
-        return;
-      }
-
-      const workspaceHints = agentId ? config.workspace_hints[agentId] : undefined;
-      const decision = classifyTask(
-        event.prompt,
-        config.keywords,
-        config.high_risk_keywords,
-        workspaceHints,
-        config.risk_levels,
-      );
-
-      if (decision.risk === "high") {
-        logRouting(agentId, { ...decision, model: null, reason: `high_risk:${decision.reason}` });
-        return;
-      }
-
-      if (decision.category === "default") {
-        logRouting(agentId, decision);
-        return;
-      }
-
-      const visionKeywords = config.vision_keywords ?? DEFAULT_VISION_KEYWORDS;
-      const promptLower = event.prompt.toLowerCase();
-      const likelyVision = visionKeywords.some((keyword) => buildKeywordRegex(keyword).test(promptLower));
-
-      const tokenEstimate = estimateTokens(event.prompt);
-      const isFast = decision.category === "fast";
-      const capable = Object.fromEntries(
-        Object.entries(
-          filterCapableModels(config.models, {
-            estimatedTokens: tokenEstimate,
-            maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
-            requiresVision: likelyVision,
-          }),
-        ).filter(([modelKey]) =>
-          isModelAllowedBySubscriptionProfile(config.subscription_profile, agentId, modelKey),
-        ),
-      );
-
       const currentModel = ctx.modelId
         ? `${ctx.modelProviderId}/${ctx.modelId}`
         : config.default_model;
+      const resolution = resolveRoutingDecision(config, {
+        prompt: event.prompt,
+        agentId: ctx.agentId,
+        trigger: ctx.trigger,
+        currentModel,
+      });
 
-      const weightedCandidates = getSubscriptionWeightedCandidates(
-        decision.category,
-        capable,
-        config.routing_rules,
-        config.subscription_profile,
-        agentId,
-      );
-
-      const selectedModel = weightedCandidates.length > 0
-        ? selectModel(
-            decision.category,
-            Object.fromEntries(weightedCandidates.map((candidate) => [candidate, capable[candidate]])),
-            {
-              ...config.routing_rules,
-              [decision.category]: {
-                primary: weightedCandidates[0],
-                fallbacks: weightedCandidates.slice(1),
-              },
-            },
-            currentModel,
-          )
-        : null;
-
-      if (!selectedModel) {
-        logRouting(agentId, { ...decision, model: null, reason: `${decision.reason}:no_switch_needed` });
+      if (resolution.action === "skip") {
+        logRoutingEvent({
+          agentId: ctx.agentId,
+          category: "system",
+          reason: resolution.reason,
+        });
         return;
       }
 
-      const slashIdx = selectedModel.indexOf("/");
-      const provider = selectedModel.substring(0, slashIdx);
-      const model = selectedModel.substring(slashIdx + 1);
+      if (!resolution.finalDecision) {
+        return;
+      }
 
-      decision.model = selectedModel;
-      decision.provider = provider;
-      logRouting(agentId, decision);
-
-      return {
-        providerOverride: provider,
-        modelOverride: model,
-      };
+      logRouting(ctx.agentId, resolution);
+      if (resolution.action === "route") {
+        return {
+          providerOverride: resolution.providerOverride!,
+          modelOverride: resolution.modelOverride!,
+        };
+      }
     });
+    registerState.registered = true;
   },
 });

@@ -1,6 +1,12 @@
 # Provider Configuration Reference
 
-This document covers provider setup, model IDs, auth methods, and the zeroapi-config.json schema for ZeroAPI v3.1.
+This document covers provider setup, model IDs, auth methods, and the zeroapi-config.json schema for ZeroAPI v3.2.
+
+Important distinction:
+
+- `benchmarks.json` is the broad benchmark reference snapshot
+- `policy-families.json` is the conservative set of practical model families currently documented for day-to-day routing
+- `zeroapi-config.json` is the user's actual live routing pool
 
 ## Provider Exclusions
 
@@ -48,12 +54,11 @@ openclaw onboard --auth-choice openai-codex
 
 | Model ID | Notes |
 |----------|-------|
-| `gpt-5.4` | Flagship — high TTFT (~170s), not suitable for fast tasks |
+| `gpt-5.4` | Flagship — high TTFT (~200s), not suitable for fast tasks |
 | `gpt-5.4-mini` | Balanced |
-| `gpt-5.4-nano` | Fast path |
 | `gpt-5.3-codex` | Coding specialist |
 
-**Context window note**: GPT-5.4 reports `contextWindow: 1,048,576` (native) but OpenClaw enforces a runtime cap of `contextTokens: 272,000`. ZeroAPI uses `contextTokens` (272K) for capability filtering, not the native value.
+**Context window note**: GPT-5.4 reports `contextWindow: 1,050,000` (native) but OpenClaw enforces a runtime cap of `contextTokens: 272,000`. ZeroAPI uses `contextTokens` (272K) for capability filtering, not the native value.
 
 **Provider entry** (in `openclaw.json`):
 
@@ -67,7 +72,6 @@ openclaw onboard --auth-choice openai-codex
         "models": [
           { "id": "gpt-5.4" },
           { "id": "gpt-5.4-mini" },
-          { "id": "gpt-5.4-nano" },
           { "id": "gpt-5.3-codex" }
         ]
       }
@@ -78,20 +82,20 @@ openclaw onboard --auth-choice openai-codex
 
 ---
 
-### 2. Kimi — `kimi-coding`
+### 2. Kimi — `moonshot`
 
 **Auth**: Static API key. Never expires.
 
 ```bash
-openclaw onboard --auth-choice kimi-coding
+openclaw onboard --auth-choice moonshot-api-key
 ```
 
 **Models**:
 
 | Model ID | Notes |
 |----------|-------|
-| `k2p5` | Flagship |
-| `k2-thinking` | Extended reasoning |
+| `kimi-k2.5` | Flagship |
+| `kimi-k2-thinking` | Extended reasoning |
 
 **Provider entry** (in `openclaw.json`):
 
@@ -99,12 +103,12 @@ openclaw onboard --auth-choice kimi-coding
 {
   "models": {
     "providers": {
-      "kimi-coding": {
-        "baseUrl": "https://api.kimi.com/coding/v1",
+      "moonshot": {
+        "baseUrl": "https://api.moonshot.ai/v1",
         "api": "openai-completions",
         "models": [
-          { "id": "k2p5" },
-          { "id": "k2-thinking" }
+          { "id": "kimi-k2.5" },
+          { "id": "kimi-k2-thinking" }
         ]
       }
     }
@@ -155,20 +159,20 @@ openclaw onboard --auth-choice zai-coding-global
 
 ---
 
-### 4. MiniMax — `minimax`
+### 4. MiniMax — `minimax-portal`
 
 **Auth**: OAuth via MiniMax portal.
 
 ```bash
-openclaw onboard --auth-choice minimax-portal
+openclaw onboard --auth-choice minimax-global-oauth
 ```
 
 **Models**:
 
 | Model ID | Notes |
 |----------|-------|
-| `m2.7` | Flagship |
-| `m2.7-highspeed` | Fast variant |
+| `MiniMax-M2.7` | Flagship |
+| `MiniMax-M2.7-highspeed` | Fast variant |
 
 **Provider entry** (in `openclaw.json`):
 
@@ -176,11 +180,11 @@ openclaw onboard --auth-choice minimax-portal
 {
   "models": {
     "providers": {
-      "minimax": {
-        "api": "openai-completions",
+      "minimax-portal": {
+        "api": "anthropic-messages",
         "models": [
-          { "id": "m2.7" },
-          { "id": "m2.7-highspeed" }
+          { "id": "MiniMax-M2.7" },
+          { "id": "MiniMax-M2.7-highspeed" }
         ]
       }
     }
@@ -190,21 +194,22 @@ openclaw onboard --auth-choice minimax-portal
 
 ---
 
-### 5. Alibaba / Qwen — `modelstudio`
+### 5. Alibaba / Qwen — `qwen`
 
-**Auth**: API key via Alibaba Cloud Coding Plan.
+**Auth**: API key via Alibaba Qwen standard endpoint.
 
 ```bash
-openclaw onboard --auth-choice modelstudio
+openclaw onboard --auth-choice qwen-standard-api-key
 ```
 
 **Models**:
 
 | Model ID | Notes |
 |----------|-------|
-| `qwen3.5-397b-a17b` | Flagship (MoE) |
+| `qwen3.5-plus` | Coding Plan default |
+| `qwen3.6-plus` | Standard endpoint benchmarked route target |
 
-**Note**: Uses the dedicated coding endpoint at `coding.dashscope.aliyuncs.com`. The `modelstudio` auth choice sets this automatically.
+**Note**: `qwen3.6-plus` requires the standard endpoint auth choice (`qwen-standard-api-key`) in upstream OpenClaw. The Coding Plan auth choice (`qwen-api-key`) exposes a narrower routeable model set.
 
 **Provider entry** (in `openclaw.json`):
 
@@ -212,11 +217,12 @@ openclaw onboard --auth-choice modelstudio
 {
   "models": {
     "providers": {
-      "modelstudio": {
-        "baseUrl": "https://coding.dashscope.aliyuncs.com/compatible-mode/v1",
+      "qwen": {
+        "baseUrl": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
         "api": "openai-completions",
         "models": [
-          { "id": "qwen3.5-397b-a17b" }
+          { "id": "qwen3.6-plus" },
+          { "id": "qwen3.5-plus" }
         ]
       }
     }
@@ -234,13 +240,20 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.1.0",
+  "version": "3.2.1",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
+  "subscription_catalog_version": "1.0.0",
+  "subscription_profile": {
+    "version": "1.0.0",
+    "global": {
+      "openai-codex": { "enabled": true, "tierId": "plus" }
+    }
+  },
   "default_model": "<provider>/<model-id>",
   "models": {
     "<provider>/<model-id>": {
-      "context_window": 1050000,
+      "context_window": 272000,
       "supports_vision": false,
       "speed_tps": 72,
       "ttft_seconds": 170,
@@ -283,6 +296,8 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 |-------|-------------|
 | `version` | ZeroAPI config schema version |
 | `benchmarks_date` | Date of the embedded benchmarks.json used to generate this config |
+| `subscription_catalog_version` | Public tier catalog version used when the config was generated |
+| `subscription_profile.global` | Enabled providers and selected subscription tiers. Missing or empty values can filter out all routing candidates. |
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
 | `models.<id>.context_window` | Maximum tokens the model can accept |
 | `models.<id>.supports_vision` | Whether image attachments can be sent |
@@ -304,4 +319,6 @@ Every fallback chain should span at least two providers — same-provider fallba
 
 ### Benchmark slugs vs model IDs
 
-`benchmarks.json` uses short slugs (e.g. `glm-5`, `gpt-5.4-xhigh`) while OpenClaw uses provider-prefixed IDs (e.g. `zai/glm-5`, `openai-codex/gpt-5.4`). These are different namespaces. The plugin matches by OpenClaw model ID, not benchmark slug.
+`benchmarks.json` uses short slugs (e.g. `glm-5`, `gpt-5-4`) while OpenClaw uses provider-prefixed IDs (e.g. `zai/glm-5`, `openai-codex/gpt-5.4`). These are different namespaces. The plugin matches by OpenClaw model ID, not benchmark slug.
+
+`policy-families.json` bridges that gap for the currently documented practical families by storing both the OpenClaw model IDs and the benchmark slugs. The refreshed `benchmarks.json` also carries per-model `policy_family` metadata for those members.

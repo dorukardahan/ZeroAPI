@@ -8,7 +8,7 @@ describe("profile", () => {
     global: {
       "openai-codex": { enabled: true, tierId: "plus" },
       "zai": { enabled: true, tierId: "max" },
-      "kimi-coding": { enabled: false, tierId: null },
+      "moonshot": { enabled: false, tierId: null },
     },
     agentOverrides: {
       "research-agent": {

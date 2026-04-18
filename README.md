@@ -3,13 +3,17 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.2.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.0)
+[![Version](https://img.shields.io/badge/version-3.2.1-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.1)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
 ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior — not a replacement for OpenClaw's own model defaults, explicit `/model` choices, or per-agent configuration.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
+
+The repo now separates:
+- `benchmarks.json` -> broad benchmark reference snapshot
+- `policy-families.json` -> conservative practical model families ZeroAPI currently documents as day-to-day routing targets
 
 **What makes it different:**
 - **Benchmark-driven** — routes by real benchmark scores (Artificial Analysis), not vibes
@@ -36,8 +40,9 @@ The plugin fires before eligible messages via OpenClaw's `before_model_resolve` 
 
 1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
 2. **Subscription filter** — eliminate models not allowed by the user's global profile or agent-level override
-3. **Subscription-weighted ranking** — among the benchmark-ranked survivors, prefer providers whose subscription tier and provider bias make them more appropriate for routine use
-4. **Benchmark-preserving fallback order** — keep the remaining candidates in benchmark order when weights tie
+3. **Benchmark frontier** — keep only candidates that stay close enough to the category leader for their subscription/headroom profile
+4. **Subscription pressure ordering** — inside that frontier, prefer providers whose tier and provider bias make them more appropriate for routine use
+5. **Benchmark fallback order** — outside the frontier, fall back in benchmark strength order
 
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
@@ -46,10 +51,10 @@ When the hook returns an override, the model is switched for that turn only. The
 | Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
 |----------|------------|--------------|---------|-----------------|--------|
 | OpenAI | `openai-codex` | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.4, GPT-5.3 Codex, GPT-5.4 mini |
-| Kimi | `kimi-coding` | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.5, K2 Thinking |
+| Kimi | `moonshot` | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.5, K2 Thinking |
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
-| MiniMax | `minimax` | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
-| Alibaba (Qwen) | `modelstudio` | Pro | $50 | $42 | Qwen3.5 397B |
+| MiniMax | `minimax-portal` | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
+| Alibaba (Qwen) | `qwen` | Pro | $50 | $42 | Qwen3.6 Plus |
 
 ## Task Categories
 
@@ -60,8 +65,8 @@ The plugin matches keywords in each message to one of six routing categories. No
 | **Code** | `0.85*terminalbench + 0.15*scicode` | implement, function, class, refactor, fix, test, debug, PR, diff, migration | "Refactor this auth module", "Write unit tests for..." |
 | **Research** | `gpqa`, `hle` | research, analyze, explain, compare, paper, evidence, investigate | "Compare these two papers", "Explain the mechanism of..." |
 | **Orchestration** | `0.6*tau2 + 0.4*ifbench` | orchestrate, coordinate, pipeline, workflow, sequence, parallel | "Set up a fan-out pipeline", "Coordinate these 3 agents" |
-| **Math** | `aime_25` | calculate, solve, equation, proof, integral, probability, optimize | "Solve this integral", "Prove that..." |
-| **Fast** | speed (t/s), TTFT < 5s | quick, simple, format, convert, translate, rename, one-liner | "Rename these files", "Format this JSON" |
+| **Math** | `math`, `aime_25` | calculate, solve, equation, proof, integral, probability, optimize | "Solve this integral", "Prove that..." |
+| **Fast** | speed (t/s), configured TTFT ceiling | quick, simple, format, convert, translate, rename, one-liner | "Rename these files", "Format this JSON" |
 | **Default** | `intelligence` | (no match) | Any task not matching above |
 
 ## Quick Start
@@ -70,7 +75,8 @@ The plugin matches keywords in each message to one of six routing categories. No
 1. Install:   openclaw plugins install zeroapi-router
 2. Configure: /zeroapi   (in any OpenClaw session)
 3. Verify:    bash scripts-zeroapi-doctor.sh
-4. Done — conservative routing policy is active for eligible messages
+4. Inspect:   npx tsx scripts/simulate.ts --prompt "refactor this auth module"
+5. Done — conservative routing policy is active for eligible messages
 ```
 
 The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
@@ -79,9 +85,17 @@ As of the new subscription-aware foundation, the config can include:
 - a public subscription catalog version reference
 - a persistent global subscription profile
 - agent-level partial overrides for provider availability
-- subscription-weighted routing that can bias toward high-headroom providers like GLM Max without exposing private usage data
+- benchmark-frontier routing that can bias toward high-headroom providers like GLM Max without letting weak candidates jump the queue
 
 The user declares what subscriptions they have. ZeroAPI decides the route.
+
+Before turning routing loose on real traffic, inspect a sample decision:
+
+```bash
+npx tsx scripts/simulate.ts --prompt "coordinate a workflow across 3 services"
+```
+
+The simulator shows category, risk, current model, candidate pool, and the final route/stay/skip reason. It is the fastest way to see whether a config behaves the way the user expects.
 
 ## Policy Tuning
 
@@ -95,6 +109,12 @@ npx tsx scripts/eval.ts --last 500
 
 The report shows category distribution, risk override rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants — keywords, risk levels, vision detection, TTFT thresholds, fallback ordering — live in `zeroapi-config.json` and can be changed without touching code.
 
+For one-off sanity checks before changing production traffic, use the simulator instead of waiting for live logs:
+
+```bash
+npx tsx scripts/simulate.ts --prompt "quickly format this JSON payload"
+```
+
 **The loop:** run eval, change one constant, restart gateway, wait for traffic, re-run eval. Keep what improves routing, revert what doesn't.
 
 This pattern is inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — the same measure-experiment-promote cycle, applied to routing policy instead of model training. For a production example of this pattern in the broader OpenClaw stack, see [`references/mahmory-autoresearch-usage.md`](references/mahmory-autoresearch-usage.md).
@@ -104,11 +124,15 @@ This pattern is inspired by [karpathy/autoresearch](https://github.com/karpathy/
 ```
 ZeroAPI/
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
-├── benchmarks.json                       # 155 models, 15 benchmarks, 5 providers (AA API v2)
+├── benchmarks.json                       # 162 benchmark reference models, plus policy-family tags
+├── policy-families.json                  # 11 practical policy-family members across 5 providers
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
-│   └── eval.ts                           # Routing log analyzer
+│   ├── eval.ts                           # Routing log analyzer
+│   ├── refresh_benchmarks.py             # Refreshes benchmarks.json from AA API v2
+│   └── simulate.ts                       # Prompt-level routing simulator
 ├── plugin/
+│   ├── decision.ts                       # Shared routing decision engine
 │   ├── index.ts                          # Plugin entry, before_model_resolve hook
 │   ├── classifier.ts                     # Keyword/regex task classification
 │   ├── filter.ts                         # Capability filter (context window, vision, TTFT)
@@ -116,13 +140,14 @@ ZeroAPI/
 │   ├── config.ts                         # Config loader + cache
 │   ├── logger.ts                         # Routing log writer
 │   ├── profile.ts                        # Subscription profile filtering
-│   ├── router.ts                         # Subscription-weighted candidate ordering
+│   ├── router.ts                         # Benchmark-frontier + subscription-pressure ordering
 │   ├── subscriptions.ts                  # Provider subscription catalog
 │   ├── types.ts                          # TypeScript types
 │   ├── package.json
 │   ├── vitest.config.ts
 │   └── __tests__/
 │       ├── classifier.test.ts
+│       ├── decision.test.ts
 │       ├── config.test.ts
 │       ├── filter.test.ts
 │       ├── selector.test.ts
@@ -151,18 +176,18 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-04). For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|
-| **Code** (terminalbench) | GPT-5.4 | 0.576 | OpenAI |
-| **Research** (gpqa) | GPT-5.4 | 0.920 | OpenAI |
-| **Orchestration** (0.6*tau2 + 0.4*ifbench) | Qwen3.5 397B A17B | 0.889 | Alibaba |
-| **Math** (aime_25) | GPT-5.4 | 0.990 | OpenAI |
-| **Fast** (speed, TTFT < 5s) | GPT-5.4 nano | 206 t/s | OpenAI |
-| **Default** (intelligence) | GPT-5.4 | 57.2 | OpenAI |
+| **Code** (terminalbench) | GPT-5.4 (xhigh) | 0.576 | OpenAI |
+| **Research** (gpqa) | GPT-5.4 (xhigh) | 0.920 | OpenAI |
+| **Orchestration** (0.6*tau2 + 0.4*ifbench) | GLM-5.1 (Reasoning) | 0.891 | Z AI |
+| **Math** (math) | GPT-5.2 (xhigh) | 99.0 | OpenAI |
+| **Fast** (speed, TTFT < 5s) | Qwen3.5 0.8B (Non-reasoning) | 301 t/s | Alibaba |
+| **Default** (intelligence) | GPT-5.4 (xhigh) | 56.8 | OpenAI |
 
-Routes use whichever leader is available in your subscription. If the top model is unavailable, the plugin falls back to the next benchmark-ranked model from a different provider.
+Some absolute leaders in the reference dataset are not part of the conservative policy families documented today. Example configs intentionally use the narrower `policy-families.json` pool. Routes use whichever leader is both covered by your subscriptions and included in your policy config. If the top model is unavailable, the plugin falls back to the next benchmark-ranked model from a different provider.
 
 ## Cost Summary
 

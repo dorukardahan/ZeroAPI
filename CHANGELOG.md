@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.2.1] — 2026-04-18
+
+OpenClaw source-alignment patch, benchmark refresh, and public configuration hardening.
+
+### Added
+- **Routing simulator** — `scripts/simulate.ts` explains how ZeroAPI would classify and route a prompt before touching runtime traffic
+- **Benchmark refresh utility** — `scripts/refresh_benchmarks.py` rebuilds `benchmarks.json` from Artificial Analysis Data API v2 while keeping ZeroAPI's supported provider-ecosystem boundary
+- **Policy family manifest** — `policy-families.json` defines the practical routeable model pool separately from the broader benchmark reference snapshot
+
+### Changed
+- Benchmark snapshot refreshed to 162 benchmark reference models from ZeroAPI's supported provider ecosystems (AA API v2, fetched 2026-04-18)
+- Practical policy pool source-aligned with upstream OpenClaw provider catalogs: `moonshot/kimi-k2.5`, `minimax-portal/MiniMax-M2.7`, `qwen/qwen3.6-plus`, `zai/glm-5.1`, and `openai-codex/gpt-5.4`
+- `gpt-5.4-nano` removed from the subscription-focused OpenAI Codex policy pool because upstream OpenClaw exposes it under the direct OpenAI provider, not `openai-codex`
+- Example configs now use OpenClaw runtime capability limits, including the `openai-codex` 272K context cap and source-confirmed vision support for Kimi, MiniMax, and Qwen
+- Subscription routing now uses a benchmark frontier plus subscription pressure instead of pure tier-weight reordering
+
+### Fixed
+- Plugin registration is now idempotent per process, preventing duplicate `before_model_resolve` handlers if OpenClaw loads the extension entry more than once
+- Startup log now reports the plugin version separately from the generated policy config version
+- Fast-task filtering now excludes models whose TTFT is missing from the benchmark source instead of treating unknown latency as eligible
+- Stay reasons now distinguish `no_eligible_candidate` from `no_switch_needed`, making routing diagnostics easier to trust
+- Legacy configs missing `workspace_hints` now load safely with an empty object default
+
+---
+
 ## [3.2.0] — 2026-04-10
 
 Config-driven policy tuning, subscription-aware routing, and autoresearch-inspired eval workflow.
@@ -18,6 +43,9 @@ Config-driven policy tuning, subscription-aware routing, and autoresearch-inspir
 - README restructured: feature highlights, dedicated Policy Tuning section, Karpathy autoresearch credit
 - SKILL.md streamlined, detailed docs moved to `references/`
 - Repo description and topics updated for discoverability
+
+### Fixed
+- Plugin package, manifest, skill metadata, example configs, and benchmark snapshot versions now match the documented 3.2.0 release
 
 ### New files
 - `plugin/profile.ts` — subscription profile filtering
@@ -43,7 +71,7 @@ Routing diagnostics, conservative classification, and docs alignment with OpenCl
 - Classification engine: first-match keyword → score-based weighted matching
 - Workspace hints: now act as weak bias only (single-hint only, suppressed by high-risk or strong keyword signals)
 - High-risk keyword context included in routing reason
-- Model naming standardized: `kimi-coding/k2p5` (was `kimi-coding/kimi-k2.5` or `kimi/k2p5` in various files)
+- Model naming standardized: `moonshot/kimi-k2.5` (was `kimi-coding/k2p5` or `kimi/k2p5` in various files)
 - Plugin version aligned: `package.json` + `openclaw.plugin.json` both at 3.1.0
 - Default model in all examples updated to `zai/glm-5.1`
 

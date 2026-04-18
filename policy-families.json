@@ -1,0 +1,80 @@
+{
+  "version": "1.0.0",
+  "description": "Conservative routeable model families that ZeroAPI currently documents as practical subscription-first policy targets.",
+  "families": [
+    {
+      "id": "openai-gpt54-core",
+      "provider": "openai-codex",
+      "label": "OpenAI GPT-5.4 core family",
+      "openclaw_model_ids": [
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.3-codex"
+      ],
+      "benchmark_slugs": [
+        "gpt-5-4",
+        "gpt-5-4-mini",
+        "gpt-5-3-codex"
+      ]
+    },
+    {
+      "id": "zai-glm-core",
+      "provider": "zai",
+      "label": "Z AI GLM core family",
+      "openclaw_model_ids": [
+        "glm-5.1",
+        "glm-5",
+        "glm-5-turbo",
+        "glm-4.7-flash"
+      ],
+      "benchmark_slugs": [
+        "glm-5-1",
+        "glm-5",
+        "glm-5-turbo",
+        "glm-4-7-flash"
+      ]
+    },
+    {
+      "id": "kimi-k2-core",
+      "provider": "moonshot",
+      "label": "Kimi K2 core family",
+      "openclaw_model_ids": [
+        "kimi-k2.5",
+        "kimi-k2-thinking",
+        "kimi-k2-thinking-turbo",
+        "kimi-k2-turbo"
+      ],
+      "benchmark_slugs": [
+        "kimi-k2-5",
+        "kimi-k2-thinking",
+        "kimi-k2-thinking-turbo",
+        "kimi-k2-turbo"
+      ]
+    },
+    {
+      "id": "minimax-m27-core",
+      "provider": "minimax-portal",
+      "label": "MiniMax M2.7 core family",
+      "openclaw_model_ids": [
+        "MiniMax-M2.7",
+        "MiniMax-M2.7-highspeed"
+      ],
+      "benchmark_slugs": [
+        "minimax-m2-7"
+      ],
+      "notes": "OpenClaw exposes MiniMax subscription routing through minimax-portal. The benchmark snapshot currently has a direct row only for MiniMax-M2.7."
+    },
+    {
+      "id": "qwen36-plus-core",
+      "provider": "qwen",
+      "label": "Qwen3.6 Plus routeable family",
+      "openclaw_model_ids": [
+        "qwen3.6-plus"
+      ],
+      "benchmark_slugs": [
+        "qwen3-6-plus"
+      ],
+      "notes": "Artificial Analysis has a strong Qwen3.5 397B reference row, but upstream OpenClaw's routeable Qwen catalog currently exposes qwen3.6-plus/qwen3.5-plus, not qwen3.5-397b-a17b."
+    }
+  ]
+}

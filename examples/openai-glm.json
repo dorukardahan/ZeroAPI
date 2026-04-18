@@ -1,18 +1,32 @@
 {
-  "version": "3.0.0",
-  "generated": "2026-04-05T00:00:00Z",
-  "benchmarks_date": "2026-04-04",
+  "version": "3.2.1",
+  "generated": "2026-04-18T00:00:00Z",
+  "benchmarks_date": "2026-04-18",
+  "subscription_catalog_version": "1.0.0",
+  "subscription_profile": {
+    "version": "1.0.0",
+    "global": {
+      "openai-codex": {
+        "enabled": true,
+        "tierId": "plus"
+      },
+      "zai": {
+        "enabled": true,
+        "tierId": "lite"
+      }
+    }
+  },
   "default_model": "zai/glm-5.1",
   "models": {
     "openai-codex/gpt-5.4": {
-      "context_window": 1050000,
+      "context_window": 272000,
       "supports_vision": false,
-      "speed_tps": 71.9,
-      "ttft_seconds": 170.4,
+      "speed_tps": 82.116,
+      "ttft_seconds": 201.544,
       "benchmarks": {
-        "intelligence": 57.2,
+        "intelligence": 56.8,
         "coding": 57.3,
-        "tau2": 0.915,
+        "tau2": 0.871,
         "terminalbench": 0.576,
         "ifbench": 0.739,
         "gpqa": 0.92,
@@ -22,20 +36,20 @@
       }
     },
     "zai/glm-5.1": {
-      "context_window": 200000,
+      "context_window": 202800,
       "supports_vision": false,
-      "speed_tps": 62.8,
-      "ttft_seconds": 0.9,
+      "speed_tps": 47.221,
+      "ttft_seconds": 0.928,
       "benchmarks": {
-        "intelligence": 49.8,
-        "coding": 44.2,
-        "tau2": 0.982,
+        "intelligence": 51.4,
+        "coding": 43.4,
+        "tau2": 0.977,
         "terminalbench": 0.432,
-        "ifbench": 0.723,
-        "gpqa": 0.82,
-        "lcr": 0.633,
-        "hle": 0.272,
-        "scicode": 0.462
+        "ifbench": 0.763,
+        "gpqa": 0.868,
+        "lcr": 0.623,
+        "hle": 0.28,
+        "scicode": 0.438
       }
     }
   },

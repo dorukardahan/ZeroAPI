@@ -57,13 +57,49 @@ describe("config", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null when workspace_hints is not an object", async () => {
+    const bad = {
+      version: "3.0.0",
+      default_model: "foo/bar",
+      models: {},
+      routing_rules: {},
+      workspace_hints: [],
+      keywords: {},
+      high_risk_keywords: [],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(bad));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
+  it("defaults missing workspace_hints to an empty object", async () => {
+    const legacy = {
+      version: "3.0.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "openai-codex/gpt-5.4",
+      models: { "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
+      routing_rules: { default: { primary: "openai-codex/gpt-5.4", fallbacks: [] } },
+      keywords: { code: ["implement"] },
+      high_risk_keywords: ["deploy"],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(legacy));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).not.toBeNull();
+    expect(result!.workspace_hints).toEqual({});
+  });
+
   it("loads and caches valid config", async () => {
     const valid = {
       version: "3.0.0",
       generated: "2026-04-05",
       benchmarks_date: "2026-04-04",
       default_model: "openai-codex/gpt-5.4",
-      models: { "openai-codex/gpt-5.4": { context_window: 1050000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
+      models: { "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
       routing_rules: { default: { primary: "openai-codex/gpt-5.4", fallbacks: [] } },
       workspace_hints: {},
       keywords: { code: ["implement"] },

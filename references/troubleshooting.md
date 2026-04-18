@@ -119,11 +119,11 @@ tail -f ~/.openclaw/logs/zeroapi-routing.log
 
 Log format:
 ```
-2026-04-05T10:30:15Z agent=senti category=code model=openai-codex/gpt-5.4 reason=keyword:refactor
-2026-04-05T10:30:45Z agent=main category=default model=openai-codex/gpt-5.4 reason=no_match
+2026-04-05T10:30:15Z agent=senti action=route category=code current=zai/glm-5.1 model=openai-codex/gpt-5.4 risk=medium reason=keyword:refactor candidates=openai-codex/gpt-5.4,zai/glm-5.1
+2026-04-05T10:30:45Z agent=main action=stay category=default current=zai/glm-5.1 model=default risk=low reason=no_match
 ```
 
-`reason=no_match` means no category was detected — the current runtime default/current model was used. Other skip reasons may appear as `skip:*` or `default_mismatch:*`.
+`reason=no_match` means no category was detected — the current runtime default/current model was used. `action=stay` means the plugin evaluated the prompt and intentionally kept the current model. Other skip reasons may appear as `skip:*`, `default_mismatch:*`, or `no_eligible_candidate`.
 
 **Note**: The plugin never overrides explicit user model selections (`/model` or `#model:` directives). It also does not route messages from specialist agents (codex, glm) or cron/heartbeat triggers.
 
@@ -139,7 +139,11 @@ Log format:
 | 30-60 days | Warning shown — update recommended |
 | > 60 days | Explicit override required to proceed |
 
-**Fix**: Pull the latest release from the ZeroAPI repo. The repo maintainer runs the AA API fetch script and commits updated `benchmarks.json` with each release. After pulling, re-run `/zeroapi` to regenerate config.
+**Fix**:
+
+- If you are the maintainer, refresh with `python3 scripts/refresh_benchmarks.py --api-key-file /path/to/aa_api_key`, commit the new `benchmarks.json`, and cut a release.
+- If you are a normal user, pull the latest ZeroAPI release instead of running the AA fetch yourself.
+- After updating, re-run `/zeroapi` to regenerate config.
 
 ---
 
@@ -154,10 +158,10 @@ Log format:
 | Provider | Config location | Correct `api` value |
 |----------|----------------|---------------------|
 | `openai-codex` | `openclaw.json` | `"openai-responses"` |
-| `kimi-coding` | `openclaw.json` | `"openai-completions"` |
+| `moonshot` | `openclaw.json` | `"openai-completions"` |
 | `zai` | `openclaw.json` | `"openai-completions"` |
-| `minimax` | `openclaw.json` | `"openai-completions"` |
-| `modelstudio` | `openclaw.json` | `"openai-completions"` |
+| `minimax-portal` | `openclaw.json` | `"anthropic-messages"` |
+| `qwen` | `openclaw.json` | `"openai-completions"` |
 
 The `api` field is required for every custom provider (OpenClaw 2026.2.6+).
 
@@ -185,7 +189,7 @@ Ensure the model ID in your config exactly matches the provider's catalog. Some 
 
 - **OpenAI Codex**: Use the tmux OAuth flow to run `openclaw onboard --auth-choice openai-codex`. See `references/oauth-setup.md`.
 - **Kimi / GLM / Qwen**: API keys do not expire. If failing, verify the subscription is still active at the provider portal.
-- **MiniMax**: Use the tmux OAuth flow with `--auth-choice minimax-portal`.
+- **MiniMax**: Use the tmux OAuth flow with `--auth-choice minimax-global-oauth`.
 
 After manual renewal, sync the new token across all locations. See `references/oauth-setup.md` → "Token Storage Architecture".
 

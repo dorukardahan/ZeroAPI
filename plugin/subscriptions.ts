@@ -60,7 +60,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
     providerId: "kimi",
     label: "Kimi",
-    openclawProviderId: "kimi-coding",
+    openclawProviderId: "moonshot",
     status: "active",
     authMode: "api_key",
     selectionMode: "single_tier",
@@ -89,9 +89,9 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
     providerId: "minimax",
     label: "MiniMax",
-    openclawProviderId: "minimax",
+    openclawProviderId: "minimax-portal",
     status: "active",
-    authMode: "mixed",
+    authMode: "oauth",
     selectionMode: "single_tier",
     tiers: [
       { tierId: "starter", label: "Starter", monthlyPriceUsd: 10, annualEffectiveMonthlyUsd: null, availability: "available", routingWeight: 1, recommendedUsage: "Entry MiniMax access." },
@@ -104,7 +104,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
     providerId: "alibaba",
     label: "Alibaba (Qwen)",
-    openclawProviderId: "modelstudio",
+    openclawProviderId: "qwen",
     status: "active",
     authMode: "api_key",
     selectionMode: "single_tier",

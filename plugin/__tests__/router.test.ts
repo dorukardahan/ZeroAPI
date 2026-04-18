@@ -3,19 +3,72 @@ import { getSubscriptionWeightedCandidates } from "../router.js";
 import type { ModelCapabilities, RoutingRule, SubscriptionProfile } from "../types.js";
 
 const models: Record<string, ModelCapabilities> = {
-  "openai-codex/gpt-5.4": { context_window: 1000, supports_vision: false, speed_tps: 10, ttft_seconds: 10, benchmarks: {} },
-  "zai/glm-5-turbo": { context_window: 1000, supports_vision: false, speed_tps: 10, ttft_seconds: 1, benchmarks: {} },
-  "kimi-coding/k2p5": { context_window: 1000, supports_vision: false, speed_tps: 10, ttft_seconds: 2, benchmarks: {} },
+  "openai-codex/gpt-5.4": {
+    context_window: 1000,
+    supports_vision: false,
+    speed_tps: 82.116,
+    ttft_seconds: 201.544,
+    benchmarks: {
+      intelligence: 56.8,
+      coding: 57.3,
+      gpqa: 0.92,
+      hle: 0.416,
+      tau2: 0.871,
+      terminalbench: 0.576,
+      ifbench: 0.739,
+      scicode: 0.566,
+    },
+  },
+  "zai/glm-5.1": {
+    context_window: 1000,
+    supports_vision: false,
+    speed_tps: 47.221,
+    ttft_seconds: 0.928,
+    benchmarks: {
+      intelligence: 51.4,
+      coding: 43.4,
+      gpqa: 0.868,
+      hle: 0.28,
+      tau2: 0.977,
+      terminalbench: 0.432,
+      ifbench: 0.763,
+      scicode: 0.438,
+    },
+  },
+  "moonshot/kimi-k2.5": {
+    context_window: 1000,
+    supports_vision: false,
+    speed_tps: 32.926,
+    ttft_seconds: 1.273,
+    benchmarks: {
+      intelligence: 46.8,
+      coding: 39.5,
+      gpqa: 0.879,
+      hle: 0.294,
+      tau2: 0.959,
+      terminalbench: 0.348,
+      ifbench: 0.702,
+      scicode: 0.49,
+    },
+  },
 };
 
 const rules: Record<string, RoutingRule> = {
   code: {
     primary: "openai-codex/gpt-5.4",
-    fallbacks: ["zai/glm-5-turbo", "kimi-coding/k2p5"],
+    fallbacks: ["zai/glm-5.1", "moonshot/kimi-k2.5"],
   },
   default: {
     primary: "openai-codex/gpt-5.4",
-    fallbacks: ["zai/glm-5-turbo", "kimi-coding/k2p5"],
+    fallbacks: ["zai/glm-5.1", "moonshot/kimi-k2.5"],
+  },
+  orchestration: {
+    primary: "zai/glm-5.1",
+    fallbacks: ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"],
+  },
+  fast: {
+    primary: "zai/glm-5.1",
+    fallbacks: ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"],
   },
 };
 
@@ -24,15 +77,33 @@ const profile: SubscriptionProfile = {
   global: {
     "openai-codex": { enabled: true, tierId: "plus" },
     "zai": { enabled: true, tierId: "max" },
-    "kimi-coding": { enabled: true, tierId: "moderato" },
+    "moonshot": { enabled: true, tierId: "moderato" },
   },
 };
 
 describe("router weighting", () => {
-  it("prefers higher subscription-weighted providers over raw rule order", () => {
+  it("keeps the benchmark leader first when subscription pressure cannot justify the quality drop", () => {
     const candidates = getSubscriptionWeightedCandidates("code", models, rules, profile, undefined);
-    expect(candidates[0]).toBe("zai/glm-5-turbo");
+    expect(candidates[0]).toBe("openai-codex/gpt-5.4");
+    expect(candidates[1]).toBe("zai/glm-5.1");
+  });
+
+  it("allows high-headroom providers to lead when they stay within the benchmark frontier", () => {
+    const candidates = getSubscriptionWeightedCandidates("default", models, rules, profile, undefined);
+    expect(candidates[0]).toBe("zai/glm-5.1");
     expect(candidates).toContain("openai-codex/gpt-5.4");
+  });
+
+  it("preserves the orchestration leader while keeping benchmark-near fallbacks in pressure order", () => {
+    const candidates = getSubscriptionWeightedCandidates("orchestration", models, rules, profile, undefined);
+    expect(candidates[0]).toBe("zai/glm-5.1");
+    expect(candidates[1]).toBe("moonshot/kimi-k2.5");
+    expect(candidates).toContain("openai-codex/gpt-5.4");
+  });
+
+  it("lets low-latency models win fast tasks when they remain in the configured pool", () => {
+    const candidates = getSubscriptionWeightedCandidates("fast", models, rules, profile, undefined);
+    expect(candidates[0]).toBe("zai/glm-5.1");
   });
 
   it("removes providers that are not enabled in profile", () => {
@@ -43,7 +114,8 @@ describe("router weighting", () => {
         "zai": { enabled: false, tierId: null },
       },
     };
-    const candidates = getSubscriptionWeightedCandidates("code", models, rules, constrained, undefined);
-    expect(candidates).not.toContain("zai/glm-5-turbo");
+    const candidates = getSubscriptionWeightedCandidates("default", models, rules, constrained, undefined);
+    expect(candidates).not.toContain("zai/glm-5.1");
+    expect(candidates[0]).toBe("openai-codex/gpt-5.4");
   });
 });

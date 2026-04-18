@@ -3,6 +3,8 @@
 Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` policy snapshot — copy it to `~/.openclaw/zeroapi-config.json`.
 
 Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw runtime defaults, provider wiring, and per-agent model state still live there.
+These examples now include `subscription_profile` data. If that block is missing or empty, ZeroAPI may silently filter out every configured provider.
+These examples are intentionally conservative starter pools. `benchmarks.json` tracks a wider 162-model benchmark reference snapshot, but the canned configs keep a smaller, easier-to-operate subset. That practical subset is now documented in `policy-families.json`.
 
 ## Example Files
 
@@ -19,9 +21,9 @@ Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw r
 |-------|----------|--------------|
 | GPT-5.4 | openai-codex | $5.63 |
 | GLM-5.1 | zai | $1.55 |
-| Kimi K2.5 (Reasoning) | kimi-coding | $1.20 |
-| MiniMax-M2.7 | minimax | $0.53 |
-| Qwen3.5 397B A17B (Reasoning) | modelstudio | $1.35 |
+| Kimi K2.5 (Reasoning) | moonshot | $1.20 |
+| MiniMax-M2.7 | minimax-portal | $0.53 |
+| Qwen3.6 Plus | qwen | $1.13 |
 
 ## How to Use
 
@@ -38,16 +40,16 @@ cp examples/<file>.json ~/.openclaw/zeroapi-config.json
 openclaw onboard --auth-choice openai-codex
 
 # Z AI GLM (API key)
-openclaw onboard --auth-choice zai
+openclaw onboard --auth-choice zai-coding-global
 
 # Kimi (API key)
-openclaw onboard --auth-choice kimi-code-api-key
+openclaw onboard --auth-choice moonshot-api-key
 
 # MiniMax (OAuth portal)
-openclaw onboard --auth-choice minimax
+openclaw onboard --auth-choice minimax-global-oauth
 
-# Alibaba ModelStudio (API key)
-openclaw onboard --auth-choice modelstudio
+# Alibaba Qwen (API key)
+openclaw onboard --auth-choice qwen-standard-api-key
 ```
 
 ### 3. Verify
@@ -62,6 +64,12 @@ Then check runtime/policy alignment:
 
 ```bash
 bash scripts-zeroapi-doctor.sh
+```
+
+And simulate a real prompt before enabling live traffic:
+
+```bash
+npx tsx scripts/simulate.ts --prompt "coordinate a 3-step data pipeline"
 ```
 
 ### 4. Add workspace hints (optional)
@@ -97,12 +105,12 @@ High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc
 
 - **Keywords**: Add domain-specific terms to the `keywords` object
 - **Fallback chains**: Reorder or add models in `fallbacks` arrays
-- **Fast TTFT threshold**: Adjust `fast_ttft_max_seconds` (default: 5s) — only models with `ttft_seconds` below this are eligible for `fast` tasks
+- **Fast TTFT threshold**: Adjust `fast_ttft_max_seconds` — only models with `ttft_seconds` below this are eligible for `fast` tasks
 - **Default model**: Change `default_model` to whichever model you want as ZeroAPI's policy default target, then make sure `openclaw.json` agrees if you want runtime default behavior to match
 
 ## Benchmark Scores Reference
 
-All benchmark values in these configs are sourced from `benchmarks.json` (date: 2026-04-04).
+All benchmark values in these configs are sourced from `benchmarks.json` (date: 2026-04-18).
 
 | Benchmark | What It Measures |
 |-----------|-----------------|

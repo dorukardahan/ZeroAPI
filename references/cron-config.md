@@ -27,4 +27,4 @@ Example fallback chains (5-provider setup):
 | Research | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) |
 | Orchestration | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | Qwen3.5 (Alibaba) | — |
 | Math | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Qwen3.5 (Alibaba) | — |
-| Fast | GLM-4.7-Flash (Z AI) | GPT-5.4 nano (OpenAI) | MiniMax-M2.7 (MiniMax) | — |
+| Fast | GLM-5.1 (Z AI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | — |

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OPENCLAW_DIR="${HOME}/.openclaw"
+OPENCLAW_DIR="${OPENCLAW_DIR:-${HOME}/.openclaw}"
 ZEROAPI_CFG="$OPENCLAW_DIR/zeroapi-config.json"
 OPENCLAW_CFG="$OPENCLAW_DIR/openclaw.json"
 
@@ -13,8 +13,8 @@ fail() { printf 'FAIL: %s\n' "$*"; exit 1; }
 [ -f "$OPENCLAW_CFG" ] || fail "missing $OPENCLAW_CFG"
 
 python3 - <<'PY'
-import json, pathlib, sys
-home = pathlib.Path.home() / '.openclaw'
+import json, os, pathlib, sys
+home = pathlib.Path(os.environ.get('OPENCLAW_DIR', str(pathlib.Path.home() / '.openclaw')))
 zcfg = json.loads((home / 'zeroapi-config.json').read_text())
 ocfg = json.loads((home / 'openclaw.json').read_text())
 
@@ -38,7 +38,27 @@ workspace_hints = zcfg.get('workspace_hints', {})
 for agent, hint in workspace_hints.items():
     if hint is not None and not isinstance(hint, list):
         print(f'WARN: workspace_hints.{agent} should be list|null, got {type(hint).__name__}')
+
+profile = zcfg.get('subscription_profile')
+if not isinstance(profile, dict):
+    print('WARN: subscription_profile missing. Routing may silently filter out all configured providers.')
+else:
+    global_profile = profile.get('global')
+    if not isinstance(global_profile, dict) or not global_profile:
+        print('WARN: subscription_profile.global missing or empty. Routing may silently filter out all configured providers.')
+    else:
+        enabled = []
+        for provider, selection in global_profile.items():
+            if isinstance(selection, dict) and selection.get('enabled') is True:
+                enabled.append(provider)
+        print(f'subscription_profile.enabled={",".join(enabled) if enabled else "none"}')
+        if not enabled:
+            print('WARN: no enabled providers in subscription_profile.global')
 PY
+
+if [ -d "$OPENCLAW_DIR/extensions/zeroapi-router" ]; then
+  warn "manual extension directory detected at $OPENCLAW_DIR/extensions/zeroapi-router - this can shadow or duplicate plugin registry installs"
+fi
 
 if command -v openclaw >/dev/null 2>&1; then
   say "--- openclaw plugins list ---"

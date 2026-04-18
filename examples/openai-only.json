@@ -1,18 +1,28 @@
 {
-  "version": "3.0.0",
-  "generated": "2026-04-05T00:00:00Z",
-  "benchmarks_date": "2026-04-04",
+  "version": "3.2.1",
+  "generated": "2026-04-18T00:00:00Z",
+  "benchmarks_date": "2026-04-18",
+  "subscription_catalog_version": "1.0.0",
+  "subscription_profile": {
+    "version": "1.0.0",
+    "global": {
+      "openai-codex": {
+        "enabled": true,
+        "tierId": "plus"
+      }
+    }
+  },
   "default_model": "openai-codex/gpt-5.4",
   "models": {
     "openai-codex/gpt-5.4": {
-      "context_window": 1050000,
+      "context_window": 272000,
       "supports_vision": false,
-      "speed_tps": 71.9,
-      "ttft_seconds": 170.4,
+      "speed_tps": 82.116,
+      "ttft_seconds": 201.544,
       "benchmarks": {
-        "intelligence": 57.2,
+        "intelligence": 56.8,
         "coding": 57.3,
-        "tau2": 0.915,
+        "tau2": 0.871,
         "terminalbench": 0.576,
         "ifbench": 0.739,
         "gpqa": 0.92,
@@ -22,75 +32,117 @@
       }
     },
     "openai-codex/gpt-5.4-mini": {
-      "context_window": 1050000,
+      "context_window": 272000,
       "supports_vision": false,
-      "speed_tps": 150.2,
-      "ttft_seconds": 3.2,
+      "speed_tps": 172.146,
+      "ttft_seconds": 5.699,
       "benchmarks": {
-        "intelligence": 42.1,
-        "coding": 38.5,
-        "tau2": 0.78,
-        "terminalbench": 0.31,
-        "ifbench": 0.71,
-        "gpqa": 0.85,
-        "lcr": 0.68,
-        "hle": 0.22,
-        "scicode": 0.41
-      }
-    },
-    "openai-codex/gpt-5.4-nano": {
-      "context_window": 1050000,
-      "supports_vision": false,
-      "speed_tps": 206.0,
-      "ttft_seconds": 1.1,
-      "benchmarks": {
-        "intelligence": 32.0,
-        "coding": 28.5,
-        "tau2": 0.62,
-        "terminalbench": 0.22,
-        "ifbench": 0.68,
-        "gpqa": 0.75,
-        "lcr": 0.55,
-        "hle": 0.12,
-        "scicode": 0.31
+        "intelligence": 48.9,
+        "coding": 51.5,
+        "tau2": 0.833,
+        "terminalbench": 0.523,
+        "ifbench": 0.733,
+        "gpqa": 0.875,
+        "lcr": 0.693,
+        "hle": 0.266,
+        "scicode": 0.499
       }
     }
   },
   "routing_rules": {
     "code": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["openai-codex/gpt-5.4-mini"]
+      "fallbacks": [
+        "openai-codex/gpt-5.4-mini"
+      ]
     },
     "research": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["openai-codex/gpt-5.4-mini"]
+      "fallbacks": [
+        "openai-codex/gpt-5.4-mini"
+      ]
     },
     "orchestration": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["openai-codex/gpt-5.4-mini"]
+      "fallbacks": [
+        "openai-codex/gpt-5.4-mini"
+      ]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["openai-codex/gpt-5.4-mini"]
+      "fallbacks": [
+        "openai-codex/gpt-5.4-mini"
+      ]
     },
     "fast": {
-      "primary": "openai-codex/gpt-5.4-nano",
-      "fallbacks": ["openai-codex/gpt-5.4-mini"]
+      "primary": "openai-codex/gpt-5.4-mini",
+      "fallbacks": []
     },
     "default": {
       "primary": "openai-codex/gpt-5.4",
-      "fallbacks": ["openai-codex/gpt-5.4-mini", "openai-codex/gpt-5.4-nano"]
+      "fallbacks": [
+        "openai-codex/gpt-5.4-mini"
+      ]
     }
   },
   "workspace_hints": {},
   "keywords": {
-    "code": ["implement", "function", "class", "refactor", "fix", "test", "debug", "build", "write"],
-    "research": ["research", "analyze", "explain", "compare", "investigate", "summarize", "review"],
-    "orchestration": ["orchestrate", "coordinate", "pipeline", "workflow", "plan", "manage"],
-    "math": ["calculate", "solve", "equation", "proof", "compute", "formula"],
-    "fast": ["quick", "simple", "format", "convert", "translate", "list", "rename"]
+    "code": [
+      "implement",
+      "function",
+      "class",
+      "refactor",
+      "fix",
+      "test",
+      "debug",
+      "build",
+      "write"
+    ],
+    "research": [
+      "research",
+      "analyze",
+      "explain",
+      "compare",
+      "investigate",
+      "summarize",
+      "review"
+    ],
+    "orchestration": [
+      "orchestrate",
+      "coordinate",
+      "pipeline",
+      "workflow",
+      "plan",
+      "manage"
+    ],
+    "math": [
+      "calculate",
+      "solve",
+      "equation",
+      "proof",
+      "compute",
+      "formula"
+    ],
+    "fast": [
+      "quick",
+      "simple",
+      "format",
+      "convert",
+      "translate",
+      "list",
+      "rename"
+    ]
   },
-  "high_risk_keywords": ["deploy", "delete", "drop", "rm", "production", "credentials", "secret", "password"],
-  "_note": "Single-provider setup. Fallback chains are same-provider only — no cross-provider resilience.",
-  "fast_ttft_max_seconds": 5
+  "high_risk_keywords": [
+    "deploy",
+    "delete",
+    "drop",
+    "rm",
+    "production",
+    "credentials",
+    "secret",
+    "password"
+  ],
+  "_note": "Single-provider setup. Fallback chains are same-provider only \u2014 no cross-provider resilience.",
+  "fast_ttft_max_seconds": 6
 }

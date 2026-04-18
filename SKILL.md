@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.1.0
+version: 3.2.1
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -12,7 +12,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.1 — Plugin-Based Model Routing
+# ZeroAPI v3.2 — Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -50,7 +50,7 @@ ZeroAPI also supports a **subscription-aware foundation**:
 - a fixed provider tier catalog
 - a persistent global subscription profile
 - optional agent-level partial overrides
-- subscription-weighted candidate ordering without exposing private usage data
+- benchmark-frontier candidate ordering without exposing private usage data
 
 ## Supported providers
 
@@ -59,10 +59,10 @@ Five subscription-based providers are currently supported by the routing policy.
 | Provider | OpenClaw ID | Auth | Tiers |
 |----------|-------------|------|-------|
 | OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus, Pro |
-| Kimi | `kimi-coding` | API key | Moderato, Allegretto, Allegro, Vivace |
+| Kimi | `moonshot` | API key | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
-| MiniMax | `minimax` | OAuth portal | Starter, Plus, Max, Ultra-HS |
-| Alibaba (Qwen) | `modelstudio` | API key | Pro |
+| MiniMax | `minimax-portal` | OAuth portal | Starter, Plus, Max, Ultra-HS |
+| Alibaba (Qwen) | `qwen` | API key | Pro |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
 
@@ -106,7 +106,7 @@ Among surviving models:
 
 - classify the task conservatively
 - rank by the category's benchmark basis
-- apply subscription-weighted ordering across benchmark-ranked candidates
+- apply subscription pressure only inside a benchmark frontier, then keep the rest in benchmark order
 - if the chosen model equals the current default, return no override
 - if there is no good match, stay on default
 
@@ -147,7 +147,7 @@ Practical subscription mapping:
 - Kimi -> K2.5
 - Z AI -> GLM-5.1 / GLM-5 / GLM-5-Turbo / GLM-4.7 family
 - MiniMax -> MiniMax-M2.7
-- Alibaba -> Qwen3.5 397B
+- Alibaba -> Qwen3.6 Plus
 
 Persist the result into a subscription profile with:
 - `global` provider selections
@@ -173,7 +173,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.1.0",
+  "version": "3.2.1",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",

@@ -6,31 +6,31 @@ import { isModelAllowedBySubscriptionProfile } from "../profile.js";
 import type { ZeroAPIConfig } from "../types.js";
 
 const config: ZeroAPIConfig = {
-  version: "3.1.0",
+  version: "3.2.1",
   generated: "2026-04-05",
   benchmarks_date: "2026-04-04",
   default_model: "openai-codex/gpt-5.4",
   models: {
     "openai-codex/gpt-5.4": {
-      context_window: 1050000, supports_vision: false, speed_tps: 72, ttft_seconds: 163,
+      context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163,
       benchmarks: { intelligence: 57.2, coding: 57.3, tau2: 0.915 },
     },
     "zai/glm-5": {
-      context_window: 200000, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9,
+      context_window: 202800, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9,
       benchmarks: { intelligence: 49.8, coding: 44.2, tau2: 0.982 },
     },
-    "kimi-coding/k2p5": {
-      context_window: 128000, supports_vision: false, speed_tps: 32, ttft_seconds: 2.4,
+    "moonshot/kimi-k2.5": {
+      context_window: 262144, supports_vision: true, speed_tps: 32, ttft_seconds: 2.4,
       benchmarks: { intelligence: 46.8, coding: 39.5, tau2: 0.959 },
     },
   },
   routing_rules: {
-    code: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "kimi-coding/k2p5"] },
+    code: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "moonshot/kimi-k2.5"] },
     research: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5"] },
-    orchestration: { primary: "zai/glm-5", fallbacks: ["kimi-coding/k2p5", "openai-codex/gpt-5.4"] },
+    orchestration: { primary: "zai/glm-5", fallbacks: ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"] },
     math: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5"] },
-    fast: { primary: "zai/glm-5", fallbacks: ["kimi-coding/k2p5"] },
-    default: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "kimi-coding/k2p5"] },
+    fast: { primary: "zai/glm-5", fallbacks: ["moonshot/kimi-k2.5"] },
+    default: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5", "moonshot/kimi-k2.5"] },
   },
   workspace_hints: { codex: null, glm: null, senti: ["code", "research"] },
   keywords: {
@@ -48,7 +48,7 @@ const config: ZeroAPIConfig = {
     global: {
       "openai-codex": { enabled: true, tierId: "plus" },
       "zai": { enabled: true, tierId: "max" },
-      "kimi-coding": { enabled: false, tierId: null },
+      "moonshot": { enabled: false, tierId: null },
     },
     agentOverrides: {
       constrained: {
@@ -90,14 +90,15 @@ describe("full routing pipeline", () => {
     });
     expect(capable["zai/glm-5"]).toBeDefined();
     expect(capable["openai-codex/gpt-5.4"]).toBeUndefined();
-    expect(capable["kimi-coding/k2p5"]).toBeDefined();
+    expect(capable["moonshot/kimi-k2.5"]).toBeDefined();
   });
 
-  it("large context filters out small-window models", () => {
+  it("large context filters out all models above current runtime caps", () => {
     const capable = filterCapableModels(config.models, { estimatedTokens: 500000 });
+    expect(capable["openai-codex/gpt-5.4"]).toBeUndefined();
     expect(capable["zai/glm-5"]).toBeUndefined();
-    expect(capable["kimi-coding/k2p5"]).toBeUndefined();
-    expect(Object.keys(capable)).toHaveLength(1);
+    expect(capable["moonshot/kimi-k2.5"]).toBeUndefined();
+    expect(Object.keys(capable)).toHaveLength(0);
   });
 
   it("ambiguous message stays on default", () => {
