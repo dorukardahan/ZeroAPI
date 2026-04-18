@@ -14,7 +14,7 @@ function writeConfig(dir: string): void {
   writeFileSync(
     join(dir, "zeroapi-config.json"),
     JSON.stringify({
-      version: "3.2.1",
+      version: "3.3.0",
       generated: "2026-04-17",
       benchmarks_date: "2026-04-04",
       default_model: "zai/glm-5.1",

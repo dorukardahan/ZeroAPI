@@ -3,7 +3,7 @@ import { resolveRoutingDecision } from "../decision.js";
 import type { ZeroAPIConfig } from "../types.js";
 
 const config: ZeroAPIConfig = {
-  version: "3.2.1",
+  version: "3.3.0",
   generated: "2026-04-05",
   benchmarks_date: "2026-04-04",
   default_model: "openai-codex/gpt-5.4",
