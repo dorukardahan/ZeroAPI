@@ -33,6 +33,12 @@ function getUsagePriorityFactor(priority: number | undefined): number {
   return 0.8 + (0.2 * clamp(priority ?? 1, 0, 3));
 }
 
+function normalizeAuthProfile(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized || null;
+}
+
 function resolveInventoryAccounts(params: {
   inventory: SubscriptionInventory | undefined;
   providerId: string;
@@ -57,7 +63,7 @@ function resolveInventoryAccounts(params: {
       weight:
         getAccountBaseWeight(providerId, account.tierId) *
         getUsagePriorityFactor(account.usagePriority),
-      authProfile: account.authProfile?.trim() || null,
+      authProfile: normalizeAuthProfile(account.authProfile),
       intendedUse: account.intendedUse ?? [],
     }));
 
