@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.3.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.3.0)
+[![Version](https://img.shields.io/badge/version-3.4.1-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.4.1)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -120,7 +120,7 @@ It lets ZeroAPI model that provider as an account pool instead of a single tier:
 }
 ```
 
-Current limitation: ZeroAPI still returns only `providerOverride` and `modelOverride`. OpenClaw remains responsible for real auth profile rotation inside that provider via `auth.order`, cooldowns, and session pinning. For best results, keep your OpenClaw `auth.order` aligned with the priorities in `subscription_inventory`.
+When the winning inventory account has an `authProfile`, ZeroAPI now returns `authProfileOverride` alongside `providerOverride` and `modelOverride`. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
 
 Before turning routing loose on real traffic, inspect a sample decision:
 
@@ -261,7 +261,7 @@ Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your me
 Yes. ZeroAPI keeps a legacy global `subscription_profile` plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
 
 **Can ZeroAPI pick between multiple accounts for the same provider?**
-Partially. ZeroAPI can now score the provider as a pool with `subscription_inventory`, but the real per-turn account selection still belongs to OpenClaw runtime. OpenClaw rotates auth profiles with `auth.order`, cooldowns, and session stickiness. For best results, keep the account priorities in both places aligned.
+Yes. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI returns it as `authProfileOverride`. OpenClaw then treats it as the preferred profile for the run, while still handling cooldowns, failover, and session stickiness.
 
 ## License
 

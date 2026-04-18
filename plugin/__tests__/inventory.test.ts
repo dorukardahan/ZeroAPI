@@ -43,6 +43,8 @@ describe("subscription inventory", () => {
     expect(resolved?.enabled).toBe(true);
     expect(resolved?.accountCount).toBe(2);
     expect(resolved?.matchedAccountIds).toContain("openai-work-max");
+    expect(resolved?.preferredAccountId).toBe("openai-work-max");
+    expect(resolved?.preferredAuthProfile).toBe("openai:work");
     expect(resolved?.routingWeight ?? 0).toBeGreaterThan(3);
   });
 
@@ -90,5 +92,31 @@ describe("subscription inventory", () => {
     expect(resolved?.source).toBe("profile");
     expect(resolved?.enabled).toBe(true);
     expect(resolved?.routingWeight).toBe(4);
+    expect(resolved?.preferredAuthProfile).toBeNull();
+  });
+
+  it("ignores non-string authProfile values in inventory accounts", () => {
+    const inventory = {
+      version: "1.0.0",
+      accounts: {
+        "openai-work-max": {
+          provider: "openai-codex",
+          tierId: "pro",
+          authProfile: 123,
+          usagePriority: 2,
+        },
+      },
+    } as unknown as SubscriptionInventory;
+
+    const resolved = resolveProviderCapacity({
+      profile,
+      inventory,
+      agentId: undefined,
+      providerId: "openai-codex",
+      category: "code",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.preferredAuthProfile).toBeNull();
   });
 });

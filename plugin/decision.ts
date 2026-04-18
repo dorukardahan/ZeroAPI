@@ -1,6 +1,6 @@
 import { classifyTask } from "./classifier.js";
 import { filterCapableModels, estimateTokens } from "./filter.js";
-import { isModelAllowedBySubscriptions } from "./inventory.js";
+import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 import { selectModel } from "./selector.js";
 import type { RoutingDecision, TaskCategory, ZeroAPIConfig } from "./types.js";
@@ -44,6 +44,8 @@ export type RoutingResolution = {
   selectedModel: string | null;
   providerOverride: string | null;
   modelOverride: string | null;
+  authProfileOverride: string | null;
+  selectedAccountId: string | null;
 };
 
 function escapeRegex(value: string): string {
@@ -96,6 +98,8 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
@@ -116,6 +120,8 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
@@ -136,6 +142,8 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
@@ -170,6 +178,8 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
@@ -191,6 +201,8 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
@@ -247,6 +259,8 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
@@ -265,7 +279,20 @@ export function resolveRoutingDecision(
       )
     : null;
 
-  if (!selectedModel) {
+  const preferredCurrentModel =
+    selectedModel === null && weightedCandidates[0] === currentModel ? weightedCandidates[0] : null;
+  const targetModel = selectedModel ?? preferredCurrentModel;
+  const resolvedCapacity = targetModel
+    ? resolveProviderCapacity({
+        profile: config.subscription_profile,
+        inventory: config.subscription_inventory,
+        agentId,
+        providerId: splitModelKey(targetModel).provider,
+        category: rawDecision.category,
+      })
+    : null;
+
+  if (!targetModel) {
     const finalDecision = {
       ...rawDecision,
       model: null,
@@ -288,13 +315,47 @@ export function resolveRoutingDecision(
       selectedModel: null,
       providerOverride: null,
       modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
     };
   }
 
-  const { provider, model } = splitModelKey(selectedModel);
+  if (
+    selectedModel === null &&
+    currentModel === preferredCurrentModel &&
+    !resolvedCapacity?.preferredAuthProfile
+  ) {
+    const finalDecision = {
+      ...rawDecision,
+      model: null,
+      provider: null,
+      reason: `${rawDecision.reason}:no_switch_needed`,
+    };
+    return {
+      action: "stay",
+      reason: finalDecision.reason,
+      agentId,
+      trigger: options.trigger,
+      currentModel,
+      workspaceHints,
+      tokenEstimate,
+      likelyVision,
+      capableModels: Object.keys(capable),
+      weightedCandidates,
+      rawDecision,
+      finalDecision,
+      selectedModel: null,
+      providerOverride: null,
+      modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
+    };
+  }
+
+  const { provider, model } = splitModelKey(targetModel);
   const finalDecision = {
     ...rawDecision,
-    model: selectedModel,
+    model: targetModel,
     provider,
   };
 
@@ -311,8 +372,10 @@ export function resolveRoutingDecision(
     weightedCandidates,
     rawDecision,
     finalDecision,
-    selectedModel,
+    selectedModel: targetModel,
     providerOverride: provider,
     modelOverride: model,
+    authProfileOverride: resolvedCapacity?.preferredAuthProfile ?? null,
+    selectedAccountId: resolvedCapacity?.preferredAccountId ?? null,
   };
 }

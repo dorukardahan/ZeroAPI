@@ -9,6 +9,8 @@ export type ResolvedProviderCapacity = {
   source: "inventory" | "profile";
   accountCount: number;
   matchedAccountIds: string[];
+  preferredAccountId: string | null;
+  preferredAuthProfile: string | null;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -31,6 +33,12 @@ function getUsagePriorityFactor(priority: number | undefined): number {
   return 0.8 + (0.2 * clamp(priority ?? 1, 0, 3));
 }
 
+function normalizeAuthProfile(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized || null;
+}
+
 function resolveInventoryAccounts(params: {
   inventory: SubscriptionInventory | undefined;
   providerId: string;
@@ -39,8 +47,8 @@ function resolveInventoryAccounts(params: {
   const { inventory, providerId, category } = params;
   if (!inventory) {
     return {
-      allAccounts: [] as Array<{ accountId: string; weight: number }>,
-      scoringAccounts: [] as Array<{ accountId: string; weight: number }>,
+      allAccounts: [] as Array<{ accountId: string; weight: number; authProfile: string | null }>,
+      scoringAccounts: [] as Array<{ accountId: string; weight: number; authProfile: string | null }>,
     };
   }
 
@@ -55,20 +63,29 @@ function resolveInventoryAccounts(params: {
       weight:
         getAccountBaseWeight(providerId, account.tierId) *
         getUsagePriorityFactor(account.usagePriority),
+      authProfile: normalizeAuthProfile(account.authProfile),
       intendedUse: account.intendedUse ?? [],
     }));
 
   if (enabledAccounts.length === 0) {
     return {
-      allAccounts: [] as Array<{ accountId: string; weight: number }>,
-      scoringAccounts: [] as Array<{ accountId: string; weight: number }>,
+      allAccounts: [] as Array<{ accountId: string; weight: number; authProfile: string | null }>,
+      scoringAccounts: [] as Array<{ accountId: string; weight: number; authProfile: string | null }>,
     };
   }
 
   if (!category) {
     return {
-      allAccounts: enabledAccounts.map(({ accountId, weight }) => ({ accountId, weight })),
-      scoringAccounts: enabledAccounts.map(({ accountId, weight }) => ({ accountId, weight })),
+      allAccounts: enabledAccounts.map(({ accountId, weight, authProfile }) => ({
+        accountId,
+        weight,
+        authProfile,
+      })),
+      scoringAccounts: enabledAccounts.map(({ accountId, weight, authProfile }) => ({
+        accountId,
+        weight,
+        authProfile,
+      })),
     };
   }
 
@@ -78,9 +95,38 @@ function resolveInventoryAccounts(params: {
   const scoringAccounts = matchedCategory.length > 0 ? matchedCategory : enabledAccounts;
 
   return {
-    allAccounts: enabledAccounts.map(({ accountId, weight }) => ({ accountId, weight })),
-    scoringAccounts: scoringAccounts.map(({ accountId, weight }) => ({ accountId, weight })),
+    allAccounts: enabledAccounts.map(({ accountId, weight, authProfile }) => ({
+      accountId,
+      weight,
+      authProfile,
+    })),
+    scoringAccounts: scoringAccounts.map(({ accountId, weight, authProfile }) => ({
+      accountId,
+      weight,
+      authProfile,
+    })),
   };
+}
+
+function pickPreferredInventoryAccount(
+  accounts: Array<{ accountId: string; weight: number; authProfile: string | null }>,
+): { accountId: string; authProfile: string | null } | null {
+  if (accounts.length === 0) return null;
+
+  const ranked = [...accounts].sort((a, b) => {
+    if (b.weight !== a.weight) {
+      return b.weight - a.weight;
+    }
+    return a.accountId.localeCompare(b.accountId);
+  });
+
+  const preferred = ranked[0];
+  return preferred
+    ? {
+        accountId: preferred.accountId,
+        authProfile: preferred.authProfile,
+      }
+    : null;
 }
 
 export function resolveProviderCapacity(params: {
@@ -106,11 +152,14 @@ export function resolveProviderCapacity(params: {
         source: "inventory",
         accountCount: 0,
         matchedAccountIds: [],
+        preferredAccountId: null,
+        preferredAuthProfile: null,
       };
     }
 
     const strongestAccount = Math.max(...accounts.scoringAccounts.map((account) => account.weight));
     const redundancyBonus = Math.min(1, 0.25 * Math.max(0, accounts.scoringAccounts.length - 1));
+    const preferredAccount = pickPreferredInventoryAccount(accounts.scoringAccounts);
 
     return {
       providerId,
@@ -119,6 +168,8 @@ export function resolveProviderCapacity(params: {
       source: "inventory",
       accountCount: accounts.allAccounts.length,
       matchedAccountIds: accounts.scoringAccounts.map((account) => account.accountId),
+      preferredAccountId: preferredAccount?.accountId ?? null,
+      preferredAuthProfile: preferredAccount?.authProfile ?? null,
     };
   }
 
@@ -132,6 +183,8 @@ export function resolveProviderCapacity(params: {
     source: "profile",
     accountCount: legacy.enabled ? 1 : 0,
     matchedAccountIds: [],
+    preferredAccountId: null,
+    preferredAuthProfile: null,
   };
 }
 

@@ -7,6 +7,8 @@ let logPath: string | null = null;
 type LogEntry = {
   action?: string;
   agentId?: string;
+  authProfile?: string | null;
+  accountId?: string | null;
   category: string;
   currentModel?: string | null;
   model?: string | null;
@@ -29,9 +31,11 @@ export function logRouting(
   agentId: string | undefined,
   routing: {
     action: "skip" | "stay" | "route";
+    authProfileOverride?: string | null;
     currentModel: string | null;
     weightedCandidates: string[];
     finalDecision: RoutingDecision | null;
+    selectedAccountId?: string | null;
   },
 ): void {
   if (!routing.finalDecision) return;
@@ -39,6 +43,8 @@ export function logRouting(
   logRoutingEvent({
     action: routing.action,
     agentId,
+    authProfile: routing.authProfileOverride ?? null,
+    accountId: routing.selectedAccountId ?? null,
     category: routing.finalDecision.category,
     currentModel: routing.currentModel,
     model: routing.finalDecision.model ?? "default",
@@ -65,6 +71,12 @@ export function logRoutingEvent(entry: LogEntry): void {
 
   if (entry.candidates?.length) {
     parts.push(`candidates=${entry.candidates.join(",")}`);
+  }
+  if (entry.authProfile) {
+    parts.push(`authProfile=${entry.authProfile}`);
+  }
+  if (entry.accountId) {
+    parts.push(`account=${entry.accountId}`);
   }
 
   const line = `${parts.join(" ")}\n`;

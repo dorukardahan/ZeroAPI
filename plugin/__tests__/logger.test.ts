@@ -46,7 +46,9 @@ describe("logger", () => {
 
     logRouting("agent-1", {
       action: "route",
+      authProfileOverride: "openai:work",
       currentModel: "zai/glm-5.1",
+      selectedAccountId: "openai-work-pro",
       weightedCandidates: ["openai-codex/gpt-5.4", "zai/glm-5.1"],
       finalDecision: {
         category: "code",
@@ -81,6 +83,8 @@ describe("logger", () => {
     expect(lines[0]).toContain("current=zai/glm-5.1");
     expect(lines[0]).toContain("model=openai-codex/gpt-5.4");
     expect(lines[0]).toContain("candidates=openai-codex/gpt-5.4,zai/glm-5.1");
+    expect(lines[0]).toContain("authProfile=openai:work");
+    expect(lines[0]).toContain("account=openai-work-pro");
     expect(lines[1]).toContain("agent=agent-2");
     expect(lines[1]).toContain("action=stay");
     expect(lines[1]).toContain("category=research");
