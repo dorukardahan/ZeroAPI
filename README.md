@@ -224,3 +224,7 @@ Yes. ZeroAPI now has a foundation for a global subscription profile plus agent-l
 ## License
 
 MIT
+
+## Download History
+
+[![Download History](https://skill-history.com/chart/dorukardahan/zeroapi.svg)](https://skill-history.com/dorukardahan/zeroapi)
