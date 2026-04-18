@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.2.1-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.1)
+[![Version](https://img.shields.io/badge/version-3.2.2-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.2.2)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -51,10 +51,10 @@ When the hook returns an override, the model is switched for that turn only. The
 | Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
 |----------|------------|--------------|---------|-----------------|--------|
 | OpenAI | `openai-codex` | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.4, GPT-5.3 Codex, GPT-5.4 mini |
-| Kimi | `moonshot` | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.5, K2 Thinking |
+| Kimi | `moonshot` (`kimi-coding` alias) | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.5, K2 Thinking |
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
-| MiniMax | `minimax-portal` | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
-| Alibaba (Qwen) | `qwen` | Pro | $50 | $42 | Qwen3.6 Plus |
+| MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
+| Alibaba (Qwen) | `qwen` (`qwen-dashscope` alias) | Pro | $50 | $42 | Qwen3.6 Plus |
 
 ## Task Categories
 

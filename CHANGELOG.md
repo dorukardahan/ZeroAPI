@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.2.2] — 2026-04-18
+
+Provider alias compatibility patch for OpenClaw deployments that still use legacy provider ids.
+
+### Fixed
+- Subscription-aware routing now resolves documented provider aliases, including `kimi-coding` for Kimi, `minimax` for MiniMax, and `qwen-dashscope` for Qwen
+- Canonical subscription profile keys still work when runtime model ids use an alias, so `moonshot` subscriptions can keep `kimi-coding/*` models eligible
+- Added tests covering provider alias subscription resolution and routing candidate eligibility
+
+---
+
 ## [3.2.1] — 2026-04-18
 
 OpenClaw source-alignment patch, benchmark refresh, and public configuration hardening.

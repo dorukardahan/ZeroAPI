@@ -183,7 +183,7 @@ def main() -> None:
         1 for model in models if model.get("policy_family", {}).get("included")
     )
     payload = {
-        "version": "3.2.1",
+        "version": "3.2.2",
         "source": "Artificial Analysis Data API v2",
         "api": API_URL,
         "fetched": datetime.now(timezone.utc).date().isoformat(),

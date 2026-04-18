@@ -36,6 +36,23 @@ describe("profile", () => {
     expect(isModelAllowedBySubscriptionProfile(profile, undefined, "zai/glm-5-turbo")).toBe(true);
   });
 
+  it("resolves provider aliases from the canonical subscription profile key", () => {
+    const resolved = resolveProviderSubscription(profile, undefined, "kimi-coding");
+    expect(resolved).not.toBeNull();
+    expect(resolved?.enabled).toBe(false);
+    expect(resolved?.tierId).toBeNull();
+  });
+
+  it("allows legacy provider ids when the canonical provider is enabled", () => {
+    const aliasProfile: SubscriptionProfile = {
+      version: "1.0.0",
+      global: {
+        "moonshot": { enabled: true, tierId: "moderato" },
+      },
+    };
+    expect(isModelAllowedBySubscriptionProfile(aliasProfile, undefined, "kimi-coding/k2p5")).toBe(true);
+  });
+
   it("blocks model when provider is disabled by override", () => {
     expect(isModelAllowedBySubscriptionProfile(profile, "research-agent", "openai-codex/gpt-5.4")).toBe(false);
   });

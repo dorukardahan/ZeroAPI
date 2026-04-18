@@ -40,6 +40,7 @@ Each provider entry should define:
 - `providerId`, stable internal ID
 - `label`, human-readable provider name
 - `openclawProviderId`, provider slug used by OpenClaw
+- `openclawProviderAliases`, optional legacy/runtime provider slugs that map to the same subscription
 - `status`, one of `active`, `excluded`, `experimental`
 - `authMode`, such as `oauth`, `api_key`, or `mixed`
 - `selectionMode`, currently `single_tier`

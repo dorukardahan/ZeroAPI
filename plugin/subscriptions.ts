@@ -16,6 +16,7 @@ export type ProviderCatalogEntry = {
   providerId: string;
   label: string;
   openclawProviderId: string;
+  openclawProviderAliases?: string[];
   status: ProviderCatalogStatus;
   authMode: "oauth" | "api_key" | "mixed";
   selectionMode: "single_tier";
@@ -61,6 +62,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     providerId: "kimi",
     label: "Kimi",
     openclawProviderId: "moonshot",
+    openclawProviderAliases: ["kimi-coding"],
     status: "active",
     authMode: "api_key",
     selectionMode: "single_tier",
@@ -90,6 +92,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     providerId: "minimax",
     label: "MiniMax",
     openclawProviderId: "minimax-portal",
+    openclawProviderAliases: ["minimax"],
     status: "active",
     authMode: "oauth",
     selectionMode: "single_tier",
@@ -105,6 +108,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     providerId: "alibaba",
     label: "Alibaba (Qwen)",
     openclawProviderId: "qwen",
+    openclawProviderAliases: ["qwen-dashscope"],
     status: "active",
     authMode: "api_key",
     selectionMode: "single_tier",
@@ -117,5 +121,8 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
 ];
 
 export function getProviderCatalogEntry(openclawProviderId: string): ProviderCatalogEntry | null {
-  return SUBSCRIPTION_CATALOG.find((entry) => entry.openclawProviderId === openclawProviderId) ?? null;
+  return SUBSCRIPTION_CATALOG.find((entry) =>
+    entry.openclawProviderId === openclawProviderId ||
+    entry.openclawProviderAliases?.includes(openclawProviderId),
+  ) ?? null;
 }

@@ -1,4 +1,4 @@
-import { getProviderCatalogEntry } from "./subscriptions.js";
+import { getProviderCatalogEntry, type ProviderCatalogEntry } from "./subscriptions.js";
 
 export type ProviderSubscriptionSelection = {
   enabled?: boolean;
@@ -26,6 +26,28 @@ function normalizeSelection(selection?: ProviderSubscriptionSelection): Provider
   };
 }
 
+function providerProfileKeys(openclawProviderId: string, catalog: ProviderCatalogEntry): string[] {
+  return Array.from(new Set([
+    openclawProviderId,
+    catalog.openclawProviderId,
+    ...(catalog.openclawProviderAliases ?? []),
+  ]));
+}
+
+function findProviderSelection(
+  selections: Record<string, ProviderSubscriptionSelection> | undefined,
+  openclawProviderId: string,
+  catalog: ProviderCatalogEntry,
+): ProviderSubscriptionSelection | undefined {
+  if (!selections) return undefined;
+  for (const key of providerProfileKeys(openclawProviderId, catalog)) {
+    if (Object.prototype.hasOwnProperty.call(selections, key)) {
+      return selections[key];
+    }
+  }
+  return undefined;
+}
+
 export function resolveProviderSubscription(
   profile: SubscriptionProfile | undefined,
   agentId: string | undefined,
@@ -34,9 +56,13 @@ export function resolveProviderSubscription(
   const catalog = getProviderCatalogEntry(openclawProviderId);
   if (!catalog) return null;
 
-  const globalSelection = normalizeSelection(profile?.global?.[openclawProviderId]);
+  const globalSelection = normalizeSelection(
+    findProviderSelection(profile?.global, openclawProviderId, catalog),
+  );
   const overrideSelection = agentId
-    ? normalizeSelection(profile?.agentOverrides?.[agentId]?.[openclawProviderId])
+    ? normalizeSelection(
+        findProviderSelection(profile?.agentOverrides?.[agentId], openclawProviderId, catalog),
+      )
     : {};
 
   const enabled = overrideSelection.enabled ?? globalSelection.enabled ?? false;

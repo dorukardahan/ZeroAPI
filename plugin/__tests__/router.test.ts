@@ -51,6 +51,22 @@ const models: Record<string, ModelCapabilities> = {
       scicode: 0.49,
     },
   },
+  "kimi-coding/k2p5": {
+    context_window: 1000,
+    supports_vision: false,
+    speed_tps: 32.926,
+    ttft_seconds: 1.273,
+    benchmarks: {
+      intelligence: 46.8,
+      coding: 39.5,
+      gpqa: 0.879,
+      hle: 0.294,
+      tau2: 0.959,
+      terminalbench: 0.348,
+      ifbench: 0.702,
+      scicode: 0.49,
+    },
+  },
 };
 
 const rules: Record<string, RoutingRule> = {
@@ -117,5 +133,16 @@ describe("router weighting", () => {
     const candidates = getSubscriptionWeightedCandidates("default", models, rules, constrained, undefined);
     expect(candidates).not.toContain("zai/glm-5.1");
     expect(candidates[0]).toBe("openai-codex/gpt-5.4");
+  });
+
+  it("keeps legacy provider ids eligible through catalog aliases", () => {
+    const aliasRules: Record<string, RoutingRule> = {
+      default: {
+        primary: "kimi-coding/k2p5",
+        fallbacks: ["openai-codex/gpt-5.4"],
+      },
+    };
+    const candidates = getSubscriptionWeightedCandidates("default", models, aliasRules, profile, undefined);
+    expect(candidates).toContain("kimi-coding/k2p5");
   });
 });

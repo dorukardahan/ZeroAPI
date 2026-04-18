@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.2.1
+version: 3.2.2
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -59,10 +59,10 @@ Five subscription-based providers are currently supported by the routing policy.
 | Provider | OpenClaw ID | Auth | Tiers |
 |----------|-------------|------|-------|
 | OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus, Pro |
-| Kimi | `moonshot` | API key | Moderato, Allegretto, Allegro, Vivace |
+| Kimi | `moonshot` (`kimi-coding` alias) | API key | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
-| MiniMax | `minimax-portal` | OAuth portal | Starter, Plus, Max, Ultra-HS |
-| Alibaba (Qwen) | `qwen` | API key | Pro |
+| MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
+| Alibaba (Qwen) | `qwen` (`qwen-dashscope` alias) | API key | Pro |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
 
@@ -173,7 +173,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.2.1",
+  "version": "3.2.2",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",
