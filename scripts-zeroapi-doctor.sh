@@ -4,6 +4,7 @@ set -euo pipefail
 OPENCLAW_DIR="${OPENCLAW_DIR:-${HOME}/.openclaw}"
 ZEROAPI_CFG="$OPENCLAW_DIR/zeroapi-config.json"
 OPENCLAW_CFG="$OPENCLAW_DIR/openclaw.json"
+ZEROAPI_ADVISORY="$OPENCLAW_DIR/zeroapi-advisories.json"
 
 say() { printf '%s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*"; }
@@ -82,6 +83,21 @@ if inventory_accounts_with_auth:
 if not enabled_profile and not inventory_accounts:
     print('WARN: neither subscription_profile nor enabled subscription_inventory accounts are configured. Routing may silently filter out every provider.')
 PY
+
+if [ -f "$ZEROAPI_ADVISORY" ]; then
+  say "--- zeroapi advisory ---"
+  python3 - <<'PY'
+import json, os, pathlib
+home = pathlib.Path(os.environ.get('OPENCLAW_DIR', str(pathlib.Path.home() / '.openclaw')))
+advisory = json.loads((home / 'zeroapi-advisories.json').read_text())
+print(f"updated_at={advisory.get('updatedAt', 'unknown')}")
+for line in advisory.get('summary', []):
+    print(f"WARN: {line}")
+action = advisory.get('recommendedAction')
+if action:
+    print(f"NEXT: {action}")
+PY
+fi
 
 if [ -d "$OPENCLAW_DIR/extensions/zeroapi-router" ]; then
   warn "manual extension directory detected at $OPENCLAW_DIR/extensions/zeroapi-router - this can shadow or duplicate plugin registry installs"

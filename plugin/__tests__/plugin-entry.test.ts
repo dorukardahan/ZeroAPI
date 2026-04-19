@@ -7,6 +7,12 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
   definePluginEntry: (entry: unknown) => entry,
 }));
 
+const startSubscriptionAdvisoryMonitor = vi.fn(() => ({ stop: vi.fn() }));
+
+vi.mock("../subscription-advisory.js", () => ({
+  startSubscriptionAdvisoryMonitor,
+}));
+
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 function writeConfig(dir: string): void {
@@ -31,6 +37,8 @@ function writeConfig(dir: string): void {
 describe("plugin entry registration", () => {
   afterEach(() => {
     delete (globalThis as typeof globalThis & { [REGISTER_STATE_KEY]?: unknown })[REGISTER_STATE_KEY];
+    startSubscriptionAdvisoryMonitor.mockReset();
+    startSubscriptionAdvisoryMonitor.mockImplementation(() => ({ stop: vi.fn() }));
     vi.restoreAllMocks();
     vi.resetModules();
   });
@@ -57,6 +65,7 @@ describe("plugin entry registration", () => {
 
       expect(on).toHaveBeenCalledTimes(1);
       expect(api.logger.info).toHaveBeenCalledTimes(1);
+      expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledTimes(1);
     } finally {
       process.env.HOME = previousHome;
       rmSync(home, { recursive: true, force: true });

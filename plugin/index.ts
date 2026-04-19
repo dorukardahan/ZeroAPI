@@ -5,11 +5,13 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { syncSessionAuthProfileOverride } from "./session-auth.js";
+import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 
 const PLUGIN_VERSION = "3.5.0";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
+  advisoryMonitorStarted?: boolean;
   registered: boolean;
 };
 
@@ -43,6 +45,15 @@ export default definePluginEntry({
     const registerState = getRegisterState();
     if (registerState.registered) {
       return;
+    }
+
+    if (!registerState.advisoryMonitorStarted) {
+      startSubscriptionAdvisoryMonitor({
+        openclawDir,
+        config,
+        logger: api.logger,
+      });
+      registerState.advisoryMonitorStarted = true;
     }
 
     api.logger.info(

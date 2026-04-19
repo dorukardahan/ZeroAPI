@@ -111,6 +111,10 @@ As of the new subscription-aware foundation, the config can include:
 
 The user declares what subscriptions they have. ZeroAPI decides the route.
 
+### Runtime Advisory
+
+If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin now writes `~/.openclaw/zeroapi-advisories.json` and logs a short advisory. Re-run `/zeroapi` to review and accept those additions. This is watcher-based and stays outside the routing hot path.
+
 ### Default Policy Mode
 
 `routing_mode: "balanced"` is the current product default.
