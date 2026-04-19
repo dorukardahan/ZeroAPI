@@ -98,6 +98,7 @@ function renderText(result: ReturnType<typeof resolveRoutingDecision>, prompt: s
     `Action: ${result.action}`,
     `Reason: ${result.reason}`,
     `Summary: ${explanation.headline}`,
+    `Routing modifier: ${result.routingModifier ?? "none"}`,
     `Current model: ${result.currentModel ?? "none"}`,
   ];
 

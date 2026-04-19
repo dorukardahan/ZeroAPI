@@ -2,6 +2,18 @@
 
 This document is the working program for ZeroAPI after the initial public stabilization pass. It turns the current product ideas into an ordered delivery plan instead of a loose backlog.
 
+## Status snapshot
+
+Shipped on `main` today:
+
+- core balanced policy contract
+- task-aware modifier layer v1
+- same-provider account-pool contract
+- simulator explainability contract
+- benchmark governance rules
+
+What remains after that is no longer "missing core product." It is mostly calibration, richer observability, and future telemetry-aware ideas.
+
 ## Current baseline
 
 These decisions are already locked unless there is a deliberate product change:
@@ -37,7 +49,7 @@ Exit criteria:
 
 ## Phase 2 - Modifier layer
 
-Goal: define task-aware overlays without breaking the balanced core.
+Goal: define and ship task-aware overlays without breaking the balanced core.
 
 Candidate modifiers:
 
@@ -50,6 +62,9 @@ Deliverables:
 - a modifier spec that states what inputs a modifier may change
 - conflict rules for modifier vs balanced core
 - examples showing when a modifier is allowed to override the default ordering
+- optional `routing_modifier` config field
+- shipped `coding-aware`, `research-aware`, and `speed-aware` overlays
+- modifier-aware simulator explanations
 
 Exit criteria:
 
@@ -117,5 +132,4 @@ That order matters. Modifiers and explainability will stay messy if the balanced
 
 - Do not add telemetry-dependent routing rules before the static policy is written down.
 - Do not widen ZeroAPI into general API-key routing.
-- Do not ship modifiers before the balanced contract has a stable written spec.
 - Do not treat explainability as a UI-only concern; it depends on policy language first.

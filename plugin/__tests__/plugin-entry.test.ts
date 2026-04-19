@@ -70,7 +70,7 @@ describe("plugin entry registration", () => {
 
     vi.doMock("../config.js", () => ({
       loadConfig: () => ({
-        version: "3.4.3",
+        version: "3.5.0",
         generated: "2026-04-19",
         benchmarks_date: "2026-04-18",
         default_model: "zai/glm-5",
@@ -88,6 +88,7 @@ describe("plugin entry registration", () => {
         action: "route",
         reason: "stay:no_switch_needed",
         agentId: "main",
+        routingModifier: null,
         currentModel: "zai/glm-5",
         workspaceHints: null,
         tokenEstimate: 8,

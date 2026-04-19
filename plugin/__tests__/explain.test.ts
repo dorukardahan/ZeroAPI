@@ -85,6 +85,43 @@ describe("buildExplanationSummary", () => {
     expect(summary.details).toContain("authProfile=zai:work");
   });
 
+  it("mentions active modifiers when they shape the route", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        routing_modifier: "speed-aware",
+        models: {
+          "openai-codex/gpt-5.4": {
+            context_window: 272000,
+            supports_vision: false,
+            speed_tps: 40,
+            ttft_seconds: 4.5,
+            benchmarks: { intelligence: 58, coding: 58, gpqa: 0.9 },
+          },
+          "zai/glm-5": {
+            context_window: 202800,
+            supports_vision: false,
+            speed_tps: 100,
+            ttft_seconds: 0.6,
+            benchmarks: { intelligence: 50, coding: 48, gpqa: 0.83 },
+          },
+        },
+        routing_rules: {
+          ...config.routing_rules,
+          default: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5"] },
+        },
+      },
+      {
+        prompt: "please help with this",
+        currentModel: "openai-codex/gpt-5.4",
+      },
+    );
+
+    const summary = buildExplanationSummary(result);
+    expect(summary.headline).toBe("Stayed on the current model because the task did not clear a strong routing category.");
+    expect(summary.details).toContain("modifier=speed-aware");
+  });
+
   it("explains same-model auth-profile reroutes", () => {
     const result = resolveRoutingDecision(config, {
       prompt: "coordinate a workflow across 3 services",

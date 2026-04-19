@@ -21,6 +21,19 @@ export function buildExplanationSummary(result: RoutingResolution): ExplanationS
     `weighted=${formatList(result.weightedCandidates)}`,
   ];
 
+  if (result.routingModifier) {
+    details.push(`modifier=${result.routingModifier}`);
+    if (result.routingModifier === "coding-aware" && category === "code") {
+      details.push("modifierEffect=tighter code frontier favored stronger coding benchmarks");
+    }
+    if (result.routingModifier === "research-aware" && category === "research") {
+      details.push("modifierEffect=tighter research frontier favored stronger reasoning benchmarks");
+    }
+    if (result.routingModifier === "speed-aware" && (category === "fast" || category === "default")) {
+      details.push("modifierEffect=wider speed frontier prioritized lower TTFT among near-equal candidates");
+    }
+  }
+
   if (result.selectedModel) {
     details.push(`selected=${result.selectedModel}`);
   }
@@ -97,14 +110,14 @@ export function buildExplanationSummary(result: RoutingResolution): ExplanationS
 
   if (result.selectedModel && result.selectedModel === result.currentModel && result.authProfileOverride) {
     return {
-      headline: `Kept ${result.selectedModel} and preferred auth profile ${result.authProfileOverride} for the winning same-provider account.`,
+      headline: `Kept ${result.selectedModel} and preferred auth profile ${result.authProfileOverride} for the winning same-provider account${result.routingModifier ? ` under ${result.routingModifier}` : ""}.`,
       details,
     };
   }
 
   if (result.selectedModel) {
     return {
-      headline: `Routed to ${result.selectedModel} after capability, subscription, and policy scoring.`,
+      headline: `Routed to ${result.selectedModel} after capability, subscription, and policy scoring${result.routingModifier ? ` under ${result.routingModifier}` : ""}.`,
       details,
     };
   }

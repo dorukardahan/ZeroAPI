@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.4.3-green)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.0-green)](CHANGELOG.md)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -17,7 +17,7 @@ The repo now separates:
 
 The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
 
-For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the explanation surface used by the simulator, see [`references/explainability-contract.md`](references/explainability-contract.md). For benchmark freshness and maintenance rules, see [`references/benchmark-governance.md`](references/benchmark-governance.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
+For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the shipped task-aware modifier contract, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the explanation surface used by the simulator, see [`references/explainability-contract.md`](references/explainability-contract.md). For benchmark freshness and maintenance rules, see [`references/benchmark-governance.md`](references/benchmark-governance.md). For the current program snapshot, see [`references/product-roadmap.md`](references/product-roadmap.md).
 
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
@@ -109,7 +109,32 @@ In plain terms:
 - let stronger subscription headroom win when benchmark quality stays near the leader
 - do not let weak candidates jump the queue just because the subscription is larger
 
-Future task-aware modifiers can sit on top of this baseline, but the current shipping contract is one clear default: sustainable quality optimization.
+Task-aware modifiers can now sit on top of this baseline without replacing it. The default shipping contract is still one clear default: sustainable quality optimization.
+
+## Task-Aware Modifiers
+
+ZeroAPI now supports one optional global modifier on top of `routing_mode: "balanced"`:
+
+- `coding-aware`
+- `research-aware`
+- `speed-aware`
+
+Example:
+
+```json
+{
+  "routing_mode": "balanced",
+  "routing_modifier": "coding-aware"
+}
+```
+
+Current shipped behavior:
+
+- `coding-aware` tightens close code decisions and protects the stronger coding benchmark leader
+- `research-aware` does the same for reasoning-heavy research turns
+- `speed-aware` can widen close routine decisions and let lower TTFT win when the faster model remains benchmark-near
+
+All three keep the same safety, capability, and subscription gates from balanced mode. For the exact contract, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
 
 ## Same-Provider Multi-Account
 

@@ -20,9 +20,11 @@ ocfg = json.loads((home / 'openclaw.json').read_text())
 
 zero_default = zcfg.get('default_model')
 routing_mode = zcfg.get('routing_mode') or 'balanced'
+routing_modifier = zcfg.get('routing_modifier') or 'none'
 runtime_default = ocfg.get('agents', {}).get('defaults', {}).get('model', {}).get('primary')
 print(f'zeroapi.default_model={zero_default}')
 print(f'zeroapi.routing_mode={routing_mode}')
+print(f'zeroapi.routing_modifier={routing_modifier}')
 print(f'openclaw.default_model={runtime_default}')
 if zero_default != runtime_default:
     print('WARN: default model mismatch between zeroapi-config.json and openclaw.json')

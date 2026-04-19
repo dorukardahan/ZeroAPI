@@ -114,7 +114,6 @@ Current explanations do not yet expose:
 - per-candidate benchmark scores
 - frontier membership
 - pressure score math
-- explicit modifier overlays
 
 Those should only be added after the underlying runtime surface exposes them cleanly.
 
@@ -123,6 +122,5 @@ Those should only be added after the underlying runtime surface exposes them cle
 The most sensible future additions are:
 
 1. benchmark-frontier explanation details
-2. modifier-aware explanation text
-3. simulator sections for "filtered out by capability" vs "filtered out by subscription"
-4. user-facing explanation blocks in OpenClaw plugin UIs
+2. simulator sections for "filtered out by capability" vs "filtered out by subscription"
+3. user-facing explanation blocks in OpenClaw plugin UIs

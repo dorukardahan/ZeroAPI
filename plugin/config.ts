@@ -11,6 +11,11 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   const routingModeValid =
     cfg.routing_mode === undefined ||
     cfg.routing_mode === "balanced";
+  const routingModifierValid =
+    cfg.routing_modifier === undefined ||
+    cfg.routing_modifier === "coding-aware" ||
+    cfg.routing_modifier === "research-aware" ||
+    cfg.routing_modifier === "speed-aware";
   const externalModelPolicyValid =
     cfg.external_model_policy === undefined ||
     cfg.external_model_policy === "stay" ||
@@ -42,6 +47,7 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     typeof cfg.version === "string" &&
     typeof cfg.default_model === "string" &&
     routingModeValid &&
+    routingModifierValid &&
     externalModelPolicyValid &&
     typeof cfg.models === "object" && cfg.models !== null &&
     typeof cfg.routing_rules === "object" && cfg.routing_rules !== null &&

@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.4.3
+version: 3.5.0
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -12,7 +12,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Sa
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.4.3 — Plugin-Based Model Routing
+# ZeroAPI v3.5.0 — Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -153,6 +153,10 @@ Practical subscription mapping:
 Persist the result into a subscription profile with:
 - `global` provider selections
 - optional `agentOverrides`
+- optional one-value `routing_modifier` when the user explicitly wants a task-aware overlay:
+  - `coding-aware`
+  - `research-aware`
+  - `speed-aware`
 
 If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on newer OpenClaw runtimes. Older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists, and otherwise continue to rely on `auth.order`. For the current account-pool scoring contract, see `references/account-pool-spec.md`.
 
@@ -176,10 +180,12 @@ Required config shape:
 
 ```json
 {
-  "version": "3.3.0",
+  "version": "3.5.0",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",
+  "routing_mode": "balanced",
+  "routing_modifier": "coding-aware",
   "subscription_profile": {
     "version": "1.0.0",
     "global": {},
@@ -203,6 +209,8 @@ Required config shape:
 ```
 
 `vision_keywords` and `risk_levels` are optional overrides. Omit them to use the built-in plugin defaults. `external_model_policy` should usually stay at `"stay"` unless the user explicitly wants ZeroAPI to reclaim turns from non-ZeroAPI current models.
+
+`routing_modifier` is also optional. Leave it unset for plain balanced mode unless the user explicitly wants one of the shipped overlays.
 
 Important rules:
 

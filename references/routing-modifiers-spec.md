@@ -1,6 +1,6 @@
 # ZeroAPI Routing Modifiers Spec
 
-Status: design spec for the next product phase. This document does **not** describe shipped behavior yet. It defines how future task-aware modifiers should extend `routing_mode: "balanced"` without turning the router into a black box.
+Status: current implemented contract for `routing_modifier` on top of `routing_mode: "balanced"`
 
 ## Purpose
 
@@ -46,11 +46,11 @@ If a modifier conflicts with the balanced baseline, balanced wins unless the mod
 - no modifier may override explicit user model choice
 - no modifier may silently widen ZeroAPI into general API-key routing
 
-## Recommended v1 activation model
+## Activation model
 
-For the first implementation, ZeroAPI should support **at most one active modifier at a time**.
+ZeroAPI currently supports **at most one active modifier at a time**.
 
-Recommended future config shape:
+Current config shape:
 
 ```json
 {
@@ -123,11 +123,12 @@ Intent:
 - preserve stronger coding leaders when the benchmark gap is real
 - still allow high-headroom subscriptions to win near-ties
 
-Recommended behavior:
+Current shipped behavior:
 
-- make the coding benchmark blend more conservative toward `terminalbench`, `scicode`, and `coding`
-- tighten the frontier for code tasks relative to plain balanced mode
-- inside the frontier, treat `intendedUse: ["code"]` as a small account-level bonus
+- coding benchmark blend shifts toward `terminalbench`, `scicode`, and `coding`
+- allowed benchmark drop is tightened by `0.025`, with floor `0.03`
+- inside the frontier, candidates sort by benchmark strength first, then effective pressure
+- preferred accounts with `intendedUse: ["code"]` get a small `+0.15` pressure bonus
 
 What it should feel like:
 
@@ -143,11 +144,12 @@ Intent:
 - preserve research leaders when knowledge quality matters more than routine throughput
 - keep benchmark quality dominant for long-form analysis
 
-Recommended behavior:
+Current shipped behavior:
 
-- tilt the research blend harder toward `gpqa`, `hle`, and `lcr`
-- tighten the frontier for research tasks
-- inside the frontier, treat `intendedUse: ["research"]` as a small account-level bonus
+- research benchmark blend shifts harder toward `gpqa`, `hle`, and `lcr`
+- allowed benchmark drop is tightened by `0.025`, with floor `0.03`
+- inside the frontier, candidates sort by benchmark strength first, then effective pressure
+- preferred accounts with `intendedUse: ["research"]` get a small `+0.15` pressure bonus
 
 What it should feel like:
 
@@ -163,12 +165,13 @@ Intent:
 - prefer smoother interactive routing when benchmark quality remains near-equal
 - avoid forcing slow premium models for every medium-value turn
 
-Recommended behavior:
+Current shipped behavior:
 
-- among frontier candidates, use lower TTFT as an earlier tie-break
-- allow a slightly wider frontier only when the faster candidate remains benchmark-near
-- treat missing TTFT as no speed bonus
-- give a small account-level bonus to `intendedUse: ["fast"]` or `["default"]` for routine prompts
+- applies to `fast` and `default` categories only
+- allowed benchmark drop widens by `0.015`, capped at `0.18`
+- among frontier candidates, lower TTFT wins before pressure and benchmark tie-breaks
+- missing TTFT gives no speed bonus
+- preferred accounts with `intendedUse: ["fast"]` or `["default"]` get a small `+0.15` pressure bonus
 
 What it should feel like:
 
@@ -197,35 +200,21 @@ Example explanation style:
 
 > `coding-aware` kept the route inside the code frontier, then favored the stronger coding benchmark profile over raw subscription pressure.
 
-## Benchmarking requirements before shipping modifiers
+## Validation requirements
 
-Before a modifier becomes real product behavior, it should be validated against:
+Modifiers are now shipped behavior, so they should keep being validated against:
 
 1. baseline balanced routing
 2. same-provider multi-account scenarios
 3. prompts where benchmark leadership is clear
 4. prompts where multiple candidates are close enough to be legitimately debatable
 
-The goal is not “modifier changes many decisions.” The goal is “modifier changes the right close decisions.”
+The goal is not "modifier changes many decisions." The goal is "modifier changes the right close decisions."
 
-## Recommended next implementation order
+## Open follow-up questions
 
-1. add modifier field to config as optional and single-valued
-2. add simulator support for modifier-aware output
-3. implement modifier overlays one by one
-4. add explanation text for modifier effects
-5. benchmark modifier deltas against balanced baseline
+These are no longer blockers for shipping, but they are still worth studying:
 
-## Open product questions
-
-These are still worth deciding before code lands:
-
-1. Should the first release expose all three modifiers, or just one?
-2. Should a modifier apply globally, or allow agent-level override later?
-3. How strong should the `intendedUse` bonus be relative to `usagePriority`?
-
-Recommended answer for now:
-
-- ship one global modifier at a time
-- keep agent-level overrides for a later phase
-- keep `intendedUse` bonus smaller than core benchmark and subscription-headroom logic
+1. Should modifiers stay global-only, or later allow agent-level override?
+2. Should the account bonus remain `+0.15`, or be tuned after real traffic review?
+3. Should speed-aware eventually expose deeper per-candidate latency detail in simulator output?

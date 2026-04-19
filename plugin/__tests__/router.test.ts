@@ -206,4 +206,184 @@ describe("router weighting", () => {
     expect(candidates).toContain("openai-codex/gpt-5.4");
     expect(candidates[0]).toBe("openai-codex/gpt-5.4");
   });
+
+  it("coding-aware keeps the stronger coding leader ahead on close code decisions", () => {
+    const modifierModels: Record<string, ModelCapabilities> = {
+      "openai-codex/gpt-5.4": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 40,
+        ttft_seconds: 4,
+        benchmarks: {
+          intelligence: 58,
+          coding: 60,
+          terminalbench: 0.6,
+          scicode: 0.56,
+        },
+      },
+      "zai/glm-5.1": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 100,
+        ttft_seconds: 0.6,
+        benchmarks: {
+          intelligence: 52,
+          coding: 57,
+          terminalbench: 0.56,
+          scicode: 0.54,
+        },
+      },
+    };
+    const modifierRules: Record<string, RoutingRule> = {
+      code: {
+        primary: "openai-codex/gpt-5.4",
+        fallbacks: ["zai/glm-5.1"],
+      },
+      default: {
+        primary: "openai-codex/gpt-5.4",
+        fallbacks: ["zai/glm-5.1"],
+      },
+    };
+
+    const balanced = getSubscriptionWeightedCandidates(
+      "code",
+      modifierModels,
+      modifierRules,
+      profile,
+      undefined,
+      undefined,
+      "balanced",
+    );
+    const codingAware = getSubscriptionWeightedCandidates(
+      "code",
+      modifierModels,
+      modifierRules,
+      profile,
+      undefined,
+      undefined,
+      "balanced",
+      "coding-aware",
+    );
+
+    expect(balanced[0]).toBe("zai/glm-5.1");
+    expect(codingAware[0]).toBe("openai-codex/gpt-5.4");
+  });
+
+  it("research-aware keeps the stronger research leader ahead on close reasoning decisions", () => {
+    const modifierModels: Record<string, ModelCapabilities> = {
+      "openai-codex/gpt-5.4": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 40,
+        ttft_seconds: 4,
+        benchmarks: {
+          intelligence: 58,
+          gpqa: 0.91,
+          hle: 0.44,
+          lcr: 0.67,
+        },
+      },
+      "zai/glm-5.1": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 90,
+        ttft_seconds: 0.7,
+        benchmarks: {
+          intelligence: 53,
+          gpqa: 0.88,
+          hle: 0.4,
+          lcr: 0.62,
+        },
+      },
+    };
+    const modifierRules: Record<string, RoutingRule> = {
+      research: {
+        primary: "openai-codex/gpt-5.4",
+        fallbacks: ["zai/glm-5.1"],
+      },
+      default: {
+        primary: "openai-codex/gpt-5.4",
+        fallbacks: ["zai/glm-5.1"],
+      },
+    };
+
+    const balanced = getSubscriptionWeightedCandidates(
+      "research",
+      modifierModels,
+      modifierRules,
+      profile,
+      undefined,
+      undefined,
+      "balanced",
+    );
+    const researchAware = getSubscriptionWeightedCandidates(
+      "research",
+      modifierModels,
+      modifierRules,
+      profile,
+      undefined,
+      undefined,
+      "balanced",
+      "research-aware",
+    );
+
+    expect(balanced[0]).toBe("zai/glm-5.1");
+    expect(researchAware[0]).toBe("openai-codex/gpt-5.4");
+  });
+
+  it("speed-aware can widen the default frontier and prefer lower TTFT on near-equal routine turns", () => {
+    const modifierModels: Record<string, ModelCapabilities> = {
+      "openai-codex/gpt-5.4": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 40,
+        ttft_seconds: 4.5,
+        benchmarks: {
+          intelligence: 58,
+          coding: 58,
+          gpqa: 0.9,
+        },
+      },
+      "zai/glm-5.1": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 100,
+        ttft_seconds: 0.6,
+        benchmarks: {
+          intelligence: 50,
+          coding: 48,
+          gpqa: 0.83,
+        },
+      },
+    };
+    const modifierRules: Record<string, RoutingRule> = {
+      default: {
+        primary: "openai-codex/gpt-5.4",
+        fallbacks: ["zai/glm-5.1"],
+      },
+    };
+
+    const balanced = getSubscriptionWeightedCandidates(
+      "default",
+      modifierModels,
+      modifierRules,
+      profile,
+      undefined,
+      undefined,
+      "balanced",
+    );
+    const speedAware = getSubscriptionWeightedCandidates(
+      "default",
+      modifierModels,
+      modifierRules,
+      profile,
+      undefined,
+      undefined,
+      "balanced",
+      "speed-aware",
+    );
+
+    expect(balanced[0]).toBe("openai-codex/gpt-5.4");
+    expect(speedAware[0]).toBe("zai/glm-5.1");
+  });
 });

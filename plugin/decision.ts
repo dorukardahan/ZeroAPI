@@ -3,7 +3,7 @@ import { filterCapableModels, estimateTokens } from "./filter.js";
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 import { selectModel } from "./selector.js";
-import type { RoutingDecision, TaskCategory, ZeroAPIConfig } from "./types.js";
+import type { RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
 
 export const DEFAULT_VISION_KEYWORDS = [
   "image",
@@ -33,6 +33,7 @@ export type RoutingResolution = {
   reason: string;
   agentId?: string;
   trigger?: string;
+  routingModifier: RoutingModifier | null;
   currentModel: string | null;
   workspaceHints?: TaskCategory[] | null;
   tokenEstimate: number | null;
@@ -80,15 +81,20 @@ export function resolveRoutingDecision(
   const agentId = options.agentId;
   const workspaceHints = agentId ? config.workspace_hints[agentId] : undefined;
   const currentModel = options.currentModel ?? config.default_model ?? null;
+  const routingModifier = config.routing_modifier ?? null;
+  const baseContext = {
+    agentId,
+    trigger: options.trigger,
+    routingModifier,
+    currentModel,
+    workspaceHints,
+  };
 
   if (agentId && workspaceHints === null) {
     return {
       action: "skip",
       reason: "skip:specialist_agent",
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
@@ -107,10 +113,7 @@ export function resolveRoutingDecision(
     return {
       action: "skip",
       reason: `skip:trigger:${options.trigger}`,
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
@@ -129,10 +132,7 @@ export function resolveRoutingDecision(
     return {
       action: "stay",
       reason: "stay:external_current_model",
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
@@ -165,10 +165,7 @@ export function resolveRoutingDecision(
     return {
       action: "stay",
       reason: finalDecision.reason,
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
@@ -188,10 +185,7 @@ export function resolveRoutingDecision(
     return {
       action: "stay",
       reason: finalDecision.reason,
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
@@ -235,6 +229,7 @@ export function resolveRoutingDecision(
     config.subscription_inventory,
     agentId,
     config.routing_mode ?? "balanced",
+    config.routing_modifier,
   );
 
   if (Object.keys(capable).length === 0 || weightedCandidates.length === 0) {
@@ -247,10 +242,7 @@ export function resolveRoutingDecision(
     return {
       action: "stay",
       reason: finalDecision.reason,
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate,
       likelyVision,
       capableModels: Object.keys(capable),
@@ -303,10 +295,7 @@ export function resolveRoutingDecision(
     return {
       action: "stay",
       reason: finalDecision.reason,
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate,
       likelyVision,
       capableModels: Object.keys(capable),
@@ -335,10 +324,7 @@ export function resolveRoutingDecision(
     return {
       action: "stay",
       reason: finalDecision.reason,
-      agentId,
-      trigger: options.trigger,
-      currentModel,
-      workspaceHints,
+      ...baseContext,
       tokenEstimate,
       likelyVision,
       capableModels: Object.keys(capable),
@@ -363,10 +349,7 @@ export function resolveRoutingDecision(
   return {
     action: "route",
     reason: finalDecision.reason,
-    agentId,
-    trigger: options.trigger,
-    currentModel,
-    workspaceHints,
+    ...baseContext,
     tokenEstimate,
     likelyVision,
     capableModels: Object.keys(capable),

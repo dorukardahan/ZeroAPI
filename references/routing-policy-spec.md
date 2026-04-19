@@ -220,14 +220,14 @@ At minimum, a balanced explanation should be able to answer:
 - prompt token estimation is approximate
 - no real usage-pressure or depletion signal exists yet
 - provider bias values are heuristic
-- balanced mode is the only implemented routing mode today
+- modifiers are intentionally global-only in v1
 
 ## Next extension points
 
 The correct future extension order is:
 
-1. task-aware modifiers on top of this contract
-2. clearer same-provider account-pool scoring rules
-3. user-facing explainability output
+1. richer modifier benchmarking and calibration
+2. bounded usage-pressure signals on top of account pools
+3. deeper user-facing explainability output
 
 Those should be additive. They should not make the balanced baseline ambiguous again.

@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-04-19
+
 ### Added
+- Optional `routing_modifier` config field with shipped `coding-aware`, `research-aware`, and `speed-aware` overlays on top of balanced routing
+- Modifier-aware router tests covering coding, research, and speed close-call behavior
+- Modifier-aware explanation details in simulator output and JSON payloads
 - Weekly Sunday benchmark refresh workflow for maintainers, backed by the private repo secret `AA_API_KEY`, so public users do not need direct Artificial Analysis API access
 - Written product roadmap for the next ZeroAPI phase, covering policy spec, modifiers, account-pool rules, explainability, and benchmark governance
 - Written `balanced` routing policy spec that matches the current router behavior and makes the benchmark frontier contract explicit
@@ -12,6 +17,8 @@
 - Written benchmark governance doc covering refresh cadence, stale thresholds, ownership, and workflow maintenance rules
 
 ### Changed
+- Router startup logs and doctor output now report the active routing modifier when one is configured
+- Public docs now describe task-aware modifiers as shipped product behavior instead of future design work
 - Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning
 
 ## [3.4.3] - 2026-04-19

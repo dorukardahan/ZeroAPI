@@ -6,7 +6,7 @@ import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { syncSessionAuthProfileOverride } from "./session-auth.js";
 
-const PLUGIN_VERSION = "3.4.3";
+const PLUGIN_VERSION = "3.5.0";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -46,7 +46,7 @@ export default definePluginEntry({
     }
 
     api.logger.info(
-      `ZeroAPI Router v${PLUGIN_VERSION} loaded (policy config v${config.version}, mode=${config.routing_mode ?? "balanced"}, ${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`
+      `ZeroAPI Router v${PLUGIN_VERSION} loaded (policy config v${config.version}, mode=${config.routing_mode ?? "balanced"}${config.routing_modifier ? `, modifier=${config.routing_modifier}` : ""}, ${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`
     );
 
     try {
