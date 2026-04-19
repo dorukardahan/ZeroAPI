@@ -6,6 +6,7 @@
 - Weekly Sunday benchmark refresh workflow for maintainers, backed by the private repo secret `AA_API_KEY`, so public users do not need direct Artificial Analysis API access
 - Written product roadmap for the next ZeroAPI phase, covering policy spec, modifiers, account-pool rules, explainability, and benchmark governance
 - Written `balanced` routing policy spec that matches the current router behavior and makes the benchmark frontier contract explicit
+- Written routing modifier spec covering `coding-aware`, `research-aware`, and `speed-aware` as additive overlays on top of balanced mode
 
 ### Changed
 - Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning
