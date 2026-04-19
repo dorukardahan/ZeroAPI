@@ -2,6 +2,14 @@
 
 Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` policy snapshot — copy it to `~/.openclaw/zeroapi-config.json`.
 
+If you want the easier path, start with:
+
+```bash
+npx tsx scripts/first_run.ts
+```
+
+That wizard writes a starter config for you and prints the exact auth/install follow-up commands.
+
 Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw runtime defaults, provider wiring, and per-agent model state still live there.
 These examples include either `subscription_profile`, `subscription_inventory`, or both. If both blocks are missing or empty, ZeroAPI may silently filter out every configured provider.
 These examples also set `external_model_policy` to `stay`, which is the safe default when you use extra OpenClaw providers outside the ZeroAPI pool.

@@ -5,6 +5,7 @@
 ## [3.5.0] - 2026-04-19
 
 ### Added
+- `scripts/first_run.ts`, an interactive first-run wizard that asks for providers, tiers, optional same-provider account pools, and modifier preference before writing a starter `zeroapi-config.json`
 - Optional `routing_modifier` config field with shipped `coding-aware`, `research-aware`, and `speed-aware` overlays on top of balanced routing
 - Modifier-aware router tests covering coding, research, and speed close-call behavior
 - Modifier-aware explanation details in simulator output and JSON payloads
@@ -23,6 +24,7 @@
 - Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning
 - Benchmark refresh now stamps `benchmarks.json` with the current ZeroAPI version instead of carrying a stale hard-coded snapshot version
 - Public benchmark docs now match the 2026-04-19 committed snapshot for fetched date and current fast-leader reporting
+- Public quick-start flow now points new users to the first-run wizard instead of assuming immediate hand-edited config
 
 ## [3.4.3] - 2026-04-19
 

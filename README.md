@@ -81,14 +81,16 @@ The plugin matches keywords in each message to one of six routing categories. No
 ## Quick Start
 
 ```
-1. Install:   openclaw plugins install zeroapi-router
-2. Configure: /zeroapi   (in any OpenClaw session)
+1. Clone:     git clone https://github.com/dorukardahan/ZeroAPI.git
+2. Configure: npx tsx scripts/first_run.ts
 3. Verify:    bash scripts-zeroapi-doctor.sh
 4. Inspect:   npx tsx scripts/simulate.ts --prompt "refactor this auth module"
 5. Done — conservative routing policy is active for eligible messages
 ```
 
-The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
+`scripts/first_run.ts` is the easiest public entry point right now. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
+
+The `/zeroapi` skill is still the richer agent-assisted setup path inside OpenClaw itself. It scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
 
 As of the new subscription-aware foundation, the config can include:
 - an explicit `routing_mode` (currently `balanced`)
@@ -233,6 +235,7 @@ ZeroAPI/
 ├── policy-families.json                  # 11 practical policy-family members across 5 providers
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
+│   ├── first_run.ts                      # Interactive starter wizard for public repo onboarding
 │   ├── eval.ts                           # Routing log analyzer
 │   ├── compare_modifiers.ts              # Prompt-set delta checker for balanced vs modifiers
 │   ├── refresh_benchmarks.py             # Refreshes benchmarks.json from AA API v2
