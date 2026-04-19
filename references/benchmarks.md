@@ -1,6 +1,6 @@
 # Benchmark Data (April 2026)
 
-Current leaders from `benchmarks.json` (fetched 2026-04-18). The snapshot covers 162 benchmark reference models from the five provider ecosystems ZeroAPI supports. It also marks 11 models as current `policy_family` members.
+Current leaders from `benchmarks.json` (fetched 2026-04-19). The snapshot covers 162 benchmark reference models from the five provider ecosystems ZeroAPI supports. It also marks 11 models as current `policy_family` members.
 
 | Category | Leader | Score | Provider | Notes |
 |----------|--------|-------|----------|-------|
@@ -11,7 +11,7 @@ Current leaders from `benchmarks.json` (fetched 2026-04-18). The snapshot covers
 | IFBench | Qwen3.5 397B A17B (Reasoning) | 78.8% | Alibaba | |
 | GPQA | GPT-5.4 (xhigh) | 92% | OpenAI | |
 | Math | GPT-5.2 (xhigh) | 99.0 | OpenAI | |
-| Speed | Qwen3.5 0.8B (Non-reasoning) | 301.5 t/s | Alibaba | Absolute speed leader in the reference dataset. Practical fast routing still depends on TTFT <= 5s and which models the policy exposes |
+| Speed | gpt-oss-20B (high) | 293.7 t/s | OpenAI | Absolute speed leader in the current reference dataset. Practical fast routing still depends on TTFT <= 5s and which models the policy exposes |
 | Research/HLE | GPT-5.4 (xhigh) | 0.416 | OpenAI | |
 
 **Orchestration composite ranking** (`0.6*tau2 + 0.4*ifbench`):
@@ -34,4 +34,4 @@ GLM-5.1 is now both the practical orchestration recommendation and the raw compo
 
 Context windows and exact OpenClaw runtime IDs live in `references/provider-config.md`. This page focuses on the benchmark reference snapshot only. The practical routing pool is narrower and is defined by the user's `zeroapi-config.json`, the documented provider mappings, and `policy-families.json`.
 
-Source: Artificial Analysis Data API v2, fetched 2026-04-18. Full data lives in `benchmarks.json`.
+Source: Artificial Analysis Data API v2, fetched 2026-04-19. Full data lives in `benchmarks.json`.

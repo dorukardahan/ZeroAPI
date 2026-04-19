@@ -293,7 +293,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-04-19). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|
@@ -301,7 +301,7 @@ Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The sn
 | **Research** (gpqa) | GPT-5.4 (xhigh) | 0.920 | OpenAI |
 | **Orchestration** (0.6*tau2 + 0.4*ifbench) | GLM-5.1 (Reasoning) | 0.891 | Z AI |
 | **Math** (math) | GPT-5.2 (xhigh) | 99.0 | OpenAI |
-| **Fast** (speed, TTFT < 5s) | Qwen3.5 0.8B (Non-reasoning) | 301 t/s | Alibaba |
+| **Fast** (speed, TTFT < 5s) | gpt-oss-20B (high) | 293.7 t/s | OpenAI |
 | **Default** (intelligence) | GPT-5.4 (xhigh) | 56.8 | OpenAI |
 
 Some absolute leaders in the reference dataset are not part of the conservative policy families documented today. Example configs intentionally use the narrower `policy-families.json` pool. Routes use whichever leader is both covered by your subscriptions and included in your policy config. If the top model is unavailable, the plugin falls back to the next benchmark-ranked model from a different provider.
