@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildStarterConfig, getStarterAuthCommands, getStarterTierChoices } from "../onboarding.js";
+import {
+  buildStarterConfig,
+  deriveStarterDefaults,
+  getStarterAuthCommands,
+  getStarterTierChoices,
+  summarizeStarterConfig,
+} from "../onboarding.js";
 
 describe("buildStarterConfig", () => {
   it("builds the mixed OpenAI + GLM starter pool without OpenAI mini", () => {
@@ -93,5 +99,78 @@ describe("starter onboarding helpers", () => {
       "plus",
       "max",
     ]);
+  });
+
+  it("summarizes existing config for reruns", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "zai", tierId: "max" }],
+      routingModifier: "research-aware",
+      inventoryAccounts: [
+        {
+          accountId: "openai-work-pro",
+          providerId: "openai-codex",
+          tierId: "pro",
+          authProfile: "openai:work",
+        },
+      ],
+    });
+
+    expect(summarizeStarterConfig(config)).toEqual({
+      defaultModel: "zai/glm-5.1",
+      inventoryAccountCount: 1,
+      modifier: "research-aware",
+      providerLabels: ["OpenAI", "Z AI (GLM)"],
+    });
+  });
+
+  it("derives rerun defaults from current config including inventory providers", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "zai", tierId: "pro" }],
+      routingModifier: "coding-aware",
+      inventoryAccounts: [
+        {
+          accountId: "openai-personal-plus",
+          providerId: "openai-codex",
+          tierId: "plus",
+          authProfile: "openai:personal",
+          usagePriority: 1,
+          intendedUse: ["fast", "default"],
+        },
+        {
+          accountId: "openai-work-pro",
+          providerId: "openai-codex",
+          tierId: "pro",
+          authProfile: "openai:work",
+          usagePriority: 3,
+          intendedUse: ["code", "research"],
+        },
+      ],
+    });
+
+    expect(deriveStarterDefaults(config)).toEqual({
+      providers: [
+        { providerId: "openai-codex", tierId: "pro" },
+        { providerId: "zai", tierId: "pro" },
+      ],
+      inventoryAccounts: [
+        {
+          accountId: "openai-personal-plus",
+          providerId: "openai-codex",
+          tierId: "plus",
+          authProfile: "openai:personal",
+          usagePriority: 1,
+          intendedUse: ["fast", "default"],
+        },
+        {
+          accountId: "openai-work-pro",
+          providerId: "openai-codex",
+          tierId: "pro",
+          authProfile: "openai:work",
+          usagePriority: 3,
+          intendedUse: ["code", "research"],
+        },
+      ],
+      routingModifier: "coding-aware",
+    });
   });
 });

@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { dirname, join } from "node:path";
 import {
   advisoryFingerprint,
+  listPendingSubscriptionAdvisoryItems,
   readPendingSubscriptionAdvisory,
   type PendingSubscriptionAdvisory,
 } from "./subscription-advisory.js";
@@ -89,12 +90,8 @@ function pruneDeliveryState(delivered: Record<string, DeliveryRecord>): Record<s
 }
 
 function formatChannelAdvisory(advisory: PendingSubscriptionAdvisory): string {
-  const lines = ["ZeroAPI noticed new routing options outside its current policy:"];
-  const providerLines = advisory.pendingProviders.map((provider) => `- Provider: ${provider.label}`);
-  const authProfileLines = advisory.pendingAuthProfiles.map(
-    (profile) => `- Account: ${profile.profileId} (${profile.label}/${profile.agentId})`,
-  );
-  const detailLines = [...providerLines, ...authProfileLines];
+  const lines = ["ZeroAPI found new routing options you have not added yet:"];
+  const detailLines = listPendingSubscriptionAdvisoryItems(advisory).map((item) => `- ${item}`);
   const preview = detailLines.slice(0, 4);
   const remaining = detailLines.length - preview.length;
 
@@ -102,7 +99,7 @@ function formatChannelAdvisory(advisory: PendingSubscriptionAdvisory): string {
   if (remaining > 0) {
     lines.push(`- +${remaining} more pending additions`);
   }
-  lines.push("Run /zeroapi to review.");
+  lines.push("Run /zeroapi to review and update the policy.");
   return lines.join("\n");
 }
 

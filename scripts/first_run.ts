@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { spawnSync } from "child_process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
@@ -8,13 +8,16 @@ import { createInterface } from "readline/promises";
 import { stdin as input, stdout as output } from "process";
 import {
   buildStarterConfig,
+  deriveStarterDefaults,
   getStarterAuthCommands,
   getStarterProviders,
   getStarterTierChoices,
+  summarizeStarterConfig,
   type StarterInventoryAccountInput,
   type StarterProviderSelection,
 } from "../plugin/onboarding.js";
-import type { RoutingModifier, TaskCategory } from "../plugin/types.js";
+import { listPendingSubscriptionAdvisoryItems, readPendingSubscriptionAdvisory } from "../plugin/subscription-advisory.js";
+import type { RoutingModifier, TaskCategory, ZeroAPIConfig } from "../plugin/types.js";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(MODULE_DIR, "..");
@@ -114,6 +117,35 @@ async function askChoice<T>(
   }
 }
 
+async function askChoiceWithDefault<T>(
+  rl: ReturnType<typeof createInterface>,
+  prompt: string,
+  options: Array<{ label: string; value: T }>,
+  defaultValue: T,
+): Promise<T> {
+  console.log(`\n${prompt}`);
+  let defaultIndex = -1;
+  options.forEach((option, index) => {
+    if (Object.is(option.value, defaultValue)) {
+      defaultIndex = index;
+    }
+    console.log(`  ${index + 1}. ${option.label}`);
+  });
+
+  while (true) {
+    const suffix = defaultIndex >= 0 ? ` [${defaultIndex + 1}]` : "";
+    const raw = (await rl.question(`Seçim numarası${suffix}: `)).trim();
+    if (!raw && defaultIndex >= 0) {
+      return options[defaultIndex].value;
+    }
+    const index = Number.parseInt(raw, 10);
+    if (Number.isFinite(index) && index >= 1 && index <= options.length) {
+      return options[index - 1].value;
+    }
+    console.log("Geçerli bir numara gir.");
+  }
+}
+
 async function askInt(
   rl: ReturnType<typeof createInterface>,
   prompt: string,
@@ -131,6 +163,16 @@ async function askInt(
   }
 }
 
+async function askOptional(
+  rl: ReturnType<typeof createInterface>,
+  prompt: string,
+  defaultValue?: string,
+): Promise<string> {
+  const suffix = defaultValue ? ` [${defaultValue}]` : "";
+  const answer = (await rl.question(`${prompt}${suffix}: `)).trim();
+  return answer || defaultValue || "";
+}
+
 function parseIntendedUse(value: string): TaskCategory[] | undefined {
   if (!value.trim()) return undefined;
   const normalized = value
@@ -143,6 +185,15 @@ function parseIntendedUse(value: string): TaskCategory[] | undefined {
   );
 
   return categories.length > 0 ? Array.from(new Set(categories)) : undefined;
+}
+
+function formatIntendedUse(value?: TaskCategory[]): string | undefined {
+  if (!value || value.length === 0) return undefined;
+  return value.join(",");
+}
+
+function readJsonFile<T>(path: string): T {
+  return JSON.parse(readFileSync(path, "utf-8")) as T;
 }
 
 function commandExists(command: string): boolean {
@@ -175,11 +226,39 @@ async function main() {
     }
 
     const targetFile = resolve(args.openclawDir, "zeroapi-config.json");
+    let existingConfig: ZeroAPIConfig | null = null;
+    let starterDefaults:
+      | ReturnType<typeof deriveStarterDefaults>
+      | null = null;
+    if (existsSync(targetFile)) {
+      try {
+        existingConfig = readJsonFile<ZeroAPIConfig>(targetFile);
+        starterDefaults = deriveStarterDefaults(existingConfig);
+        const summary = summarizeStarterConfig(existingConfig);
+        console.log("\nMevcut ZeroAPI durumu");
+        console.log(`- provider'lar: ${summary.providerLabels.join(", ") || "yok"}`);
+        console.log(`- modifier: ${summary.modifier}`);
+        console.log(`- default_model: ${summary.defaultModel}`);
+        console.log(`- inventory hesap sayısı: ${summary.inventoryAccountCount}`);
+      } catch (error) {
+        console.log(`\nMevcut config okunamadı: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    const pendingAdvisory = readPendingSubscriptionAdvisory(args.openclawDir);
+    if (pendingAdvisory) {
+      console.log("\nZeroAPI bu yeniden çalıştırma için yeni drift tespit etti");
+      for (const item of listPendingSubscriptionAdvisoryItems(pendingAdvisory)) {
+        console.log(`- ${item}`);
+      }
+      console.log("- Bu koşu sonunda policy bu eklemeleri kapsayacak şekilde güncellenecek.");
+    }
+
     if (existsSync(targetFile)) {
       const overwrite = await askYesNo(
         rl,
-        `${targetFile} zaten var. Üzerine yazılsın mı?`,
-        false,
+        `${targetFile} zaten var. Yeniden üretip üzerine yazılsın mı?`,
+        Boolean(pendingAdvisory),
       );
       if (!overwrite) {
         console.log("İptal edildi.");
@@ -195,9 +274,19 @@ async function main() {
     });
 
     let selectedProviderIndexes: number[] = [];
+    const defaultProviderIndexes = (starterDefaults?.providers ?? [])
+      .map((selection) => providers.findIndex((provider) => provider.openclawProviderId === selection.providerId))
+      .filter((index) => index >= 0);
+    const defaultProviderAnswer =
+      defaultProviderIndexes.length > 0
+        ? defaultProviderIndexes.map((index) => `${index + 1}`).join(",")
+        : undefined;
     while (selectedProviderIndexes.length === 0) {
-      const answer = await rl.question("\nHangi provider'ları starter havuza almak istiyorsun? (örn: 1,3): ");
-      selectedProviderIndexes = parseMultiSelect(answer, providers.length);
+      const suffix = defaultProviderAnswer ? ` [${defaultProviderAnswer}]` : "";
+      const answer = (
+        await rl.question(`\nHangi provider'ları starter havuza almak istiyorsun? (örn: 1,3)${suffix}: `)
+      ).trim();
+      selectedProviderIndexes = parseMultiSelect(answer || defaultProviderAnswer || "", providers.length);
       if (selectedProviderIndexes.length === 0) {
         console.log("En az bir provider seç.");
       }
@@ -205,6 +294,13 @@ async function main() {
 
     const providerSelections: StarterProviderSelection[] = [];
     const inventoryAccounts: StarterInventoryAccountInput[] = [];
+    const providerDefaults = new Map((starterDefaults?.providers ?? []).map((provider) => [provider.providerId, provider]));
+    const inventoryDefaultsByProvider = new Map<string, StarterInventoryAccountInput[]>();
+    for (const account of starterDefaults?.inventoryAccounts ?? []) {
+      const next = inventoryDefaultsByProvider.get(account.providerId) ?? [];
+      next.push(account);
+      inventoryDefaultsByProvider.set(account.providerId, next);
+    }
 
     for (const providerIndex of selectedProviderIndexes) {
       const provider = providers[providerIndex];
@@ -213,21 +309,22 @@ async function main() {
         fail(`${provider.label} için kullanılabilir tier bulunamadı.`);
       }
 
+      const existingAccounts = inventoryDefaultsByProvider.get(provider.openclawProviderId) ?? [];
       const multiAccount = await askYesNo(
         rl,
         `${provider.label} için aynı provider altında birden fazla hesap kurmak istiyor musun?`,
-        false,
+        existingAccounts.length > 0,
       );
 
       if (!multiAccount) {
-        const tierId = await askChoice(
-          rl,
-          `${provider.label} tier seç`,
-          tierChoices.map((tier) => ({
-            label: `${tier.label} (${tier.tierId})`,
-            value: tier.tierId,
-          })),
-        );
+        const tierOptions = tierChoices.map((tier) => ({
+          label: `${tier.label} (${tier.tierId})`,
+          value: tier.tierId,
+        }));
+        const defaultTierId = providerDefaults.get(provider.openclawProviderId)?.tierId;
+        const tierId = defaultTierId
+          ? await askChoiceWithDefault(rl, `${provider.label} tier seç`, tierOptions, defaultTierId)
+          : await askChoice(rl, `${provider.label} tier seç`, tierOptions);
 
         providerSelections.push({
           providerId: provider.openclawProviderId,
@@ -239,42 +336,51 @@ async function main() {
       const accountCount = await askInt(
         rl,
         `${provider.label} için kaç hesap tanımlayacaksın?`,
-        2,
+        existingAccounts.length || 2,
         1,
         10,
       );
 
-      const highestTierId = tierChoices[tierChoices.length - 1]?.tierId ?? tierChoices[0].tierId;
+      const defaultInventoryTier =
+        providerDefaults.get(provider.openclawProviderId)?.tierId ??
+        tierChoices[tierChoices.length - 1]?.tierId ??
+        tierChoices[0].tierId;
       providerSelections.push({
         providerId: provider.openclawProviderId,
-        tierId: highestTierId,
+        tierId: defaultInventoryTier,
       });
 
       for (let accountIndex = 0; accountIndex < accountCount; accountIndex++) {
         console.log(`\n${provider.label} hesap ${accountIndex + 1}/${accountCount}`);
+        const accountDefaults = existingAccounts[accountIndex];
         const accountId = await askNonEmpty(
           rl,
           "accountId",
-          `${provider.openclawProviderId}-account-${accountIndex + 1}`,
+          accountDefaults?.accountId ?? `${provider.openclawProviderId}-account-${accountIndex + 1}`,
         );
-        const tierId = await askChoice(
+        const tierOptions = tierChoices.map((tier) => ({
+          label: `${tier.label} (${tier.tierId})`,
+          value: tier.tierId,
+        }));
+        const tierId = accountDefaults?.tierId
+          ? await askChoiceWithDefault(rl, "Tier seç", tierOptions, accountDefaults.tierId)
+          : await askChoice(rl, "Tier seç", tierOptions);
+        const authProfileRaw = await askOptional(
           rl,
-          "Tier seç",
-          tierChoices.map((tier) => ({
-            label: `${tier.label} (${tier.tierId})`,
-            value: tier.tierId,
-          })),
+          "authProfile (opsiyonel, boş bırak geç)",
+          accountDefaults?.authProfile ?? undefined,
         );
-        const authProfileRaw = await rl.question("authProfile (opsiyonel, boş bırak geç): ");
         const usagePriority = await askInt(
           rl,
           "usagePriority (0-3, büyük = daha çok tercih)",
-          1,
+          accountDefaults?.usagePriority ?? 1,
           0,
           3,
         );
-        const intendedUseRaw = await rl.question(
-          "intendedUse (virgülle ayır: code,research,fast,default,orchestration,math | boş = hepsi): ",
+        const intendedUseRaw = await askOptional(
+          rl,
+          "intendedUse (virgülle ayır: code,research,fast,default,orchestration,math | boş = hepsi)",
+          formatIntendedUse(accountDefaults?.intendedUse),
         );
 
         inventoryAccounts.push({
@@ -288,15 +394,22 @@ async function main() {
       }
     }
 
-    const routingModifier = await askChoice(
-      rl,
-      "Varsayılan balanced üstüne modifier istiyor musun?",
-      MODIFIER_CHOICES,
-    );
+    const effectiveRoutingModifier = existingConfig
+      ? await askChoiceWithDefault(
+          rl,
+          "Varsayılan balanced üstüne modifier istiyor musun?",
+          MODIFIER_CHOICES,
+          starterDefaults?.routingModifier,
+        )
+      : await askChoice(
+          rl,
+          "Varsayılan balanced üstüne modifier istiyor musun?",
+          MODIFIER_CHOICES,
+        );
 
     const config = buildStarterConfig({
       providers: providerSelections,
-      routingModifier,
+      routingModifier: effectiveRoutingModifier,
       inventoryAccounts,
     });
 

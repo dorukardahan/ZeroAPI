@@ -109,7 +109,9 @@ Channel users should still receive a short natural-language explanation of what 
 Re-running `/zeroapi` should:
 
 - detect existing `~/.openclaw/zeroapi-config.json`
+- surface pending `zeroapi-advisories.json` items first when drift exists
 - summarize current subscriptions and modifier state
+- reuse current provider and modifier choices as the default answer when possible
 - propose changes before writing
 - avoid unrelated `openclaw.json` churn
 

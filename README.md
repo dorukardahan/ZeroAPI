@@ -97,7 +97,7 @@ Recommended path:
 
 The `/zeroapi` skill is the primary public onboarding surface. It should feel natural inside chat channels: short questions, compact choices, and a final confirmation before writing `~/.openclaw/zeroapi-config.json`.
 
-`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
+`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
 
 For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 

@@ -35,9 +35,9 @@ describe("channel advisory delivery", () => {
       { to: "C123", content: "hello", metadata: { threadTs: "1111.2222" } },
       { channelId: "slack", accountId: "default" },
     );
-    expect(first).toContain("ZeroAPI noticed new routing options outside its current policy:");
+    expect(first).toContain("ZeroAPI found new routing options you have not added yet:");
     expect(first).toContain("Provider: Kimi");
-    expect(first).toContain("Run /zeroapi to review.");
+    expect(first).toContain("Run /zeroapi to review and update the policy.");
     expect(first).toContain("\n\nhello");
 
     const second = maybePrefixChannelAdvisory(

@@ -64,6 +64,17 @@ function getSupportedProviderLabel(providerId: string): string {
   );
 }
 
+export function listPendingSubscriptionAdvisoryItems(
+  advisory: PendingSubscriptionAdvisory,
+): string[] {
+  return [
+    ...advisory.pendingProviders.map((provider) => `Provider: ${provider.label}`),
+    ...advisory.pendingAuthProfiles.map(
+      (profile) => `Account: ${profile.profileId} (${profile.label}/${profile.agentId})`,
+    ),
+  ];
+}
+
 function sortProviders<T extends SupportedProvider>(items: T[]): T[] {
   return [...items].sort((a, b) => {
     if (a.label !== b.label) {
@@ -397,7 +408,11 @@ function safeWatch(
 }
 
 export function formatAdvisoryMessage(advisory: PendingSubscriptionAdvisory): string {
-  return `${advisory.summary.join(". ")}. ${advisory.recommendedAction}`;
+  const items = listPendingSubscriptionAdvisoryItems(advisory);
+  if (items.length === 0) {
+    return advisory.recommendedAction;
+  }
+  return `ZeroAPI found new routing options not yet included in the current policy: ${items.join("; ")}. ${advisory.recommendedAction.replace("accept these additions", "update the policy")}`;
 }
 
 export function startSubscriptionAdvisoryMonitor(params: {

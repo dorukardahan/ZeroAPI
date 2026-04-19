@@ -95,8 +95,37 @@ export type StarterConfigOptions = {
   inventoryAccounts?: StarterInventoryAccountInput[];
 };
 
+export type StarterConfigSummary = {
+  defaultModel: string;
+  inventoryAccountCount: number;
+  modifier: RoutingModifier | "balanced";
+  providerLabels: string[];
+};
+
+export type StarterDefaults = {
+  inventoryAccounts: StarterInventoryAccountInput[];
+  providers: StarterProviderSelection[];
+  routingModifier?: RoutingModifier;
+};
+
 function readJsonFile<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf-8")) as T;
+}
+
+function getTierRank(providerId: string, tierId: string | null | undefined): number {
+  if (!tierId) return -1;
+  const entry = SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId);
+  if (!entry) return -1;
+  return entry.tiers.findIndex((tier) => tier.tierId === tierId);
+}
+
+function getProviderLabel(providerId: string): string {
+  return SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId)?.label ?? providerId;
+}
+
+function getDefaultTierId(providerId: string): string {
+  const entry = SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId);
+  return entry?.tiers.find((tier) => tier.availability === "available")?.tierId ?? entry?.tiers[0]?.tierId ?? "unknown";
 }
 
 function normalizeBenchmarkValue(value: number | null | undefined): number | null {
@@ -329,6 +358,76 @@ export function getStarterAuthCommands(providerIds: string[]): string[] {
   return providerIds
     .map((providerId) => STARTER_AUTH_CHOICES[providerId])
     .filter((value): value is string => Boolean(value));
+}
+
+export function summarizeStarterConfig(config: ZeroAPIConfig): StarterConfigSummary {
+  const providerIds = new Set<string>();
+
+  for (const [providerId, selection] of Object.entries(config.subscription_profile?.global ?? {})) {
+    if (selection?.enabled !== false) {
+      providerIds.add(providerId);
+    }
+  }
+
+  for (const account of Object.values(config.subscription_inventory?.accounts ?? {})) {
+    if (account?.enabled !== false && typeof account.provider === "string") {
+      providerIds.add(account.provider);
+    }
+  }
+
+  return {
+    defaultModel: config.default_model,
+    inventoryAccountCount: Object.keys(config.subscription_inventory?.accounts ?? {}).length,
+    modifier: config.routing_modifier ?? "balanced",
+    providerLabels: Array.from(providerIds)
+      .map((providerId) => getProviderLabel(providerId))
+      .sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
+  const providers = new Map<string, StarterProviderSelection>();
+
+  for (const [providerId, selection] of Object.entries(config.subscription_profile?.global ?? {})) {
+    if (selection?.enabled === false || !selection?.tierId) continue;
+    providers.set(providerId, {
+      providerId,
+      tierId: selection.tierId,
+    });
+  }
+
+  const inventoryAccounts = Object.entries(config.subscription_inventory?.accounts ?? {}).flatMap(
+    ([accountId, account]) => {
+      if (!account || account.enabled === false || !account.provider) {
+        return [];
+      }
+      const next: StarterInventoryAccountInput = {
+        accountId,
+        providerId: account.provider,
+        tierId: account.tierId ?? getDefaultTierId(account.provider),
+        authProfile: account.authProfile ?? undefined,
+        usagePriority: account.usagePriority,
+        intendedUse: account.intendedUse,
+      };
+      const currentProvider = providers.get(account.provider);
+      if (!currentProvider || getTierRank(account.provider, next.tierId) > getTierRank(account.provider, currentProvider.tierId)) {
+        providers.set(account.provider, {
+          providerId: account.provider,
+          tierId: next.tierId,
+        });
+      }
+      return [next];
+    },
+  );
+
+  return {
+    providers: Array.from(providers.values()).sort((a, b) => a.providerId.localeCompare(b.providerId)),
+    inventoryAccounts: inventoryAccounts.sort((a, b) => {
+      if (a.providerId !== b.providerId) return a.providerId.localeCompare(b.providerId);
+      return a.accountId.localeCompare(b.accountId);
+    }),
+    routingModifier: config.routing_modifier,
+  };
 }
 
 export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig {

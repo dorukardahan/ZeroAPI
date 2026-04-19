@@ -150,6 +150,7 @@ Rules:
 
 - If existing ZeroAPI config is present, treat this as a re-run and show current subscriptions + routing rules before changing anything.
 - If `zeroapi-advisories.json` exists, summarize the pending provider or account additions first. Treat that as the primary reason for this re-run.
+- On re-runs, prefer the current provider set and modifier as the default answer instead of restarting from a blank selection.
 - If Anthropic OAuth profiles exist, warn that they are not subscription-covered for OpenClaw and offer cleanup.
 - If Google/Gemini OAuth profiles exist, warn that they violate Google's ToS for third-party CLI OAuth and offer cleanup.
 - In channels, summarize findings in a short message before asking the next question. Do not start by pasting raw files.

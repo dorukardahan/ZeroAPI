@@ -5,6 +5,7 @@
 ### Changed
 - Public onboarding docs and `SKILL.md` now treat `/zeroapi` as a channel-first flow for Slack, Telegram, WhatsApp, Matrix, Discord, and terminal chat, with `scripts/first_run.ts` documented as the shell fallback instead of the main path
 - ZeroAPI now writes `~/.openclaw/zeroapi-advisories.json` when it detects newly usable supported providers or same-provider auth profiles outside the current policy config, and surfaces that drift once per conversation on the next outgoing reply so operators can re-run `/zeroapi` without polling logs or shell state
+- Terminal fallback onboarding now shows pending advisory drift up front on reruns and reuses current provider and modifier choices as defaults instead of treating every rerun like a blank install
 
 ## [3.5.0] - 2026-04-19
 
