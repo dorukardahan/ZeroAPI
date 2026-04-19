@@ -8,6 +8,9 @@ let configPath: string | null = null;
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   if (typeof obj !== "object" || obj === null) return false;
   const cfg = obj as Record<string, unknown>;
+  const routingModeValid =
+    cfg.routing_mode === undefined ||
+    cfg.routing_mode === "balanced";
   const externalModelPolicyValid =
     cfg.external_model_policy === undefined ||
     cfg.external_model_policy === "stay" ||
@@ -38,6 +41,7 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   return (
     typeof cfg.version === "string" &&
     typeof cfg.default_model === "string" &&
+    routingModeValid &&
     externalModelPolicyValid &&
     typeof cfg.models === "object" && cfg.models !== null &&
     typeof cfg.routing_rules === "object" && cfg.routing_rules !== null &&
@@ -68,6 +72,7 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
     }
     cachedConfig = {
       ...parsed,
+      routing_mode: parsed.routing_mode ?? "balanced",
       external_model_policy: parsed.external_model_policy ?? "stay",
       workspace_hints: parsed.workspace_hints ?? {},
     };

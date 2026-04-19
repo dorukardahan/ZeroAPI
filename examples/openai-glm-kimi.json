@@ -3,6 +3,7 @@
   "generated": "2026-04-18T00:00:00Z",
   "benchmarks_date": "2026-04-18",
   "subscription_catalog_version": "1.0.0",
+  "routing_mode": "balanced",
   "external_model_policy": "stay",
   "subscription_profile": {
     "version": "1.0.0",

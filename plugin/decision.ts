@@ -234,6 +234,7 @@ export function resolveRoutingDecision(
     config.subscription_profile,
     config.subscription_inventory,
     agentId,
+    config.routing_mode ?? "balanced",
   );
 
   if (Object.keys(capable).length === 0 || weightedCandidates.length === 0) {

@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 
-const PLUGIN_VERSION = "3.4.1";
+const PLUGIN_VERSION = "3.4.2";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -23,7 +23,7 @@ function getRegisterState(): RegisterState {
 export default definePluginEntry({
   id: "zeroapi-router",
   name: "ZeroAPI Router",
-  description: "Benchmark-driven model routing across subscription providers",
+  description: "Balanced benchmark-aware model routing across subscription providers",
 
   register(api) {
     const openclawDir = process.env.HOME
@@ -45,7 +45,7 @@ export default definePluginEntry({
     }
 
     api.logger.info(
-      `ZeroAPI Router v${PLUGIN_VERSION} loaded (policy config v${config.version}, ${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`
+      `ZeroAPI Router v${PLUGIN_VERSION} loaded (policy config v${config.version}, mode=${config.routing_mode ?? "balanced"}, ${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`
     );
 
     try {

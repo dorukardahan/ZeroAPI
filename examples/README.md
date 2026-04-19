@@ -5,6 +5,7 @@ Pick the example that matches your provider subscriptions. Each file is a ready-
 Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw runtime defaults, provider wiring, and per-agent model state still live there.
 These examples include either `subscription_profile`, `subscription_inventory`, or both. If both blocks are missing or empty, ZeroAPI may silently filter out every configured provider.
 These examples also set `external_model_policy` to `stay`, which is the safe default when you use extra OpenClaw providers outside the ZeroAPI pool.
+These examples now also set `routing_mode` to `balanced`, which is ZeroAPI's current default policy contract.
 These examples are intentionally conservative starter pools. `benchmarks.json` tracks a wider 162-model benchmark reference snapshot, but the canned configs keep a smaller, easier-to-operate subset. That practical subset is now documented in `policy-families.json`.
 
 ## Example Files
@@ -89,6 +90,8 @@ Edit `workspace_hints` in your config to bias routing per agent workspace:
 A `null` value means no hint — routing falls back to keyword matching only. Hints should be treated as a weak bias, not as the primary routing signal.
 
 ## Routing Logic
+
+All example configs use `routing_mode: "balanced"`.
 
 ZeroAPI classifies each task into one of six categories based on keywords in the prompt:
 

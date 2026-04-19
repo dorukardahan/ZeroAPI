@@ -1,5 +1,11 @@
 import { getProviderCatalogEntry } from "./subscriptions.js";
-import type { ModelCapabilities, RoutingRule, SubscriptionInventory, TaskCategory } from "./types.js";
+import type {
+  ModelCapabilities,
+  RoutingMode,
+  RoutingRule,
+  SubscriptionInventory,
+  TaskCategory,
+} from "./types.js";
 import { resolveProviderCapacity } from "./inventory.js";
 import type { SubscriptionProfile } from "./profile.js";
 
@@ -94,7 +100,10 @@ export function getSubscriptionWeightedCandidates(
   profile: SubscriptionProfile | undefined,
   inventory: SubscriptionInventory | undefined,
   agentId: string | undefined,
+  routingMode: RoutingMode = "balanced",
 ): string[] {
+  if (routingMode !== "balanced") return [];
+
   const rule = rules[category] ?? rules["default"];
   if (!rule) return [];
 

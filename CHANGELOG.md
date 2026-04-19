@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.4.2] - 2026-04-19
+
+### Added
+- Explicit `routing_mode: "balanced"` config support so the default product policy is visible in config, tests, and examples
+- Router/config tests that lock the current balanced contract in place
+
+### Changed
+- Startup logs, examples, and doctor output now report the active routing mode
+- Public docs now describe ZeroAPI as balanced benchmark-aware routing instead of implying pure benchmark-max behavior
+
 ## [3.4.1] - 2026-04-18
 
 ### Fixed

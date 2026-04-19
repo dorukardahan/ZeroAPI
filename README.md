@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.4.1-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.4.1)
+[![Version](https://img.shields.io/badge/version-3.4.2-green)](CHANGELOG.md)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -16,7 +16,8 @@ The repo now separates:
 - `policy-families.json` -> conservative practical model families ZeroAPI currently documents as day-to-day routing targets
 
 **What makes it different:**
-- **Benchmark-driven** — routes by real benchmark scores (Artificial Analysis), not vibes
+- **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
+- **Benchmark-aware** — routes by real benchmark scores (Artificial Analysis), not vibes
 - **Subscription-aware** — respects your provider tiers and biases toward high-headroom plans
 - **Data-driven tuning** — built-in eval script analyzes routing logs and suggests config improvements
 - **Zero runtime cost** — keyword classification under 1ms, no LLM call, no external API
@@ -43,6 +44,8 @@ The plugin fires before eligible messages via OpenClaw's `before_model_resolve` 
 3. **Benchmark frontier** — keep only candidates that stay close enough to the category leader for their subscription/headroom profile
 4. **Subscription pressure ordering** — inside that frontier, prefer providers whose tier and provider bias make them more appropriate for routine use
 5. **Benchmark fallback order** — outside the frontier, fall back in benchmark strength order
+
+The default policy mode is `balanced`. That means ZeroAPI will not blindly force the raw benchmark winner on every turn. It only lets subscription headroom reorder candidates when they stay close enough to the category leader. This is the intended default for users who have uneven subscription limits across providers.
 
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
@@ -84,6 +87,7 @@ The plugin matches keywords in each message to one of six routing categories. No
 The `/zeroapi` skill scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
 
 As of the new subscription-aware foundation, the config can include:
+- an explicit `routing_mode` (currently `balanced`)
 - a public subscription catalog version reference
 - a persistent global subscription profile
 - a preferred `subscription_inventory` for same-provider multi-account setups
@@ -91,6 +95,17 @@ As of the new subscription-aware foundation, the config can include:
 - benchmark-frontier routing that can bias toward high-headroom providers like GLM Max without letting weak candidates jump the queue
 
 The user declares what subscriptions they have. ZeroAPI decides the route.
+
+### Default Policy Mode
+
+`routing_mode: "balanced"` is the current product default.
+
+In plain terms:
+- keep the benchmark leader when the quality gap is meaningful
+- let stronger subscription headroom win when benchmark quality stays near the leader
+- do not let weak candidates jump the queue just because the subscription is larger
+
+Future task-aware modifiers can sit on top of this baseline, but the current shipping contract is one clear default: sustainable quality optimization.
 
 ## Same-Provider Multi-Account
 

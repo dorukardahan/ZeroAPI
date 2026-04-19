@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.4.1
+version: 3.4.2
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -12,7 +12,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Sa
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.4 — Plugin-Based Model Routing
+# ZeroAPI v3.4.2 — Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -37,7 +37,7 @@ Layer 2: SKILL.md (/zeroapi runs once)
   Scans setup, chooses model pools, writes config, installs plugin.
 
 Layer 3: Plugin runtime (before_model_resolve)
-  Capability filter -> conservative classification -> category leader selection.
+  Capability filter -> conservative classification -> balanced benchmark-aware selection.
 ```
 
 Important authority order:

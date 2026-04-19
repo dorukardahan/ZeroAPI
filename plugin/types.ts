@@ -2,6 +2,8 @@ export type TaskCategory = "code" | "research" | "orchestration" | "math" | "fas
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type RoutingMode = "balanced";
+
 export type ModelCapabilities = {
   context_window: number;
   supports_vision: boolean;
@@ -45,6 +47,7 @@ export type ZeroAPIConfig = {
   generated: string;
   benchmarks_date: string;
   default_model: string;
+  routing_mode?: RoutingMode;
   external_model_policy?: "stay" | "allow";
   models: Record<string, ModelCapabilities>;
   routing_rules: Record<string, RoutingRule>;

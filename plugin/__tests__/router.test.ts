@@ -98,6 +98,19 @@ const profile: SubscriptionProfile = {
 };
 
 describe("router weighting", () => {
+  it("uses balanced mode as the explicit default policy", () => {
+    const candidates = getSubscriptionWeightedCandidates(
+      "default",
+      models,
+      rules,
+      profile,
+      undefined,
+      undefined,
+    );
+    expect(candidates[0]).toBe("zai/glm-5.1");
+    expect(candidates).toContain("openai-codex/gpt-5.4");
+  });
+
   it("keeps the benchmark leader first when subscription pressure cannot justify the quality drop", () => {
     const candidates = getSubscriptionWeightedCandidates("code", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("openai-codex/gpt-5.4");

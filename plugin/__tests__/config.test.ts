@@ -90,8 +90,29 @@ describe("config", () => {
     const { loadConfig } = await import("../config.js");
     const result = loadConfig(testDir);
     expect(result).not.toBeNull();
+    expect(result!.routing_mode).toBe("balanced");
     expect(result!.external_model_policy).toBe("stay");
     expect(result!.workspace_hints).toEqual({});
+  });
+
+  it("returns null when routing_mode is invalid", async () => {
+    const bad = {
+      version: "3.0.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "foo/bar",
+      routing_mode: "quality_first",
+      models: {},
+      routing_rules: {},
+      workspace_hints: {},
+      keywords: {},
+      high_risk_keywords: [],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(bad));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
   });
 
   it("returns null when external_model_policy is invalid", async () => {
@@ -120,6 +141,7 @@ describe("config", () => {
       generated: "2026-04-05",
       benchmarks_date: "2026-04-04",
       default_model: "openai-codex/gpt-5.4",
+      routing_mode: "balanced",
       external_model_policy: "allow",
       models: { "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
       routing_rules: { default: { primary: "openai-codex/gpt-5.4", fallbacks: [] } },
@@ -152,6 +174,7 @@ describe("config", () => {
     const result = loadConfig(testDir);
     expect(result).not.toBeNull();
     expect(result!.version).toBe("3.3.0");
+    expect(result!.routing_mode).toBe("balanced");
     expect(result!.external_model_policy).toBe("allow");
     expect(result!.subscription_inventory?.accounts["openai-work-max"]?.provider).toBe("openai-codex");
     expect(getConfig()).toBe(result);
@@ -163,6 +186,7 @@ describe("config", () => {
       generated: "2026-04-19",
       benchmarks_date: "2026-04-18",
       default_model: "zai/glm-5",
+      routing_mode: "balanced",
       models: { "zai/glm-5": { context_window: 202800, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9, benchmarks: {} } },
       routing_rules: { default: { primary: "zai/glm-5", fallbacks: [] } },
       keywords: { orchestration: ["coordinate"] },
@@ -188,6 +212,7 @@ describe("config", () => {
     expect(result!.subscription_profile).toBeUndefined();
     expect(result!.subscription_inventory?.accounts["zai-max-work"]?.authProfile).toBe("zai:work");
     expect(result!.workspace_hints).toEqual({});
+    expect(result!.routing_mode).toBe("balanced");
     expect(result!.external_model_policy).toBe("stay");
   });
 
