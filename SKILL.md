@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.4.2
+version: 3.4.3
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when user mentions model routing, multi-model setup, "which model should I use",
@@ -8,11 +8,11 @@ description: >
   Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
-compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Same-provider account steering via `authProfile` needs an OpenClaw runtime that supports `authProfileOverride` from `before_model_resolve`.
+compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Same-provider account steering via `authProfile` works best on OpenClaw runtimes that support `authProfileOverride` from `before_model_resolve`; older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.4.2 — Plugin-Based Model Routing
+# ZeroAPI v3.4.3 — Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -154,7 +154,7 @@ Persist the result into a subscription profile with:
 - `global` provider selections
 - optional `agentOverrides`
 
-If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on compatible OpenClaw runtimes; older runtimes still treat it as metadata and continue to rely on `auth.order`.
+If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on newer OpenClaw runtimes. Older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists, and otherwise continue to rely on `auth.order`.
 
 The user declares what subscriptions they have. ZeroAPI decides routing.
 

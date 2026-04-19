@@ -32,6 +32,7 @@ describe("plugin entry registration", () => {
   afterEach(() => {
     delete (globalThis as typeof globalThis & { [REGISTER_STATE_KEY]?: unknown })[REGISTER_STATE_KEY];
     vi.restoreAllMocks();
+    vi.resetModules();
   });
 
   it("registers hooks only once per process", async () => {
@@ -56,6 +57,110 @@ describe("plugin entry registration", () => {
 
       expect(on).toHaveBeenCalledTimes(1);
       expect(api.logger.info).toHaveBeenCalledTimes(1);
+    } finally {
+      process.env.HOME = previousHome;
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it("does not return authProfileOverride when a user-pinned session profile is preserved", async () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
+    const previousHome = process.env.HOME;
+    process.env.HOME = home;
+
+    vi.doMock("../config.js", () => ({
+      loadConfig: () => ({
+        version: "3.4.3",
+        generated: "2026-04-19",
+        benchmarks_date: "2026-04-18",
+        default_model: "zai/glm-5",
+        routing_mode: "balanced",
+        models: {},
+        routing_rules: {},
+        keywords: {},
+        high_risk_keywords: [],
+        fast_ttft_max_seconds: 5,
+        workspace_hints: {},
+      }),
+    }));
+    vi.doMock("../decision.js", () => ({
+      resolveRoutingDecision: () => ({
+        action: "route",
+        reason: "stay:no_switch_needed",
+        agentId: "main",
+        currentModel: "zai/glm-5",
+        workspaceHints: null,
+        tokenEstimate: 8,
+        likelyVision: false,
+        capableModels: ["zai/glm-5"],
+        weightedCandidates: ["zai/glm-5"],
+        rawDecision: {
+          category: "orchestration",
+          model: "zai/glm-5",
+          provider: "zai",
+          reason: "weighted",
+          risk: "low",
+        },
+        finalDecision: {
+          category: "orchestration",
+          model: "zai/glm-5",
+          provider: "zai",
+          reason: "weighted",
+          risk: "low",
+        },
+        selectedModel: "zai/glm-5",
+        providerOverride: "zai",
+        modelOverride: "glm-5",
+        authProfileOverride: "zai:work",
+        selectedAccountId: "zai-work",
+      }),
+    }));
+    vi.doMock("../logger.js", () => ({
+      initLogger: vi.fn(),
+      logRouting: vi.fn(),
+      logRoutingEvent: vi.fn(),
+    }));
+    vi.doMock("../session-auth.js", () => ({
+      syncSessionAuthProfileOverride: () => ({
+        action: "blocked",
+        reason: "user_pinned_override",
+        sessionKey: "agent:main:main",
+      }),
+    }));
+
+    const on = vi.fn();
+    const api = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+      },
+      on,
+    };
+
+    try {
+      const mod = await import("../index.js");
+      mod.default.register(api);
+
+      const handler = on.mock.calls[0]?.[1];
+      expect(typeof handler).toBe("function");
+
+      const result = handler(
+        { prompt: "coordinate a workflow across 3 services" },
+        {
+          agentId: "main",
+          modelId: "glm-5",
+          modelProviderId: "zai",
+          sessionKey: "agent:main:main",
+        },
+      );
+
+      expect(result).toEqual({
+        providerOverride: "zai",
+        modelOverride: "glm-5",
+      });
+      expect(api.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("user-pinned auth profile"),
+      );
     } finally {
       process.env.HOME = previousHome;
       rmSync(home, { recursive: true, force: true });

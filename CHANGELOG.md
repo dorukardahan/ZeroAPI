@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.4.3] - 2026-04-19
+
+### Added
+- Best-effort session-store auth-profile fallback for same-provider multi-account routing on OpenClaw builds that do not yet consume `authProfileOverride` from `before_model_resolve`
+- Session auth sync tests covering default stores, custom `session.store` templates, auto-clear behavior, and user-pinned guardrails
+
+### Changed
+- Public docs, examples, and doctor output now describe the compatibility fallback instead of treating same-provider steering as fully unavailable on older OpenClaw runtimes
+
 ## [3.4.2] - 2026-04-19
 
 ### Added

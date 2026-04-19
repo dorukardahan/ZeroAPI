@@ -4,8 +4,9 @@ import { resolveRoutingDecision } from "./decision.js";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
+import { syncSessionAuthProfileOverride } from "./session-auth.js";
 
-const PLUGIN_VERSION = "3.4.2";
+const PLUGIN_VERSION = "3.4.3";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -95,12 +96,45 @@ export default definePluginEntry({
       }
 
       logRouting(ctx.agentId, resolution);
+      let runtimeAuthProfileOverride = resolution.authProfileOverride;
+      const shouldSyncSessionAuth =
+        resolution.action === "route" ||
+        (resolution.action === "stay" && resolution.reason.includes("no_switch_needed"));
+      if (shouldSyncSessionAuth) {
+        const syncResult = syncSessionAuthProfileOverride({
+          openclawDir,
+          agentId: ctx.agentId,
+          sessionKey: "sessionKey" in ctx ? ctx.sessionKey : undefined,
+          authProfileOverride: resolution.authProfileOverride,
+        });
+        if (syncResult.action === "blocked") {
+          runtimeAuthProfileOverride = null;
+          api.logger.warn(
+            `ZeroAPI kept the user-pinned auth profile for ${syncResult.sessionKey ?? "unknown-session"} instead of replacing it with ${resolution.authProfileOverride ?? "none"}.`
+          );
+        }
+        if (syncResult.reason === "user_pinned_preserved") {
+          runtimeAuthProfileOverride = null;
+        }
+        if (
+          syncResult.reason !== "already_current" &&
+          syncResult.reason !== "no_auto_override_to_clear" &&
+          syncResult.reason !== "user_pinned_preserved"
+        ) {
+          logRoutingEvent({
+            agentId: ctx.agentId,
+            category: "system",
+            model: resolution.selectedModel,
+            reason: `session_auth_sync:${syncResult.reason}`,
+          });
+        }
+      }
       if (resolution.action === "route") {
         return {
           providerOverride: resolution.providerOverride!,
           modelOverride: resolution.modelOverride!,
-          ...(resolution.authProfileOverride
-            ? { authProfileOverride: resolution.authProfileOverride }
+          ...(runtimeAuthProfileOverride
+            ? { authProfileOverride: runtimeAuthProfileOverride }
             : {}),
         };
       }

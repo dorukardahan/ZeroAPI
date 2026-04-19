@@ -75,7 +75,7 @@ if isinstance(inventory, dict):
 print(f'subscription_inventory.accounts={",".join(inventory_accounts) if inventory_accounts else "none"}')
 if inventory_accounts_with_auth:
     print(f'subscription_inventory.auth_profiles={",".join(inventory_accounts_with_auth)}')
-    print('NOTE: authProfile inventory steering needs an OpenClaw runtime that supports authProfileOverride from before_model_resolve.')
+    print('NOTE: authProfile inventory steering works best on newer OpenClaw runtimes, but ZeroAPI also has a best-effort session-store fallback for older builds.')
 
 if not enabled_profile and not inventory_accounts:
     print('WARN: neither subscription_profile nor enabled subscription_inventory accounts are configured. Routing may silently filter out every provider.')

@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.4.2-green)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.4.3-green)](CHANGELOG.md)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -135,9 +135,9 @@ It lets ZeroAPI model that provider as an account pool instead of a single tier:
 }
 ```
 
-When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride`. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
+When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride`. On newer OpenClaw builds that hook field is consumed directly. On older builds, ZeroAPI now also performs a best-effort session-store sync so the active session can still prefer the right auth profile without waiting for upstream hook support. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
 
-Important: same-provider account steering only becomes active on OpenClaw builds that support `authProfileOverride` from `before_model_resolve` hooks. On older builds, the extra field is ignored, so `subscription_inventory` still improves provider weighting but the final same-provider account choice falls back to OpenClaw `auth.order`.
+Important: the compatibility fallback only updates sessions that already exist in OpenClaw's session store and it never overwrites a user-pinned auth profile. If the session store is unavailable, `subscription_inventory` still improves provider weighting and the final same-provider account choice falls back to OpenClaw `auth.order`.
 
 Before turning routing loose on real traffic, inspect a sample decision:
 
@@ -196,6 +196,7 @@ ZeroAPI/
 │   ├── logger.ts                         # Routing log writer
 │   ├── profile.ts                        # Subscription profile filtering
 │   ├── router.ts                         # Benchmark-frontier + subscription-pressure ordering
+│   ├── session-auth.ts                   # Best-effort session auth-profile fallback for older runtimes
 │   ├── subscriptions.ts                  # Provider subscription catalog
 │   ├── types.ts                          # TypeScript types
 │   ├── package.json
@@ -205,12 +206,14 @@ ZeroAPI/
 │       ├── decision.test.ts
 │       ├── config.test.ts
 │       ├── filter.test.ts
-│       ├── selector.test.ts
-│       ├── logger.test.ts
 │       ├── integration.test.ts
 │       ├── inventory.test.ts
+│       ├── logger.test.ts
+│       ├── plugin-entry.test.ts
 │       ├── profile.test.ts
-│       └── router.test.ts
+│       ├── router.test.ts
+│       ├── selector.test.ts
+│       └── session-auth.test.ts
 ├── examples/
 │   ├── README.md
 │   ├── openai-only.json
@@ -278,7 +281,7 @@ Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your me
 Yes. ZeroAPI keeps a legacy global `subscription_profile` plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
 
 **Can ZeroAPI pick between multiple accounts for the same provider?**
-Yes, with one runtime caveat. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI returns it as `authProfileOverride`. OpenClaw builds that support that hook field can then prefer the right account for the run, while still handling cooldowns, failover, and session stickiness. Older builds ignore the field and keep relying on `auth.order` inside that provider.
+Yes. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI returns it as `authProfileOverride`. Newer OpenClaw builds consume that hook field directly. Older builds use ZeroAPI's best-effort session-store fallback when the session already exists, and otherwise keep relying on `auth.order` inside that provider.
 
 ## License
 
