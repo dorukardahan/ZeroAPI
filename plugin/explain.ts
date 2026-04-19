@@ -9,6 +9,12 @@ function formatList(values: string[]): string {
   return values.length > 0 ? values.join(", ") : "none";
 }
 
+function formatRejected(values: Array<{ model: string; reason: string }>): string {
+  return values.length > 0
+    ? values.map((value) => `${value.model}:${value.reason}`).join(", ")
+    : "none";
+}
+
 export function buildExplanationSummary(result: RoutingResolution): ExplanationSummary {
   const category = result.rawDecision?.category ?? "n/a";
   const risk = result.rawDecision?.risk ?? result.finalDecision?.risk ?? "n/a";
@@ -18,6 +24,8 @@ export function buildExplanationSummary(result: RoutingResolution): ExplanationS
     `reason=${result.reason}`,
     `current=${result.currentModel ?? "none"}`,
     `capable=${formatList(result.capableModels)}`,
+    `capabilityRejected=${formatRejected(result.capabilityRejected)}`,
+    `subscriptionRejected=${formatList(result.subscriptionRejected)}`,
     `weighted=${formatList(result.weightedCandidates)}`,
   ];
 

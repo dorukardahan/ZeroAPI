@@ -1,5 +1,5 @@
 import { classifyTask } from "./classifier.js";
-import { filterCapableModels, estimateTokens } from "./filter.js";
+import { filterCapableModels, estimateTokens, getCapabilityFilterFailure } from "./filter.js";
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 import { selectModel } from "./selector.js";
@@ -26,6 +26,7 @@ export type ResolveRoutingOptions = {
   agentId?: string;
   trigger?: string;
   currentModel?: string | null;
+  includeDiagnostics?: boolean;
 };
 
 export type RoutingResolution = {
@@ -39,6 +40,8 @@ export type RoutingResolution = {
   tokenEstimate: number | null;
   likelyVision: boolean;
   capableModels: string[];
+  capabilityRejected: Array<{ model: string; reason: string }>;
+  subscriptionRejected: string[];
   weightedCandidates: string[];
   rawDecision: RoutingDecision | null;
   finalDecision: RoutingDecision | null;
@@ -79,6 +82,7 @@ export function resolveRoutingDecision(
   options: ResolveRoutingOptions,
 ): RoutingResolution {
   const agentId = options.agentId;
+  const includeDiagnostics = options.includeDiagnostics === true;
   const workspaceHints = agentId ? config.workspace_hints[agentId] : undefined;
   const currentModel = options.currentModel ?? config.default_model ?? null;
   const routingModifier = config.routing_modifier ?? null;
@@ -98,6 +102,8 @@ export function resolveRoutingDecision(
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
+      capabilityRejected: [],
+      subscriptionRejected: [],
       weightedCandidates: [],
       rawDecision: null,
       finalDecision: null,
@@ -117,6 +123,8 @@ export function resolveRoutingDecision(
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
+      capabilityRejected: [],
+      subscriptionRejected: [],
       weightedCandidates: [],
       rawDecision: null,
       finalDecision: null,
@@ -136,6 +144,8 @@ export function resolveRoutingDecision(
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
+      capabilityRejected: [],
+      subscriptionRejected: [],
       weightedCandidates: [],
       rawDecision: null,
       finalDecision: null,
@@ -169,6 +179,8 @@ export function resolveRoutingDecision(
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
+      capabilityRejected: [],
+      subscriptionRejected: [],
       weightedCandidates: [],
       rawDecision,
       finalDecision,
@@ -189,6 +201,8 @@ export function resolveRoutingDecision(
       tokenEstimate: null,
       likelyVision: false,
       capableModels: [],
+      capabilityRejected: [],
+      subscriptionRejected: [],
       weightedCandidates: [],
       rawDecision,
       finalDecision,
@@ -206,14 +220,33 @@ export function resolveRoutingDecision(
 
   const tokenEstimate = estimateTokens(options.prompt);
   const isFast = rawDecision.category === "fast";
+  const filterOptions = {
+    estimatedTokens: tokenEstimate,
+    maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
+    requiresVision: likelyVision,
+  };
+
+  const capabilityRejected = includeDiagnostics
+    ? Object.entries(config.models)
+      .map(([modelKey, caps]) => {
+        const failure = getCapabilityFilterFailure(modelKey, caps, filterOptions);
+        return failure ? { model: modelKey, reason: failure } : null;
+      })
+      .filter((entry): entry is { model: string; reason: string } => entry !== null)
+    : [];
+
+  const capabilityPassed = filterCapableModels(config.models, filterOptions);
+  const subscriptionRejected = includeDiagnostics
+    ? Object.keys(capabilityPassed).filter((modelKey) => !isModelAllowedBySubscriptions({
+      profile: config.subscription_profile,
+      inventory: config.subscription_inventory,
+      agentId,
+      modelKey,
+    }))
+    : [];
+
   const capable = Object.fromEntries(
-    Object.entries(
-      filterCapableModels(config.models, {
-        estimatedTokens: tokenEstimate,
-        maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
-        requiresVision: likelyVision,
-      }),
-    ).filter(([modelKey]) => isModelAllowedBySubscriptions({
+    Object.entries(capabilityPassed).filter(([modelKey]) => isModelAllowedBySubscriptions({
       profile: config.subscription_profile,
       inventory: config.subscription_inventory,
       agentId,
@@ -246,6 +279,8 @@ export function resolveRoutingDecision(
       tokenEstimate,
       likelyVision,
       capableModels: Object.keys(capable),
+      capabilityRejected,
+      subscriptionRejected,
       weightedCandidates,
       rawDecision,
       finalDecision,
@@ -299,6 +334,8 @@ export function resolveRoutingDecision(
       tokenEstimate,
       likelyVision,
       capableModels: Object.keys(capable),
+      capabilityRejected,
+      subscriptionRejected,
       weightedCandidates,
       rawDecision,
       finalDecision,
@@ -328,6 +365,8 @@ export function resolveRoutingDecision(
       tokenEstimate,
       likelyVision,
       capableModels: Object.keys(capable),
+      capabilityRejected,
+      subscriptionRejected,
       weightedCandidates,
       rawDecision,
       finalDecision,
@@ -353,6 +392,8 @@ export function resolveRoutingDecision(
     tokenEstimate,
     likelyVision,
     capableModels: Object.keys(capable),
+    capabilityRejected,
+    subscriptionRejected,
     weightedCandidates,
     rawDecision,
     finalDecision,

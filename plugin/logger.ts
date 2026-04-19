@@ -12,6 +12,7 @@ type LogEntry = {
   category: string;
   currentModel?: string | null;
   model?: string | null;
+  modifier?: string | null;
   candidates?: string[];
   risk?: string;
   reason: string;
@@ -33,6 +34,7 @@ export function logRouting(
     action: "skip" | "stay" | "route";
     authProfileOverride?: string | null;
     currentModel: string | null;
+    routingModifier?: string | null;
     weightedCandidates: string[];
     finalDecision: RoutingDecision | null;
     selectedAccountId?: string | null;
@@ -48,6 +50,7 @@ export function logRouting(
     category: routing.finalDecision.category,
     currentModel: routing.currentModel,
     model: routing.finalDecision.model ?? "default",
+    modifier: routing.routingModifier ?? null,
     candidates: routing.weightedCandidates.slice(0, 3),
     risk: routing.finalDecision.risk,
     reason: routing.finalDecision.reason,
@@ -71,6 +74,9 @@ export function logRoutingEvent(entry: LogEntry): void {
 
   if (entry.candidates?.length) {
     parts.push(`candidates=${entry.candidates.join(",")}`);
+  }
+  if (entry.modifier) {
+    parts.push(`modifier=${entry.modifier}`);
   }
   if (entry.authProfile) {
     parts.push(`authProfile=${entry.authProfile}`);

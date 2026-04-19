@@ -26,6 +26,7 @@ type LogEntry = {
   agent: string;
   category: string;
   model: string;
+  modifier: string;
   risk: string;
   reason: string;
 };
@@ -38,6 +39,7 @@ function parseLine(line: string): LogEntry | null {
   const agentMatch = trimmed.match(/agent=(\S+)/);
   const catMatch = trimmed.match(/category=(\S+)/);
   const modelMatch = trimmed.match(/model=(\S+)/);
+  const modifierMatch = trimmed.match(/modifier=(\S+)/);
   const riskMatch = trimmed.match(/risk=(\S+)/);
   const reasonMatch = trimmed.match(/reason=(.+)$/);
 
@@ -48,6 +50,7 @@ function parseLine(line: string): LogEntry | null {
     agent: agentMatch?.[1] ?? "unknown",
     category: catMatch[1],
     model: modelMatch?.[1] ?? "default",
+    modifier: modifierMatch?.[1] ?? "none",
     risk: riskMatch?.[1] ?? "low",
     reason: reasonMatch?.[1] ?? "unknown",
   };
@@ -165,6 +168,14 @@ for (const [prov, count] of sortedEntries(providers)) {
 const uniqueProviders = Object.keys(providers).filter((p) => p !== "no-override").length;
 if (uniqueProviders <= 1) {
   console.log(`  ⚠ Only ${uniqueProviders} provider used. Cross-provider routing not active.`);
+}
+
+const modifiers = counter(entries.map((e) => e.modifier));
+if (Object.keys(modifiers).some((modifier) => modifier !== "none")) {
+  console.log(`\n## Modifier Usage`);
+  for (const [modifier, count] of sortedEntries(modifiers)) {
+    console.log(`  ${pad(modifier, 20)} ${padNum(count, 4)} (${pct(count, total).padStart(5)})`);
+  }
 }
 
 // Routing activity — distinguish between no-keyword-match, high-risk blocks, and no-switch-needed

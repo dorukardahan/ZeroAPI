@@ -136,6 +136,12 @@ Current shipped behavior:
 
 All three keep the same safety, capability, and subscription gates from balanced mode. For the exact contract, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
 
+To see how modifiers differ on a real prompt set before enabling one globally:
+
+```bash
+npx tsx scripts/compare_modifiers.ts --prompts-file prompts.txt
+```
+
 ## Same-Provider Multi-Account
 
 If you have multiple subscriptions under the same provider - for example one OpenAI Pro account and two OpenAI Plus accounts - prefer `subscription_inventory`.

@@ -8,6 +8,7 @@
 - Optional `routing_modifier` config field with shipped `coding-aware`, `research-aware`, and `speed-aware` overlays on top of balanced routing
 - Modifier-aware router tests covering coding, research, and speed close-call behavior
 - Modifier-aware explanation details in simulator output and JSON payloads
+- Modifier comparison CLI (`scripts/compare_modifiers.ts`) for checking prompt-set deltas against balanced routing
 - Weekly Sunday benchmark refresh workflow for maintainers, backed by the private repo secret `AA_API_KEY`, so public users do not need direct Artificial Analysis API access
 - Written product roadmap for the next ZeroAPI phase, covering policy spec, modifiers, account-pool rules, explainability, and benchmark governance
 - Written `balanced` routing policy spec that matches the current router behavior and makes the benchmark frontier contract explicit

@@ -129,6 +129,8 @@ function renderText(result: ReturnType<typeof resolveRoutingDecision>, prompt: s
 
   lines.push(`Selected model: ${result.selectedModel ?? "stay on current/default"}`);
   lines.push(`Capable models: ${result.capableModels.length > 0 ? result.capableModels.join(", ") : "none"}`);
+  lines.push(`Capability rejected: ${result.capabilityRejected.length > 0 ? result.capabilityRejected.map((entry) => `${entry.model}:${entry.reason}`).join(", ") : "none"}`);
+  lines.push(`Subscription rejected: ${result.subscriptionRejected.length > 0 ? result.subscriptionRejected.join(", ") : "none"}`);
   lines.push(`Weighted candidates: ${result.weightedCandidates.length > 0 ? result.weightedCandidates.join(", ") : "none"}`);
   lines.push("Explanation details:");
   lines.push(...explanation.details.map((detail) => `- ${detail}`));
@@ -148,6 +150,7 @@ const result = resolveRoutingDecision(config, {
   agentId: options.agentId,
   currentModel: options.currentModel,
   trigger: options.trigger,
+  includeDiagnostics: true,
 });
 const explanation = buildExplanationSummary(result);
 

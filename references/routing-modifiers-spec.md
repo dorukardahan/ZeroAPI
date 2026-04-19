@@ -211,6 +211,14 @@ Modifiers are now shipped behavior, so they should keep being validated against:
 
 The goal is not "modifier changes many decisions." The goal is "modifier changes the right close decisions."
 
+Practical helper:
+
+```bash
+npx tsx scripts/compare_modifiers.ts --prompts-file prompts.txt
+```
+
+That compares `balanced` against all shipped modifiers on the same prompt set and highlights only the changed decisions.
+
 ## Open follow-up questions
 
 These are no longer blockers for shipping, but they are still worth studying:
