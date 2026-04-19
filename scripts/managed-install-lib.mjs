@@ -296,6 +296,7 @@ export function installOrUpdatePlugin(pluginPath, openclawDir) {
   if (!commandExists("openclaw")) {
     fail("openclaw CLI is required for managed ZeroAPI install");
   }
+  rmSync(join(openclawDir, "extensions", "zeroapi-router"), { force: true, recursive: true });
   runCommand("openclaw", ["plugins", "install", pluginPath], {
     stdio: "inherit",
     env: openclawEnv(openclawDir),
