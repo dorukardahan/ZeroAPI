@@ -7,6 +7,7 @@ import {
   buildPendingSubscriptionAdvisory,
   collectRuntimeSubscriptionSignals,
   formatAdvisoryMessage,
+  getPendingSubscriptionAdvisoryKind,
   listPendingSubscriptionAdvisoryItems,
   writePendingSubscriptionAdvisory,
 } from "../subscription-advisory.js";
@@ -200,5 +201,54 @@ describe("subscription advisory", () => {
     );
     expect(formatAdvisoryMessage(advisory)).toContain("Provider: Kimi");
     expect(formatAdvisoryMessage(advisory)).toContain("update the policy");
+  });
+
+  it("classifies provider, account, and mixed drift kinds", () => {
+    expect(
+      getPendingSubscriptionAdvisoryKind({
+        version: "1.0.0",
+        updatedAt: "2026-04-19T00:00:00.000Z",
+        pendingProviders: [{ providerId: "moonshot", label: "Kimi" }],
+        pendingAuthProfiles: [],
+        summary: [],
+        recommendedAction: "Re-run /zeroapi to review and accept these additions.",
+      }),
+    ).toBe("provider_only");
+
+    expect(
+      getPendingSubscriptionAdvisoryKind({
+        version: "1.0.0",
+        updatedAt: "2026-04-19T00:00:00.000Z",
+        pendingProviders: [],
+        pendingAuthProfiles: [
+          {
+            agentId: "main",
+            label: "OpenAI",
+            profileId: "openai:work",
+            providerId: "openai-codex",
+          },
+        ],
+        summary: [],
+        recommendedAction: "Re-run /zeroapi to review and accept these additions.",
+      }),
+    ).toBe("account_only");
+
+    expect(
+      getPendingSubscriptionAdvisoryKind({
+        version: "1.0.0",
+        updatedAt: "2026-04-19T00:00:00.000Z",
+        pendingProviders: [{ providerId: "moonshot", label: "Kimi" }],
+        pendingAuthProfiles: [
+          {
+            agentId: "main",
+            label: "OpenAI",
+            profileId: "openai:work",
+            providerId: "openai-codex",
+          },
+        ],
+        summary: [],
+        recommendedAction: "Re-run /zeroapi to review and accept these additions.",
+      }),
+    ).toBe("mixed");
   });
 });

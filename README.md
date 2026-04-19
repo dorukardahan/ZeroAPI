@@ -99,7 +99,7 @@ The `/zeroapi` skill is the primary public onboarding surface. It should feel na
 
 `scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
 
-For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
+For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). For rerun-first question behavior when drift is detected, see [`references/chat-rerun-playbook.md`](references/chat-rerun-playbook.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 
 As of the new subscription-aware foundation, the config can include:
 - an explicit `routing_mode` (currently `balanced`)
@@ -113,7 +113,7 @@ The user declares what subscriptions they have. ZeroAPI decides the route.
 
 ### Runtime Advisory
 
-If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin now writes `~/.openclaw/zeroapi-advisories.json`, logs a short advisory, and prepends one compact notice to the next outgoing reply in each conversation. Re-run `/zeroapi` to review and accept those additions. This is watcher-based, happens outside the routing hot path, and does not spend extra model tokens.
+If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin now writes `~/.openclaw/zeroapi-advisories.json`, logs a short advisory, and prepends one compact notice to the next outgoing reply in each conversation. Re-run `/zeroapi` to review and accept those additions. The chat rerun flow should then start from a drift-aware first question instead of replaying full onboarding. This is watcher-based, happens outside the routing hot path, and does not spend extra model tokens.
 
 ### Default Policy Mode
 

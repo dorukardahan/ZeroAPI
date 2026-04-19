@@ -151,6 +151,11 @@ Rules:
 - If existing ZeroAPI config is present, treat this as a re-run and show current subscriptions + routing rules before changing anything.
 - If `zeroapi-advisories.json` exists, summarize the pending provider or account additions first. Treat that as the primary reason for this re-run.
 - On re-runs, prefer the current provider set and modifier as the default answer instead of restarting from a blank selection.
+- Choose the **first rerun question** from `references/chat-rerun-playbook.md` based on drift kind:
+  - `provider_only`
+  - `account_only`
+  - `mixed`
+  - or normal refresh when there is no advisory
 - If Anthropic OAuth profiles exist, warn that they are not subscription-covered for OpenClaw and offer cleanup.
 - If Google/Gemini OAuth profiles exist, warn that they violate Google's ToS for third-party CLI OAuth and offer cleanup.
 - In channels, summarize findings in a short message before asking the next question. Do not start by pasting raw files.
@@ -364,6 +369,7 @@ Use these only when needed:
 - `references/oauth-setup.md` — provider auth notes
 - `references/provider-config.md` — provider/model ID notes
 - `references/channel-onboarding.md` — host-vs-channel onboarding contract
+- `references/chat-rerun-playbook.md` — drift-aware first-question contract for reruns
 - `references/troubleshooting.md` — common runtime issues
 - `references/cost-summary.md` — bundle planning examples
 - `references/subscription-catalog.md` — provider tiers and public catalog version

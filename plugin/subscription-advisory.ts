@@ -41,6 +41,11 @@ export type PendingSubscriptionAdvisory = {
   pendingProviders: PendingProviderAdvisory[];
 };
 
+export type PendingSubscriptionAdvisoryKind =
+  | "provider_only"
+  | "account_only"
+  | "mixed";
+
 type MonitorLogger = {
   info: (message: string) => void;
   warn: (message: string) => void;
@@ -73,6 +78,16 @@ export function listPendingSubscriptionAdvisoryItems(
       (profile) => `Account: ${profile.profileId} (${profile.label}/${profile.agentId})`,
     ),
   ];
+}
+
+export function getPendingSubscriptionAdvisoryKind(
+  advisory: PendingSubscriptionAdvisory,
+): PendingSubscriptionAdvisoryKind {
+  const hasProviders = advisory.pendingProviders.length > 0;
+  const hasAccounts = advisory.pendingAuthProfiles.length > 0;
+  if (hasProviders && hasAccounts) return "mixed";
+  if (hasProviders) return "provider_only";
+  return "account_only";
 }
 
 function sortProviders<T extends SupportedProvider>(items: T[]): T[] {
@@ -412,7 +427,14 @@ export function formatAdvisoryMessage(advisory: PendingSubscriptionAdvisory): st
   if (items.length === 0) {
     return advisory.recommendedAction;
   }
-  return `ZeroAPI found new routing options not yet included in the current policy: ${items.join("; ")}. ${advisory.recommendedAction.replace("accept these additions", "update the policy")}`;
+  const kind = getPendingSubscriptionAdvisoryKind(advisory);
+  const intro =
+    kind === "provider_only"
+      ? "ZeroAPI found newly usable providers not yet included in the current policy"
+      : kind === "account_only"
+        ? "ZeroAPI found new same-provider accounts not yet included in the current policy"
+        : "ZeroAPI found new routing options not yet included in the current policy";
+  return `${intro}: ${items.join("; ")}. ${advisory.recommendedAction.replace("accept these additions", "update the policy")}`;
 }
 
 export function startSubscriptionAdvisoryMonitor(params: {

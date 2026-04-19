@@ -55,6 +55,7 @@ The `/zeroapi` flow should behave like a compact chat wizard:
 - do not paste full JSON unless the user explicitly asks
 - show a short summary before writing config
 - keep re-run safe and resumable
+- adapt the **first rerun question** to the detected drift kind instead of restarting from a generic provider survey
 
 Good style:
 
@@ -112,6 +113,7 @@ Re-running `/zeroapi` should:
 - surface pending `zeroapi-advisories.json` items first when drift exists
 - summarize current subscriptions and modifier state
 - reuse current provider and modifier choices as the default answer when possible
+- choose the first question from the drift-aware playbook in `references/chat-rerun-playbook.md`
 - propose changes before writing
 - avoid unrelated `openclaw.json` churn
 
