@@ -14,6 +14,7 @@ import {
   loadPluginVersion,
   managedPaths,
   pruneBackupSnapshots,
+  removeDuplicateZeroAPILoadPaths,
   restartGatewayIfPossible,
   writeManagedInstallState,
 } from "./managed-install-lib.mjs";
@@ -61,6 +62,7 @@ function restoreBackup(backupRepoDir, backupSkillDir, repoDir, skillDir, opencla
   }
   if (existsSync(join(repoDir, "plugin"))) {
     installOrUpdatePlugin(join(repoDir, "plugin"), openclawDir);
+    removeDuplicateZeroAPILoadPaths(openclawDir);
     restartGatewayIfPossible();
   }
 }
@@ -133,6 +135,7 @@ function main() {
     copyRepoSnapshot(stageDir, repoDir);
     copyRepoSnapshot(repoDir, skillDir);
     installOrUpdatePlugin(join(repoDir, "plugin"), args.openclawDir);
+    removeDuplicateZeroAPILoadPaths(args.openclawDir);
     const restartResult = restartGatewayIfPossible();
 
     const next = persistStatus(args.openclawDir, state, {

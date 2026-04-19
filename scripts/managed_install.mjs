@@ -12,6 +12,7 @@ import {
   installOrUpdatePlugin,
   loadPluginVersion,
   managedPaths,
+  removeDuplicateZeroAPILoadPaths,
   restartGatewayIfPossible,
   writeManagedInstallState,
   writeManagedSystemdUnits,
@@ -64,6 +65,7 @@ function main() {
   copyRepoSnapshot(REPO_ROOT, repoDir);
   copyRepoSnapshot(repoDir, skillDir);
   installOrUpdatePlugin(resolve(repoDir, "plugin"), args.openclawDir);
+  const removedLoadPaths = removeDuplicateZeroAPILoadPaths(args.openclawDir);
 
   let timerEnabled = false;
   let timerReason = "disabled_by_flag";
@@ -104,6 +106,7 @@ function main() {
   console.log(`- skill sync: ${skillDir}`);
   console.log(`- auto-update timer: ${timerEnabled ? "enabled" : `skipped (${timerReason})`}`);
   console.log(`- gateway restart: ${restartResult.restarted ? "done" : `skipped (${restartResult.reason})`}`);
+  console.log(`- duplicate load paths removed: ${removedLoadPaths.length > 0 ? removedLoadPaths.join(", ") : "none"}`);
   console.log(`- state file: ${resolve(args.openclawDir, "zeroapi-managed-install.json")}`);
 }
 

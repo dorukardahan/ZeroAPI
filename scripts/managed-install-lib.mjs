@@ -179,6 +179,32 @@ export function writeManagedInstallState(openclawDir, state) {
   writeJsonAtomic(statePath, state);
 }
 
+export function removeDuplicateZeroAPILoadPaths(openclawDir) {
+  const configPath = join(openclawDir, "openclaw.json");
+  if (!existsSync(configPath)) {
+    return [];
+  }
+  const config = readJson(configPath);
+  const loadPaths = config?.plugins?.load?.paths;
+  if (!Array.isArray(loadPaths) || loadPaths.length === 0) {
+    return [];
+  }
+  const removed = [];
+  const nextPaths = loadPaths.filter((value) => {
+    if (typeof value !== "string") return true;
+    const normalized = value.replaceAll("\\", "/").toLowerCase();
+    const shouldRemove = normalized.includes("/zeroapi") && normalized.endsWith("/plugin");
+    if (shouldRemove) removed.push(value);
+    return !shouldRemove;
+  });
+  if (removed.length === 0) {
+    return [];
+  }
+  config.plugins.load.paths = nextPaths;
+  writeJsonAtomic(configPath, config);
+  return removed;
+}
+
 export function ensureManagedUpdateWrapper({ wrapperPath, nodePath, repoDir, openclawDir }) {
   const content = `#!/usr/bin/env bash
 set -euo pipefail

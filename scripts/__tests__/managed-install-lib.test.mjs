@@ -12,6 +12,7 @@ import {
   latestVersionFromGitRefs,
   normalizeVersion,
   parseGitTagRefs,
+  removeDuplicateZeroAPILoadPaths,
 } from "../managed-install-lib.mjs";
 
 function doesNotExist(fn) {
@@ -84,4 +85,31 @@ test("buildManagedInstallState captures managed metadata", () => {
   assert.equal(state.repo.installedVersion, "3.5.0");
   assert.equal(state.updates.autoApply, "minor_patch");
   assert.equal(state.updates.timerEnabled, true);
+});
+
+test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths only", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-load-paths-"));
+  const openclawDir = join(root, ".openclaw");
+  mkdirSync(openclawDir, { recursive: true });
+  writeFileSync(
+    join(openclawDir, "openclaw.json"),
+    JSON.stringify({
+      plugins: {
+        load: {
+          paths: [
+            "/opt/asuman/noldomem",
+            "/opt/asuman/ZeroAPI/plugin",
+            "/root/.openclaw/zeroapi-managed/repo/plugin",
+          ],
+        },
+      },
+    }),
+  );
+  const removed = removeDuplicateZeroAPILoadPaths(openclawDir);
+  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
+  assert.deepEqual(removed, [
+    "/opt/asuman/ZeroAPI/plugin",
+    "/root/.openclaw/zeroapi-managed/repo/plugin",
+  ]);
+  assert.deepEqual(updated.plugins.load.paths, ["/opt/asuman/noldomem"]);
 });
