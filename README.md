@@ -113,7 +113,7 @@ The user declares what subscriptions they have. ZeroAPI decides the route.
 
 ### Runtime Advisory
 
-If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin now writes `~/.openclaw/zeroapi-advisories.json` and logs a short advisory. Re-run `/zeroapi` to review and accept those additions. This is watcher-based and stays outside the routing hot path.
+If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin now writes `~/.openclaw/zeroapi-advisories.json`, logs a short advisory, and prepends one compact notice to the next outgoing reply in each conversation. Re-run `/zeroapi` to review and accept those additions. This is watcher-based, happens outside the routing hot path, and does not spend extra model tokens.
 
 ### Default Policy Mode
 

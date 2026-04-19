@@ -322,7 +322,35 @@ export function buildPendingSubscriptionAdvisory(
   };
 }
 
-function advisoryFingerprint(advisory: PendingSubscriptionAdvisory | null): string {
+export function readPendingSubscriptionAdvisory(
+  openclawDir: string,
+): PendingSubscriptionAdvisory | null {
+  const advisoryPath = join(openclawDir, ADVISORY_FILE);
+  if (!existsSync(advisoryPath)) {
+    return null;
+  }
+
+  const parsed = parseJsonFile(advisoryPath);
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+
+  const advisory = parsed as Partial<PendingSubscriptionAdvisory>;
+  if (
+    !Array.isArray(advisory.pendingProviders) ||
+    !Array.isArray(advisory.pendingAuthProfiles) ||
+    !Array.isArray(advisory.summary) ||
+    typeof advisory.recommendedAction !== "string" ||
+    typeof advisory.updatedAt !== "string" ||
+    typeof advisory.version !== "string"
+  ) {
+    return null;
+  }
+
+  return advisory as PendingSubscriptionAdvisory;
+}
+
+export function advisoryFingerprint(advisory: PendingSubscriptionAdvisory | null): string {
   if (!advisory) return "none";
   return JSON.stringify({
     pendingAuthProfiles: advisory.pendingAuthProfiles.map((profile) => [
@@ -368,7 +396,7 @@ function safeWatch(
   }
 }
 
-function formatAdvisoryMessage(advisory: PendingSubscriptionAdvisory): string {
+export function formatAdvisoryMessage(advisory: PendingSubscriptionAdvisory): string {
   return `${advisory.summary.join(". ")}. ${advisory.recommendedAction}`;
 }
 

@@ -6,6 +6,7 @@ import { join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { syncSessionAuthProfileOverride } from "./session-auth.js";
 import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
+import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 
 const PLUGIN_VERSION = "3.5.0";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
@@ -149,6 +150,13 @@ export default definePluginEntry({
             : {}),
         };
       }
+    });
+    api.on("message_sending", (event, ctx) => {
+      const content = maybePrefixChannelAdvisory(openclawDir, event, ctx);
+      if (!content) {
+        return;
+      }
+      return { content };
     });
     registerState.registered = true;
   },

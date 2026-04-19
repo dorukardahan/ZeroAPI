@@ -8,9 +8,14 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
 }));
 
 const startSubscriptionAdvisoryMonitor = vi.fn(() => ({ stop: vi.fn() }));
+const maybePrefixChannelAdvisory = vi.fn(() => null);
 
 vi.mock("../subscription-advisory.js", () => ({
   startSubscriptionAdvisoryMonitor,
+}));
+
+vi.mock("../advisory-delivery.js", () => ({
+  maybePrefixChannelAdvisory,
 }));
 
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
@@ -39,6 +44,8 @@ describe("plugin entry registration", () => {
     delete (globalThis as typeof globalThis & { [REGISTER_STATE_KEY]?: unknown })[REGISTER_STATE_KEY];
     startSubscriptionAdvisoryMonitor.mockReset();
     startSubscriptionAdvisoryMonitor.mockImplementation(() => ({ stop: vi.fn() }));
+    maybePrefixChannelAdvisory.mockReset();
+    maybePrefixChannelAdvisory.mockImplementation(() => null);
     vi.restoreAllMocks();
     vi.resetModules();
   });
@@ -63,7 +70,7 @@ describe("plugin entry registration", () => {
       mod.default.register(api);
       mod.default.register(api);
 
-      expect(on).toHaveBeenCalledTimes(1);
+      expect(on).toHaveBeenCalledTimes(2);
       expect(api.logger.info).toHaveBeenCalledTimes(1);
       expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledTimes(1);
     } finally {
@@ -171,6 +178,8 @@ describe("plugin entry registration", () => {
       expect(api.logger.warn).toHaveBeenCalledWith(
         expect.stringContaining("user-pinned auth profile"),
       );
+      const messageHandler = on.mock.calls[1]?.[1];
+      expect(messageHandler({ to: "C123", content: "hello" }, { channelId: "slack" })).toBeUndefined();
     } finally {
       process.env.HOME = previousHome;
       rmSync(home, { recursive: true, force: true });
