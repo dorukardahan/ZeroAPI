@@ -17,7 +17,7 @@ The repo now separates:
 
 The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
 
-For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
+For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the explanation surface used by the simulator, see [`references/explainability-contract.md`](references/explainability-contract.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
 
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
@@ -160,6 +160,7 @@ npx tsx scripts/simulate.ts --prompt "coordinate a workflow across 3 services"
 ```
 
 The simulator shows category, risk, current model, candidate pool, and the final route/stay/skip reason. It is the fastest way to see whether a config behaves the way the user expects.
+It now also emits a compact explanation summary so "why this model?" is readable without digging through router code.
 
 ## Policy Tuning
 
