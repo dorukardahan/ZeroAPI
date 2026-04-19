@@ -18,6 +18,21 @@ You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** 
 
 This is **not prompt-based routing**. There is no extra LLM routing call, no context serialization, and no sub-agent layer in the runtime path.
 
+## Channel-first contract
+
+Treat `/zeroapi` as a **chat-native onboarding flow**. The primary surfaces are Slack, Telegram, WhatsApp, Matrix, Discord, terminal chat, and other OpenClaw text channels.
+
+Behavior rules:
+
+- ask **one short question at a time**
+- prefer **numbered choices**
+- keep replies compact and channel-safe
+- do not dump full JSON or large benchmark tables into chat
+- never ask the user to paste secrets into chat
+- when host access is required, give the shortest safe command and then resume the chat wizard
+
+If the channel exposes only the generic skill runner, `/skill zeroapi` is an acceptable entry point. `scripts/first_run.ts` is only a terminal fallback for repo-local or shell-driven installs.
+
 ## Provider exclusions
 
 ZeroAPI only routes across subscription-covered alternatives.
@@ -115,6 +130,13 @@ Among surviving models:
 
 When `/zeroapi` is invoked, follow this flow.
 
+Before changing anything, first figure out whether you are in:
+
+- a **channel-first run** where the user is talking from Slack/Telegram/WhatsApp/etc.
+- a **terminal/operator run** where direct shell access is available
+
+Prefer the same compact conversation contract in both cases.
+
 ### Step 1: detect existing state
 
 Inspect:
@@ -128,6 +150,7 @@ Rules:
 - If existing ZeroAPI config is present, treat this as a re-run and show current subscriptions + routing rules before changing anything.
 - If Anthropic OAuth profiles exist, warn that they are not subscription-covered for OpenClaw and offer cleanup.
 - If Google/Gemini OAuth profiles exist, warn that they violate Google's ToS for third-party CLI OAuth and offer cleanup.
+- In channels, summarize findings in a short message before asking the next question. Do not start by pasting raw files.
 
 ### Step 2: collect available subscriptions
 
@@ -141,6 +164,13 @@ openclaw models status
 ```
 
 Only keep models/providers that are actually usable (`ready` / `healthy`). Remove models showing `missing`, `auth_expired`, or equivalent failure states.
+
+Conversation rules for this step:
+
+- ask one provider/tier question at a time
+- if the user has multiple accounts under the same provider, explicitly ask whether they want account-pool behavior
+- if auth is missing, stop the wizard briefly, give the minimal host-side auth step, then continue
+- do not ask for raw API keys in chat
 
 Practical subscription mapping:
 
@@ -237,6 +267,8 @@ openclaw plugins install /tmp/ZeroAPI/plugin
 
 If the repo is already cloned elsewhere on the machine, the local plugin directory is also fine.
 
+This is a **host-side operator step**, not a chat-secret step. In Slack/Telegram/WhatsApp-style runs, explain that the plugin lives on the OpenClaw host and only needs to be installed once.
+
 The plugin auto-loads on gateway restart. Verify with:
 
 ```bash
@@ -251,6 +283,7 @@ Before restart:
 - summarize routing rules by category
 - summarize any cleanup of excluded providers
 - summarize any cron preview or applied changes
+- in channel surfaces, present this as a compact human summary first and only show raw commands when needed
 
 Then restart the gateway and verify the runtime state.
 
@@ -327,6 +360,7 @@ Use these only when needed:
 - `references/risk-policy.md` — risk, logging, staleness policy
 - `references/oauth-setup.md` — provider auth notes
 - `references/provider-config.md` — provider/model ID notes
+- `references/channel-onboarding.md` — host-vs-channel onboarding contract
 - `references/troubleshooting.md` — common runtime issues
 - `references/cost-summary.md` — bundle planning examples
 - `references/subscription-catalog.md` — provider tiers and public catalog version

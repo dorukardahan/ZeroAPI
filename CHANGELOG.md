@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Public onboarding docs and `SKILL.md` now treat `/zeroapi` as a channel-first flow for Slack, Telegram, WhatsApp, Matrix, Discord, and terminal chat, with `scripts/first_run.ts` documented as the shell fallback instead of the main path
+
 ## [3.5.0] - 2026-04-19
 
 ### Added

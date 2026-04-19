@@ -2,13 +2,27 @@
 
 Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` policy snapshot — copy it to `~/.openclaw/zeroapi-config.json`.
 
-If you want the easier path, start with:
+If you are using OpenClaw from Slack, Telegram, WhatsApp, Matrix, Discord, or another chat channel, start with:
+
+```text
+/zeroapi
+```
+
+or:
+
+```text
+/skill zeroapi
+```
+
+if your channel only exposes the generic skill runner.
+
+If you are doing a repo-local or terminal-only setup, start with:
 
 ```bash
 npx tsx scripts/first_run.ts
 ```
 
-That wizard writes a starter config for you and prints the exact auth/install follow-up commands.
+That wizard writes a starter config for you and prints the exact auth/install follow-up commands. It is the shell fallback, not the main chat UX.
 
 Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw runtime defaults, provider wiring, and per-agent model state still live there.
 These examples include either `subscription_profile`, `subscription_inventory`, or both. If both blocks are missing or empty, ZeroAPI may silently filter out every configured provider.

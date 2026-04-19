@@ -80,17 +80,26 @@ The plugin matches keywords in each message to one of six routing categories. No
 
 ## Quick Start
 
+ZeroAPI is a **gateway plugin**. That means setup has two layers:
+
+1. **One-time host install** by the OpenClaw operator
+2. **Channel-first onboarding** from Slack, Telegram, WhatsApp, Matrix, Discord, terminal chat, or any other OpenClaw text channel
+
+Recommended path:
+
 ```
-1. Clone:     git clone https://github.com/dorukardahan/ZeroAPI.git
-2. Configure: npx tsx scripts/first_run.ts
-3. Verify:    bash scripts-zeroapi-doctor.sh
-4. Inspect:   npx tsx scripts/simulate.ts --prompt "refactor this auth module"
-5. Done — conservative routing policy is active for eligible messages
+1. Install ZeroAPI once on the OpenClaw host
+2. Open any OpenClaw chat channel
+3. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
+4. Answer the short setup questions
+5. Verify with bash scripts-zeroapi-doctor.sh or npx tsx scripts/simulate.ts --prompt "refactor this auth module"
 ```
 
-`scripts/first_run.ts` is the easiest public entry point right now. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
+The `/zeroapi` skill is the primary public onboarding surface. It should feel natural inside chat channels: short questions, compact choices, and a final confirmation before writing `~/.openclaw/zeroapi-config.json`.
 
-The `/zeroapi` skill is still the richer agent-assisted setup path inside OpenClaw itself. It scans your OpenClaw setup, asks which subscriptions you have, and writes `~/.openclaw/zeroapi-config.json`. That file should be treated as ZeroAPI policy config. `openclaw.json` remains the actual runtime authority for defaults, provider setup, and agent model state.
+`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
+
+For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 
 As of the new subscription-aware foundation, the config can include:
 - an explicit `routing_mode` (currently `balanced`)

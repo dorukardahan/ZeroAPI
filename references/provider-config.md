@@ -16,7 +16,9 @@ Important distinction:
 
 ## Plugin Installation
 
-Install the ZeroAPI router plugin before running `/zeroapi`:
+Install the ZeroAPI router plugin before running `/zeroapi`.
+
+This is a **one-time host-side step**. After the plugin is installed, users can run `/zeroapi` from their normal OpenClaw chat surface such as Slack, Telegram, WhatsApp, Matrix, Discord, or terminal chat.
 
 Important: `~/.openclaw/zeroapi-config.json` is ZeroAPI policy config only. `~/.openclaw/openclaw.json` remains the runtime authority for provider wiring, defaults, and per-agent model state. If they drift, OpenClaw runtime behavior wins.
 
