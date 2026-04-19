@@ -35,5 +35,6 @@ Example log lines:
 Update process:
 
 - Maintainer refreshes Artificial Analysis data with `python3 scripts/refresh_benchmarks.py --api-key-file /path/to/aa_api_key`
+- Public repo automation can also refresh every Sunday via `.github/workflows/refresh-benchmarks.yml` when the maintainer sets the private repo secret `AA_API_KEY`
 - Maintainer commits the new `benchmarks.json` and publishes an updated release/tag
 - Users who do not have AA API access simply pull the latest ZeroAPI release and re-run `/zeroapi`

@@ -15,6 +15,8 @@ The repo now separates:
 - `benchmarks.json` -> broad benchmark reference snapshot
 - `policy-families.json` -> conservative practical model families ZeroAPI currently documents as day-to-day routing targets
 
+The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
+
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
 - **Benchmark-aware** — routes by real benchmark scores (Artificial Analysis), not vibes
@@ -177,6 +179,11 @@ This pattern is inspired by [karpathy/autoresearch](https://github.com/karpathy/
 
 ```
 ZeroAPI/
+├── .github/
+│   └── workflows/
+│       ├── refresh-benchmarks.yml       # Weekly Sunday refresh using repo secret AA_API_KEY
+│       ├── secret-scan.yml
+│       └── test.yml
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── benchmarks.json                       # 162 benchmark reference models, plus policy-family tags
 ├── policy-families.json                  # 11 practical policy-family members across 5 providers
@@ -235,7 +242,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|

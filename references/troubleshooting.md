@@ -142,6 +142,7 @@ Log format:
 **Fix**:
 
 - If you are the maintainer, refresh with `python3 scripts/refresh_benchmarks.py --api-key-file /path/to/aa_api_key`, commit the new `benchmarks.json`, and cut a release.
+- If you are the maintainer and prefer automation, set the private repo secret `AA_API_KEY` so the Sunday workflow can refresh `benchmarks.json` without exposing the key to public users.
 - If you are a normal user, pull the latest ZeroAPI release instead of running the AA fetch yourself.
 - After updating, re-run `/zeroapi` to regenerate config.
 
