@@ -9,6 +9,7 @@ import {
   classifyVersionBump,
   compareVersions,
   copyRepoSnapshot,
+  installOrUpdatePlugin,
   latestVersionFromGitRefs,
   normalizeVersion,
   parseGitTagRefs,
@@ -112,4 +113,25 @@ test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths on
     "/root/.openclaw/zeroapi-managed/repo/plugin",
   ]);
   assert.deepEqual(updated.plugins.load.paths, ["/opt/asuman/noldomem"]);
+});
+
+test("installOrUpdatePlugin copies plugin files and updates openclaw config without CLI", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-install-"));
+  const openclawDir = join(root, ".openclaw");
+  const pluginDir = join(root, "plugin");
+  mkdirSync(openclawDir, { recursive: true });
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: { load: { paths: ["/opt/asuman/noldomem"] } } }));
+  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
+  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
+
+  installOrUpdatePlugin(pluginDir, openclawDir);
+
+  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
+  assert.equal(updated.plugins.entries["zeroapi-router"].enabled, true);
+  assert.equal(updated.plugins.installs["zeroapi-router"].sourcePath, pluginDir);
+  assert.equal(
+    readFileSync(join(openclawDir, "extensions", "zeroapi-router", "index.ts"), "utf-8"),
+    "export default {};\n",
+  );
 });

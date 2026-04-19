@@ -86,6 +86,15 @@ export function loadPluginVersion(repoDir) {
   return version;
 }
 
+function loadPluginDirectoryVersion(pluginDir) {
+  const packageJson = readJson(join(pluginDir, "package.json"));
+  const version = normalizeVersion(packageJson.version);
+  if (!version) {
+    fail(`Could not resolve ZeroAPI plugin version from ${join(pluginDir, "package.json")}`);
+  }
+  return version;
+}
+
 export function managedPaths(openclawDir) {
   const managedRoot = join(openclawDir, MANAGED_ROOT_NAME);
   const repoDir = join(managedRoot, "repo");
@@ -285,22 +294,29 @@ export function enableManagedUpdateTimer() {
   return { enabled: true, reason: null };
 }
 
-function openclawEnv(openclawDir) {
-  return {
-    OPENCLAW_STATE_DIR: openclawDir,
-    OPENCLAW_CONFIG_PATH: join(openclawDir, "openclaw.json"),
-  };
-}
-
 export function installOrUpdatePlugin(pluginPath, openclawDir) {
-  if (!commandExists("openclaw")) {
-    fail("openclaw CLI is required for managed ZeroAPI install");
+  const configPath = join(openclawDir, "openclaw.json");
+  if (!existsSync(configPath)) {
+    fail(`openclaw.json not found at ${configPath}`);
   }
-  rmSync(join(openclawDir, "extensions", "zeroapi-router"), { force: true, recursive: true });
-  runCommand("openclaw", ["plugins", "install", pluginPath], {
-    stdio: "inherit",
-    env: openclawEnv(openclawDir),
-  });
+  const installPath = join(openclawDir, "extensions", "zeroapi-router");
+  const version = loadPluginDirectoryVersion(pluginPath);
+  copyRepoSnapshot(pluginPath, installPath);
+  const config = readJson(configPath);
+  config.plugins = config.plugins && typeof config.plugins === "object" ? config.plugins : {};
+  config.plugins.entries =
+    config.plugins.entries && typeof config.plugins.entries === "object" ? config.plugins.entries : {};
+  config.plugins.installs =
+    config.plugins.installs && typeof config.plugins.installs === "object" ? config.plugins.installs : {};
+  config.plugins.entries["zeroapi-router"] = { enabled: true };
+  config.plugins.installs["zeroapi-router"] = {
+    source: "path",
+    sourcePath: pluginPath,
+    installPath,
+    version,
+    installedAt: new Date().toISOString(),
+  };
+  writeJsonAtomic(configPath, config);
 }
 
 export function restartGatewayIfPossible() {
