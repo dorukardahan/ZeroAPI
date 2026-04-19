@@ -17,6 +17,8 @@ The repo now separates:
 
 The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
 
+For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md).
+
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
 - **Benchmark-aware** — routes by real benchmark scores (Artificial Analysis), not vibes
@@ -230,10 +232,12 @@ ZeroAPI/
 └── references/
     ├── benchmarks.md
     ├── routing-examples.md
+    ├── routing-policy-spec.md
     ├── cron-config.md
     ├── risk-policy.md
     ├── cost-summary.md
     ├── provider-config.md
+    ├── product-roadmap.md
     ├── oauth-setup.md
     ├── mahmory-autoresearch-usage.md
     ├── subscription-catalog.md
