@@ -309,7 +309,7 @@ export function restartGatewayIfPossible() {
   }
   const result = runCommand(
     "systemctl",
-    ["--user", "restart", "openclaw-gateway.service"],
+    ["--user", "restart", "--no-block", "openclaw-gateway.service"],
     { allowFailure: true },
   );
   if (result.status !== 0) {
