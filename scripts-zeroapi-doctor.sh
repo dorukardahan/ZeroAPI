@@ -40,20 +40,43 @@ for agent, hint in workspace_hints.items():
         print(f'WARN: workspace_hints.{agent} should be list|null, got {type(hint).__name__}')
 
 profile = zcfg.get('subscription_profile')
-if not isinstance(profile, dict):
-    print('WARN: subscription_profile missing. Routing may silently filter out all configured providers.')
-else:
+inventory = zcfg.get('subscription_inventory')
+
+enabled_profile = []
+if isinstance(profile, dict):
     global_profile = profile.get('global')
-    if not isinstance(global_profile, dict) or not global_profile:
-        print('WARN: subscription_profile.global missing or empty. Routing may silently filter out all configured providers.')
-    else:
-        enabled = []
+    if isinstance(global_profile, dict) and global_profile:
         for provider, selection in global_profile.items():
             if isinstance(selection, dict) and selection.get('enabled') is True:
-                enabled.append(provider)
-        print(f'subscription_profile.enabled={",".join(enabled) if enabled else "none"}')
-        if not enabled:
-            print('WARN: no enabled providers in subscription_profile.global')
+                enabled_profile.append(provider)
+    print(f'subscription_profile.enabled={",".join(enabled_profile) if enabled_profile else "none"}')
+else:
+    print('subscription_profile.enabled=none')
+
+inventory_accounts = []
+inventory_accounts_with_auth = []
+if isinstance(inventory, dict):
+    accounts = inventory.get('accounts')
+    if isinstance(accounts, dict):
+        for account_id, account in accounts.items():
+            if not isinstance(account, dict):
+                continue
+            if account.get('enabled') is False:
+                continue
+            provider = account.get('provider')
+            if isinstance(provider, str) and provider:
+                inventory_accounts.append(f'{account_id}:{provider}')
+                auth_profile = account.get('authProfile')
+                if isinstance(auth_profile, str) and auth_profile.strip():
+                    inventory_accounts_with_auth.append(f'{account_id}:{auth_profile.strip()}')
+
+print(f'subscription_inventory.accounts={",".join(inventory_accounts) if inventory_accounts else "none"}')
+if inventory_accounts_with_auth:
+    print(f'subscription_inventory.auth_profiles={",".join(inventory_accounts_with_auth)}')
+    print('NOTE: authProfile inventory steering needs an OpenClaw runtime that supports authProfileOverride from before_model_resolve.')
+
+if not enabled_profile and not inventory_accounts:
+    print('WARN: neither subscription_profile nor enabled subscription_inventory accounts are configured. Routing may silently filter out every provider.')
 PY
 
 if [ -d "$OPENCLAW_DIR/extensions/zeroapi-router" ]; then

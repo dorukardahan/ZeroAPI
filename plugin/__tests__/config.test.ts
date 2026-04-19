@@ -157,6 +157,40 @@ describe("config", () => {
     expect(getConfig()).toBe(result);
   });
 
+  it("loads valid inventory-only config without requiring subscription_profile", async () => {
+    const valid = {
+      version: "3.3.0",
+      generated: "2026-04-19",
+      benchmarks_date: "2026-04-18",
+      default_model: "zai/glm-5",
+      models: { "zai/glm-5": { context_window: 202800, supports_vision: false, speed_tps: 62, ttft_seconds: 0.9, benchmarks: {} } },
+      routing_rules: { default: { primary: "zai/glm-5", fallbacks: [] } },
+      keywords: { orchestration: ["coordinate"] },
+      high_risk_keywords: ["deploy"],
+      fast_ttft_max_seconds: 5,
+      subscription_inventory: {
+        version: "1.0.0",
+        accounts: {
+          "zai-max-work": {
+            provider: "zai",
+            tierId: "max",
+            authProfile: "zai:work",
+            usagePriority: 3,
+            intendedUse: ["orchestration"],
+          },
+        },
+      },
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(valid));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).not.toBeNull();
+    expect(result!.subscription_profile).toBeUndefined();
+    expect(result!.subscription_inventory?.accounts["zai-max-work"]?.authProfile).toBe("zai:work");
+    expect(result!.workspace_hints).toEqual({});
+    expect(result!.external_model_policy).toBe("stay");
+  });
+
   it("returns null when subscription_inventory is invalid", async () => {
     const bad = {
       version: "3.3.0",

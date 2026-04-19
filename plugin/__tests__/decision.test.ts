@@ -120,6 +120,24 @@ describe("resolveRoutingDecision", () => {
     expect(result.tokenEstimate).toBeGreaterThan(0);
   });
 
+  it("routes correctly with inventory-only config", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        subscription_profile: undefined,
+      },
+      {
+        prompt: "coordinate a workflow across 3 services",
+        currentModel: "openai-codex/gpt-5.4",
+      },
+    );
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("zai/glm-5");
+    expect(result.providerOverride).toBe("zai");
+    expect(result.authProfileOverride).toBe("zai:work");
+    expect(result.selectedAccountId).toBe("zai-max-work");
+  });
+
   it("stays on external current models by default", () => {
     const result = resolveRoutingDecision(config, {
       prompt: "coordinate a workflow across 3 services",
