@@ -17,7 +17,7 @@ The repo now separates:
 
 The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
 
-For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
+For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
 
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
@@ -138,6 +138,16 @@ It lets ZeroAPI model that provider as an account pool instead of a single tier:
   }
 }
 ```
+
+Current scoring contract in plain terms:
+
+- tier strength is still the main signal
+- `usagePriority` is only a bounded nudge inside that tier logic
+- `intendedUse` narrows the scoring subset when it matches, but falls back to the whole pool when it does not
+- extra matched accounts add a small bounded resilience bonus
+- exact ties break by `accountId`, so the winner is deterministic
+
+For the exact rules and formulas, see [`references/account-pool-spec.md`](references/account-pool-spec.md).
 
 When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride`. On newer OpenClaw builds that hook field is consumed directly. On older builds, ZeroAPI now also performs a best-effort session-store sync so the active session can still prefer the right auth profile without waiting for upstream hook support. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
 

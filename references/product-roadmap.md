@@ -62,6 +62,7 @@ Goal: formalize how `tierId`, `usagePriority`, `intendedUse`, and future limit p
 
 Deliverables:
 
+- `references/account-pool-spec.md`
 - account-pool scoring spec
 - rules for tie-breaks across equal-weight accounts
 - future-ready slot for usage-pressure or depletion signals without requiring private telemetry today

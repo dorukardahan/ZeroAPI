@@ -7,6 +7,7 @@
 - Written product roadmap for the next ZeroAPI phase, covering policy spec, modifiers, account-pool rules, explainability, and benchmark governance
 - Written `balanced` routing policy spec that matches the current router behavior and makes the benchmark frontier contract explicit
 - Written routing modifier spec covering `coding-aware`, `research-aware`, and `speed-aware` as additive overlays on top of balanced mode
+- Written same-provider account-pool spec covering `tierId`, `usagePriority`, `intendedUse`, redundancy bonus, and deterministic tie-break rules
 
 ### Changed
 - Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning

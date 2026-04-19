@@ -154,7 +154,7 @@ Persist the result into a subscription profile with:
 - `global` provider selections
 - optional `agentOverrides`
 
-If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on newer OpenClaw runtimes. Older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists, and otherwise continue to rely on `auth.order`.
+If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on newer OpenClaw runtimes. Older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists, and otherwise continue to rely on `auth.order`. For the current account-pool scoring contract, see `references/account-pool-spec.md`.
 
 The user declares what subscriptions they have. ZeroAPI decides routing.
 

@@ -119,4 +119,97 @@ describe("subscription inventory", () => {
     expect(resolved?.source).toBe("inventory");
     expect(resolved?.preferredAuthProfile).toBeNull();
   });
+
+  it("falls back to all enabled accounts when intendedUse does not match the category", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "zai-research": {
+          provider: "zai",
+          tierId: "pro",
+          intendedUse: ["research"],
+        },
+        "zai-code": {
+          provider: "zai",
+          tierId: "max",
+          intendedUse: ["code"],
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile,
+      inventory,
+      agentId: undefined,
+      providerId: "zai",
+      category: "math",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.accountCount).toBe(2);
+    expect(resolved?.matchedAccountIds).toEqual(["zai-research", "zai-code"]);
+    expect(resolved?.preferredAccountId).toBe("zai-code");
+  });
+
+  it("breaks equal-weight inventory ties by account id", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "openai-a": {
+          provider: "openai-codex",
+          tierId: "plus",
+          authProfile: "openai:a",
+          usagePriority: 1,
+        },
+        "openai-b": {
+          provider: "openai-codex",
+          tierId: "plus",
+          authProfile: "openai:b",
+          usagePriority: 1,
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile,
+      inventory,
+      agentId: undefined,
+      providerId: "openai-codex",
+      category: "default",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.preferredAccountId).toBe("openai-a");
+    expect(resolved?.preferredAuthProfile).toBe("openai:a");
+  });
+
+  it("caps usagePriority and adds a bounded redundancy bonus", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "openai-primary": {
+          provider: "openai-codex",
+          tierId: "plus",
+          usagePriority: 99,
+        },
+        "openai-secondary": {
+          provider: "openai-codex",
+          tierId: "plus",
+          usagePriority: 0,
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile,
+      inventory,
+      agentId: undefined,
+      providerId: "openai-codex",
+      category: "default",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.preferredAccountId).toBe("openai-primary");
+    expect(resolved?.routingWeight).toBeCloseTo(1.65, 5);
+  });
 });
