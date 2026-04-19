@@ -2,11 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+- Managed install/update scripts (`scripts/managed_install.mjs`, `scripts/managed_update.mjs`) that keep the runtime plugin and `/zeroapi` skill directory on the same repo snapshot, write install state, and support daily patch/minor auto-updates with backup + rollback
+- Managed install reference doc plus doctor output for `~/.openclaw/zeroapi-managed-install.json`
+- Node builtin tests for the managed install/update semver and snapshot-copy helpers
+
 ### Changed
 - Public onboarding docs and `SKILL.md` now treat `/zeroapi` as a channel-first flow for Slack, Telegram, WhatsApp, Matrix, Discord, and terminal chat, with `scripts/first_run.ts` documented as the shell fallback instead of the main path
 - ZeroAPI now writes `~/.openclaw/zeroapi-advisories.json` when it detects newly usable supported providers or same-provider auth profiles outside the current policy config, and surfaces that drift once per conversation on the next outgoing reply so operators can re-run `/zeroapi` without polling logs or shell state
 - Terminal fallback onboarding now shows pending advisory drift up front on reruns and reuses current provider and modifier choices as defaults instead of treating every rerun like a blank install
 - Chat rerun docs now define explicit first-question behavior for provider-only, account-only, mixed, and no-advisory refresh runs so `/zeroapi` can start from detected drift instead of generic setup prompts
+- Managed install is now the preferred host-side setup path, with raw `openclaw plugins install` kept as the fallback for operators who explicitly want manual lifecycle control
 
 ## [3.5.0] - 2026-04-19
 

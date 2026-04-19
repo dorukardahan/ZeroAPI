@@ -5,6 +5,7 @@ OPENCLAW_DIR="${OPENCLAW_DIR:-${HOME}/.openclaw}"
 ZEROAPI_CFG="$OPENCLAW_DIR/zeroapi-config.json"
 OPENCLAW_CFG="$OPENCLAW_DIR/openclaw.json"
 ZEROAPI_ADVISORY="$OPENCLAW_DIR/zeroapi-advisories.json"
+ZEROAPI_MANAGED_STATE="$OPENCLAW_DIR/zeroapi-managed-install.json"
 
 say() { printf '%s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*"; }
@@ -83,6 +84,26 @@ if inventory_accounts_with_auth:
 if not enabled_profile and not inventory_accounts:
     print('WARN: neither subscription_profile nor enabled subscription_inventory accounts are configured. Routing may silently filter out every provider.')
 PY
+
+if [ -f "$ZEROAPI_MANAGED_STATE" ]; then
+  say "--- zeroapi managed install ---"
+  python3 - <<'PY'
+import json, os, pathlib
+home = pathlib.Path(os.environ.get('OPENCLAW_DIR', str(pathlib.Path.home() / '.openclaw')))
+state = json.loads((home / 'zeroapi-managed-install.json').read_text())
+repo = state.get('repo', {})
+updates = state.get('updates', {})
+print(f"managed.installed_version={repo.get('installedVersion', 'unknown')}")
+print(f"managed.repo_dir={repo.get('repoDir', 'unknown')}")
+print(f"managed.skill_dir={repo.get('skillDir', 'unknown')}")
+print(f"managed.last_status={updates.get('lastStatus', 'unknown')}")
+print(f"managed.last_known_version={updates.get('lastKnownVersion', 'unknown')}")
+print(f"managed.pending_version={updates.get('pendingVersion') or 'none'}")
+print(f"managed.timer_enabled={updates.get('timerEnabled', False)}")
+if updates.get('lastError'):
+    print(f"WARN: managed.last_error={updates['lastError']}")
+PY
+fi
 
 if [ -f "$ZEROAPI_ADVISORY" ]; then
   say "--- zeroapi advisory ---"

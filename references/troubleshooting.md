@@ -99,10 +99,40 @@ grep -Rni "ZeroAPI Router" /tmp/openclaw /root/.openclaw/logs 2>/dev/null | tail
 
 If config says the plugin is enabled but you cannot identify where it was loaded from, treat that as an install-path mismatch and fix it before debugging routing behavior.
 
+If you want ZeroAPI to keep skill + plugin aligned automatically instead of only fixing the plugin path, switch to managed install:
+
+```bash
+node /path/to/ZeroAPI/scripts/managed_install.mjs --openclaw-dir ~/.openclaw
+```
+
 For a quick end-to-end sanity check from the repo checkout:
 
 ```bash
 bash scripts-zeroapi-doctor.sh
+```
+
+---
+
+### `/zeroapi` chat behavior looks stale after plugin update
+
+**Cause**: the runtime plugin was updated but `~/.openclaw/skills/zeroapi` was left on an older repo snapshot, so the chat skill text and the actual router code drifted apart.
+
+**Fix**:
+
+Preferred:
+
+```bash
+node /path/to/ZeroAPI/scripts/managed_install.mjs --openclaw-dir ~/.openclaw
+```
+
+That re-syncs both the managed repo and the skill directory, then re-installs the plugin from the managed repo path.
+
+Manual fallback:
+
+```bash
+rsync -a --delete --exclude '.git' /path/to/ZeroAPI/ ~/.openclaw/skills/zeroapi/
+openclaw plugins install /path/to/ZeroAPI/plugin
+systemctl --user restart openclaw-gateway.service
 ```
 
 ---

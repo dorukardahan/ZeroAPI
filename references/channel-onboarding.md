@@ -32,7 +32,7 @@ Entry points:
 
 One-time host tasks:
 
-- install/update the ZeroAPI plugin
+- run managed install once, so ZeroAPI owns plugin + skill sync from the same repo snapshot
 - make sure the gateway reloads the plugin
 - keep provider auth profiles healthy
 
@@ -98,7 +98,7 @@ Examples:
 
 Sometimes the skill must ask for an operator step. Keep it short and explicit:
 
-- install/update plugin
+- run managed install or managed update
 - restart gateway
 - run verification commands
 - complete provider auth

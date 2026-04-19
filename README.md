@@ -88,16 +88,36 @@ ZeroAPI is a **gateway plugin**. That means setup has two layers:
 Recommended path:
 
 ```
-1. Install ZeroAPI once on the OpenClaw host
+1. Run managed install once on the OpenClaw host
 2. Open any OpenClaw chat channel
 3. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
 4. Answer the short setup questions
 5. Verify with bash scripts-zeroapi-doctor.sh or npx tsx scripts/simulate.ts --prompt "refactor this auth module"
 ```
 
+Preferred host install:
+
+```bash
+node scripts/managed_install.mjs --openclaw-dir ~/.openclaw
+```
+
+Managed install does four things in one pass:
+- copies the current ZeroAPI repo snapshot under `~/.openclaw/zeroapi-managed/repo`
+- syncs `~/.openclaw/skills/zeroapi` from that same snapshot so skill and plugin stay aligned
+- installs/updates the plugin from the managed repo path
+- enables a user-level systemd timer that auto-applies future patch/minor ZeroAPI releases with backup + rollback
+
+If the host does not support `systemctl --user`, managed install still works, but the timer is skipped and the same updater can be run manually:
+
+```bash
+node ~/.openclaw/zeroapi-managed/repo/scripts/managed_update.mjs --openclaw-dir ~/.openclaw
+```
+
 The `/zeroapi` skill is the primary public onboarding surface. It should feel natural inside chat channels: short questions, compact choices, and a final confirmation before writing `~/.openclaw/zeroapi-config.json`.
 
-`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can install the plugin from the checked-out repo.
+`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can hand off to managed install from the checked-out repo.
+
+For managed install/update behavior, rollback rules, and timer semantics, see [`references/managed-install.md`](references/managed-install.md).
 
 For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). For rerun-first question behavior when drift is detected, see [`references/chat-rerun-playbook.md`](references/chat-rerun-playbook.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 

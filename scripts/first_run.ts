@@ -438,17 +438,31 @@ async function main() {
     }
 
     if (commandExists("openclaw")) {
-      const installPlugin = await askYesNo(
+      const managedInstall = await askYesNo(
         rl,
-        "ZeroAPI plugin'ini bu repo'daki plugin klasöründen şimdi kurayım mı?",
+        "ZeroAPI'yi managed modda kurayım mı? Bu mod skill + plugin'i birlikte senkronlar ve otomatik minor/patch update timer'ı kurmayı dener.",
         true,
       );
 
-      if (installPlugin) {
-        const result = runCommand("openclaw", ["plugins", "install", resolve(REPO_ROOT, "plugin")]);
+      if (managedInstall) {
+        const result = runCommand(process.execPath, [resolve(REPO_ROOT, "scripts", "managed_install.mjs"), "--openclaw-dir", args.openclawDir]);
         if (result.status !== 0) {
-          console.log("\nPlugin kurulumu başarısız oldu. Elle çalıştır:");
-          console.log(`openclaw plugins install ${resolve(REPO_ROOT, "plugin")}`);
+          console.log("\nManaged kurulum başarısız oldu. Fallback olarak elle çalıştır:");
+          console.log(`${process.execPath} ${resolve(REPO_ROOT, "scripts", "managed_install.mjs")} --openclaw-dir ${args.openclawDir}`);
+        }
+      } else {
+        const installPlugin = await askYesNo(
+          rl,
+          "Sadece plugin'i bu repo'daki plugin klasöründen şimdi kurayım mı?",
+          true,
+        );
+
+        if (installPlugin) {
+          const result = runCommand("openclaw", ["plugins", "install", resolve(REPO_ROOT, "plugin")]);
+          if (result.status !== 0) {
+            console.log("\nPlugin kurulumu başarısız oldu. Elle çalıştır:");
+            console.log(`openclaw plugins install ${resolve(REPO_ROOT, "plugin")}`);
+          }
         }
       }
     } else {

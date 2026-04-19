@@ -270,10 +270,22 @@ For detailed cron, fallback, risk, and benchmark guidance see:
 Preferred method:
 
 ```bash
-openclaw plugins install /tmp/ZeroAPI/plugin
+node /tmp/ZeroAPI/scripts/managed_install.mjs --openclaw-dir ~/.openclaw
 ```
 
-If the repo is already cloned elsewhere on the machine, the local plugin directory is also fine.
+Managed install is the recommended host-side path because it keeps:
+
+- the runtime plugin
+- the `/zeroapi` skill files
+- the local managed repo snapshot
+
+on the same version line, and it can auto-apply future patch/minor releases with backup + rollback.
+
+Fallback method:
+
+```bash
+openclaw plugins install /tmp/ZeroAPI/plugin
+```
 
 This is a **host-side operator step**, not a chat-secret step. In Slack/Telegram/WhatsApp-style runs, explain that the plugin lives on the OpenClaw host and only needs to be installed once.
 
@@ -369,6 +381,7 @@ Use these only when needed:
 - `references/oauth-setup.md` — provider auth notes
 - `references/provider-config.md` — provider/model ID notes
 - `references/channel-onboarding.md` — host-vs-channel onboarding contract
+- `references/managed-install.md` — managed installer, timer, and rollback contract
 - `references/chat-rerun-playbook.md` — drift-aware first-question contract for reruns
 - `references/troubleshooting.md` — common runtime issues
 - `references/cost-summary.md` — bundle planning examples
