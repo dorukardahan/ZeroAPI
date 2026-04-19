@@ -17,7 +17,7 @@ The repo now separates:
 
 The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
 
-For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the explanation surface used by the simulator, see [`references/explainability-contract.md`](references/explainability-contract.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
+For the written product contract behind the current router, see [`references/routing-policy-spec.md`](references/routing-policy-spec.md). For the same-provider account-pool contract, see [`references/account-pool-spec.md`](references/account-pool-spec.md). For the explanation surface used by the simulator, see [`references/explainability-contract.md`](references/explainability-contract.md). For benchmark freshness and maintenance rules, see [`references/benchmark-governance.md`](references/benchmark-governance.md). For the next product work after stabilization, see [`references/product-roadmap.md`](references/product-roadmap.md). For the planned modifier layer on top of balanced mode, see [`references/routing-modifiers-spec.md`](references/routing-modifiers-spec.md).
 
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
@@ -258,7 +258,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-04-18). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|

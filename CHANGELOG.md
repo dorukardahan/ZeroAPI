@@ -9,6 +9,7 @@
 - Written routing modifier spec covering `coding-aware`, `research-aware`, and `speed-aware` as additive overlays on top of balanced mode
 - Written same-provider account-pool spec covering `tierId`, `usagePriority`, `intendedUse`, redundancy bonus, and deterministic tie-break rules
 - Written explainability contract and simulator summary format for compact "why this route?" inspection
+- Written benchmark governance doc covering refresh cadence, stale thresholds, ownership, and workflow maintenance rules
 
 ### Changed
 - Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning

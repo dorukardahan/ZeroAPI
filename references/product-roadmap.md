@@ -93,6 +93,7 @@ Goal: keep benchmark freshness and public reproducibility disciplined.
 
 Deliverables:
 
+- `references/benchmark-governance.md`
 - refresh policy and ownership rules
 - handling for stale snapshots, benchmark drift, and source methodology changes
 - maintenance note for workflow/runtime dependency upgrades
