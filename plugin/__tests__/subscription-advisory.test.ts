@@ -128,11 +128,52 @@ describe("subscription advisory", () => {
     expect(advisory?.pendingAuthProfiles).toEqual([
       {
         agentId: "main",
+        agentIds: ["main"],
         label: "OpenAI",
         profileId: "openai:work",
         providerId: "openai-codex",
       },
     ]);
+  });
+
+  it("dedupes the same auth profile seen in multiple agents into one advisory item", () => {
+    writeOpenClawConfig(openclawDir, ["openai-codex"]);
+    writeAuthProfiles(openclawDir, "main", {
+      "openai:work": { provider: "openai-codex" },
+    });
+    writeAuthProfiles(openclawDir, "senti", {
+      "openai:work": { provider: "openai-codex" },
+    });
+
+    const signals = collectRuntimeSubscriptionSignals(openclawDir);
+    const advisory = buildPendingSubscriptionAdvisory(
+      buildConfig({
+        subscription_inventory: {
+          version: "1.0.0",
+          accounts: {
+            "openai-personal-plus": {
+              provider: "openai-codex",
+              tierId: "plus",
+              authProfile: "openai:personal",
+            },
+          },
+        },
+      }),
+      signals,
+    );
+
+    expect(advisory?.pendingAuthProfiles).toEqual([
+      {
+        agentId: "main",
+        agentIds: ["main", "senti"],
+        label: "OpenAI",
+        profileId: "openai:work",
+        providerId: "openai-codex",
+      },
+    ]);
+    expect(listPendingSubscriptionAdvisoryItems(advisory!)).toContain(
+      "Account: openai:work (OpenAI/main +1 more)",
+    );
   });
 
   it("does not raise auth-profile advisory for a single existing profile without inventory mode", () => {
@@ -183,6 +224,7 @@ describe("subscription advisory", () => {
       pendingAuthProfiles: [
         {
           agentId: "main",
+          agentIds: ["main"],
           label: "OpenAI",
           profileId: "openai:work",
           providerId: "openai-codex",
@@ -223,6 +265,7 @@ describe("subscription advisory", () => {
         pendingAuthProfiles: [
           {
             agentId: "main",
+            agentIds: ["main"],
             label: "OpenAI",
             profileId: "openai:work",
             providerId: "openai-codex",
@@ -241,6 +284,7 @@ describe("subscription advisory", () => {
         pendingAuthProfiles: [
           {
             agentId: "main",
+            agentIds: ["main"],
             label: "OpenAI",
             profileId: "openai:work",
             providerId: "openai-codex",

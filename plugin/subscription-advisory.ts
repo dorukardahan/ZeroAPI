@@ -29,6 +29,7 @@ export type PendingProviderAdvisory = SupportedProvider;
 
 export type PendingAuthProfileAdvisory = SupportedProvider & {
   agentId: string;
+  agentIds?: string[];
   profileId: string;
 };
 
@@ -74,9 +75,20 @@ export function listPendingSubscriptionAdvisoryItems(
 ): string[] {
   return [
     ...advisory.pendingProviders.map((provider) => `Provider: ${provider.label}`),
-    ...advisory.pendingAuthProfiles.map(
-      (profile) => `Account: ${profile.profileId} (${profile.label}/${profile.agentId})`,
-    ),
+    ...advisory.pendingAuthProfiles.map((profile) => {
+      const agentIds = Array.isArray(profile.agentIds)
+        ? Array.from(new Set(profile.agentIds.filter((agentId) => typeof agentId === "string" && agentId.trim())))
+        : [];
+      const displayAgents = agentIds.length > 0 ? agentIds : [profile.agentId].filter(Boolean);
+      const primaryAgent = displayAgents.includes("main") ? "main" : displayAgents[0];
+      const suffix =
+        displayAgents.length > 1 && primaryAgent
+          ? `/${primaryAgent} +${displayAgents.length - 1} more`
+          : primaryAgent
+            ? `/${primaryAgent}`
+            : "";
+      return `Account: ${profile.profileId} (${profile.label}${suffix})`;
+    }),
   ];
 }
 
@@ -307,14 +319,26 @@ export function buildPendingSubscriptionAdvisory(
         return [];
       }
 
-      return profiles
-        .filter((profile) => !configuredProfiles.has(profile.profileId))
-        .map((profile) => ({
-          agentId: profile.agentId,
+      const profilesById = new Map<string, Set<string>>();
+      for (const profile of profiles) {
+        if (configuredProfiles.has(profile.profileId)) {
+          continue;
+        }
+        const next = profilesById.get(profile.profileId) ?? new Set<string>();
+        next.add(profile.agentId);
+        profilesById.set(profile.profileId, next);
+      }
+
+      return Array.from(profilesById.entries()).map(([profileId, agentIdsSet]) => {
+        const agentIds = Array.from(agentIdsSet).sort((a, b) => a.localeCompare(b));
+        return {
+          agentId: agentIds.includes("main") ? "main" : agentIds[0] ?? "main",
+          agentIds,
           label: getSupportedProviderLabel(providerId),
-          profileId: profile.profileId,
+          profileId,
           providerId,
-        }));
+        };
+      });
     }),
   );
 
@@ -333,7 +357,14 @@ export function buildPendingSubscriptionAdvisory(
   if (pendingAuthProfiles.length > 0) {
     summary.push(
       `New same-provider auth profiles detected outside current ZeroAPI inventory: ${pendingAuthProfiles
-        .map((profile) => `${profile.profileId} (${profile.label}/${profile.agentId})`)
+        .map((profile) => listPendingSubscriptionAdvisoryItems({
+          version: ADVISORY_VERSION,
+          updatedAt: "",
+          pendingProviders: [],
+          pendingAuthProfiles: [profile],
+          summary: [],
+          recommendedAction: "",
+        })[0]?.replace(/^Account:\s*/, "") ?? profile.profileId)
         .join(", ")}`,
     );
   }
@@ -382,7 +413,6 @@ export function advisoryFingerprint(advisory: PendingSubscriptionAdvisory | null
     pendingAuthProfiles: advisory.pendingAuthProfiles.map((profile) => [
       profile.providerId,
       profile.profileId,
-      profile.agentId,
     ]),
     pendingProviders: advisory.pendingProviders.map((provider) => provider.providerId),
   });
