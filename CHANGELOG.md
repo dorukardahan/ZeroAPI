@@ -5,6 +5,9 @@
 ### Added
 - Weekly Sunday benchmark refresh workflow for maintainers, backed by the private repo secret `AA_API_KEY`, so public users do not need direct Artificial Analysis API access
 
+### Changed
+- Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning
+
 ## [3.4.3] - 2026-04-19
 
 ### Added
