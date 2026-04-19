@@ -78,6 +78,13 @@ openclaw models status | grep google
 
 **Cause**: The plugin is not installed, failed to load at gateway start, or the install path/runtime load path is not what you expect.
 
+Important:
+
+- Current ZeroAPI releases intentionally ship the runtime plugin as TypeScript source with `plugin/index.ts`.
+- Modern OpenClaw builds can load that source directly.
+- So `dist/` missing, `build` script missing, or `tsconfig.json` missing does **not** mean the plugin failed to load.
+- Verify runtime load from OpenClaw itself before blaming TypeScript packaging.
+
 **Fix**:
 
 ```bash

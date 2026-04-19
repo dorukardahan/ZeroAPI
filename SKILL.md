@@ -143,12 +143,14 @@ Inspect:
 
 - `~/.openclaw/zeroapi-config.json`
 - `~/.openclaw/zeroapi-advisories.json`
+- `~/.openclaw/zeroapi-managed-install.json`
 - `~/.openclaw/openclaw.json`
 - auth profiles for excluded providers (Anthropic OAuth, Google/Gemini OAuth)
 
 Rules:
 
 - If existing ZeroAPI config is present, treat this as a re-run and show current subscriptions + routing rules before changing anything.
+- If `zeroapi-managed-install.json` exists, treat managed install as the expected host-side state and prefer that over ad hoc guesses about plugin packaging.
 - If `zeroapi-advisories.json` exists, summarize the pending provider or account additions first. Treat that as the primary reason for this re-run.
 - On re-runs, prefer the current provider set and modifier as the default answer instead of restarting from a blank selection.
 - Choose the **first rerun question** from `references/chat-rerun-playbook.md` based on drift kind:
@@ -159,6 +161,10 @@ Rules:
 - If Anthropic OAuth profiles exist, warn that they are not subscription-covered for OpenClaw and offer cleanup.
 - If Google/Gemini OAuth profiles exist, warn that they violate Google's ToS for third-party CLI OAuth and offer cleanup.
 - In channels, summarize findings in a short message before asking the next question. Do not start by pasting raw files.
+- Before claiming the plugin is missing or broken, check runtime evidence in this order:
+  1. `zeroapi-managed-install.json`
+  2. `openclaw plugins list`
+  3. gateway logs with `ZeroAPI Router ... loaded`
 
 ### Step 2: collect available subscriptions
 
@@ -294,6 +300,17 @@ The plugin auto-loads on gateway restart. Verify with:
 ```bash
 openclaw plugins list
 ```
+
+Important verification rule:
+
+- Do **not** assume ZeroAPI is broken just because `plugin/` only contains `.ts` files or there is no `dist/` directory.
+- ZeroAPI's current plugin package intentionally exposes `./index.ts` through `plugin/package.json` and modern OpenClaw runtimes can load that TypeScript source directly.
+- Missing `tsconfig.json`, missing `build` script, or missing `dist/` is **not** by itself evidence of a bad install.
+- Treat the plugin as runtime-loaded only after checking runtime evidence such as:
+  - `openclaw plugins list`
+  - gateway logs that include `ZeroAPI Router v... loaded`
+  - `plugins.entries` / `plugins.installs` state in `~/.openclaw/openclaw.json`
+- If runtime logs say the plugin loaded, do not tell the user to compile TypeScript first.
 
 ### Step 5: summarize and restart
 

@@ -36,6 +36,8 @@ Verify installation:
 openclaw plugins list | grep zeroapi-router
 ```
 
+Do not treat missing `dist/` output as a failure on its own. ZeroAPI's current plugin package exposes `plugin/index.ts` directly, and modern OpenClaw runtimes can load that TypeScript source without a separate build artifact.
+
 Then verify the plugin actually loaded at runtime:
 
 ```bash
