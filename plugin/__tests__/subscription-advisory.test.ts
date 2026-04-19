@@ -14,7 +14,7 @@ import {
 
 function buildConfig(overrides?: Partial<ZeroAPIConfig>): ZeroAPIConfig {
   return {
-    version: "3.5.0",
+    version: "3.6.0",
     generated: "2026-04-19T00:00:00.000Z",
     benchmarks_date: "2026-04-19",
     default_model: "openai-codex/gpt-5.4",

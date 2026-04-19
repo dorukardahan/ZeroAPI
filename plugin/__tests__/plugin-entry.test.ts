@@ -86,7 +86,7 @@ describe("plugin entry registration", () => {
 
     vi.doMock("../config.js", () => ({
       loadConfig: () => ({
-        version: "3.5.0",
+        version: "3.6.0",
         generated: "2026-04-19",
         benchmarks_date: "2026-04-18",
         default_model: "zai/glm-5",

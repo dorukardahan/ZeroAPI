@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-04-20
+
 ### Added
 - Managed install/update scripts (`scripts/managed_install.mjs`, `scripts/managed_update.mjs`) that keep the runtime plugin and `/zeroapi` skill directory on the same repo snapshot, write install state, and support daily patch/minor auto-updates with backup + rollback
 - Managed install reference doc plus doctor output for `~/.openclaw/zeroapi-managed-install.json`
@@ -14,6 +16,10 @@
 - Terminal fallback onboarding now shows pending advisory drift up front on reruns and reuses current provider and modifier choices as defaults instead of treating every rerun like a blank install
 - Chat rerun docs now define explicit first-question behavior for provider-only, account-only, mixed, and no-advisory refresh runs so `/zeroapi` can start from detected drift instead of generic setup prompts
 - Managed install is now the preferred host-side setup path, with raw `openclaw plugins install` kept as the fallback for operators who explicitly want manual lifecycle control
+
+### Fixed
+- Managed install now behaves idempotently across reruns, avoids duplicate plugin load paths, and no longer blocks gateway restarts while refreshing the plugin state
+- Public troubleshooting guidance now verifies managed install state, plugin registry output, and gateway logs before treating missing `dist/` artifacts as a real runtime failure
 
 ## [3.5.0] - 2026-04-19
 
