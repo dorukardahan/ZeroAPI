@@ -234,6 +234,7 @@ ZeroAPI/
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
 │   ├── eval.ts                           # Routing log analyzer
+│   ├── compare_modifiers.ts              # Prompt-set delta checker for balanced vs modifiers
 │   ├── refresh_benchmarks.py             # Refreshes benchmarks.json from AA API v2
 │   └── simulate.ts                       # Prompt-level routing simulator
 ├── plugin/
@@ -272,17 +273,20 @@ ZeroAPI/
 │   ├── openai-glm-kimi.json
 │   └── full-stack.json
 └── references/
+    ├── account-pool-spec.md
+    ├── benchmark-governance.md
     ├── benchmarks.md
+    ├── explainability-contract.md
     ├── routing-examples.md
-    ├── routing-policy-spec.md
-    ├── routing-modifiers-spec.md
     ├── cron-config.md
     ├── risk-policy.md
     ├── cost-summary.md
-    ├── provider-config.md
-    ├── product-roadmap.md
-    ├── oauth-setup.md
     ├── mahmory-autoresearch-usage.md
+    ├── oauth-setup.md
+    ├── product-roadmap.md
+    ├── provider-config.md
+    ├── routing-modifiers-spec.md
+    ├── routing-policy-spec.md
     ├── subscription-catalog.md
     └── troubleshooting.md
 ```

@@ -13,6 +13,7 @@ These examples are intentionally conservative starter pools. `benchmarks.json` t
 | File | Providers | Monthly Cost | Best For |
 |------|-----------|-------------|----------|
 | `openai-only.json` | OpenAI Codex | ~$20 | Getting started, OpenAI-only setup |
+| `subscription-profile.json` | OpenAI Codex | ~$20 | Minimal profile-only baseline without explicit inventory |
 | `openai-multi-account.json` | OpenAI Codex (multi-account) | ~$40-$240 | Same-provider Plus/Pro pools with explicit account inventory |
 | `openai-glm.json` | OpenAI + Z AI GLM | ~$30 | Add fast orchestration with GLM-5.1 |
 | `openai-glm-kimi.json` | OpenAI + Z AI + Kimi | ~$49 | Deep orchestration fallback coverage |
@@ -73,6 +74,12 @@ And simulate a real prompt before enabling live traffic:
 
 ```bash
 npx tsx scripts/simulate.ts --prompt "coordinate a 3-step data pipeline"
+```
+
+If you are deciding whether to keep plain balanced mode or enable a modifier, compare them on a small prompt set first:
+
+```bash
+npx tsx scripts/compare_modifiers.ts --prompts-file prompts.txt
 ```
 
 ### 4. Add workspace hints (optional)

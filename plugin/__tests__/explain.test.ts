@@ -159,6 +159,31 @@ describe("buildExplanationSummary", () => {
     expect(summary.details).toContain("weighted=none");
   });
 
+  it("surfaces diagnostic reject reasons when requested", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        subscription_profile: {
+          version: "1.0.0",
+          global: {
+            "openai-codex": { enabled: true, tierId: "plus" },
+            "zai": { enabled: false, tierId: null },
+          },
+        },
+        subscription_inventory: undefined,
+      },
+      {
+        prompt: "quickly format this payload",
+        currentModel: "openai-codex/gpt-5.4",
+        includeDiagnostics: true,
+      },
+    );
+
+    const summary = buildExplanationSummary(result);
+    expect(summary.details).toContain("capabilityRejected=openai-codex/gpt-5.4:ttft_exceeds_threshold");
+    expect(summary.details).toContain("subscriptionRejected=zai/glm-5");
+  });
+
   it("explains early specialist skips", () => {
     const result = resolveRoutingDecision(config, {
       prompt: "refactor the queue worker",

@@ -212,6 +212,41 @@ describe("resolveRoutingDecision", () => {
     expect(result.weightedCandidates).toHaveLength(0);
   });
 
+  it("keeps diagnostics empty on the normal runtime path", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        subscription_inventory: undefined,
+      },
+      {
+        prompt: "quickly format this payload",
+        agentId: "constrained",
+        currentModel: config.default_model,
+      },
+    );
+    expect(result.capabilityRejected).toEqual([]);
+    expect(result.subscriptionRejected).toEqual([]);
+  });
+
+  it("emits diagnostics only when explicitly requested", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        subscription_inventory: undefined,
+      },
+      {
+        prompt: "quickly format this payload",
+        agentId: "constrained",
+        currentModel: config.default_model,
+        includeDiagnostics: true,
+      },
+    );
+    expect(result.capabilityRejected).toEqual([
+      { model: "openai-codex/gpt-5.4", reason: "ttft_exceeds_threshold" },
+    ]);
+    expect(result.subscriptionRejected).toEqual(["zai/glm-5", "moonshot/kimi-k2.5"]);
+  });
+
   it("preserves high-risk stays with explicit reason", () => {
     const result = resolveRoutingDecision(config, {
       prompt: "deploy this to production",
