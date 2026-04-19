@@ -21,6 +21,7 @@
 - Router startup logs and doctor output now report the active routing modifier when one is configured
 - Public docs now describe task-aware modifiers as shipped product behavior instead of future design work
 - Refresh workflow now uses `actions/setup-python@v6` to avoid the GitHub Actions Node 20 deprecation warning
+- Benchmark refresh now stamps `benchmarks.json` with the current ZeroAPI version instead of carrying a stale hard-coded snapshot version
 
 ## [3.4.3] - 2026-04-19
 

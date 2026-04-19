@@ -1,5 +1,5 @@
 {
-  "version": "3.2.4",
+  "version": "3.5.0",
   "source": "Artificial Analysis Data API v2",
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
   "fetched": "2026-04-19",

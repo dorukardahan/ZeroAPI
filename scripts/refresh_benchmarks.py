@@ -13,6 +13,7 @@ API_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
 METHODOLOGY_URL = "https://artificialanalysis.ai/methodology/intelligence-benchmarking"
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "benchmarks.json"
 POLICY_FAMILIES_FILE = Path(__file__).resolve().parents[1] / "policy-families.json"
+PLUGIN_PACKAGE_FILE = Path(__file__).resolve().parents[1] / "plugin" / "package.json"
 PROVIDER_MAP = {
     "openai": "openai-codex",
     "kimi": "moonshot",
@@ -38,6 +39,14 @@ BENCHMARK_MAP = {
     "aime": "aime",
 }
 EXCLUDED_SLUG_PATTERNS = ("realtime",)
+
+
+def load_snapshot_version() -> str:
+    package_json = json.loads(PLUGIN_PACKAGE_FILE.read_text())
+    version = package_json.get("version")
+    if not isinstance(version, str) or not version.strip():
+        raise SystemExit("Could not resolve ZeroAPI version from plugin/package.json")
+    return version.strip()
 
 
 def read_key(args: argparse.Namespace) -> str:
@@ -173,6 +182,7 @@ def main() -> None:
     args = parser.parse_args()
 
     api_key = read_key(args)
+    snapshot_version = load_snapshot_version()
     response = fetch_data(api_key)
     prompt_options = response.get("prompt_options") or {}
     policy_families, policy_slug_map = load_policy_families()
@@ -183,7 +193,7 @@ def main() -> None:
         1 for model in models if model.get("policy_family", {}).get("included")
     )
     payload = {
-        "version": "3.2.4",
+        "version": snapshot_version,
         "source": "Artificial Analysis Data API v2",
         "api": API_URL,
         "fetched": datetime.now(timezone.utc).date().isoformat(),
