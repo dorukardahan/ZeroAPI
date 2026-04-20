@@ -51,7 +51,7 @@ grep -Rni "ZeroAPI Router" /tmp/openclaw /root/.openclaw/logs 2>/dev/null | tail
 **Auth**: OAuth PKCE via ChatGPT account.
 
 ```bash
-openclaw onboard --auth-choice openai-codex
+openclaw models auth login --provider openai-codex
 ```
 
 **Models**:
@@ -168,7 +168,7 @@ openclaw onboard --auth-choice zai-coding-global
 **Auth**: OAuth via MiniMax portal.
 
 ```bash
-openclaw onboard --auth-choice minimax-global-oauth
+openclaw onboard --auth-choice minimax-portal
 ```
 
 **Models**:
@@ -198,22 +198,23 @@ openclaw onboard --auth-choice minimax-global-oauth
 
 ---
 
-### 5. Alibaba / Qwen — `qwen`
+### 5. Qwen Portal — `qwen-portal`
 
-**Auth**: API key via Alibaba Qwen standard endpoint.
+**Auth**: OAuth via the bundled Qwen portal plugin.
 
 ```bash
-openclaw onboard --auth-choice qwen-standard-api-key
+openclaw plugins enable qwen-portal-auth
+openclaw models auth login --provider qwen-portal --set-default
 ```
 
 **Models**:
 
 | Model ID | Notes |
 |----------|-------|
-| `qwen3.5-plus` | Coding Plan default |
-| `qwen3.6-plus` | Standard endpoint benchmarked route target |
+| `coder-model` | Qwen Portal coder route |
+| `vision-model` | Qwen Portal vision route |
 
-**Note**: `qwen3.6-plus` requires the standard endpoint auth choice (`qwen-standard-api-key`) in upstream OpenClaw. The Coding Plan auth choice (`qwen-api-key`) exposes a narrower routeable model set.
+**Note**: Artificial Analysis tracks named Qwen releases like Qwen3.6 Plus. OpenClaw exposes the subscription route as `qwen-portal/coder-model`, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for that route.
 
 **Provider entry** (in `openclaw.json`):
 
@@ -221,12 +222,12 @@ openclaw onboard --auth-choice qwen-standard-api-key
 {
   "models": {
     "providers": {
-      "qwen": {
-        "baseUrl": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+      "qwen-portal": {
+        "baseUrl": "https://portal.qwen.ai/v1",
         "api": "openai-completions",
         "models": [
-          { "id": "qwen3.6-plus" },
-          { "id": "qwen3.5-plus" }
+          { "id": "coder-model" },
+          { "id": "vision-model" }
         ]
       }
     }

@@ -225,9 +225,10 @@ Ensure the model ID in your config exactly matches the provider's catalog. Some 
 
 **By provider**:
 
-- **OpenAI Codex**: Use the tmux OAuth flow to run `openclaw onboard --auth-choice openai-codex`. See `references/oauth-setup.md`.
-- **Kimi / GLM / Qwen**: API keys do not expire. If failing, verify the subscription is still active at the provider portal.
-- **MiniMax**: Use the tmux OAuth flow with `--auth-choice minimax-global-oauth`.
+- **OpenAI Codex**: Use the tmux OAuth flow to run `openclaw models auth login --provider openai-codex`. See `references/oauth-setup.md`.
+- **Kimi / GLM**: API keys do not expire. If failing, verify the subscription is still active at the provider portal.
+- **MiniMax**: Use the tmux OAuth flow with `openclaw onboard --auth-choice minimax-portal`.
+- **Qwen Portal**: Use the tmux OAuth flow with `openclaw models auth login --provider qwen-portal --set-default`.
 
 After manual renewal, sync the new token across all locations. See `references/oauth-setup.md` → "Token Storage Architecture".
 

@@ -10,21 +10,21 @@
 
 | Provider | Auth Method | Setup Command | Token Lifetime |
 |----------|-------------|---------------|----------------|
-| OpenAI | OAuth PKCE via ChatGPT | `openclaw onboard --auth-choice openai-codex` | ~10 days without use |
+| OpenAI | OAuth PKCE via ChatGPT | `openclaw models auth login --provider openai-codex` | Refreshable OAuth token |
 | Kimi | Static API key | `openclaw onboard --auth-choice moonshot-api-key` | Never expires |
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
-| MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-global-oauth` | Long-lived refresh token |
-| Alibaba (Qwen) | Static API key | `openclaw onboard --auth-choice qwen-standard-api-key` | Never expires |
+| MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-portal` | Refreshable OAuth token |
+| Qwen Portal | OAuth portal | `openclaw models auth login --provider qwen-portal --set-default` | Refreshable OAuth token |
 
-**Reliability ranking**: Kimi / GLM / Qwen (static key, never expires) > MiniMax OAuth (auto-refresh) > Codex OAuth (auto-refresh works; see notes below).
+**Reliability ranking**: Kimi / GLM static keys > portal OAuth providers with auto-refresh > providers with unhealthy or stale local profiles.
 
 ---
 
-## OpenAI Codex OAuth — Multi-Device Safety
+## OpenAI Codex OAuth - Multi-Device Safety
 
 A common concern: will logging into ChatGPT on another device invalidate the agent's token?
 
-**No.** Tested with all four scenarios:
+**No.** Tested with these scenarios:
 
 | Action | VPS Token Affected? |
 |--------|---------------------|
@@ -33,15 +33,13 @@ A common concern: will logging into ChatGPT on another device invalidate the age
 | Use Codex desktop app + new session | No |
 | Use Codex CLI in terminal + chat | No |
 
-OpenClaw's auto-refresh handles renewal. Users can freely use ChatGPT and Codex on all devices without disrupting the agent. A dedicated OpenAI account for the VPS is not required.
-
-**Token expiry**: Codex OAuth access tokens expire after ~10 days without use. If auto-refresh fails (e.g., the refresh token itself expired), use the tmux OAuth flow below.
+OpenClaw's auto-refresh handles renewal. Users can freely use ChatGPT and Codex on all devices without disrupting the agent.
 
 ---
 
-## API Key Providers (Kimi / GLM / Qwen)
+## Static-Key Providers (Kimi / GLM)
 
-These providers use static API keys that never expire. Setup is simpler:
+These providers use static API keys. Setup is simpler:
 
 ```bash
 # Kimi
@@ -49,89 +47,90 @@ openclaw onboard --auth-choice moonshot-api-key
 
 # Z AI / GLM (Coding Plan endpoint)
 openclaw onboard --auth-choice zai-coding-global
-
-# Alibaba Qwen (Coding Plan endpoint)
-openclaw onboard --auth-choice qwen-standard-api-key
 ```
 
-The wizard prompts for the API key and saves it to auth-profiles. No browser flow needed. If a provider with a static key stops working, check that the subscription is still active — the key itself does not expire.
+The wizard prompts for the API key and saves it to auth profiles. Never paste API keys into chat channels.
 
 ---
 
-## MiniMax OAuth
+## Portal OAuth Providers
 
-MiniMax uses an OAuth portal flow. Setup:
+MiniMax uses the OpenClaw onboarding flow:
 
 ```bash
-openclaw onboard --auth-choice minimax-global-oauth
+openclaw plugins enable minimax-portal-auth
+openclaw onboard --auth-choice minimax-portal
 ```
 
-On headless VPS, use the tmux method below (change `--auth-choice` to `minimax-global-oauth`).
+Qwen uses the OpenClaw model-auth flow:
+
+```bash
+openclaw plugins enable qwen-portal-auth
+openclaw models auth login --provider qwen-portal --set-default
+```
+
+OpenAI Codex also uses the model-auth flow:
+
+```bash
+openclaw models auth login --provider openai-codex
+```
 
 ---
 
-## OAuth Setup on Headless VPS (No Browser)
+## OAuth Setup on Headless VPS
 
-`openclaw onboard` uses an interactive TUI. On a headless VPS, OpenClaw detects the lack of a browser and switches to a "paste-the-redirect-URL" flow. Use `tmux` to manage the TUI session.
+Some OAuth commands require an interactive TTY. On a headless VPS, run them in `tmux` or `screen`, send the browser URL to the user, then paste the localhost callback URL back into the TTY.
 
-### If you are an OpenClaw agent (direct Bash access on VPS)
-
-```bash
-# Step 1: Start the wizard in a tmux session
-tmux new-session -d -s oauth 'openclaw onboard --auth-choice openai-codex --accept-risk'
-
-# Step 2: Read the screen and navigate menus
-tmux capture-pane -t oauth -p        # read current screen
-tmux send-keys -t oauth Enter        # select highlighted option
-# Repeat capture-pane + send-keys until you reach the OAuth URL screen
-
-# Step 3: Extract the OAuth URL from the screen
-# Look for: https://auth.openai.com/oauth/authorize?...
-# Send this URL to the user via your channel (WhatsApp, Telegram, etc.)
-
-# Step 4: Tell the user:
-#   "Open this link in your browser, log in.
-#    After login, your browser will try to load a localhost URL that won't work.
-#    Copy that FULL URL from the address bar and send it back."
-
-# Step 5: Paste the redirect URL the user sends back
-tmux send-keys -t oauth 'THE_REDIRECT_URL_FROM_USER' Enter
-
-# Step 6: Cancel remaining wizard steps
-tmux send-keys -t oauth C-c
-
-# Step 7: Verify
-openclaw models status | grep openai-codex
-```
-
-### If running from a local CLI (SSH to VPS)
+### If you are an OpenClaw agent with direct Bash access on VPS
 
 ```bash
-ssh YOUR_VPS 'tmux new-session -d -s oauth "openclaw onboard --auth-choice openai-codex --accept-risk"'
-ssh YOUR_VPS 'tmux capture-pane -t oauth -p'
-ssh YOUR_VPS 'tmux send-keys -t oauth Enter'
-# ... extract URL → user clicks → paste redirect URL back ...
-ssh YOUR_VPS "tmux send-keys -t oauth 'REDIRECT_URL' Enter"
-ssh YOUR_VPS 'tmux send-keys -t oauth C-c'
+# Step 1: Start a TTY session
+tmux new-session -d -s oauth 'openclaw models auth login --provider openai-codex'
+
+# Step 2: Read the screen
+tmux capture-pane -t oauth -p
+
+# Step 3: Send the OAuth URL to the user.
+# The user opens it, logs in, then sends back the full localhost callback URL.
+
+# Step 4: Paste the callback URL into the TTY
+tmux send-keys -t oauth 'THE_FULL_LOCALHOST_CALLBACK_URL_FROM_USER' Enter
+
+# Step 5: Verify
+openclaw models status
 ```
 
-### General principle (any agent)
+For Qwen, replace the session command with:
 
-1. Wrap `openclaw onboard` in `tmux` or `screen`
-2. Navigate menus with `send-keys`
-3. Extract OAuth URL and send to user
-4. Receive redirect URL from user and paste back
+```bash
+openclaw models auth login --provider qwen-portal --set-default
+```
+
+For MiniMax, use:
+
+```bash
+openclaw onboard --auth-choice minimax-portal
+```
+
+### General principle
+
+1. Wrap the auth command in `tmux` or `screen`
+2. Extract the provider's browser URL
+3. Ask the user to open it and send back the localhost callback URL
+4. Paste the callback URL into the TTY
 5. Verify with `openclaw models status`
+
+Do not copy raw tokens, refresh tokens, API keys, or callback codes into logs, docs, or commits.
 
 ---
 
 ## Auth Status Monitoring
 
 ```bash
-# Quick check — exit code 0=ok, 1=expired, 2=expiring soon
+# Quick check - exit code 0=ok, 1=expired, 2=expiring soon
 openclaw models status --check
 
-# Detailed view — expiry times and quota
+# Detailed view - expiry times and quota
 openclaw models status
 
 # Full health check with repair suggestions
@@ -140,43 +139,8 @@ openclaw doctor
 
 ---
 
-## Token Storage Architecture
+## Profile Drift Notes
 
-OAuth tokens are stored in 3 locations that do NOT auto-sync:
+OpenClaw can sync some external CLI profiles, for example Codex CLI, Qwen CLI, or MiniMax CLI credentials. If an unexpected `*:default` or CLI-derived profile appears, verify it with `openclaw models status`, then clean stale profiles through OpenClaw's auth/profile commands or the config store.
 
-| Location | Purpose | Auto-Updated? |
-|----------|---------|---------------|
-| `credentials/oauth.json` | Raw OAuth output from initial onboard | Only on first onboard |
-| `models.providers.<name>.apiKey` in `openclaw.json` | Runtime API calls | By auto-refresh |
-| `agents/<id>/agent/auth-profiles.json` | Per-agent active tokens | By auto-refresh |
-
-When you manually renew a token via the tmux flow, it is written only to `auth-profiles.json`. Other agents may reference stale tokens from `openclaw.json`.
-
-**After manual renewal**, sync the new token. Example for Codex:
-
-```bash
-# Extract new access token from auth-profiles
-NEW_TOKEN=$(python3 -c "
-import json, glob
-for f in glob.glob('$HOME/.openclaw/agents/*/agent/auth-profiles.json'):
-    profiles = json.load(open(f))
-    for p in profiles:
-        if 'openai' in p.get('provider','').lower():
-            print(p['access']); break
-    else: continue
-    break
-")
-
-# Update openclaw.json
-python3 -c "
-import json
-c = json.load(open('$HOME/.openclaw/openclaw.json'))
-c['models']['providers']['openai-codex']['apiKey'] = '$NEW_TOKEN'
-json.dump(c, open('$HOME/.openclaw/openclaw.json','w'), indent=2)
-"
-
-# Restart gateway
-systemctl --user restart openclaw-gateway.service
-```
-
-**Best practice**: Let auto-refresh handle renewal whenever possible. Use the manual tmux flow only when auto-refresh fails.
+ZeroAPI should not assume every profile for a provider belongs in the routing pool. Prefer explicit `subscription_inventory.accounts[*].authProfile` for multi-account setups.

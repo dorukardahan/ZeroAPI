@@ -33,7 +33,7 @@ For the written product contract behind the current router, see [`references/rou
 
 **Google (Gemini):** CLI OAuth with third-party tools declared ToS violation as of March 25, 2026. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key usage (AI Studio/Vertex) is separate billing, not subscription-covered.
 
-ZeroAPI routes exclusively across subscription-covered providers: OpenAI, Kimi, Z AI (GLM), MiniMax, and Alibaba (Qwen).
+ZeroAPI routes exclusively across subscription or account-quota providers: OpenAI, Kimi, Z AI (GLM), MiniMax, and Qwen Portal.
 
 ## How It Works
 
@@ -63,7 +63,7 @@ If the current runtime model is outside `zeroapi-config.json`'s `models` pool, Z
 | Kimi | `moonshot` (`kimi`, `kimi-coding` aliases) | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.5, K2 Thinking |
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
-| Alibaba (Qwen) | `qwen` (`qwen-dashscope` alias) | Pro | $50 | $42 | Qwen3.6 Plus |
+| Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | Free OAuth | $0 | $0 | coder-model |
 
 ## Task Categories
 
@@ -329,7 +329,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-19). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Alibaba. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-04-19). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Qwen. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|
@@ -352,7 +352,7 @@ For bundle planning details, see [`references/cost-summary.md`](references/cost-
 | OpenAI + GLM | 2 | $30 | $24 |
 | OpenAI + GLM + Kimi | 3 | $49 | $39 |
 | + MiniMax | 4 | $59 | $47 |
-| + Qwen (full stack) | 5 | $109 | $89 |
+| + Qwen (full stack) | 5 | $59 | $47 |
 
 ## FAQ
 

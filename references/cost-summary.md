@@ -8,6 +8,6 @@ Illustrative subscription bundles:
 | OpenAI + GLM | $30 | $24 | 2 |
 | OpenAI + GLM + Kimi | $49 | $39 | 3 |
 | + MiniMax | $59 | $47 | 4 |
-| + Qwen | $109 | $89 | 5 |
+| + Qwen | $59 | $47 | 5 |
 
 Use this only as a planning baseline. Provider pricing changes faster than benchmark rankings.

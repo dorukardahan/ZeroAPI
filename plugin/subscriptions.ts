@@ -106,17 +106,17 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   },
   {
     providerId: "alibaba",
-    label: "Alibaba (Qwen)",
-    openclawProviderId: "qwen",
-    openclawProviderAliases: ["qwen-dashscope"],
+    label: "Qwen Portal",
+    openclawProviderId: "qwen-portal",
+    openclawProviderAliases: ["qwen", "qwen-dashscope"],
     status: "active",
-    authMode: "api_key",
+    authMode: "oauth",
     selectionMode: "single_tier",
     tiers: [
-      { tierId: "lite", label: "Lite", monthlyPriceUsd: 10, annualEffectiveMonthlyUsd: null, availability: "closed", routingWeight: 1, recommendedUsage: "Legacy compatibility tier only, not for new subscriptions.", notes: "Closed to new subscriptions." },
-      { tierId: "pro", label: "Pro", monthlyPriceUsd: 50, annualEffectiveMonthlyUsd: null, availability: "available", routingWeight: 3, recommendedUsage: "Primary Qwen subscription tier for routing." },
+      { tierId: "free", label: "Free OAuth", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "available", routingWeight: 1, recommendedUsage: "Qwen Portal free-tier routing when daily quota is enough." },
     ],
     benchmarkRoutingBias: 0.95,
+    notes: "OpenClaw exposes Qwen through qwen-portal OAuth. ZeroAPI uses Qwen benchmark rows as a proxy for the portal coder model.",
   },
 ];
 

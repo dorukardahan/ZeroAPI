@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Aligned public onboarding/auth guidance with current upstream OpenClaw provider flows: OpenAI uses `openclaw models auth login --provider openai-codex`, MiniMax uses `minimax-portal`, and Qwen routes through `qwen-portal/coder-model`.
+
 ## [3.6.0] - 2026-04-20
 
 ### Added
@@ -133,7 +136,7 @@ OpenClaw source-alignment patch, benchmark refresh, and public configuration har
 
 ### Changed
 - Benchmark snapshot refreshed to 162 benchmark reference models from ZeroAPI's supported provider ecosystems (AA API v2, fetched 2026-04-18)
-- Practical policy pool source-aligned with upstream OpenClaw provider catalogs: `moonshot/kimi-k2.5`, `minimax-portal/MiniMax-M2.7`, `qwen/qwen3.6-plus`, `zai/glm-5.1`, and `openai-codex/gpt-5.4`
+- Practical policy pool source-aligned with upstream OpenClaw provider catalogs: `moonshot/kimi-k2.5`, `minimax-portal/MiniMax-M2.7`, `qwen-portal/coder-model`, `zai/glm-5.1`, and `openai-codex/gpt-5.4`
 - `gpt-5.4-nano` removed from the subscription-focused OpenAI Codex policy pool because upstream OpenClaw exposes it under the direct OpenAI provider, not `openai-codex`
 - Example configs now use OpenClaw runtime capability limits, including the `openai-codex` 272K context cap and source-confirmed vision support for Kimi, MiniMax, and Qwen
 - Subscription routing now uses a benchmark frontier plus subscription pressure instead of pure tier-weight reordering

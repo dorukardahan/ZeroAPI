@@ -19,7 +19,7 @@ PROVIDER_MAP = {
     "kimi": "moonshot",
     "zai": "zai",
     "minimax": "minimax-portal",
-    "alibaba": "qwen",
+    "alibaba": "qwen-portal",
 }
 BENCHMARK_MAP = {
     "intelligence": "artificial_analysis_intelligence_index",

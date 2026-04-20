@@ -19,11 +19,11 @@ const BENCHMARKS_FILE = resolve(MODULE_DIR, "..", "benchmarks.json");
 const PACKAGE_FILE = resolve(MODULE_DIR, "package.json");
 
 export const STARTER_AUTH_CHOICES: Record<string, string> = {
-  "openai-codex": "openclaw onboard --auth-choice openai-codex",
+  "openai-codex": "openclaw models auth login --provider openai-codex",
   "zai": "openclaw onboard --auth-choice zai-coding-global",
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
-  "minimax-portal": "openclaw onboard --auth-choice minimax-global-oauth",
-  "qwen": "openclaw onboard --auth-choice qwen-standard-api-key",
+  "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
+  "qwen-portal": "openclaw models auth login --provider qwen-portal --set-default",
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
@@ -32,7 +32,7 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
   "zai/glm-5.1": { context_window: 202800, supports_vision: false },
   "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: true },
-  "qwen/qwen3.6-plus": { context_window: 1000000, supports_vision: true },
+  "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
 };
 
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
@@ -40,7 +40,7 @@ const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
   "zai": ["zai/glm-5.1"],
   "moonshot": ["moonshot/kimi-k2.5"],
   "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
-  "qwen": ["qwen/qwen3.6-plus"],
+  "qwen-portal": ["qwen-portal/coder-model"],
 };
 
 const DEFAULT_KEYWORDS: Record<string, string[]> = {

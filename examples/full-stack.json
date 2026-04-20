@@ -24,9 +24,9 @@
         "enabled": true,
         "tierId": "starter"
       },
-      "qwen": {
+      "qwen-portal": {
         "enabled": true,
-        "tierId": "pro"
+        "tierId": "free"
       }
     }
   },
@@ -100,13 +100,13 @@
         "scicode": 0.47
       }
     },
-    "qwen/qwen3.6-plus": {
+    "qwen-portal/coder-model": {
       "context_window": 1000000,
-      "supports_vision": true,
+      "supports_vision": false,
       "speed_tps": 52.778,
       "ttft_seconds": 1.624,
       "benchmarks": {
-        "intelligence": 50.0,
+        "intelligence": 50,
         "coding": 42.9,
         "tau2": 0.977,
         "terminalbench": 0.439,
@@ -137,13 +137,13 @@
       "primary": "zai/glm-5.1",
       "fallbacks": [
         "moonshot/kimi-k2.5",
-        "qwen/qwen3.6-plus"
+        "qwen-portal/coder-model"
       ]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
       "fallbacks": [
-        "qwen/qwen3.6-plus",
+        "qwen-portal/coder-model",
         "zai/glm-5.1"
       ]
     },
@@ -151,7 +151,7 @@
       "primary": "zai/glm-5.1",
       "fallbacks": [
         "minimax-portal/MiniMax-M2.7",
-        "qwen/qwen3.6-plus"
+        "qwen-portal/coder-model"
       ]
     },
     "default": {

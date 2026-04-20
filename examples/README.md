@@ -49,7 +49,7 @@ These examples are intentionally conservative starter pools. `benchmarks.json` t
 | GLM-5.1 | zai | $1.55 |
 | Kimi K2.5 (Reasoning) | moonshot | $1.20 |
 | MiniMax-M2.7 | minimax-portal | $0.53 |
-| Qwen3.6 Plus | qwen | $1.13 |
+| Qwen Portal coder-model | qwen-portal | $1.13 benchmark proxy |
 
 ## How to Use
 
@@ -63,7 +63,7 @@ cp examples/<file>.json ~/.openclaw/zeroapi-config.json
 
 ```bash
 # OpenAI Codex (ChatGPT OAuth)
-openclaw onboard --auth-choice openai-codex
+openclaw models auth login --provider openai-codex
 
 # Z AI GLM (API key)
 openclaw onboard --auth-choice zai-coding-global
@@ -72,10 +72,10 @@ openclaw onboard --auth-choice zai-coding-global
 openclaw onboard --auth-choice moonshot-api-key
 
 # MiniMax (OAuth portal)
-openclaw onboard --auth-choice minimax-global-oauth
+openclaw onboard --auth-choice minimax-portal
 
-# Alibaba Qwen (API key)
-openclaw onboard --auth-choice qwen-standard-api-key
+# Qwen Portal (OAuth)
+openclaw models auth login --provider qwen-portal --set-default
 ```
 
 ### 3. Verify

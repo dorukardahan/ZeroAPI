@@ -11,19 +11,19 @@ This document defines the provider and subscription catalog used by ZeroAPI for 
 
 ## Supported Providers in v1
 
-ZeroAPI v1 subscription-aware routing supports exactly these subscription providers:
+ZeroAPI v1 subscription-aware routing supports exactly these subscription or account-quota providers:
 
 1. OpenAI
 2. Kimi
 3. Z AI (GLM)
 4. MiniMax
-5. Alibaba (Qwen)
+5. Qwen Portal
 
 Excluded from catalog:
 
 - Anthropic, excluded for subscription coverage reasons
 - Google/Gemini, excluded for OAuth/ToS reasons in third-party tool flows
-- Any provider without a meaningful subscription plan abstraction
+- Any provider without a meaningful subscription, plan, or account-quota abstraction
 
 ## Design Principles
 
@@ -85,10 +85,9 @@ Each tier should define:
 - Max
 - Ultra-HS
 
-### Alibaba (Qwen)
+### Qwen Portal
 
-- Pro
-- Lite, legacy/closed-to-new-subs if retained for compatibility only
+- Free OAuth
 
 ## User Profile Model
 

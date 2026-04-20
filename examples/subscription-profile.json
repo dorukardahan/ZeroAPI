@@ -1,18 +1,39 @@
 {
   "version": "1.0.0",
   "global": {
-    "openai-codex": { "enabled": true, "tierId": "plus" },
-    "moonshot": { "enabled": false, "tierId": null },
-    "zai": { "enabled": true, "tierId": "max" },
-    "minimax-portal": { "enabled": false, "tierId": null },
-    "qwen": { "enabled": false, "tierId": null }
+    "openai-codex": {
+      "enabled": true,
+      "tierId": "plus"
+    },
+    "moonshot": {
+      "enabled": false,
+      "tierId": null
+    },
+    "zai": {
+      "enabled": true,
+      "tierId": "max"
+    },
+    "minimax-portal": {
+      "enabled": false,
+      "tierId": null
+    },
+    "qwen-portal": {
+      "enabled": false,
+      "tierId": null
+    }
   },
   "agentOverrides": {
     "research-agent": {
-      "openai-codex": { "enabled": false, "tierId": null }
+      "openai-codex": {
+        "enabled": false,
+        "tierId": null
+      }
     },
     "cost-optimized-agent": {
-      "zai": { "enabled": true, "tierId": "pro" }
+      "zai": {
+        "enabled": true,
+        "tierId": "pro"
+      }
     }
   }
 }

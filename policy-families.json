@@ -65,16 +65,16 @@
       "notes": "OpenClaw exposes MiniMax subscription routing through minimax-portal. The benchmark snapshot currently has a direct row only for MiniMax-M2.7."
     },
     {
-      "id": "qwen36-plus-core",
-      "provider": "qwen",
-      "label": "Qwen3.6 Plus routeable family",
+      "id": "qwen-portal-coder-core",
+      "provider": "qwen-portal",
+      "label": "Qwen Portal coder routeable family",
       "openclaw_model_ids": [
-        "qwen3.6-plus"
+        "coder-model"
       ],
       "benchmark_slugs": [
         "qwen3-6-plus"
       ],
-      "notes": "Artificial Analysis has a strong Qwen3.5 397B reference row, but upstream OpenClaw's routeable Qwen catalog currently exposes qwen3.6-plus/qwen3.5-plus, not qwen3.5-397b-a17b."
+      "notes": "OpenClaw currently exposes Qwen through qwen-portal/coder-model. Artificial Analysis tracks named Qwen releases, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for this portal route."
     }
   ]
 }

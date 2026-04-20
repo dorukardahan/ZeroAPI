@@ -70,7 +70,7 @@ ZeroAPI also supports a **subscription-aware foundation**:
 
 ## Supported providers
 
-Five subscription-based providers are currently supported by the routing policy.
+Five subscription or account-quota providers are currently supported by the routing policy.
 
 | Provider | OpenClaw ID | Auth | Tiers |
 |----------|-------------|------|-------|
@@ -78,7 +78,7 @@ Five subscription-based providers are currently supported by the routing policy.
 | Kimi | `moonshot` (`kimi`, `kimi-coding` aliases) | API key | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
 | MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
-| Alibaba (Qwen) | `qwen` (`qwen-dashscope` alias) | API key | Pro |
+| Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | OAuth portal | Free OAuth |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
 
@@ -192,7 +192,7 @@ Practical subscription mapping:
 - Kimi -> K2.5
 - Z AI -> GLM-5.1 / GLM-5 / GLM-5-Turbo / GLM-4.7 family
 - MiniMax -> MiniMax-M2.7
-- Alibaba -> Qwen3.6 Plus
+- Qwen Portal -> coder-model, using Qwen3.6 Plus benchmark data as the closest public proxy
 
 Persist the result into a subscription profile with:
 - `global` provider selections

@@ -87,13 +87,13 @@ describe("buildStarterConfig", () => {
 describe("starter onboarding helpers", () => {
   it("returns auth commands in provider order", () => {
     expect(getStarterAuthCommands(["openai-codex", "zai"])).toEqual([
-      "openclaw onboard --auth-choice openai-codex",
+      "openclaw models auth login --provider openai-codex",
       "openclaw onboard --auth-choice zai-coding-global",
     ]);
   });
 
   it("returns available tier choices only", () => {
-    expect(getStarterTierChoices("qwen").map((item) => item.tierId)).toEqual(["pro"]);
+    expect(getStarterTierChoices("qwen-portal").map((item) => item.tierId)).toEqual(["free"]);
     expect(getStarterTierChoices("minimax-portal").map((item) => item.tierId)).toEqual([
       "starter",
       "plus",

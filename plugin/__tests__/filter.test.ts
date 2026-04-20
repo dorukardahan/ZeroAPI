@@ -15,8 +15,8 @@ const models: Record<string, ModelCapabilities> = {
     context_window: 262144, supports_vision: true, speed_tps: 32, ttft_seconds: 2.4,
     benchmarks: { intelligence: 46.8, coding: 39.5 },
   },
-  "qwen/qwen3.6-plus": {
-    context_window: 1000000, supports_vision: true, speed_tps: null, ttft_seconds: null,
+  "qwen-portal/coder-model": {
+    context_window: 1000000, supports_vision: false, speed_tps: null, ttft_seconds: null,
     benchmarks: { intelligence: 50, coding: 42.9 },
   },
 };
@@ -30,7 +30,7 @@ describe("filterCapableModels", () => {
   it("filters by context window", () => {
     const result = filterCapableModels(models, { estimatedTokens: 500000 });
     expect(Object.keys(result)).toHaveLength(1);
-    expect(result["qwen/qwen3.6-plus"]).toBeDefined();
+    expect(result["qwen-portal/coder-model"]).toBeDefined();
     expect(result["openai-codex/gpt-5.4"]).toBeUndefined();
     expect(result["zai/glm-5"]).toBeUndefined();
     expect(result["moonshot/kimi-k2.5"]).toBeUndefined();
@@ -38,9 +38,9 @@ describe("filterCapableModels", () => {
 
   it("filters by vision requirement", () => {
     const result = filterCapableModels(models, { estimatedTokens: 1000, requiresVision: true });
-    expect(Object.keys(result)).toHaveLength(2);
+    expect(Object.keys(result)).toHaveLength(1);
     expect(result["moonshot/kimi-k2.5"]).toBeDefined();
-    expect(result["qwen/qwen3.6-plus"]).toBeDefined();
+    expect(result["qwen-portal/coder-model"]).toBeUndefined();
   });
 
   it("filters by TTFT for fast tasks", () => {
@@ -48,7 +48,7 @@ describe("filterCapableModels", () => {
     expect(Object.keys(result)).toHaveLength(2);
     expect(result["zai/glm-5"]).toBeDefined();
     expect(result["moonshot/kimi-k2.5"]).toBeDefined();
-    expect(result["qwen/qwen3.6-plus"]).toBeUndefined();
+    expect(result["qwen-portal/coder-model"]).toBeUndefined();
   });
 
   it("returns empty when nothing fits", () => {

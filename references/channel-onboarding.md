@@ -68,7 +68,7 @@ What should ZeroAPI manage now?
 2. Kimi
 3. Z AI
 4. MiniMax
-5. Qwen
+5. Qwen Portal
 Reply with numbers.
 ```
 
@@ -91,8 +91,9 @@ If auth is missing, the chat flow should:
 
 Examples:
 
-- `openclaw onboard --auth-choice openai-codex`
+- `openclaw models auth login --provider openai-codex`
 - `openclaw onboard --auth-choice moonshot-api-key`
+- `openclaw models auth login --provider qwen-portal --set-default`
 
 ## Host-only follow-up steps
 

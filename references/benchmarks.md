@@ -1,6 +1,6 @@
 # Benchmark Data (April 2026)
 
-Current leaders from `benchmarks.json` (fetched 2026-04-19). The snapshot covers 162 benchmark reference models from the five provider ecosystems ZeroAPI supports. It also marks 11 models as current `policy_family` members.
+Current leaders from `benchmarks.json` (fetched 2026-04-19). The snapshot covers 162 benchmark reference models from the five provider ecosystems ZeroAPI supports. It also marks 11 models as current `policy_family` members. Qwen rows come from Alibaba's named model benchmarks; OpenClaw exposes the routeable account model as `qwen-portal/coder-model`, so ZeroAPI treats Qwen3.6 Plus as a benchmark proxy for that portal route.
 
 | Category | Leader | Score | Provider | Notes |
 |----------|--------|-------|----------|-------|
