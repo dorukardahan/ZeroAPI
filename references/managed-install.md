@@ -17,9 +17,14 @@ It installs ZeroAPI as a single managed unit:
 3. installs the plugin from `~/.openclaw/zeroapi-managed/repo/plugin`
 4. writes `~/.openclaw/zeroapi-managed-install.json`
 5. on Linux hosts with `systemctl --user`, enables `zeroapi-managed-update.timer`
-6. restarts `openclaw-gateway.service` when possible
+6. writes managed install state
+7. restarts `openclaw-gateway.service` when possible
 
 The key contract is simple: **skill and plugin should come from the same managed repo snapshot**.
+
+When user systemd is available, the gateway restart is scheduled a couple of
+seconds after the command returns. This keeps chat-driven installs from killing
+the OpenClaw agent before it can report success.
 
 ## Managed state file
 

@@ -85,7 +85,6 @@ function main() {
     timerReason = timerResult.reason ?? "enabled";
   }
 
-  const restartResult = args.restartGateway ? restartGatewayIfPossible() : { restarted: false, reason: "disabled_by_flag" };
   const state = buildManagedInstallState({
     openclawDir: args.openclawDir,
     repoDir,
@@ -99,6 +98,8 @@ function main() {
     state.updates.lastError = timerReason;
   }
   writeManagedInstallState(args.openclawDir, state);
+
+  const restartResult = args.restartGateway ? restartGatewayIfPossible() : { restarted: false, reason: "disabled_by_flag" };
 
   console.log("ZeroAPI managed install tamamlandı.");
   console.log(`- version: ${version}`);

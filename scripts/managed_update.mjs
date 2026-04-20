@@ -136,7 +136,6 @@ function main() {
     copyRepoSnapshot(repoDir, skillDir);
     installOrUpdatePlugin(join(repoDir, "plugin"), args.openclawDir);
     removeDuplicateZeroAPILoadPaths(args.openclawDir);
-    const restartResult = restartGatewayIfPossible();
 
     const next = persistStatus(args.openclawDir, state, {
       lastKnownVersion: latestVersion,
@@ -144,11 +143,17 @@ function main() {
       lastAppliedAt: new Date().toISOString(),
       pendingVersion: null,
       pendingReason: null,
-      lastStatus: restartResult.restarted ? "updated" : "updated_restart_skipped",
-      lastError: restartResult.restarted ? null : restartResult.reason,
+      lastStatus: "updated_restart_pending",
+      lastError: null,
     });
     next.repo.installedVersion = latestVersion;
     writeManagedInstallState(args.openclawDir, next);
+
+    const restartResult = restartGatewayIfPossible();
+    persistStatus(args.openclawDir, next, {
+      lastStatus: restartResult.restarted ? "updated" : "updated_restart_skipped",
+      lastError: restartResult.restarted ? null : restartResult.reason,
+    });
     pruneBackupSnapshots(backupsDir, 3);
     console.log(`ZeroAPI updated: ${installedVersion} -> ${latestVersion}`);
   } catch (error) {

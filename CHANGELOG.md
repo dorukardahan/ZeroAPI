@@ -4,6 +4,7 @@
 
 ### Changed
 - Aligned public onboarding/auth guidance with current upstream OpenClaw provider flows: OpenAI uses `openclaw models auth login --provider openai-codex`, MiniMax uses `minimax-portal`, and Qwen routes through `qwen-portal/coder-model`.
+- Managed install/update now writes state before restarting the gateway and schedules the restart through user systemd when possible, so chat-driven installs do not leave partial plugin state if the gateway stops the running agent.
 
 ## [3.6.0] - 2026-04-20
 

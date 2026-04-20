@@ -323,6 +323,25 @@ export function restartGatewayIfPossible() {
   if (!commandExists("systemctl")) {
     return { restarted: false, reason: "systemctl_missing" };
   }
+  if (commandExists("systemd-run")) {
+    const unitName = `zeroapi-gateway-restart-${Date.now()}`;
+    const scheduled = runCommand(
+      "systemd-run",
+      [
+        "--user",
+        `--unit=${unitName}`,
+        "--on-active=2s",
+        "systemctl",
+        "--user",
+        "restart",
+        "openclaw-gateway.service",
+      ],
+      { allowFailure: true },
+    );
+    if (scheduled.status === 0) {
+      return { restarted: true, reason: "scheduled" };
+    }
+  }
   const result = runCommand(
     "systemctl",
     ["--user", "restart", "--no-block", "openclaw-gateway.service"],
