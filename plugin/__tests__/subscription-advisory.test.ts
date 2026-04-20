@@ -176,6 +176,33 @@ describe("subscription advisory", () => {
     );
   });
 
+  it("does not raise auth-profile advisory for explicitly disabled inventory accounts", () => {
+    writeOpenClawConfig(openclawDir, ["moonshot"]);
+    writeAuthProfiles(openclawDir, "main", {
+      "kimi-coding:default": { provider: "moonshot" },
+    });
+
+    const signals = collectRuntimeSubscriptionSignals(openclawDir);
+    const advisory = buildPendingSubscriptionAdvisory(
+      buildConfig({
+        subscription_inventory: {
+          version: "1.0.0",
+          accounts: {
+            "kimi-cancelled": {
+              provider: "moonshot",
+              tierId: null,
+              enabled: false,
+              authProfile: "kimi-coding:default",
+            },
+          },
+        },
+      }),
+      signals,
+    );
+
+    expect(advisory).toBeNull();
+  });
+
   it("does not raise auth-profile advisory for a single existing profile without inventory mode", () => {
     writeOpenClawConfig(openclawDir, ["openai-codex"]);
     writeAuthProfiles(openclawDir, "main", {

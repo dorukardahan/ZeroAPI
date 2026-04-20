@@ -50,6 +50,8 @@ Per decision, ZeroAPI also considers:
 
 If `subscription_inventory` contains at least one account for a provider, that provider is resolved from inventory, not legacy `subscription_profile`.
 
+Disabled inventory entries are also useful as an explicit "reviewed but do not use" marker. If an account has `enabled: false` and an `authProfile`, ZeroAPI will not route to it, but the advisory monitor treats that profile as acknowledged and will not keep prompting the operator to add it.
+
 That rule is provider-local:
 
 - inventory for OpenAI does not disable legacy profile resolution for Z AI

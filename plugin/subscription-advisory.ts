@@ -142,12 +142,11 @@ function buildConfiguredProviders(config: ZeroAPIConfig): Set<string> {
     for (const [providerIdRaw, selection] of Object.entries(globalProfile)) {
       const providerId = canonicalizeProviderId(providerIdRaw);
       if (!providerId || !selection || typeof selection !== "object") continue;
-      const enabled = "enabled" in selection ? selection.enabled !== false : true;
       const tierId =
         "tierId" in selection && typeof selection.tierId === "string"
           ? selection.tierId.trim()
           : null;
-      if (enabled && (tierId || selection.enabled === true)) {
+      if (tierId || "enabled" in selection) {
         providers.add(providerId);
       }
     }
@@ -156,7 +155,7 @@ function buildConfiguredProviders(config: ZeroAPIConfig): Set<string> {
   const accounts = config.subscription_inventory?.accounts;
   if (accounts && typeof accounts === "object") {
     for (const account of Object.values(accounts)) {
-      if (!account || typeof account !== "object" || account.enabled === false) continue;
+      if (!account || typeof account !== "object") continue;
       const providerId = canonicalizeProviderId(account.provider);
       if (providerId) {
         providers.add(providerId);
@@ -175,7 +174,7 @@ function buildConfiguredAuthProfiles(config: ZeroAPIConfig): Map<string, Set<str
   }
 
   for (const account of Object.values(accounts)) {
-    if (!account || typeof account !== "object" || account.enabled === false) continue;
+    if (!account || typeof account !== "object") continue;
     const providerId = canonicalizeProviderId(account.provider);
     if (!providerId || typeof account.authProfile !== "string" || !account.authProfile.trim()) {
       continue;

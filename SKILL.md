@@ -268,11 +268,13 @@ Do **not** offer `aggressive`, `conservative`, `quality_first`, or similar routi
 Important rules:
 
 - `zeroapi-config.json` is **policy config**, not the runtime source of truth.
-- Default model should be the best overall available model for the user's chosen pool.
+- Default model should usually match the OpenClaw runtime default unless the user explicitly wants to change the runtime default too. Use routing rules and `routing_modifier` to send specialist tasks to stronger models.
 - Fallback chains must span multiple providers when possible.
 - Specialist agents should generally get `null` workspace hints.
 - Cron changes are preview-first unless the user explicitly opts in.
 - Do not modify workspace memory/docs files as part of routing setup.
+- If a user says a provider or account exists but should not be used, add it to `subscription_inventory.accounts` with `enabled: false` and its `authProfile` when known. This marks it as reviewed so advisories do not keep asking about it.
+- Do not dump full `openclaw.json`, `.plugins`, or auth files into chat/session logs. Query only the specific non-secret fields needed for setup.
 
 For detailed cron, fallback, risk, and benchmark guidance see:
 
