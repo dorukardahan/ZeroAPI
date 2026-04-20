@@ -8,6 +8,7 @@ export const STATE_FILE_NAME = "zeroapi-managed-install.json";
 export const UPDATE_SERVICE_NAME = "zeroapi-managed-update.service";
 export const UPDATE_TIMER_NAME = "zeroapi-managed-update.timer";
 export const STATE_SCHEMA_VERSION = "1.0.0";
+export const GATEWAY_RESTART_DELAY_SECONDS = 20;
 
 function fail(message) {
   throw new Error(message);
@@ -330,7 +331,7 @@ export function restartGatewayIfPossible() {
       [
         "--user",
         `--unit=${unitName}`,
-        "--on-active=2s",
+        `--on-active=${GATEWAY_RESTART_DELAY_SECONDS}s`,
         "systemctl",
         "--user",
         "restart",
@@ -339,7 +340,7 @@ export function restartGatewayIfPossible() {
       { allowFailure: true },
     );
     if (scheduled.status === 0) {
-      return { restarted: true, reason: "scheduled" };
+      return { restarted: true, reason: `scheduled_${GATEWAY_RESTART_DELAY_SECONDS}s` };
     }
   }
   const result = runCommand(

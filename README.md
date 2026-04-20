@@ -106,7 +106,7 @@ Managed install does four things in one pass:
 - syncs `~/.openclaw/skills/zeroapi` from that same snapshot so skill and plugin stay aligned
 - installs/updates the plugin from the managed repo path
 - enables a user-level systemd timer that auto-applies future patch/minor ZeroAPI releases with backup + rollback
-- writes managed state before scheduling the gateway restart, so chat-driven installs do not get stuck in partial state
+- writes managed state before scheduling the delayed gateway restart, so chat-driven installs can report success before OpenClaw restarts
 
 If the host does not support `systemctl --user`, managed install still works, but the timer is skipped and the same updater can be run manually:
 

@@ -22,9 +22,9 @@ It installs ZeroAPI as a single managed unit:
 
 The key contract is simple: **skill and plugin should come from the same managed repo snapshot**.
 
-When user systemd is available, the gateway restart is scheduled a couple of
-seconds after the command returns. This keeps chat-driven installs from killing
-the OpenClaw agent before it can report success.
+When user systemd is available, the gateway restart is scheduled about 20
+seconds after the command returns. This gives chat-driven installs enough time
+to report success before OpenClaw restarts.
 
 ## Managed state file
 

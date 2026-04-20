@@ -256,6 +256,15 @@ Required config shape:
 
 `routing_modifier` is also optional. Leave it unset for plain balanced mode unless the user explicitly wants one of the shipped overlays.
 
+Supported policy choices:
+
+- Plain balanced mode: omit `routing_modifier`
+- `coding-aware`: spend stronger models more readily on coding work
+- `research-aware`: spend stronger models more readily on research and long analysis
+- `speed-aware`: prefer lower-latency choices for quick tasks
+
+Do **not** offer `aggressive`, `conservative`, `quality_first`, or similar routing modes during onboarding. The implemented `routing_mode` contract is currently `balanced` only. If the user asks for a more aggressive setup, explain that ZeroAPI keeps `routing_mode: "balanced"` and then suggest the closest supported modifier, usually `coding-aware` for engineering-heavy OpenClaw use.
+
 Important rules:
 
 - `zeroapi-config.json` is **policy config**, not the runtime source of truth.
@@ -300,6 +309,13 @@ The plugin auto-loads on gateway restart. Verify with:
 ```bash
 openclaw plugins list
 ```
+
+Channel-first caveat:
+
+- `managed_install.mjs` schedules a gateway restart shortly after it returns.
+- In Slack/Telegram/WhatsApp-style installs, do **not** run more host commands after `managed_install.mjs` succeeds.
+- Reply to the user immediately with the installed version, restart note, and next command (`/zeroapi status` or `/zeroapi` after the gateway comes back).
+- Running follow-up commands in the same turn can be killed by the scheduled restart and make the user think the install hung.
 
 Important verification rule:
 

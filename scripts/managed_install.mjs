@@ -106,7 +106,7 @@ function main() {
   console.log(`- managed repo: ${repoDir}`);
   console.log(`- skill sync: ${skillDir}`);
   console.log(`- auto-update timer: ${timerEnabled ? "enabled" : `skipped (${timerReason})`}`);
-  console.log(`- gateway restart: ${restartResult.restarted ? "done" : `skipped (${restartResult.reason})`}`);
+  console.log(`- gateway restart: ${restartResult.restarted ? restartResult.reason : `skipped (${restartResult.reason})`}`);
   console.log(`- duplicate load paths removed: ${removedLoadPaths.length > 0 ? removedLoadPaths.join(", ") : "none"}`);
   console.log(`- state file: ${resolve(args.openclawDir, "zeroapi-managed-install.json")}`);
 }

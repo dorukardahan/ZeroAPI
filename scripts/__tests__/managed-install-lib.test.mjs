@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import {
+  GATEWAY_RESTART_DELAY_SECONDS,
   buildManagedInstallState,
   classifyVersionBump,
   compareVersions,
@@ -86,6 +87,10 @@ test("buildManagedInstallState captures managed metadata", () => {
   assert.equal(state.repo.installedVersion, "3.5.0");
   assert.equal(state.updates.autoApply, "minor_patch");
   assert.equal(state.updates.timerEnabled, true);
+});
+
+test("gateway restart delay leaves room for chat install replies", () => {
+  assert.ok(GATEWAY_RESTART_DELAY_SECONDS >= 15);
 });
 
 test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths only", () => {
