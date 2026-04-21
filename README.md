@@ -95,6 +95,7 @@ Recommended path:
 3. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
 4. Answer the short setup questions
 5. Verify with bash scripts-zeroapi-doctor.sh or npx tsx scripts/simulate.ts --prompt "refactor this auth module"
+6. Preview cron model alignment with npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
 ```
 
 Preferred host install:
@@ -273,12 +274,14 @@ ZeroAPI/
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
 │   ├── first_run.ts                      # Interactive starter wizard for public repo onboarding
+│   ├── cron_audit.ts                     # Preview-only OpenClaw cron model/fallback audit
 │   ├── eval.ts                           # Routing log analyzer
 │   ├── compare_modifiers.ts              # Prompt-set delta checker for balanced vs modifiers
 │   ├── refresh_benchmarks.py             # Refreshes benchmarks.json from AA API v2
 │   └── simulate.ts                       # Prompt-level routing simulator
 ├── plugin/
 │   ├── decision.ts                       # Shared routing decision engine
+│   ├── cron-audit.ts                     # Cron job recommendation engine
 │   ├── index.ts                          # Plugin entry, before_model_resolve hook
 │   ├── classifier.ts                     # Keyword/regex task classification
 │   ├── filter.ts                         # Capability filter (context window, vision, TTFT)
@@ -295,6 +298,7 @@ ZeroAPI/
 │   ├── vitest.config.ts
 │   └── __tests__/
 │       ├── classifier.test.ts
+│       ├── cron-audit.test.ts
 │       ├── decision.test.ts
 │       ├── config.test.ts
 │       ├── filter.test.ts

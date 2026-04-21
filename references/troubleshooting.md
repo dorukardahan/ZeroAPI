@@ -166,6 +166,20 @@ Log format:
 
 ---
 
+### Cron jobs keep using the old model
+
+**Cause**: OpenClaw cron jobs resolve models from stored job config, not from normal chat routing. ZeroAPI intentionally skips `trigger=cron` at runtime.
+
+**Preview recommended cron patches**:
+
+```bash
+npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
+```
+
+Only `payload.kind="agentTurn"` jobs can get `payload.model` and `payload.fallbacks`. `systemEvent` jobs inherit the main session path and should not be model-patched.
+
+---
+
 ### Benchmark data is outdated
 
 **Cause**: `benchmarks.json` has a `fetched` date older than 30 days.

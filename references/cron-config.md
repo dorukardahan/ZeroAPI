@@ -2,6 +2,22 @@
 
 Per-job assignment, not per-workspace. Derive cron routing from the job's purpose.
 
+ZeroAPI does not route cron-triggered turns at runtime. OpenClaw resolves cron models from the stored job itself: `payload.model` and `payload.fallbacks` on `payload.kind="agentTurn"`. `payload.kind="systemEvent"` jobs run as main-session events, and OpenClaw removes model fields from those payloads.
+
+Use the preview command before changing anything:
+
+```bash
+npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
+```
+
+Machine-readable output:
+
+```bash
+npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw --json
+```
+
+The audit is read-only. It returns recommended `cron.update` payload patches, but it does not write `jobs.json` and does not restart the gateway. In chat-native onboarding, show the preview first and apply only user-approved changes via OpenClaw's `cron.update` tool.
+
 | Cron Task Type | Detection Signal | Model Criteria |
 |---------------|------------------|----------------|
 | Health check / status | Reads file, checks thresholds | Cheapest fast model, low TTFT |
@@ -11,6 +27,17 @@ Per-job assignment, not per-workspace. Derive cron routing from the job's purpos
 | Engagement / moderation | Social/media judgment | High intelligence, moderate speed |
 
 **Conservative default:** first run is preview-only. User explicitly opts in per job. Re-run shows a diff and requires confirmation.
+
+## Audit actions
+
+| Action | Meaning | Apply automatically? |
+|--------|---------|----------------------|
+| `change` | ZeroAPI found a better `payload.model` / `payload.fallbacks` chain for an `agentTurn` job | Ask first |
+| `keep` | Existing cron model/fallbacks already match the policy, or no eligible candidate exists | No |
+| `review` | Specialist agent, high-risk prompt, or empty prompt needs human judgement | No |
+| `skip` | Disabled job or non-`agentTurn` payload | No |
+
+Specialist agents with `workspace_hints.<agentId> = null` are never patched automatically. They still get a suggested model in the audit so the user can decide case by case.
 
 ## Fallback chain rules
 
