@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-04-22
+
 ### Changed
 - Aligned Kimi starter configs and examples with OpenClaw v2026.4.20's `moonshot/kimi-k2.6` default, while using the committed K2.5 benchmark row as an explicit temporary proxy until the benchmark refresh includes native K2.6 data.
 - Documented OpenClaw's new cron `jobs-state.json` split so ZeroAPI cron helpers keep patching job definitions only and never touch runtime state.
