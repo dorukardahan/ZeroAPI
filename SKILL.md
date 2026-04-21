@@ -165,8 +165,9 @@ Rules:
 - In channels, summarize findings in a short message before asking the next question. Do not start by pasting raw files.
 - Before claiming the plugin is missing or broken, check runtime evidence in this order:
   1. `zeroapi-managed-install.json`
-  2. `openclaw plugins list`
+  2. `openclaw.json` plugin install/entry state
   3. gateway logs with `ZeroAPI Router ... loaded`
+  4. a **bounded** `timeout 10s openclaw plugins list` only if extra confirmation is still needed
 - If the user is still at the "should we install this repo?" stage, answer the repo/product question first and only switch into host-state inspection after they ask to install or inspect the live setup.
 
 ### Step 2: collect available subscriptions
@@ -312,7 +313,7 @@ This is a **host-side operator step**, not a chat-secret step. In Slack/Telegram
 The plugin auto-loads on gateway restart. Verify with:
 
 ```bash
-openclaw plugins list
+timeout 10s openclaw plugins list
 ```
 
 Channel-first caveat:
@@ -328,9 +329,10 @@ Important verification rule:
 - ZeroAPI's current plugin package intentionally exposes `./index.ts` through `plugin/package.json` and modern OpenClaw runtimes can load that TypeScript source directly.
 - Missing `tsconfig.json`, missing `build` script, or missing `dist/` is **not** by itself evidence of a bad install.
 - Treat the plugin as runtime-loaded only after checking runtime evidence such as:
-  - `openclaw plugins list`
+  - `timeout 10s openclaw plugins list`
   - gateway logs that include `ZeroAPI Router v... loaded`
   - `plugins.entries` / `plugins.installs` state in `~/.openclaw/openclaw.json`
+- If `openclaw plugins list` times out on a busy host, fall back to `openclaw.json` install records plus gateway logs instead of treating the timeout itself as a plugin failure.
 - If runtime logs say the plugin loaded, do not tell the user to compile TypeScript first.
 
 ### Step 5: summarize and restart

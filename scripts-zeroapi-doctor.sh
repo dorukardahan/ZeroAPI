@@ -126,7 +126,11 @@ fi
 
 if command -v openclaw >/dev/null 2>&1; then
   say "--- openclaw plugins list ---"
-  openclaw plugins list | grep zeroapi-router || warn "zeroapi-router not visible in plugin list"
+  if timeout 10s openclaw plugins list | grep zeroapi-router; then
+    :
+  else
+    warn "zeroapi-router not visible in plugin list or plugins list timed out - check openclaw.json installs + gateway logs"
+  fi
   say "--- openclaw models status (summary) ---"
   openclaw models status | sed -n '1,80p'
 else

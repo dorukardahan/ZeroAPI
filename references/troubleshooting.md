@@ -89,7 +89,7 @@ Important:
 
 ```bash
 # Check if plugin is installed
-openclaw plugins list | grep zeroapi-router
+timeout 10s openclaw plugins list | grep zeroapi-router
 
 # If missing, install it
 openclaw plugins install zeroapi-router
