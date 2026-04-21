@@ -45,8 +45,8 @@ function parseArgs(argv: string[]) {
     }
     if (arg === "--help" || arg === "-h") {
       console.log(`Usage:
-  npx tsx scripts/first_run.ts
-  npx tsx scripts/first_run.ts --openclaw-dir ~/.openclaw
+  npm run first-run
+  npm run first-run -- --openclaw-dir ~/.openclaw
 
 This interactive wizard writes a starter zeroapi-config.json for the selected providers.
 `);
@@ -518,7 +518,7 @@ async function main() {
     console.log("1. Yukarıdaki auth komutlarıyla seçtiğin provider'ları bağla.");
     console.log("2. openclaw models status");
     console.log("3. bash scripts-zeroapi-doctor.sh");
-    console.log('4. npx tsx scripts/simulate.ts --prompt "refactor the auth module"');
+    console.log('4. npm run simulate -- --prompt "refactor the auth module"');
     console.log("5. Gerekirse modifier davranışını compare_modifiers ile kıyasla.");
   } finally {
     rl.close();

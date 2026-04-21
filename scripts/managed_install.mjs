@@ -43,9 +43,9 @@ function parseArgs(argv) {
     }
     if (arg === "--help" || arg === "-h") {
       console.log(`Usage:
-  node scripts/managed_install.mjs
-  node scripts/managed_install.mjs --openclaw-dir ~/.openclaw
-  node scripts/managed_install.mjs --no-timer --no-restart
+  npm run managed:install
+  npm run managed:install -- --openclaw-dir ~/.openclaw
+  npm run managed:install -- --no-timer --no-restart
 `);
       process.exit(0);
     }

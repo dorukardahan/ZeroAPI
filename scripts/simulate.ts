@@ -62,8 +62,8 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--help" || arg === "-h") {
       console.log(`Usage:
-  npx tsx scripts/simulate.ts --prompt "refactor auth module"
-  echo "refactor auth module" | npx tsx scripts/simulate.ts --agent codex
+  npm run simulate -- --prompt "refactor auth module"
+  echo "refactor auth module" | npm run simulate -- --agent codex
 
 Options:
   --prompt <text>         Prompt to classify and route

@@ -24,7 +24,7 @@ Entry points:
 
 - `/zeroapi` when the channel exposes direct skill commands
 - `/skill zeroapi` when the channel exposes only the generic skill runner
-- `npx tsx scripts/first_run.ts` only as a terminal fallback
+- `npm run first-run` only as a terminal fallback
 
 ## Operator vs user responsibilities
 

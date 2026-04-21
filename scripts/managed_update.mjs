@@ -30,8 +30,8 @@ function parseArgs(argv) {
     }
     if (arg === "--help" || arg === "-h") {
       console.log(`Usage:
-  node scripts/managed_update.mjs
-  node scripts/managed_update.mjs --openclaw-dir ~/.openclaw
+  npm run managed:update
+  npm run managed:update -- --openclaw-dir ~/.openclaw
 `);
       process.exit(0);
     }

@@ -23,4 +23,4 @@ body:
     id: eval-output
     attributes:
       label: Eval output
-      description: Paste your `npx tsx scripts/eval.ts` output if you have routing data
+      description: Paste your `npm run eval` output if you have routing data

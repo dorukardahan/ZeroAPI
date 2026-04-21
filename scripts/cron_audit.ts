@@ -50,8 +50,8 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--help" || arg === "-h") {
       console.log(`Usage:
-  npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
-  npx tsx scripts/cron_audit.ts --jobs ~/.openclaw/cron/jobs.json --json
+  npm run cron:audit -- --openclaw-dir ~/.openclaw
+  npm run cron:audit -- --jobs ~/.openclaw/cron/jobs.json --json
 
 Options:
   --openclaw-dir <path>  OpenClaw config directory. Default: ~/.openclaw

@@ -173,7 +173,7 @@ Log format:
 **Preview recommended cron patches**:
 
 ```bash
-npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
+npm run cron:audit -- --openclaw-dir ~/.openclaw
 ```
 
 Only `payload.kind="agentTurn"` jobs can get `payload.model` and `payload.fallbacks`. `systemEvent` jobs inherit the main session path and should not be model-patched.

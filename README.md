@@ -94,14 +94,14 @@ Recommended path:
 2. Open any OpenClaw chat channel
 3. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
 4. Answer the short setup questions
-5. Verify with bash scripts-zeroapi-doctor.sh or npx tsx scripts/simulate.ts --prompt "refactor this auth module"
-6. Preview cron model alignment with npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
+5. Verify with bash scripts-zeroapi-doctor.sh or npm run simulate -- --prompt "refactor this auth module"
+6. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
 ```
 
 Preferred host install:
 
 ```bash
-node scripts/managed_install.mjs --openclaw-dir ~/.openclaw
+npm run managed:install -- --openclaw-dir ~/.openclaw
 ```
 
 Managed install does four things in one pass:
@@ -115,12 +115,13 @@ Managed install does four things in one pass:
 If the host does not support `systemctl --user`, managed install still works, but the timer is skipped and the same updater can be run manually:
 
 ```bash
-node ~/.openclaw/zeroapi-managed/repo/scripts/managed_update.mjs --openclaw-dir ~/.openclaw
+cd ~/.openclaw/zeroapi-managed/repo
+npm run managed:update -- --openclaw-dir ~/.openclaw
 ```
 
 The `/zeroapi` skill is the primary public onboarding surface. It should feel natural inside chat channels: short questions, compact choices, and a final confirmation before writing `~/.openclaw/zeroapi-config.json`.
 
-`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can hand off to managed install from the checked-out repo.
+`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. Run it with `npm run first-run`. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can hand off to managed install from the checked-out repo.
 
 For managed install/update behavior, rollback rules, and timer semantics, see [`references/managed-install.md`](references/managed-install.md).
 
@@ -179,7 +180,7 @@ All three keep the same safety, capability, and subscription gates from balanced
 To see how modifiers differ on a real prompt set before enabling one globally:
 
 ```bash
-npx tsx scripts/compare_modifiers.ts --prompts-file prompts.txt
+npm run compare:modifiers -- --prompts-file prompts.txt
 ```
 
 ## Same-Provider Multi-Account
@@ -227,7 +228,7 @@ Important: the compatibility fallback only updates sessions that already exist i
 Before turning routing loose on real traffic, inspect a sample decision:
 
 ```bash
-npx tsx scripts/simulate.ts --prompt "coordinate a workflow across 3 services"
+npm run simulate -- --prompt "coordinate a workflow across 3 services"
 ```
 
 The simulator shows category, risk, current model, candidate pool, and the final route/stay/skip reason. It is the fastest way to see whether a config behaves the way the user expects.
@@ -240,7 +241,7 @@ Most routing plugins are set-and-forget. ZeroAPI is set-and-improve.
 Every routing decision is logged to `~/.openclaw/logs/zeroapi-routing.log`. The built-in eval script analyzes this data and tells you what to tune:
 
 ```bash
-npx tsx scripts/eval.ts --last 500
+npm run eval -- --last 500
 ```
 
 The report shows category distribution, risk override rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants - keywords, risk levels, vision detection, TTFT thresholds, fallback ordering, and external-model handling - live in `zeroapi-config.json` and can be changed without touching code.
@@ -252,7 +253,7 @@ One important knob is `external_model_policy`:
 For one-off sanity checks before changing production traffic, use the simulator instead of waiting for live logs:
 
 ```bash
-npx tsx scripts/simulate.ts --prompt "quickly format this JSON payload"
+npm run simulate -- --prompt "quickly format this JSON payload"
 ```
 
 **The loop:** run eval, change one constant, restart gateway, wait for traffic, re-run eval. Keep what improves routing, revert what doesn't.
@@ -269,6 +270,7 @@ ZeroAPI/
 │       ├── secret-scan.yml
 │       └── test.yml
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
+├── package.json                          # Root scripts for tests and repo-local tools
 ├── benchmarks.json                       # 162 benchmark reference models, plus policy-family tags
 ├── policy-families.json                  # 11 practical policy-family members across 5 providers
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
@@ -371,7 +373,7 @@ Claude subscriptions no longer cover third-party tools like OpenClaw as of April
 Google declared CLI OAuth usage with third-party tools a ToS violation as of March 25, 2026. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key access (AI Studio/Vertex) is separate billing, not subscription-covered.
 
 **How accurate is routing?**
-Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. Inspect `~/.openclaw/logs/zeroapi-routing.log` for raw decisions or run `npx tsx scripts/eval.ts` for a tuning report, and treat routing as a policy hint layer rather than a guarantee that every message will switch models.
+Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. Inspect `~/.openclaw/logs/zeroapi-routing.log` for raw decisions or run `npm run eval` for a tuning report, and treat routing as a policy hint layer rather than a guarantee that every message will switch models.
 
 **Does it add latency?**
 Very little in normal operation. Classification is local (keyword/regex + config lookups) and does not call an external LLM, but actual end-to-end behavior still depends on OpenClaw runtime state and the selected provider.
