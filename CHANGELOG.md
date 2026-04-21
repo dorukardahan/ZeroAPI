@@ -3,7 +3,10 @@
 ## [Unreleased]
 
 ### Changed
+- Added root npm scripts for repo-local tests, simulation, eval, cron audit/apply, first-run, doctor, and managed install/update flows.
 - Added a preview-only cron audit command that reads OpenClaw cron jobs, classifies `agentTurn` payloads, and recommends `payload.model` / `payload.fallbacks` patches without writing `jobs.json`.
+- Cron audit output now includes recommendation `confidence` and `matchedSignals`, making it clear whether a model suggestion came from a task keyword, cron hint, workspace hint, or high-risk guardrail.
+- Added a dry-run-first cron apply helper that writes a timestamped backup before applying approved `agentTurn` model/fallback patches and skips low-confidence changes by default.
 - Aligned public onboarding/auth guidance with current upstream OpenClaw provider flows: OpenAI uses `openclaw models auth login --provider openai-codex`, MiniMax uses `minimax-portal`, and Qwen routes through `qwen-portal/coder-model`.
 - Managed install/update now writes state before restarting the gateway and schedules the restart through user systemd when possible, so chat-driven installs do not leave partial plugin state if the gateway stops the running agent.
 - Managed install now uses a longer scheduled restart grace period and documents that chat-based installers should reply before running follow-up host checks.

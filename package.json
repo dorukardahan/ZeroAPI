@@ -15,6 +15,7 @@
     "eval": "tsx scripts/eval.ts",
     "compare:modifiers": "tsx scripts/compare_modifiers.ts",
     "cron:audit": "tsx scripts/cron_audit.ts",
+    "cron:apply": "tsx scripts/cron_apply.ts",
     "first-run": "tsx scripts/first_run.ts",
     "doctor": "bash scripts-zeroapi-doctor.sh",
     "managed:install": "node scripts/managed_install.mjs",

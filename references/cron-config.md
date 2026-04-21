@@ -18,6 +18,15 @@ npm run cron:audit -- --openclaw-dir ~/.openclaw --json
 
 The audit is read-only. It returns recommended `cron.update` payload patches, but it does not write `jobs.json` and does not restart the gateway. In chat-native onboarding, show the preview first and apply only user-approved changes via OpenClaw's `cron.update` tool.
 
+Shell fallback:
+
+```bash
+npm run cron:apply -- --openclaw-dir ~/.openclaw
+npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
+```
+
+`cron:apply` is dry-run by default. With `--yes`, it writes a timestamped backup next to `jobs.json` before patching eligible `agentTurn` jobs. It skips low-confidence changes unless `--include-low-confidence` is passed, and `--job-id <id>` can scope the write to selected jobs.
+
 | Cron Task Type | Detection Signal | Model Criteria |
 |---------------|------------------|----------------|
 | Health check / status | Reads file, checks thresholds | Cheapest fast model, low TTFT |
