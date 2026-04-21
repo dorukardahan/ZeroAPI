@@ -58,6 +58,8 @@ The `/zeroapi` flow should behave like a compact chat wizard:
 - adapt the **first rerun question** to the detected drift kind instead of restarting from a generic provider survey
 - when the user is only asking "what is this repo?", answer that neutrally before inspecting or mentioning the current host install
 
+The fresh-install golden path is tracked in [`../examples/fresh-install-transcript.json`](../examples/fresh-install-transcript.json) and covered by the script tests. Update that fixture whenever the first-run chat contract changes.
+
 Good style:
 
 ```text

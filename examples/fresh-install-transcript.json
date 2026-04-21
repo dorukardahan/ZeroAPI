@@ -1,0 +1,61 @@
+{
+  "schema": "zeroapi.fresh_install_transcript.v1",
+  "scenario": "fresh OpenClaw user asks about the ZeroAPI GitHub repo, then installs it from chat",
+  "steps": [
+    {
+      "id": "repo-explain",
+      "user": "https://github.com/dorukardahan/ZeroAPI bu repo ne iş yapıyor? bizim için faydalı olur mu?",
+      "assistant_must": [
+        "explain ZeroAPI neutrally before checking local state",
+        "describe gateway-level routing for active AI subscriptions",
+        "say it is useful for multi-provider or multi-account OpenClaw setups"
+      ],
+      "assistant_must_not": [
+        "claim the repo belongs to the user",
+        "claim ZeroAPI is already installed",
+        "inspect host config before the user asks to install or check"
+      ]
+    },
+    {
+      "id": "install-intent",
+      "user": "kuralım",
+      "assistant_must": [
+        "state that setup is channel-first but host install may need one operator command",
+        "ask for supported active subscriptions with compact numbered choices",
+        "avoid asking for secrets in chat"
+      ],
+      "supported_provider_choices": [
+        "OpenAI",
+        "Kimi",
+        "Z AI",
+        "MiniMax",
+        "Qwen Portal"
+      ]
+    },
+    {
+      "id": "subscription-tiers",
+      "user": "OpenAI Plus and Pro, Z AI Max",
+      "assistant_must": [
+        "detect same-provider OpenAI account pool",
+        "ask only for missing tier/account details",
+        "keep balanced routing as the default unless the user chooses a modifier"
+      ]
+    },
+    {
+      "id": "host-install",
+      "assistant_must": [
+        "tell the operator to run npm install once after clone",
+        "use npm run managed:install -- --openclaw-dir ~/.openclaw",
+        "queue or explain a delayed gateway restart after install"
+      ]
+    },
+    {
+      "id": "verify-and-cron",
+      "assistant_must": [
+        "verify with scripts-zeroapi-doctor.sh or npm run simulate",
+        "preview cron changes with npm run cron:audit",
+        "apply only approved cron changes with npm run cron:apply -- --yes"
+      ]
+    }
+  ]
+}
