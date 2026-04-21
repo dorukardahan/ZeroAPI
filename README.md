@@ -90,12 +90,13 @@ ZeroAPI is a **gateway plugin**. That means setup has two layers:
 Recommended path:
 
 ```
-1. Run managed install once on the OpenClaw host
-2. Open any OpenClaw chat channel
-3. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
-4. Answer the short setup questions
-5. Verify with bash scripts-zeroapi-doctor.sh or npm run simulate -- --prompt "refactor this auth module"
-6. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
+1. Clone the repo and run npm install once
+2. Run managed install once on the OpenClaw host
+3. Open any OpenClaw chat channel
+4. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
+5. Answer the short setup questions
+6. Verify with bash scripts-zeroapi-doctor.sh or npm run simulate -- --prompt "refactor this auth module"
+7. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
 ```
 
 Preferred host install:
