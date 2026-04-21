@@ -176,6 +176,12 @@ Log format:
 npm run cron:audit -- --openclaw-dir ~/.openclaw
 ```
 
+**Apply approved cron patches with backup**:
+
+```bash
+npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
+```
+
 Only `payload.kind="agentTurn"` jobs can get `payload.model` and `payload.fallbacks`. `systemEvent` jobs inherit the main session path and should not be model-patched.
 
 ---

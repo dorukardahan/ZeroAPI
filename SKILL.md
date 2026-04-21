@@ -260,7 +260,7 @@ Required config shape:
 
 Agent model safety rule: if an OpenClaw agent already has its own model assignment, preserve that assignment. Put that agent in `workspace_hints` as `null` unless the user explicitly wants ZeroAPI to route it. If the user does want routing for that agent, use a category list such as `["code", "research"]`; this is an explicit opt-in.
 
-Cron model safety rule: runtime ZeroAPI hooks never route `trigger: "cron"` turns. Cron model selection is an offline config alignment step. Use `npm run cron:audit -- --openclaw-dir ~/.openclaw` to preview which `agentTurn` jobs should get a `payload.model` and `payload.fallbacks` patch. Apply changes only after the user approves, preferably via OpenClaw's native `cron.update` tool so the gateway owns persistence. Do not patch `systemEvent` jobs; OpenClaw strips model fields there by design.
+Cron model safety rule: runtime ZeroAPI hooks never route `trigger: "cron"` turns. Cron model selection is an offline config alignment step. Use `npm run cron:audit -- --openclaw-dir ~/.openclaw` to preview which `agentTurn` jobs should get a `payload.model` and `payload.fallbacks` patch. Apply changes only after the user approves, preferably via OpenClaw's native `cron.update` tool so the gateway owns persistence. If shell access is the only available path, use `npm run cron:apply -- --openclaw-dir ~/.openclaw --yes`; it is dry-run by default, writes a backup before changes, and skips low-confidence changes unless explicitly allowed. Do not patch `systemEvent` jobs; OpenClaw strips model fields there by design.
 
 `routing_modifier` is also optional. Leave it unset for plain balanced mode unless the user explicitly wants one of the shipped overlays.
 

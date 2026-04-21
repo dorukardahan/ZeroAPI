@@ -97,6 +97,7 @@ Recommended path:
 5. Answer the short setup questions
 6. Verify with bash scripts-zeroapi-doctor.sh or npm run simulate -- --prompt "refactor this auth module"
 7. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
+8. Apply approved cron changes with npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
 ```
 
 Preferred host install:
@@ -278,6 +279,7 @@ ZeroAPI/
 ├── scripts/
 │   ├── first_run.ts                      # Interactive starter wizard for public repo onboarding
 │   ├── cron_audit.ts                     # Preview-only OpenClaw cron model/fallback audit
+│   ├── cron_apply.ts                     # Dry-run-first cron model/fallback apply helper
 │   ├── eval.ts                           # Routing log analyzer
 │   ├── compare_modifiers.ts              # Prompt-set delta checker for balanced vs modifiers
 │   ├── refresh_benchmarks.py             # Refreshes benchmarks.json from AA API v2
