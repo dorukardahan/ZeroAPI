@@ -1,0 +1,27 @@
+{
+  "name": "zeroapi",
+  "version": "3.6.0",
+  "private": true,
+  "description": "Benchmark-driven model routing for OpenClaw",
+  "type": "module",
+  "workspaces": [
+    "plugin"
+  ],
+  "scripts": {
+    "test": "npm run test:plugin && npm run test:scripts",
+    "test:plugin": "npm --workspace zeroapi-router test",
+    "test:scripts": "node --test scripts/__tests__/*.test.mjs",
+    "simulate": "tsx scripts/simulate.ts",
+    "eval": "tsx scripts/eval.ts",
+    "compare:modifiers": "tsx scripts/compare_modifiers.ts",
+    "cron:audit": "tsx scripts/cron_audit.ts",
+    "first-run": "tsx scripts/first_run.ts",
+    "doctor": "bash scripts-zeroapi-doctor.sh",
+    "managed:install": "node scripts/managed_install.mjs",
+    "managed:update": "node scripts/managed_update.mjs",
+    "benchmarks:refresh": "python3 scripts/refresh_benchmarks.py"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5"
+  }
+}

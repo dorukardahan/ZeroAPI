@@ -10,9 +10,9 @@
  *   - keyword hit distribution
  *
  * Usage:
- *   npx tsx scripts/eval.ts                   # all entries
- *   npx tsx scripts/eval.ts --since 2026-04-01 # filter by date
- *   npx tsx scripts/eval.ts --last 100         # last N entries
+ *   npm run eval                              # all entries
+ *   npm run eval -- --since 2026-04-01        # filter by date
+ *   npm run eval -- --last 100                # last N entries
  */
 
 import { readFileSync, existsSync } from "fs";

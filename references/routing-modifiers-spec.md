@@ -214,7 +214,7 @@ The goal is not "modifier changes many decisions." The goal is "modifier changes
 Practical helper:
 
 ```bash
-npx tsx scripts/compare_modifiers.ts --prompts-file prompts.txt
+npm run compare:modifiers -- --prompts-file prompts.txt
 ```
 
 That compares `balanced` against all shipped modifiers on the same prompt set and highlights only the changed decisions.

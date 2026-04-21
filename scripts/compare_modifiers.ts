@@ -81,8 +81,8 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--help" || arg === "-h") {
       console.log(`Usage:
-  npx tsx scripts/compare_modifiers.ts --prompts-file prompts.txt
-  echo "refactor auth module" | npx tsx scripts/compare_modifiers.ts
+  npm run compare:modifiers -- --prompts-file prompts.txt
+  echo "refactor auth module" | npm run compare:modifiers
 
 Options:
   --prompt <text>         Add a single prompt (repeatable)

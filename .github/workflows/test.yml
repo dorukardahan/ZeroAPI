@@ -17,6 +17,5 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
-      - run: cd plugin && npm install
-      - run: cd plugin && npm test
-      - run: node --test scripts/__tests__/*.test.mjs
+      - run: npm install
+      - run: npm test

@@ -7,13 +7,13 @@ ZeroAPI does not route cron-triggered turns at runtime. OpenClaw resolves cron m
 Use the preview command before changing anything:
 
 ```bash
-npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw
+npm run cron:audit -- --openclaw-dir ~/.openclaw
 ```
 
 Machine-readable output:
 
 ```bash
-npx tsx scripts/cron_audit.ts --openclaw-dir ~/.openclaw --json
+npm run cron:audit -- --openclaw-dir ~/.openclaw --json
 ```
 
 The audit is read-only. It returns recommended `cron.update` payload patches, but it does not write `jobs.json` and does not restart the gateway. In chat-native onboarding, show the preview first and apply only user-approved changes via OpenClaw's `cron.update` tool.
