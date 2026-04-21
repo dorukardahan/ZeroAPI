@@ -196,6 +196,37 @@ function readJsonFile<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf-8")) as T;
 }
 
+function readModelRef(model: unknown): string | null {
+  if (typeof model === "string" && model.trim()) return model.trim();
+  if (!model || typeof model !== "object") return null;
+  const primary = (model as { primary?: unknown }).primary;
+  return typeof primary === "string" && primary.trim() ? primary.trim() : null;
+}
+
+function readExplicitModelWorkspaceHints(openclawDir: string): Record<string, TaskCategory[] | null> {
+  const openclawConfigPath = resolve(openclawDir, "openclaw.json");
+  if (!existsSync(openclawConfigPath)) return {};
+
+  try {
+    const cfg = readJsonFile<{ agents?: { list?: unknown[] } }>(openclawConfigPath);
+    const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
+    const hints: Record<string, TaskCategory[] | null> = {};
+    for (const entry of agents) {
+      if (!entry || typeof entry !== "object") continue;
+      const agent = entry as { id?: unknown; model?: unknown };
+      const agentId = typeof agent.id === "string" ? agent.id.trim() : "";
+      if (!agentId) continue;
+      if (readModelRef(agent.model)) {
+        hints[agentId] = null;
+      }
+    }
+    return hints;
+  } catch (error) {
+    console.log(`\nOpenClaw agent model listesi okunamadı: ${error instanceof Error ? error.message : String(error)}`);
+    return {};
+  }
+}
+
 function commandExists(command: string): boolean {
   const result = spawnSync("bash", ["-c", `command -v ${command}`], { encoding: "utf-8" });
   return result.status === 0;
@@ -243,6 +274,18 @@ async function main() {
       } catch (error) {
         console.log(`\nMevcut config okunamadı: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+    const detectedWorkspaceHints = readExplicitModelWorkspaceHints(args.openclawDir);
+    const workspaceHints = {
+      ...detectedWorkspaceHints,
+      ...(existingConfig?.workspace_hints ?? {}),
+    };
+    const protectedAgents = Object.entries(workspaceHints)
+      .filter(([, hint]) => hint === null)
+      .map(([agentId]) => agentId);
+    if (protectedAgents.length > 0) {
+      console.log(`\nKorunan agent model ayarları: ${protectedAgents.join(", ")}`);
+      console.log("- Bu agent'lar OpenClaw'daki kendi model seçiminde kalır; route etmek istersen workspace_hints değerini kategori listesine çevir.");
     }
 
     const pendingAdvisory = readPendingSubscriptionAdvisory(args.openclawDir);
@@ -411,6 +454,7 @@ async function main() {
       providers: providerSelections,
       routingModifier: effectiveRoutingModifier,
       inventoryAccounts,
+      workspaceHints,
     });
 
     console.log("\nÖzet");

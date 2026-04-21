@@ -82,6 +82,24 @@ describe("buildStarterConfig", () => {
       "At least one provider must be selected for starter onboarding.",
     );
   });
+
+  it("carries protected agent hints into generated starter configs", () => {
+    const config = buildStarterConfig({
+      providers: [
+        { providerId: "openai-codex", tierId: "plus" },
+        { providerId: "zai", tierId: "max" },
+      ],
+      workspaceHints: {
+        codex: null,
+        senti: ["code", "research"],
+      },
+    });
+
+    expect(config.workspace_hints).toEqual({
+      codex: null,
+      senti: ["code", "research"],
+    });
+  });
 });
 
 describe("starter onboarding helpers", () => {

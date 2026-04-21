@@ -7,7 +7,7 @@
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
-ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior - not a replacement for OpenClaw's own model defaults, per-agent configuration, or unrelated provider/API-key setups. By default, it stays on current models that sit outside the ZeroAPI policy pool.
+ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior - not a replacement for OpenClaw's own model defaults, per-agent configuration, or unrelated provider/API-key setups. By default, it stays on current models that sit outside the ZeroAPI policy pool and leaves agent-specific model assignments alone unless that agent is explicitly opted into routing.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
@@ -54,6 +54,8 @@ The default policy mode is `balanced`. That means ZeroAPI will not blindly force
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
 If the current runtime model is outside `zeroapi-config.json`'s `models` pool, ZeroAPI now defaults to `stay` instead of forcefully re-entering. This keeps subscription routing from hijacking unrelated API-key providers. Advanced users can opt back in with `"external_model_policy": "allow"`.
+
+If an OpenClaw agent is already running a non-default model and that agent has no `workspace_hints` entry, ZeroAPI skips routing for that turn. This protects specialist agents such as a `codex` agent pinned to `openai-codex/gpt-5.4`. To intentionally route a specialist agent, add a category list under `workspace_hints`; to hard-disable routing for it, set the value to `null`.
 
 ## Supported Providers
 

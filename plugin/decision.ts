@@ -77,6 +77,18 @@ function shouldStayOnExternalCurrentModel(
   return (config.external_model_policy ?? "stay") !== "allow";
 }
 
+function shouldSkipAgentCurrentModel(
+  config: ZeroAPIConfig,
+  agentId: string | undefined,
+  workspaceHints: TaskCategory[] | null | undefined,
+  currentModel: string | null,
+): boolean {
+  if (!agentId) return false;
+  if (workspaceHints !== undefined) return false;
+  if (!currentModel) return false;
+  return currentModel !== config.default_model;
+}
+
 export function resolveRoutingDecision(
   config: ZeroAPIConfig,
   options: ResolveRoutingOptions,
@@ -98,6 +110,27 @@ export function resolveRoutingDecision(
     return {
       action: "skip",
       reason: "skip:specialist_agent",
+      ...baseContext,
+      tokenEstimate: null,
+      likelyVision: false,
+      capableModels: [],
+      capabilityRejected: [],
+      subscriptionRejected: [],
+      weightedCandidates: [],
+      rawDecision: null,
+      finalDecision: null,
+      selectedModel: null,
+      providerOverride: null,
+      modelOverride: null,
+      authProfileOverride: null,
+      selectedAccountId: null,
+    };
+  }
+
+  if (shouldSkipAgentCurrentModel(config, agentId, workspaceHints, currentModel)) {
+    return {
+      action: "skip",
+      reason: "skip:agent_current_model",
       ...baseContext,
       tokenEstimate: null,
       likelyVision: false,

@@ -60,6 +60,13 @@ export function buildExplanationSummary(result: RoutingResolution): ExplanationS
       };
     }
 
+    if (result.reason === "skip:agent_current_model") {
+      return {
+        headline: "Skipped routing because this agent is already running its own OpenClaw-selected model.",
+        details,
+      };
+    }
+
     if (result.reason.startsWith("skip:trigger:")) {
       const trigger = result.reason.slice("skip:trigger:".length);
       return {

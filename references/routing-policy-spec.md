@@ -39,6 +39,7 @@ Balanced routing uses these inputs:
 ZeroAPI does nothing when any of these conditions fire:
 
 - specialist agent workspace hint is explicitly `null` -> `skip:specialist_agent`
+- agent has no `workspace_hints` entry and is already running a non-default OpenClaw model -> `skip:agent_current_model`
 - trigger is `cron` or `heartbeat` -> `skip:trigger:*`
 - current model is outside ZeroAPI's configured pool and `external_model_policy` is still `stay` -> `stay:external_current_model`
 

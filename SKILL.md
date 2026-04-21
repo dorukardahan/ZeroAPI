@@ -258,6 +258,8 @@ Required config shape:
 
 `vision_keywords` and `risk_levels` are optional overrides. Omit them to use the built-in plugin defaults. `external_model_policy` should usually stay at `"stay"` unless the user explicitly wants ZeroAPI to reclaim turns from non-ZeroAPI current models.
 
+Agent model safety rule: if an OpenClaw agent already has its own model assignment, preserve that assignment. Put that agent in `workspace_hints` as `null` unless the user explicitly wants ZeroAPI to route it. If the user does want routing for that agent, use a category list such as `["code", "research"]`; this is an explicit opt-in.
+
 `routing_modifier` is also optional. Leave it unset for plain balanced mode unless the user explicitly wants one of the shipped overlays.
 
 Supported policy choices:
@@ -274,7 +276,7 @@ Important rules:
 - `zeroapi-config.json` is **policy config**, not the runtime source of truth.
 - Default model should usually match the OpenClaw runtime default unless the user explicitly wants to change the runtime default too. Use routing rules and `routing_modifier` to send specialist tasks to stronger models.
 - Fallback chains must span multiple providers when possible.
-- Specialist agents should generally get `null` workspace hints.
+- Specialist agents and any OpenClaw agents with their own fixed model should generally get `null` workspace hints.
 - Cron changes are preview-first unless the user explicitly opts in.
 - Do not modify workspace memory/docs files as part of routing setup.
 - If a user says a provider or account exists but should not be used, add it to `subscription_inventory.accounts` with `enabled: false` and its `authProfile` when known. This marks it as reviewed so advisories do not keep asking about it.

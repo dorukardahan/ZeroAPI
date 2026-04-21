@@ -112,11 +112,11 @@ Edit `workspace_hints` in your config to bias routing per agent workspace:
 "workspace_hints": {
   "codex-workspace": ["code"],
   "glm-workspace": ["orchestration"],
-  "main-workspace": null
+  "fixed-codex-agent": null
 }
 ```
 
-A `null` value means no hint — routing falls back to keyword matching only. Hints should be treated as a weak bias, not as the primary routing signal.
+A category list opts an agent into routing and acts as a weak bias, not as the primary routing signal. A `null` value means specialist agent: ZeroAPI skips routing and leaves that agent's OpenClaw model assignment alone.
 
 ## Routing Logic
 

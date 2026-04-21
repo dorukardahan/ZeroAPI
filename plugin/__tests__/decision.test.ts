@@ -95,6 +95,35 @@ describe("resolveRoutingDecision", () => {
     expect(result.finalDecision).toBeNull();
   });
 
+  it("skips unhinted agents that are already running an explicit non-default model", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        default_model: "zai/glm-5",
+      },
+      {
+        prompt: "coordinate a workflow across 3 services",
+        agentId: "codex",
+        currentModel: "openai-codex/gpt-5.4",
+      },
+    );
+
+    expect(result.action).toBe("skip");
+    expect(result.reason).toBe("skip:agent_current_model");
+    expect(result.finalDecision).toBeNull();
+  });
+
+  it("allows workspace hints to opt an explicit-model agent into routing", () => {
+    const result = resolveRoutingDecision(config, {
+      prompt: "refactor the worker queue",
+      agentId: "senti",
+      currentModel: "zai/glm-5",
+    });
+
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("openai-codex/gpt-5.4");
+  });
+
   it("skips cron and heartbeat triggers", () => {
     const cron = resolveRoutingDecision(config, {
       prompt: "quick format this output",

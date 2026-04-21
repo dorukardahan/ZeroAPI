@@ -45,6 +45,29 @@ for agent, hint in workspace_hints.items():
     if hint is not None and not isinstance(hint, list):
         print(f'WARN: workspace_hints.{agent} should be list|null, got {type(hint).__name__}')
 
+def read_model_ref(model):
+    if isinstance(model, str) and model.strip():
+        return model.strip()
+    if isinstance(model, dict):
+        primary = model.get('primary')
+        if isinstance(primary, str) and primary.strip():
+            return primary.strip()
+    return None
+
+agents = ocfg.get('agents', {}).get('list', [])
+if isinstance(agents, list):
+    for entry in agents:
+        if not isinstance(entry, dict):
+            continue
+        agent_id = entry.get('id')
+        model_ref = read_model_ref(entry.get('model'))
+        if not isinstance(agent_id, str) or not agent_id or not model_ref:
+            continue
+        if agent_id not in workspace_hints:
+            print(f'INFO: agent {agent_id} has explicit model {model_ref}; ZeroAPI will skip it implicitly unless workspace_hints.{agent_id} opts it in')
+        elif workspace_hints.get(agent_id) is None:
+            print(f'OK: agent {agent_id} explicit model protected by workspace_hints.{agent_id}=null')
+
 profile = zcfg.get('subscription_profile')
 inventory = zcfg.get('subscription_inventory')
 

@@ -25,6 +25,7 @@ The headline is one sentence. It should describe the main outcome in plain Engli
 Examples:
 
 - `Skipped routing because the cron trigger is excluded from ZeroAPI routing.`
+- `Skipped routing because this agent is already running its own OpenClaw-selected model.`
 - `Stayed on the current model because no candidate survived the capability and subscription filters.`
 - `Routed to zai/glm-5 after capability, subscription, and policy scoring.`
 - `Kept zai/glm-5 and preferred auth profile zai:work for the winning same-provider account.`
@@ -52,6 +53,7 @@ Current fields:
 Use skip headlines when an early gate prevents real routing work:
 
 - specialist agent
+- agent-specific current model that was not explicitly opted into routing
 - excluded trigger such as `cron` or `heartbeat`
 - future early exits of the same class
 

@@ -195,4 +195,22 @@ describe("buildExplanationSummary", () => {
     expect(summary.headline).toBe("Skipped routing because this agent is explicitly marked as specialist-only.");
     expect(summary.details).toContain("category=n/a");
   });
+
+  it("explains implicit protection for agent-specific current models", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        default_model: "zai/glm-5",
+      },
+      {
+        prompt: "coordinate this workflow",
+        agentId: "codex",
+        currentModel: "openai-codex/gpt-5.4",
+      },
+    );
+
+    const summary = buildExplanationSummary(result);
+    expect(summary.headline).toBe("Skipped routing because this agent is already running its own OpenClaw-selected model.");
+    expect(summary.details).toContain("reason=skip:agent_current_model");
+  });
 });

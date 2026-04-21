@@ -93,6 +93,7 @@ export type StarterConfigOptions = {
   providers: StarterProviderSelection[];
   routingModifier?: RoutingModifier;
   inventoryAccounts?: StarterInventoryAccountInput[];
+  workspaceHints?: Record<string, TaskCategory[] | null>;
 };
 
 export type StarterConfigSummary = {
@@ -471,7 +472,7 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
     default_model: defaultModel,
     models,
     routing_rules: routingRules,
-    workspace_hints: {},
+    workspace_hints: options.workspaceHints ?? {},
     keywords: DEFAULT_KEYWORDS,
     high_risk_keywords: DEFAULT_HIGH_RISK_KEYWORDS,
     fast_ttft_max_seconds: getFastTtftThreshold(providerIds),

@@ -11,6 +11,7 @@
 - Setup docs now keep `default_model` aligned with the OpenClaw runtime default unless the user explicitly changes runtime defaults too.
 - `/zeroapi` docs now require neutral repo explanations before install instead of assuming repository ownership from repo slug or old memory.
 - Added `scripts/reload_gateway.mjs` and documented it as the delayed reload path after config-only reruns, so policy edits stop pretending they are live before the gateway reload happens.
+- Agent-specific OpenClaw model assignments are now protected by default: unhinted agents already running a non-default model skip ZeroAPI routing unless `workspace_hints` explicitly opts them in, and starter config generation preserves fixed-model agents with `null` hints.
 
 ## [3.6.0] - 2026-04-20
 
