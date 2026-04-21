@@ -9,6 +9,8 @@
 - Onboarding docs now forbid unsupported `aggressive`/`conservative` routing modes and direct users to supported balanced modifiers instead.
 - Advisory detection now treats disabled inventory accounts with `authProfile` as acknowledged exclusions, so cancelled subscriptions do not keep reappearing as pending additions.
 - Setup docs now keep `default_model` aligned with the OpenClaw runtime default unless the user explicitly changes runtime defaults too.
+- `/zeroapi` docs now require neutral repo explanations before install instead of assuming repository ownership from repo slug or old memory.
+- Added `scripts/reload_gateway.mjs` and documented it as the delayed reload path after config-only reruns, so policy edits stop pretending they are live before the gateway reload happens.
 
 ## [3.6.0] - 2026-04-20
 

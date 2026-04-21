@@ -128,6 +128,7 @@ After the user answers the first question:
 - reuse current modifier as the default selection
 - reuse current inventory accounts as defaults where relevant
 - only ask about the changed surface unless the user asks for a full review
+- if the rerun writes `zeroapi-config.json` or `openclaw.json`, queue a delayed gateway restart before ending the turn and report that the new policy becomes active after reload
 
 Examples:
 

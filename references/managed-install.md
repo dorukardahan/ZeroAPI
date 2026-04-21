@@ -26,6 +26,12 @@ When user systemd is available, the gateway restart is scheduled about 20
 seconds after the command returns. This gives chat-driven installs enough time
 to report success before OpenClaw restarts.
 
+The same delayed restart helper can be reused for policy-only reruns:
+
+```bash
+node /path/to/ZeroAPI/scripts/reload_gateway.mjs --openclaw-dir ~/.openclaw
+```
+
 ## Managed state file
 
 State lives at:

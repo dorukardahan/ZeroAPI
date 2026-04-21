@@ -107,6 +107,7 @@ Managed install does four things in one pass:
 - installs/updates the plugin from the managed repo path
 - enables a user-level systemd timer that auto-applies future patch/minor ZeroAPI releases with backup + rollback
 - writes managed state before scheduling the delayed gateway restart, so chat-driven installs can report success before OpenClaw restarts
+- exposes `scripts/reload_gateway.mjs` for config-only reruns, so `/zeroapi` policy edits can queue the same safe delayed gateway restart
 
 If the host does not support `systemctl --user`, managed install still works, but the timer is skipped and the same updater can be run manually:
 

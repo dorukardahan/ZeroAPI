@@ -56,6 +56,7 @@ The `/zeroapi` flow should behave like a compact chat wizard:
 - show a short summary before writing config
 - keep re-run safe and resumable
 - adapt the **first rerun question** to the detected drift kind instead of restarting from a generic provider survey
+- when the user is only asking "what is this repo?", answer that neutrally before inspecting or mentioning the current host install
 
 Good style:
 
@@ -105,6 +106,8 @@ Sometimes the skill must ask for an operator step. Keep it short and explicit:
 - complete provider auth
 
 Channel users should still receive a short natural-language explanation of what is happening and why.
+
+When a rerun changes `zeroapi-config.json` or `openclaw.json`, schedule a delayed gateway restart and end the turn. Do not keep running host commands after the reload is queued.
 
 ## Re-run behavior
 

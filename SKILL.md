@@ -30,6 +30,8 @@ Behavior rules:
 - do not dump full JSON or large benchmark tables into chat
 - never ask the user to paste secrets into chat
 - when host access is required, give the shortest safe command and then resume the chat wizard
+- if the user first asks what the repo does or whether it is useful, answer that **neutrally from the repo/docs first**
+- do **not** infer repo ownership from the GitHub owner name, old memory, or previous installs unless the user explicitly states ownership or you have just verified the live host state
 
 If the channel exposes only the generic skill runner, `/skill zeroapi` is an acceptable entry point. `scripts/first_run.ts` is only a terminal fallback for repo-local or shell-driven installs.
 
@@ -165,6 +167,7 @@ Rules:
   1. `zeroapi-managed-install.json`
   2. `openclaw plugins list`
   3. gateway logs with `ZeroAPI Router ... loaded`
+- If the user is still at the "should we install this repo?" stage, answer the repo/product question first and only switch into host-state inspection after they ask to install or inspect the live setup.
 
 ### Step 2: collect available subscriptions
 
@@ -344,6 +347,18 @@ Then restart the gateway and verify the runtime state.
 
 Use the workspace-safe restart pattern if messaging continuity matters.
 
+If you changed `zeroapi-config.json` or aligned `openclaw.json`, schedule the reload with:
+
+```bash
+node /tmp/ZeroAPI/scripts/reload_gateway.mjs --openclaw-dir ~/.openclaw
+```
+
+Channel-first caveat for config reruns:
+
+- after `reload_gateway.mjs` succeeds, do **not** run more host commands in that same turn
+- reply immediately with the changed routing summary and the restart note
+- do **not** say the new policy is active until the scheduled restart/reload has happened
+
 ## Re-run behavior
 
 Re-running `/zeroapi` is safe.
@@ -353,6 +368,7 @@ Re-running `/zeroapi` is safe.
 - plugin reload happens on gateway restart
 - diffs should be shown before risky changes
 - cron changes remain opt-in unless explicitly approved
+- when a rerun changes policy files, schedule a delayed gateway restart before ending the turn
 
 ## Policy Tuning
 
