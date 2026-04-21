@@ -52,12 +52,15 @@ export type CronAuditJob = {
 };
 
 export type CronAuditAction = "skip" | "keep" | "change" | "review";
+export type CronAuditConfidence = "low" | "medium" | "high";
 
 export type CronAuditItem = {
   id: string;
   name: string;
   action: CronAuditAction;
   reason: string;
+  confidence: CronAuditConfidence;
+  matchedSignals: string[];
   agentId: string | null;
   sessionTarget: string | null;
   category: TaskCategory | null;
@@ -138,22 +141,89 @@ function likelyRequiresVision(config: ZeroAPIConfig, prompt: string): boolean {
   return keywords.some((keyword) => hasWholeKeyword(promptLower, keyword));
 }
 
-function applyCronCategoryHint(
-  prompt: string,
-  decision: ReturnType<typeof classifyTask>,
-): ReturnType<typeof classifyTask> {
-  if (decision.category !== "default" || decision.risk === "high") return decision;
-
+function findCronCategoryHint(prompt: string): { category: TaskCategory; reason: string; keyword: string } | null {
   const promptLower = prompt.toLowerCase();
-  const hint = CRON_CATEGORY_HINTS.find((entry) =>
-    entry.keywords.some((keyword) => hasCronKeyword(promptLower, keyword)),
+  for (const entry of CRON_CATEGORY_HINTS) {
+    const keyword = entry.keywords.find((candidate) => hasCronKeyword(promptLower, candidate));
+    if (keyword) {
+      return { category: entry.category, reason: entry.reason, keyword };
+    }
+  }
+  return null;
+}
+
+function extractMatchedSignals(reason: string): string[] {
+  const signals: string[] = [];
+  const keywordMatch = reason.match(/(?:^|:)keyword:([^:]+)/);
+  if (keywordMatch?.[1]) signals.push(`keyword:${keywordMatch[1]}`);
+  const workspaceMatch = reason.match(/(?:^|:)workspace_hint:([^:]+)/);
+  if (workspaceMatch?.[1]) signals.push(`workspace_hint:${workspaceMatch[1]}`);
+  const highRiskMatch = reason.match(/(?:^|:)high_risk_keyword:([^:]+)/);
+  if (highRiskMatch?.[1]) signals.push(`high_risk_keyword:${highRiskMatch[1]}`);
+  if (reason === "no_match") signals.push("no_match");
+  if (reason === "empty_prompt") signals.push("empty_prompt");
+  return signals;
+}
+
+function resolveConfidence(params: {
+  reason: string;
+  risk: RiskLevel;
+  matchedSignals: string[];
+}): CronAuditConfidence {
+  const { reason, risk, matchedSignals } = params;
+  if (risk === "high") return "high";
+  if (matchedSignals.some((signal) => signal.startsWith("keyword:"))) return "high";
+  if (matchedSignals.some((signal) => signal.startsWith("cron_hint:"))) return "medium";
+  if (matchedSignals.some((signal) => signal.startsWith("workspace_hint:"))) return "medium";
+  if (reason === "no_match" || reason === "empty_prompt") return "low";
+  return "medium";
+}
+
+function classifyCronPrompt(params: {
+  config: ZeroAPIConfig;
+  prompt: string;
+  workspaceHints?: TaskCategory[] | null;
+}): {
+  decision: ReturnType<typeof classifyTask>;
+  confidence: CronAuditConfidence;
+  matchedSignals: string[];
+} {
+  const { config, prompt, workspaceHints } = params;
+  const decision = classifyTask(
+    prompt,
+    config.keywords,
+    config.high_risk_keywords,
+    workspaceHints === null ? undefined : workspaceHints,
+    config.risk_levels,
   );
-  if (!hint) return decision;
+  const matchedSignals = extractMatchedSignals(decision.reason);
+
+  if (decision.category === "default" && decision.risk !== "high") {
+    const hint = findCronCategoryHint(prompt);
+    if (hint) {
+      const hintedDecision = {
+        ...decision,
+        category: hint.category,
+        reason: hint.reason,
+      };
+      const hintName = hint.reason.replace(/^cron_hint:/, "");
+      const hintedSignals = [`cron_hint:${hintName}:${hint.keyword}`];
+      return {
+        decision: hintedDecision,
+        confidence: resolveConfidence({
+          reason: hintedDecision.reason,
+          risk: hintedDecision.risk,
+          matchedSignals: hintedSignals,
+        }),
+        matchedSignals: hintedSignals,
+      };
+    }
+  }
 
   return {
-    ...decision,
-    category: hint.category,
-    reason: hint.reason,
+    decision,
+    confidence: resolveConfidence({ reason: decision.reason, risk: decision.risk, matchedSignals }),
+    matchedSignals,
   };
 }
 
@@ -218,6 +288,8 @@ export function auditCronJob(
     ...base,
     currentModel,
     currentFallbacks,
+    confidence: "high" as CronAuditConfidence,
+    matchedSignals: [],
     suggestedModel: null,
     suggestedFallbacks: [],
     weightedCandidates: [],
@@ -250,6 +322,8 @@ export function auditCronJob(
       ...common,
       action: "review",
       reason: "review:empty_prompt",
+      confidence: "low",
+      matchedSignals: ["empty_prompt"],
       category: null,
       risk: null,
     };
@@ -257,16 +331,12 @@ export function auditCronJob(
 
   const agentId = base.agentId ?? undefined;
   const workspaceHints = agentId ? config.workspace_hints[agentId] : undefined;
-  const decision = applyCronCategoryHint(
+  const classification = classifyCronPrompt({
+    config,
     prompt,
-    classifyTask(
-      prompt,
-      config.keywords,
-      config.high_risk_keywords,
-      workspaceHints === null ? undefined : workspaceHints,
-      config.risk_levels,
-    ),
-  );
+    workspaceHints,
+  });
+  const { decision, confidence, matchedSignals } = classification;
   const weightedCandidates = resolveWeightedCandidates({
     config,
     category: decision.category,
@@ -281,6 +351,8 @@ export function auditCronJob(
     ...common,
     category: decision.category,
     risk: decision.risk,
+    confidence,
+    matchedSignals,
     suggestedModel,
     suggestedFallbacks,
     weightedCandidates,

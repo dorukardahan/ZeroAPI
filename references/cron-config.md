@@ -28,6 +28,8 @@ The audit is read-only. It returns recommended `cron.update` payload patches, bu
 
 The audit uses cron-specific hints when the normal chat classifier has no strong keyword match. Examples: `health`, `watchdog`, `status`, `freshness`, and `reminder` map to `fast`; `sync`, `ci`, `build`, `test`, `repo`, and `github` map to `code`; `audit`, `digest`, `engage`, and `moderation` map to `research`.
 
+Each audit item includes `confidence` and `matchedSignals` so operators can see whether a recommendation came from a strong chat keyword, a cron-specific hint, a workspace hint, or a high-risk guardrail. Treat `low` confidence rows as manual review candidates even when the suggested model is technically eligible.
+
 **Conservative default:** first run is preview-only. User explicitly opts in per job. Re-run shows a diff and requires confirmation.
 
 ## Audit actions
