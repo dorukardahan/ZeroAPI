@@ -22,7 +22,7 @@ For the written product contract behind the current router, see [`references/rou
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
 - **Benchmark-aware** — routes by real benchmark scores (Artificial Analysis), not vibes
-- **Subscription-aware** — respects your provider tiers and biases toward high-headroom plans
+- **Subscription-aware** — uses your declared provider tiers, account priorities, and intended-use hints without reading private live quota data
 - **Data-driven tuning** — built-in eval script analyzes routing logs and suggests config improvements
 - **Zero runtime cost** — keyword classification under 1ms, no LLM call, no external API
 - **Cross-provider fallback** — every category has fallbacks spanning multiple providers
@@ -45,11 +45,13 @@ The plugin fires before eligible messages via OpenClaw's `before_model_resolve` 
 
 1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
 2. **Subscription filter** — eliminate models not allowed by the user's legacy profile or preferred account inventory
-3. **Benchmark frontier** — keep only candidates that stay close enough to the category leader for their subscription/headroom profile
-4. **Subscription pressure ordering** — inside that frontier, prefer providers whose tier and provider bias make them more appropriate for routine use
+3. **Benchmark frontier** — keep only candidates that stay close enough to the category leader for their declared subscription profile
+4. **Subscription pressure ordering** — inside that frontier, prefer providers whose configured tier and account hints make them more appropriate for routine use
 5. **Benchmark fallback order** — outside the frontier, fall back in benchmark strength order
 
-The default policy mode is `balanced`. That means ZeroAPI will not blindly force the raw benchmark winner on every turn. It only lets subscription headroom reorder candidates when they stay close enough to the category leader. This is the intended default for users who have uneven subscription limits across providers.
+The default policy mode is `balanced`. That means ZeroAPI will not blindly force the raw benchmark winner on every turn. It only lets declared subscription/account capacity reorder candidates when they stay close enough to the category leader. This is the intended default for users who have uneven subscription limits across providers.
+
+Important: ZeroAPI does **not** read provider dashboards, live remaining quota, billing counters, or private usage telemetry. In v1, "headroom" means a static policy signal derived from configured tier, `usagePriority`, `intendedUse`, and account count.
 
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
@@ -135,7 +137,7 @@ As of the new subscription-aware foundation, the config can include:
 - a persistent global subscription profile
 - a preferred `subscription_inventory` for same-provider multi-account setups
 - agent-level partial overrides for provider availability
-- benchmark-frontier routing that can bias toward high-headroom providers like GLM Max without letting weak candidates jump the queue
+- benchmark-frontier routing that can bias toward higher-capacity configured providers like GLM Max without letting weak candidates jump the queue
 
 The user declares what subscriptions they have. ZeroAPI decides the route.
 
@@ -149,7 +151,7 @@ If OpenClaw gains a newly usable **supported provider** or a new same-provider *
 
 In plain terms:
 - keep the benchmark leader when the quality gap is meaningful
-- let stronger subscription headroom win when benchmark quality stays near the leader
+- let stronger declared subscription/account capacity win when benchmark quality stays near the leader
 - do not let weak candidates jump the queue just because the subscription is larger
 
 Task-aware modifiers can now sit on top of this baseline without replacing it. The default shipping contract is still one clear default: sustainable quality optimization.

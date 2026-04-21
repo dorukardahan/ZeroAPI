@@ -8,6 +8,7 @@
 - Cron audit output now includes recommendation `confidence` and `matchedSignals`, making it clear whether a model suggestion came from a task keyword, cron hint, workspace hint, or high-risk guardrail.
 - Added a dry-run-first cron apply helper that writes a timestamped backup before applying approved `agentTurn` model/fallback patches and skips low-confidence changes by default.
 - Added a fresh-install golden transcript fixture that locks the channel-first repo explanation, install, provider, verify, and cron setup contract.
+- Clarified that subscription/account headroom is static configured policy input, not live provider quota or private usage telemetry.
 - Aligned public onboarding/auth guidance with current upstream OpenClaw provider flows: OpenAI uses `openclaw models auth login --provider openai-codex`, MiniMax uses `minimax-portal`, and Qwen routes through `qwen-portal/coder-model`.
 - Managed install/update now writes state before restarting the gateway and schedules the restart through user systemd when possible, so chat-driven installs do not leave partial plugin state if the gateway stops the running agent.
 - Managed install now uses a longer scheduled restart grace period and documents that chat-based installers should reply before running follow-up host checks.

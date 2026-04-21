@@ -14,10 +14,12 @@ That matters when a user has cases like:
 - one account meant for coding and another meant for routine traffic
 - multiple same-provider accounts where quota resilience matters
 
+ZeroAPI does not inspect live provider quota, remaining messages, or billing counters. In this spec, "headroom" means static configured capacity from tier weights, `usagePriority`, `intendedUse`, and bounded redundancy.
+
 ## Goals
 
 - keep same-provider account choice deterministic
-- let higher subscription headroom matter without making the pool opaque
+- let higher declared subscription/account capacity matter without making the pool opaque
 - make `usagePriority` and `intendedUse` meaningful but bounded
 - leave a clean future slot for depletion or usage-pressure signals
 

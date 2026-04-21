@@ -2,6 +2,8 @@
 
 This document defines the provider and subscription catalog used by ZeroAPI for subscription-aware routing.
 
+ZeroAPI does not read live provider quota or private usage telemetry. Catalog weights are static policy hints based on public/provider-declared tiers and account-quota shape.
+
 ## Goals
 
 - Let users select from known subscription tiers instead of free-form text
@@ -153,8 +155,8 @@ It should only shape selection among benchmark-near candidates.
 Practical intent:
 
 - OpenAI may remain benchmark leader for many categories
-- GLM Max may still deserve stronger routine preference if the user has much more headroom there
-- Lower-headroom subscriptions should not dominate every task just because they benchmark slightly higher
+- GLM Max may still deserve stronger routine preference if the user configured much more capacity there
+- Lower-capacity configured subscriptions should not dominate every task just because they benchmark slightly higher
 
 That is why catalog entries can carry a provider-level routing bias, while tiers carry a tier-level routing weight.
 The router uses two layers:
@@ -165,7 +167,7 @@ The router uses two layers:
    - only candidates inside that drop window can compete for first place
 
 2. Subscription pressure ordering:
-   - inside the frontier, higher headroom providers sort earlier
+   - inside the frontier, higher configured-capacity providers sort earlier
    - outside the frontier, candidates stay in benchmark order
 
 The effective pressure signal is:
@@ -175,7 +177,7 @@ The effective pressure signal is:
 - tier routing weight
 - provider benchmark bias
 
-This stays heuristic in v1. Real usage telemetry comes later, but the frontier rule keeps the heuristic from overwhelming benchmark quality.
+This stays heuristic in v1. Real usage telemetry comes later, but the frontier rule keeps static tier/account hints from overwhelming benchmark quality.
 
 ## Files to Add in v1
 
