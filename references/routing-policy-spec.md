@@ -7,7 +7,8 @@ This document describes what ZeroAPI means by balanced routing today. It is a pr
 ## Goals
 
 - preserve benchmark leadership when the quality gap is meaningful
-- allow subscription headroom to reorder only benchmark-near candidates
+- allow declared subscription/account capacity to reorder only benchmark-near candidates
+- define "headroom" as static configured tier/account capacity, not live remaining quota
 - keep manual user/runtime choices above automatic routing
 - make same-provider multi-account routing deterministic enough to explain
 
@@ -112,7 +113,7 @@ Note: benchmark values above 1 are normalized to percentages divided by 100 befo
 
 ## Benchmark frontier
 
-Balanced does not directly sort all candidates by subscription headroom. It first asks whether a candidate is close enough to the strongest benchmark score.
+Balanced does not directly sort all candidates by subscription/account capacity. It first asks whether a candidate is close enough to the strongest benchmark score.
 
 For each candidate:
 
@@ -150,7 +151,7 @@ Candidates outside the frontier are sorted by:
 This is the core balanced rule:
 
 - benchmark quality defines who is even allowed to compete for first place
-- subscription headroom only reorders that benchmark-near set
+- declared subscription/account capacity only reorders that benchmark-near set
 
 ## Route vs stay behavior
 

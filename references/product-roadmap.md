@@ -22,12 +22,13 @@ These decisions are already locked unless there is a deliberate product change:
 - ZeroAPI is a subscription-focused routing layer, not a generic API-key router
 - Public benchmark data ships as a committed snapshot, not by exposing the Artificial Analysis API key
 - Same-provider multi-account routing is modeled via `subscription_inventory`
+- Subscription/account headroom is static policy input today, not live quota telemetry
 - OpenClaw runtime state remains the authority; ZeroAPI suggests routing and account preference
 
 ## Product principles
 
 1. Benchmark quality still leads.
-2. Subscription headroom may reorder only benchmark-near candidates.
+2. Declared subscription/account capacity may reorder only benchmark-near candidates.
 3. Manual user choices win over automatic routing.
 4. Public repo behavior must stay generic and operator-safe.
 5. Every routing rule that matters should be explainable in one short sentence.

@@ -121,7 +121,7 @@ Use when the operator wants stronger protection for code quality and does not wa
 Intent:
 
 - preserve stronger coding leaders when the benchmark gap is real
-- still allow high-headroom subscriptions to win near-ties
+- still allow higher-capacity configured subscriptions to win near-ties
 
 Current shipped behavior:
 
@@ -133,7 +133,7 @@ Current shipped behavior:
 What it should feel like:
 
 - GPT-class coding leaders stay in front more often when they are clearly better
-- GLM/Kimi/Qwen still win routine coding turns when they are close enough and the user has stronger headroom there
+- GLM/Kimi/Qwen still win routine coding turns when they are close enough and the user has stronger declared capacity there
 
 ### 2. `research-aware`
 
@@ -153,7 +153,7 @@ Current shipped behavior:
 
 What it should feel like:
 
-- top reasoning models are harder to displace just because another provider has more quota
+- top reasoning models are harder to displace just because another provider has stronger configured capacity
 - subscription pressure still matters when research candidates are genuinely close
 
 ### 3. `speed-aware`
