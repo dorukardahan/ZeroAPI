@@ -317,6 +317,7 @@ ZeroAPI/
 │       └── session-auth.test.ts
 ├── examples/
 │   ├── README.md
+│   ├── fresh-install-transcript.json
 │   ├── openai-only.json
 │   ├── openai-glm.json
 │   ├── openai-glm-kimi.json
