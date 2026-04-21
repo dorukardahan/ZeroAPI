@@ -8,7 +8,7 @@ description: >
   Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
-compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Same-provider account steering via `authProfile` works best on OpenClaw runtimes that support `authProfileOverride` from `before_model_resolve`; older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists.
+compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. OpenClaw v2026.4.20 still only consumes `providerOverride` and `modelOverride` from `before_model_resolve`, so same-provider account steering via `authProfile` uses ZeroAPI's best-effort session-store fallback when the active session already exists.
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw","claude"],"config":["agents"]}}}
 ---
 
@@ -77,7 +77,7 @@ Five subscription or account-quota providers are currently supported by the rout
 | Provider | OpenClaw ID | Auth | Tiers |
 |----------|-------------|------|-------|
 | OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus, Pro |
-| Kimi | `moonshot` (`kimi`, `kimi-coding` aliases) | API key | Moderato, Allegretto, Allegro, Vivace |
+| Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | API key | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
 | MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
 | Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | OAuth portal | Free OAuth |
@@ -206,7 +206,7 @@ Persist the result into a subscription profile with:
   - `research-aware`
   - `speed-aware`
 
-If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI returns that value as `authProfileOverride` on newer OpenClaw runtimes. Older runtimes use ZeroAPI's best-effort session-store fallback when the active session already exists, and otherwise continue to rely on `auth.order`. For the current account-pool scoring contract, see `references/account-pool-spec.md`.
+If the user has multiple accounts under the same provider, also build a `subscription_inventory` with one entry per account. Include `authProfile` when the user has matching OpenClaw auth profiles configured. ZeroAPI syncs that preferred profile into OpenClaw session state when the active session already exists, and otherwise continues to rely on OpenClaw `auth.order`. For the current account-pool scoring contract, see `references/account-pool-spec.md`.
 
 The user declares what subscriptions they have. ZeroAPI decides routing.
 

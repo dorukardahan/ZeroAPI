@@ -41,6 +41,16 @@ describe("buildStarterConfig", () => {
     expect(config.fast_ttft_max_seconds).toBe(8);
   });
 
+  it("uses the current OpenClaw Moonshot default for Kimi starter configs", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "moonshot", tierId: "moderato" }],
+    });
+
+    expect(Object.keys(config.models)).toEqual(["moonshot/kimi-k2.6"]);
+    expect(config.models["moonshot/kimi-k2.6"]?.context_window).toBe(262144);
+    expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+  });
+
   it("prefers inventory for multi-account providers and keeps modifier selection", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "zai", tierId: "pro" }],

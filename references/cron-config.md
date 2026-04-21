@@ -27,6 +27,11 @@ npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
 
 `cron:apply` is dry-run by default. With `--yes`, it writes a timestamped backup next to `jobs.json` before patching eligible `agentTurn` jobs. It skips low-confidence changes unless `--include-low-confidence` is passed, and `--job-id <id>` can scope the write to selected jobs.
 
+OpenClaw v2026.4.20 splits cron runtime state into `jobs-state.json`. ZeroAPI
+intentionally reads and patches only the job definition store (`jobs.json` or
+the configured `cron.store`). It must not copy, edit, or version-control
+`jobs-state.json`; that file is runtime-owned.
+
 | Cron Task Type | Detection Signal | Model Criteria |
 |---------------|------------------|----------------|
 | Health check / status | Reads file, checks thresholds | Cheapest fast model, low TTFT |
@@ -63,8 +68,8 @@ Example fallback chains (5-provider setup):
 
 | Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |----------|---------|------------|------------|------------|
-| Code | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | MiniMax-M2.7 (MiniMax) |
-| Research | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | Qwen Portal (Qwen proxy) |
-| Orchestration | GLM-5.1 (Z AI) | Kimi K2.5 (Kimi) | Qwen Portal (Qwen proxy) | — |
+| Code | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Kimi K2.6 (Kimi) | MiniMax-M2.7 (MiniMax) |
+| Research | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.6 (Kimi) | Qwen Portal (Qwen proxy) |
+| Orchestration | GLM-5.1 (Z AI) | Kimi K2.6 (Kimi) | Qwen Portal (Qwen proxy) | — |
 | Math | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Qwen Portal (Qwen proxy) | — |
-| Fast | GLM-5.1 (Z AI) | MiniMax-M2.7 (MiniMax) | Kimi K2.5 (Kimi) | — |
+| Fast | GLM-5.1 (Z AI) | MiniMax-M2.7 (MiniMax) | Kimi K2.6 (Kimi) | — |

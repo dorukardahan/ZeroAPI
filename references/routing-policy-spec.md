@@ -190,8 +190,8 @@ When `subscription_inventory` resolves a preferred account:
 If the winning model equals the current model:
 
 - ZeroAPI still routes when `preferredAuthProfile` is present
-- newer OpenClaw runtimes consume `authProfileOverride` directly
-- older runtimes rely on ZeroAPI's best-effort session-store fallback
+- OpenClaw v2026.4.20 still consumes only `providerOverride` and `modelOverride` from `before_model_resolve`
+- ZeroAPI relies on its best-effort session-store fallback for same-provider account steering when the active session exists
 
 Guardrail:
 
