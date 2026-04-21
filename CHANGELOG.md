@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-04-22
+
 ### Changed
 - Added root npm scripts for repo-local tests, simulation, eval, cron audit/apply, first-run, doctor, and managed install/update flows.
 - Added a preview-only cron audit command that reads OpenClaw cron jobs, classifies `agentTurn` payloads, and recommends `payload.model` / `payload.fallbacks` patches without writing `jobs.json`.
