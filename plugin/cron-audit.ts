@@ -7,6 +7,40 @@ import type { RiskLevel, TaskCategory, ZeroAPIConfig } from "./types.js";
 
 type UnknownRecord = Record<string, unknown>;
 
+const CRON_CATEGORY_HINTS: Array<{
+  category: TaskCategory;
+  reason: string;
+  keywords: string[];
+}> = [
+  {
+    category: "code",
+    reason: "cron_hint:code_sync",
+    keywords: ["sync", "ci", "build", "test", "npm", "package", "repo", "repository", "github"],
+  },
+  {
+    category: "fast",
+    reason: "cron_hint:health_check",
+    keywords: [
+      "alert",
+      "check",
+      "dm",
+      "failsafe",
+      "freshness",
+      "health",
+      "reminder",
+      "status",
+      "streak",
+      "token expiry",
+      "watchdog",
+    ],
+  },
+  {
+    category: "research",
+    reason: "cron_hint:review_digest",
+    keywords: ["audit", "digest", "engage", "engagement", "moderation", "review"],
+  },
+];
+
 export type CronAuditJob = {
   id?: unknown;
   name?: unknown;
@@ -83,6 +117,11 @@ function hasWholeKeyword(inputLower: string, keyword: string): boolean {
   return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`).test(inputLower);
 }
 
+function hasCronKeyword(inputLower: string, keyword: string): boolean {
+  if (keyword.includes(" ")) return inputLower.includes(keyword.toLowerCase());
+  return hasWholeKeyword(inputLower, keyword);
+}
+
 function buildPrompt(job: CronAuditJob, payload: UnknownRecord): string {
   return [
     normalizeString(job.name),
@@ -97,6 +136,25 @@ function likelyRequiresVision(config: ZeroAPIConfig, prompt: string): boolean {
   const promptLower = prompt.toLowerCase();
   const keywords = config.vision_keywords ?? DEFAULT_VISION_KEYWORDS;
   return keywords.some((keyword) => hasWholeKeyword(promptLower, keyword));
+}
+
+function applyCronCategoryHint(
+  prompt: string,
+  decision: ReturnType<typeof classifyTask>,
+): ReturnType<typeof classifyTask> {
+  if (decision.category !== "default" || decision.risk === "high") return decision;
+
+  const promptLower = prompt.toLowerCase();
+  const hint = CRON_CATEGORY_HINTS.find((entry) =>
+    entry.keywords.some((keyword) => hasCronKeyword(promptLower, keyword)),
+  );
+  if (!hint) return decision;
+
+  return {
+    ...decision,
+    category: hint.category,
+    reason: hint.reason,
+  };
 }
 
 function resolveWeightedCandidates(params: {
@@ -199,12 +257,15 @@ export function auditCronJob(
 
   const agentId = base.agentId ?? undefined;
   const workspaceHints = agentId ? config.workspace_hints[agentId] : undefined;
-  const decision = classifyTask(
+  const decision = applyCronCategoryHint(
     prompt,
-    config.keywords,
-    config.high_risk_keywords,
-    workspaceHints === null ? undefined : workspaceHints,
-    config.risk_levels,
+    classifyTask(
+      prompt,
+      config.keywords,
+      config.high_risk_keywords,
+      workspaceHints === null ? undefined : workspaceHints,
+      config.risk_levels,
+    ),
   );
   const weightedCandidates = resolveWeightedCandidates({
     config,

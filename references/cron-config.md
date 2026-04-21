@@ -26,6 +26,8 @@ The audit is read-only. It returns recommended `cron.update` payload patches, bu
 | System monitoring | Shell commands, thresholds, logs | Moderate IFBench, fast TTFT |
 | Engagement / moderation | Social/media judgment | High intelligence, moderate speed |
 
+The audit uses cron-specific hints when the normal chat classifier has no strong keyword match. Examples: `health`, `watchdog`, `status`, `freshness`, and `reminder` map to `fast`; `sync`, `ci`, `build`, `test`, `repo`, and `github` map to `code`; `audit`, `digest`, `engage`, and `moderation` map to `research`.
+
 **Conservative default:** first run is preview-only. User explicitly opts in per job. Re-run shows a diff and requires confirmation.
 
 ## Audit actions

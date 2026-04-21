@@ -133,6 +133,22 @@ describe("auditCronJob", () => {
     expect(result.patch).toBeNull();
   });
 
+  it("uses cron-specific hints for short health check prompts", () => {
+    const result = auditCronJob(config, {
+      id: "watchdog",
+      name: "System Watchdog",
+      enabled: true,
+      payload: {
+        kind: "agentTurn",
+        message: "Inspect services and report abnormal thresholds.",
+      },
+    });
+
+    expect(result.category).toBe("fast");
+    expect(result.reason).toBe("change:cron_hint:health_check");
+    expect(result.suggestedModel).toBe("zai/glm-5.1");
+  });
+
   it("does not touch systemEvent cron jobs", () => {
     const result = auditCronJob(config, {
       id: "wake-main",
