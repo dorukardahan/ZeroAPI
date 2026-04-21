@@ -107,6 +107,8 @@ describe("auditCronJob", () => {
 
     expect(result.action).toBe("change");
     expect(result.category).toBe("code");
+    expect(result.confidence).toBe("high");
+    expect(result.matchedSignals).toContain("keyword:fix");
     expect(result.suggestedModel).toBe("openai-codex/gpt-5.4");
     expect(result.patch?.payload).toEqual({
       kind: "agentTurn",
@@ -145,8 +147,26 @@ describe("auditCronJob", () => {
     });
 
     expect(result.category).toBe("fast");
+    expect(result.confidence).toBe("medium");
+    expect(result.matchedSignals).toContain("cron_hint:health_check:watchdog");
     expect(result.reason).toBe("change:cron_hint:health_check");
     expect(result.suggestedModel).toBe("zai/glm-5.1");
+  });
+
+  it("marks unmatched cron prompts as low confidence", () => {
+    const result = auditCronJob(config, {
+      id: "ambiguous",
+      name: "Ambiguous recurring task",
+      enabled: true,
+      payload: {
+        kind: "agentTurn",
+        message: "handle the usual weekly thing",
+      },
+    });
+
+    expect(result.category).toBe("default");
+    expect(result.confidence).toBe("low");
+    expect(result.matchedSignals).toContain("no_match");
   });
 
   it("does not touch systemEvent cron jobs", () => {
@@ -197,6 +217,8 @@ describe("auditCronJob", () => {
 
     expect(result.action).toBe("review");
     expect(result.reason).toContain("review:high_risk");
+    expect(result.confidence).toBe("high");
+    expect(result.matchedSignals).toContain("high_risk_keyword:deploy");
     expect(result.patch).toBeNull();
   });
 });

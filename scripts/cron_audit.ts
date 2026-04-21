@@ -138,6 +138,7 @@ function renderText(report: CronAuditReport, jobsPath: string): string {
   for (const item of report.items) {
     lines.push(`- [${item.action}] ${item.name} (${item.id})`);
     lines.push(`  reason: ${item.reason}`);
+    lines.push(`  confidence: ${item.confidence} | signals: ${formatList(item.matchedSignals)}`);
     if (item.category) lines.push(`  category: ${item.category}, risk: ${item.risk ?? "unknown"}`);
     if (item.agentId) lines.push(`  agent: ${item.agentId}`);
     lines.push(`  current: ${item.currentModel ?? "inherits OpenClaw default"} | fallbacks: ${formatList(item.currentFallbacks)}`);
