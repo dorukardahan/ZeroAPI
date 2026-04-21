@@ -256,7 +256,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.7.0",
+  "version": "3.7.1",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",
