@@ -30,6 +30,7 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
   "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false },
   "openai-codex/gpt-5.4-mini": { context_window: 272000, supports_vision: false },
   "zai/glm-5.1": { context_window: 202800, supports_vision: false },
+  "moonshot/kimi-k2.6": { context_window: 262144, supports_vision: true },
   "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: true },
   "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
@@ -38,9 +39,13 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
   "openai-codex": ["openai-codex/gpt-5.4", "openai-codex/gpt-5.4-mini"],
   "zai": ["zai/glm-5.1"],
-  "moonshot": ["moonshot/kimi-k2.5"],
+  "moonshot": ["moonshot/kimi-k2.6"],
   "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
   "qwen-portal": ["qwen-portal/coder-model"],
+};
+
+const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
+  "moonshot/kimi-k2.6": "moonshot/kimi-k2.5",
 };
 
 const DEFAULT_KEYWORDS: Record<string, string[]> = {
@@ -218,20 +223,31 @@ function loadZeroAPIVersion(): string {
   return pkg.version;
 }
 
-function getStarterBenchmarkRecord(snapshot: BenchmarkSnapshot, modelKey: string): BenchmarkRecord {
+function findStarterBenchmarkRecord(snapshot: BenchmarkSnapshot, modelKey: string): BenchmarkRecord | undefined {
   const slashIndex = modelKey.indexOf("/");
   const providerId = modelKey.slice(0, slashIndex);
   const modelId = modelKey.slice(slashIndex + 1);
 
-  const record = snapshot.models.find((item) =>
+  return snapshot.models.find((item) =>
     item.openclaw_provider === providerId && item.openclaw_model === modelId,
   );
+}
 
-  if (!record) {
-    throw new Error(`Missing benchmark data for starter model ${modelKey}`);
+function getStarterBenchmarkRecord(snapshot: BenchmarkSnapshot, modelKey: string): BenchmarkRecord {
+  const record = findStarterBenchmarkRecord(snapshot, modelKey);
+  if (record) {
+    return record;
   }
 
-  return record;
+  const proxyModelKey = STARTER_BENCHMARK_PROXIES[modelKey];
+  if (proxyModelKey) {
+    const proxyRecord = findStarterBenchmarkRecord(snapshot, proxyModelKey);
+    if (proxyRecord) {
+      return proxyRecord;
+    }
+  }
+
+  throw new Error(`Missing benchmark data for starter model ${modelKey}`);
 }
 
 function buildStarterModels(snapshot: BenchmarkSnapshot, providerIds: string[]): Record<string, ModelCapabilities> {

@@ -58,7 +58,7 @@
         "scicode": 0.438
       }
     },
-    "moonshot/kimi-k2.5": {
+    "moonshot/kimi-k2.6": {
       "context_window": 262144,
       "supports_vision": true,
       "speed_tps": 32.926,
@@ -81,34 +81,34 @@
       "primary": "openai-codex/gpt-5.4",
       "fallbacks": [
         "zai/glm-5.1",
-        "moonshot/kimi-k2.5"
+        "moonshot/kimi-k2.6"
       ]
     },
     "research": {
       "primary": "openai-codex/gpt-5.4",
       "fallbacks": [
-        "moonshot/kimi-k2.5",
+        "moonshot/kimi-k2.6",
         "zai/glm-5.1"
       ]
     },
     "orchestration": {
       "primary": "zai/glm-5.1",
       "fallbacks": [
-        "moonshot/kimi-k2.5",
+        "moonshot/kimi-k2.6",
         "openai-codex/gpt-5.4"
       ]
     },
     "math": {
       "primary": "openai-codex/gpt-5.4",
       "fallbacks": [
-        "moonshot/kimi-k2.5",
+        "moonshot/kimi-k2.6",
         "zai/glm-5.1"
       ]
     },
     "fast": {
       "primary": "zai/glm-5.1",
       "fallbacks": [
-        "moonshot/kimi-k2.5",
+        "moonshot/kimi-k2.6",
         "openai-codex/gpt-5.4"
       ]
     },
@@ -116,7 +116,7 @@
       "primary": "zai/glm-5.1",
       "fallbacks": [
         "zai/glm-5.1",
-        "moonshot/kimi-k2.5"
+        "moonshot/kimi-k2.6"
       ]
     }
   },

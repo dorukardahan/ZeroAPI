@@ -47,7 +47,7 @@ These examples are intentionally conservative starter pools. `benchmarks.json` t
 |-------|----------|--------------|
 | GPT-5.4 | openai-codex | $5.63 |
 | GLM-5.1 | zai | $1.55 |
-| Kimi K2.5 (Reasoning) | moonshot | $1.20 |
+| Kimi K2.6 (K2.5 benchmark proxy until refresh) | moonshot | $1.71 |
 | MiniMax-M2.7 | minimax-portal | $0.53 |
 | Qwen Portal coder-model | qwen-portal | $1.13 benchmark proxy |
 
@@ -137,7 +137,7 @@ High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc
 
 ## Multi-account note
 
-If you have multiple subscriptions under the same provider, prefer `subscription_inventory` over squeezing them into one `subscription_profile` tier. ZeroAPI uses inventory both for provider headroom scoring and for `authProfileOverride` steering when the winning account declares an `authProfile`. Newer OpenClaw runtimes consume that hook field directly. Older runtimes fall back to ZeroAPI's best-effort session-store sync when the session already exists, and otherwise keep using `auth.order`, cooldowns, and session stickiness.
+If you have multiple subscriptions under the same provider, prefer `subscription_inventory` over squeezing them into one `subscription_profile` tier. ZeroAPI uses inventory both for provider headroom scoring and for `authProfileOverride` steering when the winning account declares an `authProfile`. OpenClaw v2026.4.20 still does not merge that hook field directly, so ZeroAPI uses its best-effort session-store sync when the session already exists, and otherwise keeps using `auth.order`, cooldowns, and session stickiness.
 
 ## Customizing
 

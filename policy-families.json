@@ -39,17 +39,20 @@
       "provider": "moonshot",
       "label": "Kimi K2 core family",
       "openclaw_model_ids": [
+        "kimi-k2.6",
         "kimi-k2.5",
         "kimi-k2-thinking",
         "kimi-k2-thinking-turbo",
         "kimi-k2-turbo"
       ],
       "benchmark_slugs": [
+        "kimi-k2-6",
         "kimi-k2-5",
         "kimi-k2-thinking",
         "kimi-k2-thinking-turbo",
         "kimi-k2-turbo"
-      ]
+      ],
+      "notes": "OpenClaw v2026.4.20 defaults Moonshot to kimi-k2.6. Starter configs use kimi-k2.5 benchmark values as a transparent proxy until Artificial Analysis publishes a matching kimi-k2-6 row."
     },
     {
       "id": "minimax-m27-core",

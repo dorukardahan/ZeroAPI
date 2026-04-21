@@ -94,11 +94,21 @@ openclaw models auth login --provider openai-codex
 openclaw onboard --auth-choice moonshot-api-key
 ```
 
+OpenClaw v2026.4.20 makes `moonshot/kimi-k2.6` the default Moonshot Kimi route.
+ZeroAPI starter configs follow that runtime default. The committed Artificial
+Analysis snapshot may briefly proxy K2.6 scoring through K2.5 until the weekly
+benchmark refresh includes a native K2.6 row.
+
+Important: OpenClaw treats Moonshot K2 (`moonshot/...`) and Kimi Coding
+(`kimi/...`) as separate providers with separate keys and model refs. ZeroAPI's
+`kimi` / `kimi-coding` aliases are retained only for legacy config compatibility.
+
 **Models**:
 
 | Model ID | Notes |
 |----------|-------|
-| `kimi-k2.5` | Flagship |
+| `kimi-k2.6` | Current OpenClaw default |
+| `kimi-k2.5` | Previous flagship |
 | `kimi-k2-thinking` | Extended reasoning |
 
 **Provider entry** (in `openclaw.json`):
@@ -111,6 +121,7 @@ openclaw onboard --auth-choice moonshot-api-key
         "baseUrl": "https://api.moonshot.ai/v1",
         "api": "openai-completions",
         "models": [
+          { "id": "kimi-k2.6" },
           { "id": "kimi-k2.5" },
           { "id": "kimi-k2-thinking" }
         ]
@@ -318,7 +329,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 | `benchmarks_date` | Date of the embedded benchmarks.json used to generate this config |
 | `subscription_catalog_version` | Public tier catalog version used when the config was generated |
 | `subscription_profile.global` | Enabled providers and selected subscription tiers. Missing or empty values can filter out all routing candidates. |
-| `subscription_inventory.accounts` | Preferred same-provider multi-account pool. Each account can declare `provider`, `tierId`, `authProfile`, `usagePriority`, and `intendedUse`. Winning accounts pass `authProfile` through as OpenClaw `authProfileOverride` on newer runtimes, while older runtimes use ZeroAPI's best-effort session-store fallback when possible and otherwise keep using `auth.order`. `intendedUse` is a soft scoring preference, not a hard filter. See [`account-pool-spec.md`](account-pool-spec.md) for the exact scoring and tie-break rules. |
+| `subscription_inventory.accounts` | Preferred same-provider multi-account pool. Each account can declare `provider`, `tierId`, `authProfile`, `usagePriority`, and `intendedUse`. Winning accounts pass `authProfile` through as OpenClaw `authProfileOverride` for forward compatibility, but OpenClaw v2026.4.20 still uses ZeroAPI's best-effort session-store fallback when possible and otherwise keeps using `auth.order`. `intendedUse` is a soft scoring preference, not a hard filter. See [`account-pool-spec.md`](account-pool-spec.md) for the exact scoring and tie-break rules. |
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
 | `routing_modifier` | Optional task-aware overlay on top of `routing_mode: "balanced"`. Valid values: `coding-aware`, `research-aware`, `speed-aware`. See [`routing-modifiers-spec.md`](routing-modifiers-spec.md). |
 | `external_model_policy` | How ZeroAPI behaves when the active current model is outside its own `models` pool. `stay` keeps that foreign or external model. `allow` lets ZeroAPI re-enter and route back into its subscription pool. |

@@ -165,8 +165,8 @@ If the winning account defines `authProfile`, ZeroAPI passes that forward as the
 
 Current behavior:
 
-- newer OpenClaw runtimes can consume `authProfileOverride` directly
-- older runtimes use ZeroAPI's best-effort session-store compatibility fallback when possible
+- OpenClaw v2026.4.20 still does not merge `authProfileOverride` from `before_model_resolve`
+- ZeroAPI uses its best-effort session-store compatibility fallback when possible
 - user-pinned auth profiles still win
 
 This means same-provider reroutes can still be meaningful even when the provider and model stay the same.
