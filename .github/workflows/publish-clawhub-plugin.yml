@@ -1,0 +1,48 @@
+name: Publish ClawHub Plugin
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zeroapi-publish-clawhub-plugin
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Read package version
+        id: version
+        run: echo "value=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Skip when ClawHub token is not configured
+        if: ${{ env.CLAWHUB_TOKEN == '' }}
+        run: echo "CLAWHUB_TOKEN secret is not configured. Skipping ClawHub plugin publish."
+
+      - name: Publish plugin package
+        if: ${{ env.CLAWHUB_TOKEN != '' }}
+        run: |
+          npx --yes clawhub@0.9.0 login --token "$CLAWHUB_TOKEN" --no-browser
+          npx --yes clawhub@0.9.0 package publish . \
+            --family code-plugin \
+            --name zeroapi \
+            --display-name "ZeroAPI Router" \
+            --version "${{ steps.version.outputs.value }}" \
+            --changelog "Publish ZeroAPI ${{ steps.version.outputs.value }}" \
+            --source-repo dorukardahan/ZeroAPI \
+            --source-commit "$GITHUB_SHA" \
+            --source-ref "$GITHUB_REF_NAME" \
+            --source-path "."

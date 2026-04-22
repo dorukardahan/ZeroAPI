@@ -1,0 +1,10 @@
+.git/
+.github/
+node_modules/
+plugin/node_modules/
+plugin/__tests__/
+plugin/vitest.config.ts
+coverage/
+.DS_Store
+package-lock.json
+*.log

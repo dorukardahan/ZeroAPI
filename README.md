@@ -4,7 +4,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
 [![Version](https://img.shields.io/badge/version-3.7.2-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.7.2)
-[![Downloads](https://skill-history.com/badge/dorukardahan/zeroapi.svg)](https://skill-history.com/dorukardahan/zeroapi)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -84,6 +83,8 @@ The plugin matches keywords in each message to one of six routing categories. No
 | **Default** | `intelligence` | (no match) | Any task not matching above |
 
 ## Quick Start
+
+ZeroAPI is published as a **ClawHub plugin package**, not as a standalone public skill. The `SKILL.md` file in this repo is an onboarding guide for agents that inspect the GitHub repo directly.
 
 ZeroAPI is a **gateway plugin**. That means setup has two layers:
 
