@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.7.3] - 2026-04-23
+
+### Changed
+- Publish ZeroAPI as a ClawHub code-plugin package from the `plugin/` root instead of as a legacy public skill.
+- Add GitHub Actions support for release-triggered ClawHub plugin publishing with `CLAWHUB_TOKEN`.
+- Update public install docs to use `openclaw plugins install clawhub:zeroapi`.
+
 ## [3.7.2] - 2026-04-22
 
 ### Fixed
