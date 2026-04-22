@@ -84,7 +84,7 @@ The plugin matches keywords in each message to one of six routing categories. No
 
 ## Quick Start
 
-ZeroAPI is published as a **ClawHub plugin package**, not as a standalone public skill. The `SKILL.md` file in this repo is an onboarding guide for agents that inspect the GitHub repo directly.
+ZeroAPI is published from `plugin/` as a **ClawHub plugin package**, not as a standalone public skill. The `SKILL.md` file in this repo is an onboarding guide for agents that inspect the GitHub repo directly.
 
 ZeroAPI is a **gateway plugin**. That means setup has two layers:
 

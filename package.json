@@ -7,19 +7,6 @@
   "workspaces": [
     "plugin"
   ],
-  "openclaw": {
-    "extensions": [
-      "./plugin/index.ts"
-    ],
-    "compat": {
-      "pluginApi": ">=2026.4.2",
-      "minGatewayVersion": "2026.4.2"
-    },
-    "build": {
-      "openclawVersion": "2026.4.21",
-      "pluginSdkVersion": "2026.4.21"
-    }
-  },
   "scripts": {
     "test": "npm run test:plugin && npm run test:scripts",
     "test:plugin": "npm --workspace zeroapi-router test",

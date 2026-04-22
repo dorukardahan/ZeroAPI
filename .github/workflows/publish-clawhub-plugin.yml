@@ -26,7 +26,7 @@ jobs:
 
       - name: Read package version
         id: version
-        run: echo "value=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(node -p \"require('./plugin/package.json').version\")" >> "$GITHUB_OUTPUT"
 
       - name: Skip when ClawHub token is not configured
         if: ${{ env.CLAWHUB_TOKEN == '' }}
@@ -36,7 +36,7 @@ jobs:
         if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
           npx --yes clawhub@0.9.0 login --token "$CLAWHUB_TOKEN" --no-browser
-          npx --yes clawhub@0.9.0 package publish . \
+          npx --yes clawhub@0.9.0 package publish plugin \
             --family code-plugin \
             --name zeroapi \
             --display-name "ZeroAPI Router" \
@@ -45,4 +45,4 @@ jobs:
             --source-repo dorukardahan/ZeroAPI \
             --source-commit "$GITHUB_SHA" \
             --source-ref "$GITHUB_REF_NAME" \
-            --source-path "."
+            --source-path "plugin"

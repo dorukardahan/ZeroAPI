@@ -1,0 +1,6 @@
+node_modules/
+__tests__/
+vitest.config.ts
+coverage/
+.DS_Store
+*.log
