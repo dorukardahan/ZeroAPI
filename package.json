@@ -1,6 +1,6 @@
 {
   "name": "zeroapi",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "private": true,
   "description": "Benchmark-driven model routing for OpenClaw",
   "type": "module",

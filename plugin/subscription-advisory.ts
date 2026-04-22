@@ -440,11 +440,13 @@ function safeWatch(
   logger: MonitorLogger,
 ): FSWatcher | null {
   try {
-    return watch(targetPath, (eventType, filename) => {
+    const watcher = watch(targetPath, (eventType, filename) => {
       if (eventType === "rename" || eventType === "change") {
         onChange(filename);
       }
     });
+    watcher.unref?.();
+    return watcher;
   } catch (error) {
     logger.warn(`ZeroAPI advisory watcher failed for ${targetPath}: ${String(error)}`);
     return null;
@@ -551,6 +553,7 @@ export function startSubscriptionAdvisoryMonitor(params: {
       clearTimeout(debounceTimer);
     }
     debounceTimer = setTimeout(runRefresh, ADVISORY_DEBOUNCE_MS);
+    debounceTimer.unref?.();
   };
 
   const rootWatcher = safeWatch(
