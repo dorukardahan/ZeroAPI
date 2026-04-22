@@ -137,7 +137,7 @@ High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc
 
 ## Multi-account note
 
-If you have multiple subscriptions under the same provider, prefer `subscription_inventory` over squeezing them into one `subscription_profile` tier. ZeroAPI uses inventory both for provider headroom scoring and for `authProfileOverride` steering when the winning account declares an `authProfile`. OpenClaw v2026.4.20 still does not merge that hook field directly, so ZeroAPI uses its best-effort session-store sync when the session already exists, and otherwise keeps using `auth.order`, cooldowns, and session stickiness.
+If you have multiple subscriptions under the same provider, prefer `subscription_inventory` over squeezing them into one `subscription_profile` tier. ZeroAPI uses inventory both for provider headroom scoring and for `authProfileOverride` steering when the winning account declares an `authProfile`. Current stable OpenClaw releases still do not merge that hook field directly, so ZeroAPI uses its best-effort session-store sync when the session already exists, and otherwise keeps using `auth.order`, cooldowns, and session stickiness.
 
 ## Customizing
 

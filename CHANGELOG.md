@@ -12,7 +12,7 @@
 ### Changed
 - Aligned Kimi starter configs and examples with OpenClaw v2026.4.20's `moonshot/kimi-k2.6` default, while using the committed K2.5 benchmark row as an explicit temporary proxy until the benchmark refresh includes native K2.6 data.
 - Documented OpenClaw's new cron `jobs-state.json` split so ZeroAPI cron helpers keep patching job definitions only and never touch runtime state.
-- Corrected same-provider account steering docs: OpenClaw v2026.4.20 still does not merge `authProfileOverride` from `before_model_resolve`, so ZeroAPI's session-store compatibility path remains required.
+- Corrected same-provider account steering docs: current stable OpenClaw releases still do not merge `authProfileOverride` from `before_model_resolve`, so ZeroAPI's session-store compatibility path remains required until native hook support lands.
 
 ## [3.7.0] - 2026-04-22
 

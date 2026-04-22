@@ -225,7 +225,7 @@ Current scoring contract in plain terms:
 
 For the exact rules and formulas, see [`references/account-pool-spec.md`](references/account-pool-spec.md).
 
-When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride` for forward compatibility, and also performs a best-effort session-store sync so the active session can prefer the right auth profile. OpenClaw v2026.4.20 still does not merge `authProfileOverride` from `before_model_resolve`, so the session-store path remains the runtime path for same-provider account steering. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
+When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride` for forward compatibility, and also performs a best-effort session-store sync so the active session can prefer the right auth profile. Current stable OpenClaw releases still do not merge `authProfileOverride` from `before_model_resolve`, so the session-store path remains the runtime path for same-provider account steering until native hook support lands. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
 
 Important: the compatibility fallback only updates sessions that already exist in OpenClaw's session store and it never overwrites a user-pinned auth profile. If the session store is unavailable, `subscription_inventory` still improves provider weighting and the final same-provider account choice falls back to OpenClaw `auth.order`.
 
@@ -391,7 +391,7 @@ Yes. Use `/model` in OpenClaw or add a `#model:` directive at the top of your me
 Yes. ZeroAPI keeps a legacy global `subscription_profile` plus agent-level partial overrides. That lets one agent inherit the global provider set while another disables or narrows a provider without redefining the full profile.
 
 **Can ZeroAPI pick between multiple accounts for the same provider?**
-Yes. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI keeps that preferred account in sync through OpenClaw session state. OpenClaw v2026.4.20 still only consumes `providerOverride` and `modelOverride` from `before_model_resolve`, so the session-store compatibility path remains required for same-provider account steering. If a session does not exist yet, OpenClaw still falls back to its native `auth.order` inside that provider.
+Yes. If `subscription_inventory` picks a specific account and that account defines `authProfile`, ZeroAPI keeps that preferred account in sync through OpenClaw session state. Current stable OpenClaw releases still only consume `providerOverride` and `modelOverride` from `before_model_resolve`, so the session-store compatibility path remains required for same-provider account steering until native hook support lands. If a session does not exist yet, OpenClaw still falls back to its native `auth.order` inside that provider.
 
 ## License
 

@@ -165,7 +165,7 @@ If the winning account defines `authProfile`, ZeroAPI passes that forward as the
 
 Current behavior:
 
-- OpenClaw v2026.4.20 still does not merge `authProfileOverride` from `before_model_resolve`
+- Current stable OpenClaw releases still do not merge `authProfileOverride` from `before_model_resolve`
 - ZeroAPI uses its best-effort session-store compatibility fallback when possible
 - user-pinned auth profiles still win
 
