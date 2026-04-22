@@ -23,8 +23,8 @@ This is a **one-time host-side step**. After the plugin is installed, users can 
 Important: `~/.openclaw/zeroapi-config.json` is ZeroAPI policy config only. `~/.openclaw/openclaw.json` remains the runtime authority for provider wiring, defaults, and per-agent model state. If they drift, OpenClaw runtime behavior wins.
 
 ```bash
-# Recommended — installs from OpenClaw plugin registry
-openclaw plugins install zeroapi-router
+# Recommended - installs from ClawHub
+openclaw plugins install clawhub:zeroapi
 
 # Manual — if offline or registry unavailable
 cp -r /path/to/zeroapi/plugin ~/.openclaw/plugins/zeroapi-router

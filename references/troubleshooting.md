@@ -92,7 +92,7 @@ Important:
 timeout 10s openclaw plugins list | grep zeroapi-router
 
 # If missing, install it
-openclaw plugins install zeroapi-router
+openclaw plugins install clawhub:zeroapi
 
 # Then restart the gateway
 systemctl --user restart openclaw-gateway.service

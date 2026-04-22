@@ -94,8 +94,8 @@ ZeroAPI is a **gateway plugin**. That means setup has two layers:
 Recommended path:
 
 ```
-1. Clone the repo and run npm install once
-2. Run managed install once on the OpenClaw host
+1. Install the ClawHub plugin package with openclaw plugins install clawhub:zeroapi
+2. Or clone the repo and run npm run managed:install once on the OpenClaw host
 3. Open any OpenClaw chat channel
 4. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
 5. Answer the short setup questions
