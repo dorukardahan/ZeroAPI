@@ -26,7 +26,9 @@ jobs:
 
       - name: Read package version
         id: version
-        run: echo "value=$(node -p \"require('./plugin/package.json').version\")" >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION="$(node -p "require('./plugin/package.json').version")"
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Skip when ClawHub token is not configured
         if: ${{ env.CLAWHUB_TOKEN == '' }}
