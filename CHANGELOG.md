@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.7.2] - 2026-04-22
+
+### Fixed
+- Unref subscription advisory file watchers and debounce timers so OpenClaw CLI diagnostics such as `openclaw hooks check --json` can exit cleanly after loading the plugin.
+
 ## [3.7.1] - 2026-04-22
 
 ### Changed

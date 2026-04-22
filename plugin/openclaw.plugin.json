@@ -2,7 +2,7 @@
   "id": "zeroapi-router",
   "name": "ZeroAPI Router",
   "description": "Balanced benchmark-aware model routing across subscription providers",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
