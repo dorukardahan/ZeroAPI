@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.7.5] - 2026-04-23
+
+### Fixed
+- Tightened both ZeroAPI skill surfaces so a pasted repo URL or "what does this repo do / would this help / kuralım" starts from a neutral product explanation and fresh install flow instead of jumping to stale local install assumptions.
+- Added a regression test that locks those repo-question and install-intent triggers into the published skill text.
+
 ## [3.7.4] - 2026-04-23
 
 ### Fixed

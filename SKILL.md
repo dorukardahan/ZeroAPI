@@ -1,10 +1,11 @@
 ---
 name: zeroapi
-version: 3.7.4
+version: 3.7.5
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
-  Use when user mentions model routing, multi-model setup, "which model should I use",
-  agent delegation, or wants to optimize their OpenClaw model configuration.
+  Use when the user mentions model routing, multi-model setup, "which model should I use",
+  agent delegation, the ZeroAPI GitHub repo URL, "what does this repo do", "would this help us",
+  "install ZeroAPI", "/zeroapi", or wants to optimize their OpenClaw model configuration.
   Do NOT use for single-model conversations or general chat.
 homepage: https://github.com/dorukardahan/ZeroAPI
 user-invocable: true
@@ -12,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.7.4 - Plugin-Based Model Routing
+# ZeroAPI v3.7.5 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -32,6 +33,8 @@ Behavior rules:
 - when host access is required, give the shortest safe command and then resume the chat wizard
 - if the user first asks what the repo does or whether it is useful, answer that **neutrally from the repo/docs first**
 - do **not** infer repo ownership from the GitHub owner name, old memory, or previous installs unless the user explicitly states ownership or you have just verified the live host state
+- if the user shared the ZeroAPI GitHub link or asked a repo/product question, treat that as a **fresh-product explanation trigger** and do not mention local installs, MEMORY.md, or live host state in the first answer
+- when the user says only `kuralım`, `install`, or similar right after that repo/product question, continue the **fresh install flow** instead of jumping to "already installed" unless they explicitly asked to inspect the live host
 
 If the channel exposes only the generic skill runner, `/skill zeroapi` is an acceptable entry point. `scripts/first_run.ts` is only a terminal fallback for repo-local or shell-driven installs.
 
@@ -228,7 +231,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.7.4",
+  "version": "3.7.5",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",

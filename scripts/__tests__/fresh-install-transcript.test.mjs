@@ -4,6 +4,8 @@ import { test } from "node:test";
 
 const transcript = JSON.parse(readFileSync(new URL("../../examples/fresh-install-transcript.json", import.meta.url)));
 const steps = new Map(transcript.steps.map((step) => [step.id, step]));
+const rootSkill = readFileSync(new URL("../../SKILL.md", import.meta.url), "utf8");
+const bundledSkill = readFileSync(new URL("../../plugin/skills/zeroapi/SKILL.md", import.meta.url), "utf8");
 
 test("fresh install transcript has the expected scenario steps", () => {
   assert.equal(transcript.schema, "zeroapi.fresh_install_transcript.v1");
@@ -34,4 +36,12 @@ test("host and cron steps use guarded npm commands", () => {
   assert.match(hostInstall, /npm run managed:install -- --openclaw-dir ~\/\.openclaw/);
   assert.match(verifyAndCron, /npm run cron:audit/);
   assert.match(verifyAndCron, /npm run cron:apply -- --yes/);
+});
+
+test("skill metadata explicitly covers repo-url and install-intent triggers", () => {
+  assert.match(rootSkill, /ZeroAPI GitHub repo URL/i);
+  assert.match(rootSkill, /what does this repo do/i);
+  assert.match(rootSkill, /fresh-product explanation trigger/i);
+  assert.match(bundledSkill, /pastes the ZeroAPI repo URL/i);
+  assert.match(bundledSkill, /continue the fresh install flow/i);
 });

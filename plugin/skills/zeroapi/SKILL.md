@@ -1,7 +1,7 @@
 ---
 name: zeroapi
-version: 3.7.4
-description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi or asks to set up model routing.
+version: 3.7.5
+description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi, asks to set up model routing, pastes the ZeroAPI repo URL, or asks what the repo does or whether it would help.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
@@ -17,6 +17,8 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
 - Do not read, print, or relay OAuth tokens or API keys.
 - Do not claim ZeroAPI is installed until you verify plugin state or gateway logs.
 - Respect agent-specific fixed models unless the user explicitly opts that agent into routing.
+- If the user starts with a repo/product question, answer from repo/docs first and do not mention live host state until they ask to install or inspect it.
+- If the user says only `kuralım` or `install` right after that first repo/product question, continue the fresh install flow instead of replying with local install status.
 
 ## Setup Flow
 
