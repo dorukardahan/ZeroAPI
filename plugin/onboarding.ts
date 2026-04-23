@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { getSubscriptionWeightedCandidates } from "./router.js";
@@ -15,7 +15,10 @@ import type {
 } from "./types.js";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
-const BENCHMARKS_FILE = resolve(MODULE_DIR, "..", "benchmarks.json");
+const BENCHMARKS_FILE_CANDIDATES = [
+  resolve(MODULE_DIR, "benchmarks.json"),
+  resolve(MODULE_DIR, "..", "benchmarks.json"),
+];
 const PACKAGE_FILE = resolve(MODULE_DIR, "package.json");
 
 export const STARTER_AUTH_CHOICES: Record<string, string> = {
@@ -118,6 +121,15 @@ function readJsonFile<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf-8")) as T;
 }
 
+function readBenchmarksSnapshot(): BenchmarkSnapshot {
+  for (const path of BENCHMARKS_FILE_CANDIDATES) {
+    if (existsSync(path)) {
+      return readJsonFile<BenchmarkSnapshot>(path);
+    }
+  }
+  throw new Error(`benchmarks.json not found in ${BENCHMARKS_FILE_CANDIDATES.join(", ")}`);
+}
+
 function getTierRank(providerId: string, tierId: string | null | undefined): number {
   if (!tierId) return -1;
   const entry = SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId);
@@ -212,7 +224,7 @@ function getCategoryBenchmarkStrength(category: TaskCategory, caps: ModelCapabil
 }
 
 function loadBenchmarkSnapshot(): BenchmarkSnapshot {
-  return readJsonFile<BenchmarkSnapshot>(BENCHMARKS_FILE);
+  return readBenchmarksSnapshot();
 }
 
 function loadZeroAPIVersion(): string {

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.7.4] - 2026-04-23
+
+### Fixed
+- Bundle the `/zeroapi` onboarding skill inside the ClawHub plugin package so fresh `clawhub:zeroapi` installs expose the chat setup flow.
+- Include `benchmarks.json` in the plugin package and make onboarding resolve benchmarks in both repo-local and packaged layouts.
+
 ## [3.7.3] - 2026-04-23
 
 ### Changed
