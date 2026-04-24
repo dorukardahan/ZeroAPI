@@ -30,6 +30,9 @@ jobs:
           VERSION="$(node -p "require('./plugin/package.json').version")"
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Stage runtime plugin package
+        run: node scripts/stage_clawhub_plugin.mjs .tmp-clawhub-plugin
+
       - name: Skip when ClawHub token is not configured
         if: ${{ env.CLAWHUB_TOKEN == '' }}
         run: echo "CLAWHUB_TOKEN secret is not configured. Skipping ClawHub plugin publish."
@@ -38,7 +41,7 @@ jobs:
         if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
           npx --yes clawhub@0.9.0 login --token "$CLAWHUB_TOKEN" --no-browser
-          npx --yes clawhub@0.9.0 package publish plugin \
+          npx --yes clawhub@0.9.0 package publish .tmp-clawhub-plugin \
             --family code-plugin \
             --name zeroapi \
             --display-name "ZeroAPI Router" \
@@ -48,3 +51,13 @@ jobs:
             --source-commit "$GITHUB_SHA" \
             --source-ref "$GITHUB_REF_NAME" \
             --source-path "plugin"
+
+      - name: Verify ClawHub package is downloadable
+        if: ${{ env.CLAWHUB_TOKEN != '' }}
+        run: |
+          npx --yes clawhub@0.9.0 package inspect zeroapi --version "${{ steps.version.outputs.value }}"
+          tmp_dir="$(mktemp -d)"
+          cd "$tmp_dir"
+          openclaw_version="2026.4.23"
+          npm_config_yes=true npx --yes openclaw@"$openclaw_version" plugins install "clawhub:zeroapi@${{ steps.version.outputs.value }}" \
+            --dangerously-force-unsafe-install

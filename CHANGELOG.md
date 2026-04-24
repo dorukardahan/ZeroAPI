@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.7.8] - 2026-04-24
+
+### Fixed
+- Publish ClawHub from a staged JavaScript runtime package instead of the raw TypeScript source tree.
+- Add a post-publish ClawHub download/install verification step so a blocked registry release fails CI instead of looking successful.
+- Keep GitHub and ClawHub release state in lockstep for OpenClaw update compatibility.
+
 ## [3.7.7] - 2026-04-24
 
 ### Changed

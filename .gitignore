@@ -3,6 +3,7 @@ content/
 # Dependencies
 node_modules/
 package-lock.json
+.tmp-clawhub-plugin/
 
 # macOS
 .DS_Store

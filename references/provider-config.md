@@ -36,7 +36,7 @@ Verify installation:
 timeout 10s openclaw plugins list | grep zeroapi-router
 ```
 
-Do not treat missing `dist/` output as a failure on its own. ZeroAPI's current plugin package exposes `plugin/index.ts` directly, and modern OpenClaw runtimes can load that TypeScript source without a separate build artifact.
+Do not treat missing `dist/` output as a failure on its own. Repo-local and managed installs can load `plugin/index.ts` directly. ClawHub releases are staged as a JavaScript runtime package during the publish workflow, so installed ClawHub packages expose `index.js` instead.
 
 Then verify the plugin actually loaded at runtime:
 
@@ -259,7 +259,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.7.7",
+  "version": "3.7.8",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",

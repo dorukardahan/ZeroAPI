@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.7.7
+version: 3.7.8
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when the user mentions model routing, multi-model setup, "which model should I use",
@@ -13,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.7.7 - Plugin-Based Model Routing
+# ZeroAPI v3.7.8 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -231,7 +231,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.7.7",
+  "version": "3.7.8",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",
@@ -332,8 +332,8 @@ Channel-first caveat:
 
 Important verification rule:
 
-- Do **not** assume ZeroAPI is broken just because `plugin/` only contains `.ts` files or there is no `dist/` directory.
-- ZeroAPI's current plugin package intentionally exposes `./index.ts` through `plugin/package.json` and modern OpenClaw runtimes can load that TypeScript source directly.
+- Do **not** assume ZeroAPI is broken just because repo-local `plugin/` only contains `.ts` files or there is no `dist/` directory.
+- Repo-local and managed installs can load `./index.ts` directly. ClawHub releases are staged as a JavaScript runtime package and expose `./index.js` after install.
 - Missing `tsconfig.json`, missing `build` script, or missing `dist/` is **not** by itself evidence of a bad install.
 - Treat the plugin as runtime-loaded only after checking runtime evidence such as:
   - `timeout 10s openclaw plugins list`
