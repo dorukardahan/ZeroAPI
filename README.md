@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.7.6-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.7.6)
+[![Version](https://img.shields.io/badge/version-3.7.7-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.7.7)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -57,13 +57,13 @@ When the hook returns an override, the model is switched for that turn only. The
 
 If the current runtime model is outside `zeroapi-config.json`'s `models` pool, ZeroAPI now defaults to `stay` instead of forcefully re-entering. This keeps subscription routing from hijacking unrelated API-key providers. Advanced users can opt back in with `"external_model_policy": "allow"`.
 
-If an OpenClaw agent is already running a non-default model and that agent has no `workspace_hints` entry, ZeroAPI skips routing for that turn. This protects specialist agents such as a `codex` agent pinned to `openai-codex/gpt-5.4`. To intentionally route a specialist agent, add a category list under `workspace_hints`; to hard-disable routing for it, set the value to `null`.
+If an OpenClaw agent is already running a non-default model and that agent has no `workspace_hints` entry, ZeroAPI skips routing for that turn. This protects specialist agents such as a `codex` agent pinned to `openai-codex/gpt-5.5` or `openai-codex/gpt-5.4`. To intentionally route a specialist agent, add a category list under `workspace_hints`; to hard-disable routing for it, set the value to `null`.
 
 ## Supported Providers
 
 | Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
 |----------|------------|--------------|---------|-----------------|--------|
-| OpenAI | `openai-codex` | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.4, GPT-5.3 Codex, GPT-5.4 mini |
+| OpenAI | `openai-codex` | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.5, GPT-5.4, GPT-5.4 mini |
 | Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.6, K2.5, K2 Thinking |
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
@@ -277,8 +277,8 @@ ZeroAPI/
 │       └── test.yml
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── package.json                          # Root scripts for tests and repo-local tools
-├── benchmarks.json                       # 162 benchmark reference models, plus policy-family tags
-├── policy-families.json                  # 11 practical policy-family members across 5 providers
+├── benchmarks.json                       # 172 benchmark reference models, plus policy-family tags
+├── policy-families.json                  # 13 practical policy-family members across 5 providers
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
 │   ├── first_run.ts                      # Interactive starter wizard for public repo onboarding
@@ -347,16 +347,16 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-19). The snapshot now tracks 162 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Qwen. `benchmarks.json` also tags 11 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-04-24). The snapshot now tracks 172 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Qwen. `benchmarks.json` also tags 13 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|
-| **Code** (terminalbench) | GPT-5.4 (xhigh) | 0.576 | OpenAI |
-| **Research** (gpqa) | GPT-5.4 (xhigh) | 0.920 | OpenAI |
+| **Code** (terminalbench) | GPT-5.5 (xhigh) | 0.606 | OpenAI |
+| **Research** (gpqa) | GPT-5.5 (xhigh) | 0.935 | OpenAI |
 | **Orchestration** (0.6*tau2 + 0.4*ifbench) | GLM-5.1 (Reasoning) | 0.891 | Z AI |
 | **Math** (math) | GPT-5.2 (xhigh) | 99.0 | OpenAI |
-| **Fast** (speed, TTFT < 5s) | gpt-oss-20B (high) | 293.7 t/s | OpenAI |
-| **Default** (intelligence) | GPT-5.4 (xhigh) | 56.8 | OpenAI |
+| **Fast** (speed, TTFT < 5s) | gpt-oss-20B (high) | 309.7 t/s | OpenAI |
+| **Default** (intelligence) | GPT-5.5 (xhigh) | 60.2 | OpenAI |
 
 Some absolute leaders in the reference dataset are not part of the conservative policy families documented today. Example configs intentionally use the narrower `policy-families.json` pool. Routes use whichever leader is both covered by your subscriptions and included in your policy config. If the top model is unavailable, the plugin falls back to the next benchmark-ranked model from a different provider.
 

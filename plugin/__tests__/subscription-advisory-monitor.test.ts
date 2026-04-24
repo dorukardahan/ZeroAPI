@@ -18,7 +18,7 @@ import { startSubscriptionAdvisoryMonitor } from "../subscription-advisory.js";
 
 function buildConfig(): ZeroAPIConfig {
   return {
-    version: "3.7.6",
+    version: "3.7.7",
     generated: "2026-04-22T00:00:00.000Z",
     benchmarks_date: "2026-04-19",
     default_model: "zai/glm-5.1",

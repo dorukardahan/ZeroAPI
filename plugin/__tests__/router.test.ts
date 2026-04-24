@@ -350,9 +350,9 @@ describe("router weighting", () => {
         speed_tps: 100,
         ttft_seconds: 0.6,
         benchmarks: {
-          intelligence: 50,
-          coding: 48,
-          gpqa: 0.83,
+          intelligence: 48,
+          coding: 46,
+          gpqa: 0.81,
         },
       },
     };

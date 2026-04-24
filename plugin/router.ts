@@ -140,8 +140,16 @@ function getAllowedBenchmarkDrop(
     return Math.max(0.03, base - 0.025);
   }
 
-  if (routingModifier === "speed-aware" && (category === "fast" || category === "default")) {
+  if (routingModifier === "speed-aware" && category === "default") {
+    return Math.min(0.2, base + 0.06);
+  }
+
+  if (routingModifier === "speed-aware" && category === "fast") {
     return Math.min(0.18, base + 0.015);
+  }
+
+  if (category === "default") {
+    return Math.min(0.18, base + 0.04);
   }
 
   return base;

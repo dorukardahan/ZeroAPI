@@ -3,19 +3,22 @@
   "description": "Conservative routeable model families that ZeroAPI currently documents as practical subscription-first policy targets.",
   "families": [
     {
-      "id": "openai-gpt54-core",
+      "id": "openai-gpt55-core",
       "provider": "openai-codex",
-      "label": "OpenAI GPT-5.4 core family",
+      "label": "OpenAI GPT-5.5 core family",
       "openclaw_model_ids": [
+        "gpt-5.5",
         "gpt-5.4",
         "gpt-5.4-mini",
         "gpt-5.3-codex"
       ],
       "benchmark_slugs": [
+        "gpt-5-5",
         "gpt-5-4",
         "gpt-5-4-mini",
         "gpt-5-3-codex"
-      ]
+      ],
+      "notes": "OpenClaw v2026.4.23 defaults OpenAI and OpenAI Codex to gpt-5.5. gpt-5.5-pro is provider-supported as forward-compatible metadata, but Artificial Analysis does not publish a separate benchmark row yet; use gpt-5.5 as the proxy if a custom policy enables gpt-5.5-pro."
     },
     {
       "id": "zai-glm-core",

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.7.7] - 2026-04-24
+
+### Changed
+- Added OpenClaw v2026.4.23 OpenAI Codex model support for `openai-codex/gpt-5.5`, with GPT-5.4 kept as fallback in starter routing policies.
+- Refreshed the Artificial Analysis benchmark snapshot to include GPT-5.5 rows and updated the OpenAI policy family from GPT-5.4 core to GPT-5.5 core.
+- Marked modern OpenAI Codex starter models as vision-capable to match the updated OpenClaw provider catalog.
+
 ## [3.7.6] - 2026-04-24
 
 ### Fixed

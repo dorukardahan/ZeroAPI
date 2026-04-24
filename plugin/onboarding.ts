@@ -30,8 +30,10 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
-  "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false },
-  "openai-codex/gpt-5.4-mini": { context_window: 272000, supports_vision: false },
+  "openai-codex/gpt-5.5": { context_window: 272000, supports_vision: true },
+  "openai-codex/gpt-5.5-pro": { context_window: 272000, supports_vision: true },
+  "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: true },
+  "openai-codex/gpt-5.4-mini": { context_window: 272000, supports_vision: true },
   "zai/glm-5.1": { context_window: 202800, supports_vision: false },
   "moonshot/kimi-k2.6": { context_window: 262144, supports_vision: true },
   "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
@@ -40,7 +42,7 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
 };
 
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
-  "openai-codex": ["openai-codex/gpt-5.4", "openai-codex/gpt-5.4-mini"],
+  "openai-codex": ["openai-codex/gpt-5.5", "openai-codex/gpt-5.4", "openai-codex/gpt-5.4-mini"],
   "zai": ["zai/glm-5.1"],
   "moonshot": ["moonshot/kimi-k2.6"],
   "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
@@ -48,6 +50,7 @@ const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
+  "openai-codex/gpt-5.5-pro": "openai-codex/gpt-5.5",
   "moonshot/kimi-k2.6": "moonshot/kimi-k2.5",
 };
 

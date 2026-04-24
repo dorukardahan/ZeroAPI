@@ -1,7 +1,7 @@
 {
-  "version": "3.7.6",
-  "generated": "2026-04-18T00:00:00Z",
-  "benchmarks_date": "2026-04-18",
+  "version": "3.7.7",
+  "generated": "2026-04-24T00:00:00Z",
+  "benchmarks_date": "2026-04-24",
   "subscription_catalog_version": "1.0.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -14,13 +14,30 @@
       }
     }
   },
-  "default_model": "openai-codex/gpt-5.4",
+  "default_model": "openai-codex/gpt-5.5",
   "models": {
+    "openai-codex/gpt-5.5": {
+      "context_window": 272000,
+      "supports_vision": true,
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "benchmarks": {
+        "intelligence": 60.2,
+        "coding": 59.1,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
+      }
+    },
     "openai-codex/gpt-5.4": {
       "context_window": 272000,
-      "supports_vision": false,
-      "speed_tps": 82.116,
-      "ttft_seconds": 201.544,
+      "supports_vision": true,
+      "speed_tps": 82.67,
+      "ttft_seconds": 183.504,
       "benchmarks": {
         "intelligence": 56.8,
         "coding": 57.3,
@@ -35,9 +52,9 @@
     },
     "openai-codex/gpt-5.4-mini": {
       "context_window": 272000,
-      "supports_vision": false,
-      "speed_tps": 172.146,
-      "ttft_seconds": 5.699,
+      "supports_vision": true,
+      "speed_tps": 175.709,
+      "ttft_seconds": 7.319,
       "benchmarks": {
         "intelligence": 48.9,
         "coding": 51.5,
@@ -53,36 +70,44 @@
   },
   "routing_rules": {
     "code": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "openai-codex/gpt-5.4-mini"
       ]
     },
     "research": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "openai-codex/gpt-5.4-mini"
       ]
     },
     "orchestration": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "openai-codex/gpt-5.4-mini"
       ]
     },
     "math": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "openai-codex/gpt-5.4-mini"
       ]
     },
     "fast": {
       "primary": "openai-codex/gpt-5.4-mini",
-      "fallbacks": []
+      "fallbacks": [
+        "openai-codex/gpt-5.4",
+        "openai-codex/gpt-5.5"
+      ]
     },
     "default": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "openai-codex/gpt-5.4-mini"
       ]
     }
@@ -145,6 +170,6 @@
     "secret",
     "password"
   ],
-  "_note": "Single-provider setup. Fallback chains are same-provider only \u2014 no cross-provider resilience.",
-  "fast_ttft_max_seconds": 6
+  "fast_ttft_max_seconds": 8,
+  "_note": "Single-provider setup. Fallback chains are same-provider only - no cross-provider resilience."
 }

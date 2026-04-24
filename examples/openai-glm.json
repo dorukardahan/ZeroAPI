@@ -1,7 +1,7 @@
 {
-  "version": "3.7.6",
-  "generated": "2026-04-18T00:00:00Z",
-  "benchmarks_date": "2026-04-18",
+  "version": "3.7.7",
+  "generated": "2026-04-24T00:00:00Z",
+  "benchmarks_date": "2026-04-24",
   "subscription_catalog_version": "1.0.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -18,13 +18,30 @@
       }
     }
   },
-  "default_model": "zai/glm-5.1",
+  "default_model": "openai-codex/gpt-5.5",
   "models": {
+    "openai-codex/gpt-5.5": {
+      "context_window": 272000,
+      "supports_vision": true,
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "benchmarks": {
+        "intelligence": 60.2,
+        "coding": 59.1,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
+      }
+    },
     "openai-codex/gpt-5.4": {
       "context_window": 272000,
-      "supports_vision": false,
-      "speed_tps": 82.116,
-      "ttft_seconds": 201.544,
+      "supports_vision": true,
+      "speed_tps": 82.67,
+      "ttft_seconds": 183.504,
       "benchmarks": {
         "intelligence": 56.8,
         "coding": 57.3,
@@ -40,8 +57,8 @@
     "zai/glm-5.1": {
       "context_window": 202800,
       "supports_vision": false,
-      "speed_tps": 47.221,
-      "ttft_seconds": 0.928,
+      "speed_tps": 52.278,
+      "ttft_seconds": 0.733,
       "benchmarks": {
         "intelligence": 51.4,
         "coding": 43.4,
@@ -57,38 +74,44 @@
   },
   "routing_rules": {
     "code": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "zai/glm-5.1"
       ]
     },
     "research": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "zai/glm-5.1"
       ]
     },
     "orchestration": {
       "primary": "zai/glm-5.1",
       "fallbacks": [
+        "openai-codex/gpt-5.5",
         "openai-codex/gpt-5.4"
       ]
     },
     "math": {
-      "primary": "openai-codex/gpt-5.4",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "zai/glm-5.1"
       ]
     },
     "fast": {
       "primary": "zai/glm-5.1",
       "fallbacks": [
-        "openai-codex/gpt-5.4"
+        "openai-codex/gpt-5.4",
+        "openai-codex/gpt-5.5"
       ]
     },
     "default": {
-      "primary": "zai/glm-5.1",
+      "primary": "openai-codex/gpt-5.5",
       "fallbacks": [
+        "openai-codex/gpt-5.4",
         "zai/glm-5.1"
       ]
     }

@@ -28,7 +28,7 @@ Important: these examples do not replace `~/.openclaw/openclaw.json`. OpenClaw r
 These examples include either `subscription_profile`, `subscription_inventory`, or both. If both blocks are missing or empty, ZeroAPI may silently filter out every configured provider.
 These examples also set `external_model_policy` to `stay`, which is the safe default when you use extra OpenClaw providers outside the ZeroAPI pool.
 These examples now also set `routing_mode` to `balanced`, which is ZeroAPI's current default policy contract.
-These examples are intentionally conservative starter pools. `benchmarks.json` tracks a wider 162-model benchmark reference snapshot, but the canned configs keep a smaller, easier-to-operate subset. That practical subset is now documented in `policy-families.json`.
+These examples are intentionally conservative starter pools. `benchmarks.json` tracks a wider 172-model benchmark reference snapshot, but the canned configs keep a smaller, easier-to-operate subset. That practical subset is now documented in `policy-families.json`.
 
 ## Example Files
 
@@ -45,6 +45,7 @@ These examples are intentionally conservative starter pools. `benchmarks.json` t
 
 | Model | Provider | Blended Price |
 |-------|----------|--------------|
+| GPT-5.5 | openai-codex | $11.25 |
 | GPT-5.4 | openai-codex | $5.63 |
 | GLM-5.1 | zai | $1.55 |
 | Kimi K2.6 (K2.5 benchmark proxy until refresh) | moonshot | $1.71 |
@@ -148,7 +149,7 @@ If you have multiple subscriptions under the same provider, prefer `subscription
 
 ## Benchmark Scores Reference
 
-All benchmark values in these configs are sourced from `benchmarks.json` (date: 2026-04-18).
+All benchmark values in these configs are sourced from `benchmarks.json` (date: 2026-04-24).
 
 | Benchmark | What It Measures |
 |-----------|-----------------|
