@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.7.6] - 2026-04-24
+
+### Fixed
+- Load ZeroAPI config from `OPENCLAW_STATE_DIR` / `OPENCLAW_CONFIG_PATH` so named OpenClaw profiles and isolated clean installs do not fall back to the default `~/.openclaw`.
+- Avoid noisy advisory watcher warnings when an agent state directory exists before its `agent/auth-profiles.json` directory is created.
+- Pin `zeroapi-router` in `plugins.allow` for fresh managed installs, while preserving existing allow lists and avoiding unsafe narrowing when other plugin load paths already exist.
+
 ## [3.7.5] - 2026-04-23
 
 ### Fixed

@@ -135,8 +135,44 @@ test("installOrUpdatePlugin copies plugin files and updates openclaw config with
   const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
   assert.equal(updated.plugins.entries["zeroapi-router"].enabled, true);
   assert.equal(updated.plugins.installs["zeroapi-router"].sourcePath, pluginDir);
+  assert.equal(updated.plugins.allow, undefined);
   assert.equal(
     readFileSync(join(openclawDir, "extensions", "zeroapi-router", "index.ts"), "utf-8"),
     "export default {};\n",
   );
+});
+
+test("installOrUpdatePlugin pins zeroapi in plugins.allow for a fresh plugin profile", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-allow-"));
+  const openclawDir = join(root, ".openclaw");
+  const pluginDir = join(root, "plugin");
+  mkdirSync(openclawDir, { recursive: true });
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: {} }));
+  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
+  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
+
+  installOrUpdatePlugin(pluginDir, openclawDir);
+
+  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
+  assert.deepEqual(updated.plugins.allow, ["zeroapi-router"]);
+});
+
+test("installOrUpdatePlugin appends zeroapi to an existing explicit plugins.allow list", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-allow-append-"));
+  const openclawDir = join(root, ".openclaw");
+  const pluginDir = join(root, "plugin");
+  mkdirSync(openclawDir, { recursive: true });
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(
+    join(openclawDir, "openclaw.json"),
+    JSON.stringify({ plugins: { allow: ["noldomem"] } }),
+  );
+  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
+  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
+
+  installOrUpdatePlugin(pluginDir, openclawDir);
+
+  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
+  assert.deepEqual(updated.plugins.allow, ["noldomem", "zeroapi-router"]);
 });

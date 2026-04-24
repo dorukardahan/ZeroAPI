@@ -215,6 +215,12 @@ export function removeDuplicateZeroAPILoadPaths(openclawDir) {
   return removed;
 }
 
+function isZeroAPIPluginPath(value) {
+  if (typeof value !== "string") return false;
+  const normalized = value.replaceAll("\\", "/").toLowerCase();
+  return normalized.includes("/zeroapi") && normalized.endsWith("/plugin");
+}
+
 export function ensureManagedUpdateWrapper({ wrapperPath, nodePath, repoDir, openclawDir }) {
   const content = `#!/usr/bin/env bash
 set -euo pipefail
@@ -309,6 +315,9 @@ export function installOrUpdatePlugin(pluginPath, openclawDir) {
     config.plugins.entries && typeof config.plugins.entries === "object" ? config.plugins.entries : {};
   config.plugins.installs =
     config.plugins.installs && typeof config.plugins.installs === "object" ? config.plugins.installs : {};
+  const existingPluginIds = Object.keys(config.plugins.entries);
+  const loadPaths = Array.isArray(config.plugins.load?.paths) ? config.plugins.load.paths : [];
+  const nonZeroAPILoadPaths = loadPaths.filter((value) => typeof value === "string" && !isZeroAPIPluginPath(value));
   config.plugins.entries["zeroapi-router"] = { enabled: true };
   config.plugins.installs["zeroapi-router"] = {
     source: "path",
@@ -317,6 +326,16 @@ export function installOrUpdatePlugin(pluginPath, openclawDir) {
     version,
     installedAt: new Date().toISOString(),
   };
+  if (Array.isArray(config.plugins.allow)) {
+    if (!config.plugins.allow.includes("zeroapi-router")) {
+      config.plugins.allow.push("zeroapi-router");
+    }
+  } else if (
+    existingPluginIds.every((pluginId) => pluginId === "zeroapi-router") &&
+    nonZeroAPILoadPaths.length === 0
+  ) {
+    config.plugins.allow = ["zeroapi-router"];
+  }
   writeJsonAtomic(configPath, config);
 }
 

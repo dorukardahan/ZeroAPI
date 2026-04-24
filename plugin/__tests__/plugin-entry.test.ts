@@ -50,6 +50,55 @@ describe("plugin entry registration", () => {
     vi.resetModules();
   });
 
+  it("loads config from OPENCLAW_STATE_DIR for named OpenClaw profiles", async () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
+    const profileDir = join(home, ".openclaw-zeroapi-clean");
+    const previousHome = process.env.HOME;
+    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+    const previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+    process.env.HOME = home;
+    process.env.OPENCLAW_STATE_DIR = profileDir;
+    delete process.env.OPENCLAW_CONFIG_PATH;
+    writeConfig(profileDir);
+
+    const on = vi.fn();
+    const api = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+      },
+      on,
+    };
+
+    try {
+      const mod = await import("../index.js");
+      mod.default.register(api);
+
+      expect(api.logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining("zeroapi-config.json not found"),
+      );
+      expect(api.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining("ZeroAPI Router v"),
+      );
+      expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledWith(
+        expect.objectContaining({ openclawDir: profileDir }),
+      );
+    } finally {
+      process.env.HOME = previousHome;
+      if (previousStateDir === undefined) {
+        delete process.env.OPENCLAW_STATE_DIR;
+      } else {
+        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      }
+      if (previousConfigPath === undefined) {
+        delete process.env.OPENCLAW_CONFIG_PATH;
+      } else {
+        process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
+      }
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   it("registers hooks only once per process", async () => {
     const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
     const previousHome = process.env.HOME;

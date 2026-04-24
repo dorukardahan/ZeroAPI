@@ -18,7 +18,7 @@ import { startSubscriptionAdvisoryMonitor } from "../subscription-advisory.js";
 
 function buildConfig(): ZeroAPIConfig {
   return {
-    version: "3.7.5",
+    version: "3.7.6",
     generated: "2026-04-22T00:00:00.000Z",
     benchmarks_date: "2026-04-19",
     default_model: "zai/glm-5.1",
@@ -95,6 +95,43 @@ describe("subscription advisory monitor", () => {
 
     callbacks[0]?.("change", "openclaw.json");
     expect(timeoutUnref).toHaveBeenCalledTimes(1);
+
+    handle.stop();
+  });
+
+  it("does not warn when an agent exists before its auth profile directory is created", () => {
+    mkdirSync(join(openclawDir, "agents", "main"), { recursive: true });
+    writeFileSync(
+      join(openclawDir, "openclaw.json"),
+      JSON.stringify({ models: { providers: { "openai-codex": {} } } }),
+    );
+
+    const watchedPaths: string[] = [];
+    watchMock.mockImplementation(
+      (targetPath: string, _callback: (eventType: string, filename?: string) => void) => {
+        watchedPaths.push(targetPath);
+        if (targetPath.endsWith(join("main", "agent"))) {
+          throw new Error("ENOENT");
+        }
+        return {
+          close: vi.fn(),
+          unref: vi.fn(),
+        };
+      },
+    );
+
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const handle = startSubscriptionAdvisoryMonitor({
+      config: buildConfig(),
+      logger,
+      openclawDir,
+    });
+
+    expect(watchedPaths).toContain(openclawDir);
+    expect(watchedPaths).toContain(join(openclawDir, "agents"));
+    expect(watchedPaths).toContain(join(openclawDir, "agents", "main"));
+    expect(watchedPaths).not.toContain(join(openclawDir, "agents", "main", "agent"));
+    expect(logger.warn).not.toHaveBeenCalled();
 
     handle.stop();
   });

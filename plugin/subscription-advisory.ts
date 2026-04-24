@@ -233,6 +233,7 @@ function resolveAgentAuthProfileDirs(openclawDir: string): Array<{ agentId: stri
     for (const entry of agentEntries) {
       if (!entry.isDirectory()) continue;
       const dirPath = join(agentsRoot, entry.name, "agent");
+      if (!existsSync(dirPath)) continue;
       if (seen.has(dirPath)) continue;
       result.push({ agentId: entry.name, dirPath });
       seen.add(dirPath);
@@ -242,6 +243,18 @@ function resolveAgentAuthProfileDirs(openclawDir: string): Array<{ agentId: stri
   }
 
   return result;
+}
+
+function resolveAgentRootDirs(openclawDir: string): string[] {
+  const agentsRoot = join(openclawDir, "agents");
+  try {
+    return readdirSync(agentsRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => join(agentsRoot, entry.name))
+      .sort();
+  } catch {
+    return [];
+  }
 }
 
 function readAuthProfilesForDir(dirPath: string, agentId: string): RuntimeAuthProfile[] {
@@ -489,7 +502,11 @@ export function startSubscriptionAdvisoryMonitor(params: {
   };
 
   const refreshAuthDirectoryWatchers = () => {
-    const wanted = new Set(resolveAgentAuthProfileDirs(openclawDir).map((entry) => entry.dirPath));
+    const wantedEntries = [
+      ...resolveAgentRootDirs(openclawDir).map((dirPath) => ({ dirPath, kind: "agent-root" as const })),
+      ...resolveAgentAuthProfileDirs(openclawDir).map((entry) => ({ dirPath: entry.dirPath, kind: "auth" as const })),
+    ];
+    const wanted = new Set(wantedEntries.map((entry) => entry.dirPath));
     for (const watchedPath of Array.from(watcherMap.keys())) {
       if (watchedPath === rootPath || watchedPath === agentsRoot) {
         continue;
@@ -499,12 +516,15 @@ export function startSubscriptionAdvisoryMonitor(params: {
       }
     }
 
-    for (const dirPath of wanted) {
+    for (const { dirPath, kind } of wantedEntries) {
       if (watcherMap.has(dirPath)) continue;
       const watcher = safeWatch(
         dirPath,
         (filename) => {
-          if (typeof filename === "string" && filename !== "auth-profiles.json") {
+          if (kind === "auth" && typeof filename === "string" && filename !== "auth-profiles.json") {
+            return;
+          }
+          if (kind === "agent-root" && typeof filename === "string" && filename !== "agent") {
             return;
           }
           scheduleRefresh();

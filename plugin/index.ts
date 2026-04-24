@@ -2,13 +2,13 @@ import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { loadConfig } from "./config.js";
 import { resolveRoutingDecision } from "./decision.js";
 import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { syncSessionAuthProfileOverride } from "./session-auth.js";
 import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 
-const PLUGIN_VERSION = "3.7.5";
+const PLUGIN_VERSION = "3.7.6";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -24,15 +24,27 @@ function getRegisterState(): RegisterState {
   return globalStore[REGISTER_STATE_KEY];
 }
 
+function resolveOpenClawDir(env: NodeJS.ProcessEnv = process.env): string {
+  const stateDir = env.OPENCLAW_STATE_DIR?.trim();
+  if (stateDir) {
+    return stateDir;
+  }
+
+  const configPath = env.OPENCLAW_CONFIG_PATH?.trim();
+  if (configPath) {
+    return dirname(configPath);
+  }
+
+  return env.HOME ? `${env.HOME}/.openclaw` : "/root/.openclaw";
+}
+
 export default definePluginEntry({
   id: "zeroapi-router",
   name: "ZeroAPI Router",
   description: "Balanced benchmark-aware model routing across subscription providers",
 
   register(api) {
-    const openclawDir = process.env.HOME
-      ? `${process.env.HOME}/.openclaw`
-      : "/root/.openclaw";
+    const openclawDir = resolveOpenClawDir();
 
     const config = loadConfig(openclawDir);
     initLogger(openclawDir);
