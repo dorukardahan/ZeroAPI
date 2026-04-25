@@ -1,6 +1,6 @@
 {
   "name": "zeroapi-workspace",
-  "version": "3.7.8",
+  "version": "3.7.9",
   "private": true,
   "description": "Benchmark-driven model routing for OpenClaw",
   "type": "module",
@@ -14,6 +14,8 @@
     "simulate": "tsx scripts/simulate.ts",
     "eval": "tsx scripts/eval.ts",
     "compare:modifiers": "tsx scripts/compare_modifiers.ts",
+    "agent:audit": "tsx scripts/agent_audit.ts",
+    "agent:apply": "tsx scripts/agent_apply.ts",
     "cron:audit": "tsx scripts/cron_audit.ts",
     "cron:apply": "tsx scripts/cron_apply.ts",
     "first-run": "tsx scripts/first_run.ts",

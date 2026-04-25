@@ -50,9 +50,11 @@
       ]
     },
     {
-      "id": "verify-and-cron",
+      "id": "verify-agent-and-cron",
       "assistant_must": [
         "verify with scripts-zeroapi-doctor.sh or npm run simulate",
+        "preview agent/model catalog alignment with npm run agent:audit",
+        "apply approved agent/model changes with npm run agent:apply -- --yes",
         "preview cron changes with npm run cron:audit",
         "apply only approved cron changes with npm run cron:apply -- --yes"
       ]

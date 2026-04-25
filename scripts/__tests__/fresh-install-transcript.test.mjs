@@ -11,7 +11,7 @@ test("fresh install transcript has the expected scenario steps", () => {
   assert.equal(transcript.schema, "zeroapi.fresh_install_transcript.v1");
   assert.deepEqual(
     transcript.steps.map((step) => step.id),
-    ["repo-explain", "install-intent", "subscription-tiers", "host-install", "verify-and-cron"],
+    ["repo-explain", "install-intent", "subscription-tiers", "host-install", "verify-agent-and-cron"],
   );
 });
 
@@ -31,9 +31,11 @@ test("fresh install flow covers provider choices without chat secrets", () => {
 
 test("host and cron steps use guarded npm commands", () => {
   const hostInstall = steps.get("host-install").assistant_must.join("\n");
-  const verifyAndCron = steps.get("verify-and-cron").assistant_must.join("\n");
+  const verifyAndCron = steps.get("verify-agent-and-cron").assistant_must.join("\n");
   assert.match(hostInstall, /npm install/);
   assert.match(hostInstall, /npm run managed:install -- --openclaw-dir ~\/\.openclaw/);
+  assert.match(verifyAndCron, /npm run agent:audit/);
+  assert.match(verifyAndCron, /npm run agent:apply -- --yes/);
   assert.match(verifyAndCron, /npm run cron:audit/);
   assert.match(verifyAndCron, /npm run cron:apply -- --yes/);
 });

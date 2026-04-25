@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.7.8
+version: 3.7.9
 description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi, asks to set up model routing, pastes the ZeroAPI repo URL, or asks what the repo does or whether it would help.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
@@ -47,7 +47,13 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
    - `external_model_policy`: `stay`
    - model pool and routing rules based on available providers and the bundled `benchmarks.json`.
 
-6. Verify after restart:
+6. Align OpenClaw runtime state before restart:
+   - add missing ZeroAPI model ids under `agents.defaults.models`
+   - preserve fixed-model specialist agents
+   - for agents explicitly hinted in `workspace_hints`, set a safe baseline `agent.model`
+   - for repo-local installs, prefer `npm run agent:audit` then `npm run agent:apply -- --yes`
+
+7. Verify after restart:
    - gateway is active
    - logs show `ZeroAPI Router v... loaded`
    - `/zeroapi` rerun reports current subscriptions and routing instead of starting from blank setup.

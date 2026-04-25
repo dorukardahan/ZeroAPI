@@ -1,11 +1,17 @@
 #!/usr/bin/env npx tsx
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { spawnSync } from "child_process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { createInterface } from "readline/promises";
 import { stdin as input, stdout as output } from "process";
+import {
+  applyOpenClawAgentAlignment,
+  auditOpenClawAgentModels,
+  inferWorkspaceHintsFromOpenClawConfig,
+  type OpenClawConfig,
+} from "../plugin/agent-audit.js";
 import {
   buildStarterConfig,
   deriveStarterDefaults,
@@ -196,31 +202,13 @@ function readJsonFile<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf-8")) as T;
 }
 
-function readModelRef(model: unknown): string | null {
-  if (typeof model === "string" && model.trim()) return model.trim();
-  if (!model || typeof model !== "object") return null;
-  const primary = (model as { primary?: unknown }).primary;
-  return typeof primary === "string" && primary.trim() ? primary.trim() : null;
-}
-
-function readExplicitModelWorkspaceHints(openclawDir: string): Record<string, TaskCategory[] | null> {
+function readDetectedWorkspaceHints(openclawDir: string): Record<string, TaskCategory[] | null> {
   const openclawConfigPath = resolve(openclawDir, "openclaw.json");
   if (!existsSync(openclawConfigPath)) return {};
 
   try {
-    const cfg = readJsonFile<{ agents?: { list?: unknown[] } }>(openclawConfigPath);
-    const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
-    const hints: Record<string, TaskCategory[] | null> = {};
-    for (const entry of agents) {
-      if (!entry || typeof entry !== "object") continue;
-      const agent = entry as { id?: unknown; model?: unknown };
-      const agentId = typeof agent.id === "string" ? agent.id.trim() : "";
-      if (!agentId) continue;
-      if (readModelRef(agent.model)) {
-        hints[agentId] = null;
-      }
-    }
-    return hints;
+    const cfg = readJsonFile<OpenClawConfig>(openclawConfigPath);
+    return inferWorkspaceHintsFromOpenClawConfig(cfg);
   } catch (error) {
     console.log(`\nOpenClaw agent model listesi okunamadı: ${error instanceof Error ? error.message : String(error)}`);
     return {};
@@ -234,6 +222,10 @@ function commandExists(command: string): boolean {
 
 function runCommand(command: string, args: string[]) {
   return spawnSync(command, args, { stdio: "inherit" });
+}
+
+function timestamp(): string {
+  return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
 
 async function main() {
@@ -275,7 +267,7 @@ async function main() {
         console.log(`\nMevcut config okunamadı: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    const detectedWorkspaceHints = readExplicitModelWorkspaceHints(args.openclawDir);
+    const detectedWorkspaceHints = readDetectedWorkspaceHints(args.openclawDir);
     const workspaceHints = {
       ...detectedWorkspaceHints,
       ...(existingConfig?.workspace_hints ?? {}),
@@ -286,6 +278,13 @@ async function main() {
     if (protectedAgents.length > 0) {
       console.log(`\nKorunan agent model ayarları: ${protectedAgents.join(", ")}`);
       console.log("- Bu agent'lar OpenClaw'daki kendi model seçiminde kalır; route etmek istersen workspace_hints değerini kategori listesine çevir.");
+    }
+    const routedAgents = Object.entries(workspaceHints)
+      .filter(([, hint]) => Array.isArray(hint) && hint.length > 0)
+      .map(([agentId, hint]) => `${agentId} (${(hint as TaskCategory[]).join(",")})`);
+    if (routedAgents.length > 0) {
+      console.log(`\nZeroAPI-managed agent adayları: ${routedAgents.join(", ")}`);
+      console.log("- Bu agent'lar için OpenClaw model kataloğu ve güvenli başlangıç modeli hizalanabilir.");
     }
 
     const pendingAdvisory = readPendingSubscriptionAdvisory(args.openclawDir);
@@ -473,6 +472,39 @@ async function main() {
 
     writeFileSync(targetFile, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
     console.log(`\nYazıldı: ${targetFile}`);
+
+    const openclawConfigPath = resolve(args.openclawDir, "openclaw.json");
+    if (existsSync(openclawConfigPath)) {
+      try {
+        const openclawConfig = readJsonFile<OpenClawConfig>(openclawConfigPath);
+        const agentReport = auditOpenClawAgentModels(config, openclawConfig);
+        const needsAgentAlignment = agentReport.catalogMissing.length > 0 || agentReport.counts.change > 0;
+        if (needsAgentAlignment) {
+          console.log("\nOpenClaw agent/model hizalama özeti");
+          console.log(`- model catalog eksiği: ${agentReport.catalogMissing.length}`);
+          console.log(`- agent baseline değişikliği: ${agentReport.counts.change}`);
+          for (const item of agentReport.items.filter((entry) => entry.action === "change")) {
+            console.log(`- ${item.id}: ${item.suggestedModel} (${item.suggestedFallbacks.join(", ") || "fallback yok"})`);
+          }
+          const alignNow = await askYesNo(
+            rl,
+            "OpenClaw model catalog ve routed agent başlangıç modellerini hizalayayım mı?",
+            true,
+          );
+          if (alignNow) {
+            const result = applyOpenClawAgentAlignment(openclawConfig, agentReport);
+            const backupPath = `${openclawConfigPath}.zeroapi-agent.${timestamp()}.bak`;
+            copyFileSync(openclawConfigPath, backupPath);
+            writeFileSync(openclawConfigPath, `${JSON.stringify(result.config, null, 2)}\n`, "utf-8");
+            console.log(`- openclaw.json backup: ${backupPath}`);
+            console.log(`- catalog eklenen: ${result.catalogAdded.length}`);
+            console.log(`- agent hizalanan: ${result.applied.length}`);
+          }
+        }
+      } catch (error) {
+        console.log(`\nOpenClaw agent/model hizalama atlandı: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
 
     const selectedProviderIds = providerSelections.map((provider) => provider.providerId);
     const authCommands = getStarterAuthCommands(selectedProviderIds);

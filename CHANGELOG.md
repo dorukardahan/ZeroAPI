@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [3.7.9] - 2026-04-25
+
+### Added
+- Add `agent:audit` and `agent:apply` helpers to keep OpenClaw model catalog entries and routed-agent baseline models aligned with ZeroAPI policy.
+- Terminal onboarding now detects tool-heavy agents, previews catalog/baseline drift, and can back up plus patch `openclaw.json` before managed install.
+
+### Fixed
+- Prevent cron or hinted agents from silently falling back to the global OpenClaw default when ZeroAPI-selected models are missing from `agents.defaults.models`.
+
 ## [3.7.8] - 2026-04-24
 
 ### Fixed

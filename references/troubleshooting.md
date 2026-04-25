@@ -295,6 +295,20 @@ PY
 
 ---
 
+### Cron or agent says "model not allowed"
+
+**Cause**: ZeroAPI selected a model that exists in `zeroapi-config.json`, but OpenClaw's runtime catalog in `agents.defaults.models` does not include that model. OpenClaw then falls back to the agent/default model, which can cause weak-model context overflow on tool-heavy agents.
+
+**Fix**:
+```bash
+npm run agent:audit -- --openclaw-dir ~/.openclaw
+npm run agent:apply -- --openclaw-dir ~/.openclaw --yes
+```
+
+Then restart or reload the gateway. The apply command backs up `openclaw.json`, adds missing policy models to the catalog, and only sets baseline models for agents explicitly present in `workspace_hints` with category lists.
+
+---
+
 ### Config shows "invalid" after editing openclaw.json
 
 **Cause**: OpenClaw uses strict Zod schema validation. Any unrecognized key in `openclaw.json` causes the entire config to be rejected.

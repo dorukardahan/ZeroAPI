@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.7.8-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.7.8)
+[![Version](https://img.shields.io/badge/version-3.7.9-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.7.9)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -59,6 +59,10 @@ If the current runtime model is outside `zeroapi-config.json`'s `models` pool, Z
 
 If an OpenClaw agent is already running a non-default model and that agent has no `workspace_hints` entry, ZeroAPI skips routing for that turn. This protects specialist agents such as a `codex` agent pinned to `openai-codex/gpt-5.5` or `openai-codex/gpt-5.4`. To intentionally route a specialist agent, add a category list under `workspace_hints`; to hard-disable routing for it, set the value to `null`.
 
+For agents without an explicit model, ZeroAPI setup can now align two OpenClaw runtime details:
+- `agents.defaults.models` gets every model used by the ZeroAPI policy, so OpenClaw does not reject cron or agent selections as "model not allowed".
+- agents with category hints in `workspace_hints` get a safe baseline `agent.model`, so tool-heavy channels do not silently inherit a weak global default before runtime routing has a chance to act.
+
 ## Supported Providers
 
 | Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
@@ -100,8 +104,10 @@ Recommended path:
 4. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
 5. Answer the short setup questions
 6. Verify with bash scripts-zeroapi-doctor.sh or npm run simulate -- --prompt "refactor this auth module"
-7. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
-8. Apply approved cron changes with npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
+7. Preview agent/model catalog alignment with npm run agent:audit -- --openclaw-dir ~/.openclaw
+8. Apply approved agent/model alignment with npm run agent:apply -- --openclaw-dir ~/.openclaw --yes
+9. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
+10. Apply approved cron changes with npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
 ```
 
 Preferred host install:
@@ -127,7 +133,7 @@ npm run managed:update -- --openclaw-dir ~/.openclaw
 
 The `/zeroapi` skill is the primary public onboarding surface. It should feel natural inside chat channels: short questions, compact choices, and a final confirmation before writing `~/.openclaw/zeroapi-config.json`.
 
-`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. Run it with `npm run first-run`. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, and can hand off to managed install from the checked-out repo.
+`scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. Run it with `npm run first-run`. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, can align OpenClaw's model catalog/routed agent baselines, and can hand off to managed install from the checked-out repo.
 
 For managed install/update behavior, rollback rules, and timer semantics, see [`references/managed-install.md`](references/managed-install.md).
 

@@ -111,6 +111,8 @@ Channel users should still receive a short natural-language explanation of what 
 
 When a rerun changes `zeroapi-config.json` or `openclaw.json`, schedule a delayed gateway restart and end the turn. Do not keep running host commands after the reload is queued.
 
+Agent/model alignment belongs in the same confirmation step as config writes. Preview with `npm run agent:audit -- --openclaw-dir ~/.openclaw`; after approval, `npm run agent:apply -- --openclaw-dir ~/.openclaw --yes` may add missing ZeroAPI models to `agents.defaults.models` and set baseline models only for agents explicitly listed with category hints in `workspace_hints`. Preserve fixed-model specialist agents as `null`.
+
 ## Re-run behavior
 
 Re-running `/zeroapi` should:
