@@ -246,27 +246,25 @@ function classifyCronPrompt(params: {
     config.risk_levels,
   );
   const matchedSignals = extractMatchedSignals(decision.reason);
+  const hint = findCronCategoryHint(prompt);
 
-  if (decision.category === "default" && decision.risk !== "high") {
-    const hint = findCronCategoryHint(prompt);
-    if (hint) {
-      const hintedDecision = {
-        ...decision,
-        category: hint.category,
-        reason: hint.reason,
-      };
-      const hintName = hint.reason.replace(/^cron_hint:/, "");
-      const hintedSignals = [`cron_hint:${hintName}:${hint.keyword}`];
-      return {
-        decision: hintedDecision,
-        confidence: resolveConfidence({
-          reason: hintedDecision.reason,
-          risk: hintedDecision.risk,
-          matchedSignals: hintedSignals,
-        }),
+  if (hint && decision.risk !== "high" && (decision.category === "default" || hint.category === "fast")) {
+    const hintedDecision = {
+      ...decision,
+      category: hint.category,
+      reason: hint.reason,
+    };
+    const hintName = hint.reason.replace(/^cron_hint:/, "");
+    const hintedSignals = [`cron_hint:${hintName}:${hint.keyword}`];
+    return {
+      decision: hintedDecision,
+      confidence: resolveConfidence({
+        reason: hintedDecision.reason,
+        risk: hintedDecision.risk,
         matchedSignals: hintedSignals,
-      };
-    }
+      }),
+      matchedSignals: hintedSignals,
+    };
   }
 
   return {

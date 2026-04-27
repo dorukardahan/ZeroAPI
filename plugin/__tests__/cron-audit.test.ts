@@ -153,6 +153,23 @@ describe("auditCronJob", () => {
     expect(result.suggestedModel).toBe("zai/glm-5.1");
   });
 
+  it("lets health cron hints override generic analysis keywords", () => {
+    const result = auditCronJob(config, {
+      id: "senti-health",
+      name: "Senti Health Check",
+      enabled: true,
+      payload: {
+        kind: "agentTurn",
+        message: "Analyze service status and freshness thresholds.",
+        model: "openai-codex/gpt-5.4",
+      },
+    });
+
+    expect(result.category).toBe("fast");
+    expect(result.matchedSignals).toContain("cron_hint:health_check:check");
+    expect(result.suggestedModel).toBe("zai/glm-5.1");
+  });
+
   it("marks unmatched cron prompts as low confidence", () => {
     const result = auditCronJob(config, {
       id: "ambiguous",

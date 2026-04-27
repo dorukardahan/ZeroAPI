@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.2] - 2026-04-28
+
+### Fixed
+- Let cron-specific health/watchdog/status/freshness hints override generic `analyze` wording, so recurring health checks stay on fast subscription-friendly models instead of burning premium OpenAI quota.
+
 ## [3.8.1] - 2026-04-28
 
 ### Fixed
