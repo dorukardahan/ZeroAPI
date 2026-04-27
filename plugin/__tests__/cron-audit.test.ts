@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { auditCronJob, auditCronJobs } from "../cron-audit.js";
+import { auditCronJob, auditCronJobs, auditCronRuntimeState } from "../cron-audit.js";
 import type { ZeroAPIConfig } from "../types.js";
 
 const config: ZeroAPIConfig = {
@@ -241,5 +241,104 @@ describe("auditCronJobs", () => {
     expect(report.totalJobs).toBe(2);
     expect(report.counts.change).toBe(1);
     expect(report.counts.skip).toBe(1);
+  });
+});
+
+describe("auditCronRuntimeState", () => {
+  const nowMs = Date.parse("2026-04-28T09:00:00.000Z");
+
+  it("flags stale running markers that can block or replay cron work", () => {
+    const report = auditCronRuntimeState([
+      {
+        id: "stale",
+        name: "Stale cron",
+        enabled: true,
+        schedule: { kind: "cron", expr: "0 * * * *" },
+        state: {
+          runningAtMs: nowMs - 30 * 60 * 1000,
+          nextRunAtMs: nowMs - 20 * 60 * 1000,
+        },
+      },
+    ], { nowMs });
+
+    expect(report.counts.critical).toBe(1);
+    expect(report.advisories[0]).toMatchObject({
+      id: "stale",
+      kind: "stale_running_marker",
+      severity: "critical",
+    });
+  });
+
+  it("flags overdue catch-up jobs before a restart runs them immediately", () => {
+    const report = auditCronRuntimeState([
+      {
+        id: "overdue",
+        name: "Old catch-up",
+        enabled: true,
+        schedule: { kind: "cron", expr: "0 8 * * *" },
+        state: {
+          nextRunAtMs: nowMs - 2 * 60 * 60 * 1000,
+        },
+      },
+    ], { nowMs });
+
+    expect(report.advisories[0]).toMatchObject({
+      kind: "overdue_catchup",
+      severity: "critical",
+    });
+  });
+
+  it("flags provider rate-limit errors stored in cron state", () => {
+    const report = auditCronRuntimeState([
+      {
+        id: "limited",
+        name: "Rate limited",
+        enabled: true,
+        state: {
+          lastError: "429 rate limit exceeded",
+          consecutiveErrors: 2,
+          nextRunAtMs: nowMs + 60_000,
+        },
+      },
+    ], { nowMs });
+
+    expect(report.advisories[0]).toMatchObject({
+      kind: "rate_limit_backoff",
+      severity: "warning",
+    });
+  });
+
+  it("flags same-minute agentTurn cron bursts", () => {
+    const dueAt = nowMs + 10 * 60_000;
+    const report = auditCronRuntimeState([
+      {
+        id: "one",
+        name: "One",
+        enabled: true,
+        payload: { kind: "agentTurn", model: "zai/glm-5.1" },
+        state: { nextRunAtMs: dueAt },
+      },
+      {
+        id: "two",
+        name: "Two",
+        enabled: true,
+        payload: { kind: "agentTurn", model: "zai/glm-5.1" },
+        state: { nextRunAtMs: dueAt + 500 },
+      },
+      {
+        id: "three",
+        name: "Three",
+        enabled: true,
+        payload: { kind: "agentTurn", model: "openai-codex/gpt-5.4" },
+        state: { nextRunAtMs: dueAt + 1000 },
+      },
+    ], { nowMs });
+
+    expect(report.advisories).toContainEqual(
+      expect.objectContaining({
+        kind: "schedule_cluster",
+        severity: "warning",
+      }),
+    );
   });
 });

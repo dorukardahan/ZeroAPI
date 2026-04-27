@@ -18,6 +18,14 @@ npm run cron:audit -- --openclaw-dir ~/.openclaw --json
 
 The audit is read-only. It returns recommended `cron.update` payload patches, but it does not write `jobs.json` and does not restart the gateway. In chat-native onboarding, show the preview first and apply only user-approved changes via OpenClaw's `cron.update` tool.
 
+When `jobs-state.json` exists next to `jobs.json`, the same audit also prints
+read-only runtime preflight advisories. These catch stale `runningAtMs` markers,
+overdue catch-up jobs that would fire immediately after restart, provider
+rate-limit/backoff errors, repeated execution errors, and same-minute
+`agentTurn` bursts that should be staggered. ZeroAPI never writes
+`jobs-state.json`; use the advisory as an operator checklist before restarting
+cron-heavy gateways.
+
 Shell fallback:
 
 ```bash
@@ -28,9 +36,10 @@ npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
 `cron:apply` is dry-run by default. With `--yes`, it writes a timestamped backup next to `jobs.json` before patching eligible `agentTurn` jobs. It skips low-confidence changes unless `--include-low-confidence` is passed, and `--job-id <id>` can scope the write to selected jobs.
 
 OpenClaw v2026.4.20 splits cron runtime state into `jobs-state.json`. ZeroAPI
-intentionally reads and patches only the job definition store (`jobs.json` or
-the configured `cron.store`). It must not copy, edit, or version-control
-`jobs-state.json`; that file is runtime-owned.
+intentionally patches only the job definition store (`jobs.json` or the
+configured `cron.store`). It may read `jobs-state.json` for preflight
+diagnostics, but it must not copy, edit, or version-control that file; runtime
+state is owned by OpenClaw.
 
 | Cron Task Type | Detection Signal | Model Criteria |
 |---------------|------------------|----------------|

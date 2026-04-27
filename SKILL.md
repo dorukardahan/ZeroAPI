@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.7.9
+version: 3.8.0
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when the user mentions model routing, multi-model setup, "which model should I use",
@@ -13,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.7.9 - Plugin-Based Model Routing
+# ZeroAPI v3.8.0 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -232,7 +232,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.7.9",
+  "version": "3.8.0",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",
@@ -264,7 +264,7 @@ Required config shape:
 
 Agent model safety rule: if an OpenClaw agent already has its own model assignment, preserve that assignment. Put that agent in `workspace_hints` as `null` unless the user explicitly wants ZeroAPI to route it. If the user does want routing for that agent, use a category list such as `["code", "research"]`; this is an explicit opt-in. For agents without their own model, use `npm run agent:audit -- --openclaw-dir ~/.openclaw` to preview missing model catalog entries and hinted-agent baseline changes, then `npm run agent:apply -- --openclaw-dir ~/.openclaw --yes` after approval. This prevents routed agents or cron jobs from falling back to OpenClaw's global default because a selected model is not in `agents.defaults.models`.
 
-Cron model safety rule: runtime ZeroAPI hooks never route `trigger: "cron"` turns. Cron model selection is an offline config alignment step. Use `npm run cron:audit -- --openclaw-dir ~/.openclaw` to preview which `agentTurn` jobs should get a `payload.model` and `payload.fallbacks` patch. Apply changes only after the user approves, preferably via OpenClaw's native `cron.update` tool so the gateway owns persistence. If shell access is the only available path, use `npm run cron:apply -- --openclaw-dir ~/.openclaw --yes`; it is dry-run by default, writes a backup before changes, and skips low-confidence changes unless explicitly allowed. Do not patch `systemEvent` jobs; OpenClaw strips model fields there by design.
+Cron model safety rule: runtime ZeroAPI hooks never route `trigger: "cron"` turns. Cron model selection is an offline config alignment step. Use `npm run cron:audit -- --openclaw-dir ~/.openclaw` to preview which `agentTurn` jobs should get a `payload.model` and `payload.fallbacks` patch. The same audit reads OpenClaw's `jobs-state.json` when present and prints read-only preflight advisories for stale `runningAtMs`, overdue catch-up, provider rate-limit errors, repeated errors, and same-minute cron bursts. Apply model changes only after the user approves, preferably via OpenClaw's native `cron.update` tool so the gateway owns persistence. If shell access is the only available path, use `npm run cron:apply -- --openclaw-dir ~/.openclaw --yes`; it is dry-run by default, writes a backup before changes, and skips low-confidence changes unless explicitly allowed. Do not patch `systemEvent` jobs; OpenClaw strips model fields there by design. Do not write `jobs-state.json` from ZeroAPI; runtime-state advisories are diagnostics only.
 
 `routing_modifier` is also optional. Leave it unset for plain balanced mode unless the user explicitly wants one of the shipped overlays.
 

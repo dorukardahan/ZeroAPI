@@ -1,6 +1,6 @@
 {
   "name": "zeroapi-workspace",
-  "version": "3.7.9",
+  "version": "3.8.0",
   "private": true,
   "description": "Benchmark-driven model routing for OpenClaw",
   "type": "module",

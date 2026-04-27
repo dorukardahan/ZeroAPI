@@ -2,15 +2,23 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
-import { auditCronJobs, type CronAuditJob, type CronAuditReport } from "../plugin/cron-audit.js";
+import {
+  auditCronJobs,
+  auditCronRuntimeState,
+  type CronAuditJob,
+  type CronAuditReport,
+  type CronRuntimeAuditReport,
+} from "../plugin/cron-audit.js";
 import { loadConfig } from "../plugin/config.js";
 
 type CliOptions = {
   openclawDir: string;
   jobsPath?: string;
+  statePath?: string;
   json: boolean;
   includeDisabled: boolean;
   showPrompts: boolean;
+  includeRuntimeState: boolean;
 };
 
 function fail(message: string): never {
@@ -24,6 +32,7 @@ function parseArgs(argv: string[]): CliOptions {
     json: false,
     includeDisabled: false,
     showPrompts: false,
+    includeRuntimeState: true,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -34,6 +43,14 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--jobs" && argv[i + 1]) {
       options.jobsPath = argv[++i];
+      continue;
+    }
+    if (arg === "--state" && argv[i + 1]) {
+      options.statePath = argv[++i];
+      continue;
+    }
+    if (arg === "--no-state") {
+      options.includeRuntimeState = false;
       continue;
     }
     if (arg === "--json") {
@@ -56,12 +73,17 @@ function parseArgs(argv: string[]): CliOptions {
 Options:
   --openclaw-dir <path>  OpenClaw config directory. Default: ~/.openclaw
   --jobs <path>          Explicit cron jobs.json path
+  --state <path>         Explicit cron jobs-state.json path
+  --no-state             Skip runtime state preflight advisories
   --include-disabled     Include disabled jobs in recommendations
   --show-prompts         Include short prompt previews in output
   --json                 Emit machine-readable JSON
 
 This command is preview-only. Apply suggested patches through OpenClaw's
 native cron.update tool after the user approves them.
+If jobs-state.json exists next to jobs.json, the command also prints read-only
+runtime advisories for stale running markers, overdue catch-up, rate limits,
+and same-minute cron bursts. It never writes runtime state.
 `);
       process.exit(0);
     }
@@ -106,6 +128,16 @@ function resolveJobsPath(options: CliOptions): string {
   return resolveConfiguredCronStore(options.openclawDir) ?? join(options.openclawDir, "cron", "jobs.json");
 }
 
+function resolveStatePath(options: CliOptions, jobsPath: string): string | null {
+  if (!options.includeRuntimeState) return null;
+  if (options.statePath) {
+    const expanded = expandHome(options.statePath);
+    return isAbsolute(expanded) ? expanded : resolve(expanded);
+  }
+  const defaultStatePath = join(dirname(jobsPath), "jobs-state.json");
+  return existsSync(defaultStatePath) ? defaultStatePath : null;
+}
+
 function loadJobs(path: string): CronAuditJob[] {
   if (!existsSync(path)) {
     fail(`Cron jobs file not found: ${path}`);
@@ -121,19 +153,83 @@ function loadJobs(path: string): CronAuditJob[] {
   return jobs as CronAuditJob[];
 }
 
+function loadRuntimeStateJobs(path: string): CronAuditJob[] {
+  if (!existsSync(path)) return [];
+  const parsed = parseJsonFile(path);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    fail(`Cron runtime state must be an object: ${path}`);
+  }
+  const jobs = (parsed as { jobs?: unknown }).jobs;
+  if (Array.isArray(jobs)) {
+    return jobs as CronAuditJob[];
+  }
+  if (jobs && typeof jobs === "object") {
+    return Object.entries(jobs as Record<string, unknown>).map(([id, value]) => {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        return { id, ...(value as Record<string, unknown>) } as CronAuditJob;
+      }
+      return { id } as CronAuditJob;
+    });
+  }
+  fail(`Cron runtime state has no jobs array or object: ${path}`);
+}
+
+function normalizeString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function mergeRuntimeState(jobs: CronAuditJob[], runtimeJobs: CronAuditJob[]): CronAuditJob[] {
+  if (runtimeJobs.length === 0) return jobs;
+  const byId = new Map<string, CronAuditJob>();
+  for (const job of runtimeJobs) {
+    const id = normalizeString(job.id);
+    if (id) byId.set(id, job);
+  }
+  return jobs.map((job) => {
+    const id = normalizeString(job.id);
+    const runtimeJob = id ? byId.get(id) : undefined;
+    if (!runtimeJob || runtimeJob.state === undefined) return job;
+    return { ...job, state: runtimeJob.state };
+  });
+}
+
 function formatList(values: string[]): string {
   return values.length > 0 ? values.join(", ") : "-";
 }
 
-function renderText(report: CronAuditReport, jobsPath: string): string {
+function renderText(params: {
+  report: CronAuditReport;
+  runtimeReport: CronRuntimeAuditReport | null;
+  jobsPath: string;
+  statePath: string | null;
+}): string {
+  const { report, runtimeReport, jobsPath, statePath } = params;
   const lines = [
     "# ZeroAPI Cron Audit",
     "",
     `Jobs file: ${jobsPath}`,
+    `State file: ${statePath ?? "-"}`,
     `Total jobs: ${report.totalJobs}`,
     `Changes: ${report.counts.change}, review: ${report.counts.review}, keep: ${report.counts.keep}, skip: ${report.counts.skip}`,
+    `Runtime advisories: ${runtimeReport?.advisories.length ?? 0}`,
     "",
   ];
+
+  if (runtimeReport?.advisories.length) {
+    lines.push("## Runtime Preflight");
+    lines.push("");
+    for (const advisory of runtimeReport.advisories) {
+      lines.push(`- [${advisory.severity}] ${advisory.name} (${advisory.id})`);
+      lines.push(`  kind: ${advisory.kind}`);
+      lines.push(`  reason: ${advisory.reason}`);
+      lines.push(`  action: ${advisory.suggestedAction}`);
+    }
+    lines.push("");
+    lines.push("## Model Alignment");
+    lines.push("");
+  }
 
   for (const item of report.items) {
     lines.push(`- [${item.action}] ${item.name} (${item.id})`);
@@ -164,14 +260,18 @@ if (!config) {
 }
 
 const jobsPath = resolveJobsPath({ ...options, openclawDir });
+const statePath = resolveStatePath({ ...options, openclawDir }, jobsPath);
 const jobs = loadJobs(jobsPath);
+const runtimeJobs = statePath ? loadRuntimeStateJobs(statePath) : [];
+const jobsWithRuntimeState = mergeRuntimeState(jobs, runtimeJobs);
 const report = auditCronJobs(config, jobs, {
   includeDisabled: options.includeDisabled,
   showPrompts: options.showPrompts,
 });
+const runtimeReport = statePath ? auditCronRuntimeState(jobsWithRuntimeState) : null;
 
 if (options.json) {
-  console.log(JSON.stringify({ jobsPath, configVersion: config.version, ...report }, null, 2));
+  console.log(JSON.stringify({ jobsPath, statePath, configVersion: config.version, runtime: runtimeReport, ...report }, null, 2));
 } else {
-  console.log(renderText(report, jobsPath));
+  console.log(renderText({ report, runtimeReport, jobsPath, statePath }));
 }

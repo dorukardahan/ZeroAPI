@@ -49,10 +49,20 @@ export type CronAuditJob = {
   agentId?: unknown;
   sessionTarget?: unknown;
   payload?: unknown;
+  schedule?: unknown;
+  state?: unknown;
 };
 
 export type CronAuditAction = "skip" | "keep" | "change" | "review";
 export type CronAuditConfidence = "low" | "medium" | "high";
+export type CronRuntimeAdvisorySeverity = "info" | "warning" | "critical";
+export type CronRuntimeAdvisoryKind =
+  | "stale_running_marker"
+  | "overdue_catchup"
+  | "rate_limit_backoff"
+  | "repeated_errors"
+  | "missing_next_run"
+  | "schedule_cluster";
 
 export type CronAuditItem = {
   id: string;
@@ -85,6 +95,40 @@ export type CronAuditOptions = {
   showPrompts?: boolean;
 };
 
+export type CronRuntimeAdvisory = {
+  id: string;
+  name: string;
+  severity: CronRuntimeAdvisorySeverity;
+  kind: CronRuntimeAdvisoryKind;
+  reason: string;
+  suggestedAction: string;
+  details: Record<string, unknown>;
+};
+
+export type CronRuntimeAuditOptions = {
+  nowMs?: number;
+  staleRunningAfterMs?: number;
+  catchupGraceMs?: number;
+  criticalCatchupAgeMs?: number;
+  clusterHorizonMs?: number;
+  clusterMinJobs?: number;
+};
+
+export type CronRuntimeAuditReport = {
+  generatedAtMs: number;
+  totalJobs: number;
+  advisories: CronRuntimeAdvisory[];
+  counts: Record<CronRuntimeAdvisorySeverity, number>;
+};
+
+const DEFAULT_STALE_RUNNING_AFTER_MS = 10 * 60 * 1000;
+const DEFAULT_CATCHUP_GRACE_MS = 60 * 1000;
+const DEFAULT_CRITICAL_CATCHUP_AGE_MS = 60 * 60 * 1000;
+const DEFAULT_CLUSTER_HORIZON_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_CLUSTER_MIN_JOBS = 3;
+const RATE_LIMIT_ERROR_RE =
+  /(rate[_ -]?limit|too many requests|429|resource has been exhausted|quota|limit exceeded|cloudflare)/i;
+
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -100,6 +144,11 @@ function normalizeStringArray(value: unknown): string[] {
   return value
     .map((entry) => normalizeString(entry))
     .filter((entry): entry is string => Boolean(entry));
+}
+
+function normalizeNumber(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return value;
 }
 
 function arraysEqual(left: string[], right: string[]): boolean {
@@ -275,6 +324,31 @@ function buildItemBase(job: CronAuditJob): Pick<
   };
 }
 
+function readState(job: CronAuditJob): UnknownRecord {
+  return isRecord(job.state) ? job.state : {};
+}
+
+function readScheduleKind(job: CronAuditJob): string | null {
+  return isRecord(job.schedule) ? normalizeString(job.schedule.kind) : null;
+}
+
+function isAgentTurnJob(job: CronAuditJob): boolean {
+  return isRecord(job.payload) && job.payload.kind === "agentTurn";
+}
+
+function addRuntimeAdvisory(
+  advisories: CronRuntimeAdvisory[],
+  job: CronAuditJob,
+  advisory: Omit<CronRuntimeAdvisory, "id" | "name">,
+) {
+  const base = buildItemBase(job);
+  advisories.push({
+    id: base.id,
+    name: base.name,
+    ...advisory,
+  });
+}
+
 export function auditCronJob(
   config: ZeroAPIConfig,
   job: CronAuditJob,
@@ -429,6 +503,132 @@ export function auditCronJobs(
   return {
     totalJobs: jobs.length,
     items,
+    counts,
+  };
+}
+
+export function auditCronRuntimeState(
+  jobs: CronAuditJob[],
+  options: CronRuntimeAuditOptions = {},
+): CronRuntimeAuditReport {
+  const nowMs = options.nowMs ?? Date.now();
+  const staleRunningAfterMs = options.staleRunningAfterMs ?? DEFAULT_STALE_RUNNING_AFTER_MS;
+  const catchupGraceMs = options.catchupGraceMs ?? DEFAULT_CATCHUP_GRACE_MS;
+  const criticalCatchupAgeMs = options.criticalCatchupAgeMs ?? DEFAULT_CRITICAL_CATCHUP_AGE_MS;
+  const clusterHorizonMs = options.clusterHorizonMs ?? DEFAULT_CLUSTER_HORIZON_MS;
+  const clusterMinJobs = options.clusterMinJobs ?? DEFAULT_CLUSTER_MIN_JOBS;
+  const advisories: CronRuntimeAdvisory[] = [];
+  const dueBuckets = new Map<number, CronAuditJob[]>();
+
+  for (const job of jobs) {
+    if (job.enabled === false) continue;
+
+    const state = readState(job);
+    const runningAtMs = normalizeNumber(state.runningAtMs);
+    const nextRunAtMs = normalizeNumber(state.nextRunAtMs);
+    const lastError = normalizeString(state.lastError);
+    const consecutiveErrors = normalizeNumber(state.consecutiveErrors) ?? 0;
+    const scheduleKind = readScheduleKind(job);
+
+    if (runningAtMs !== null) {
+      const ageMs = nowMs - runningAtMs;
+      if (ageMs >= staleRunningAfterMs) {
+        const nextRunIsPast = nextRunAtMs !== null && nextRunAtMs <= nowMs;
+        addRuntimeAdvisory(advisories, job, {
+          severity: nextRunIsPast ? "critical" : "warning",
+          kind: "stale_running_marker",
+          reason: "runtime state still marks this job as running long after it started",
+          suggestedAction:
+            "Review before restart. Clear the stale marker through OpenClaw cron maintenance or move the next run forward if replay is not wanted.",
+          details: { runningAtMs, ageMs, nextRunAtMs },
+        });
+      }
+    } else if (nextRunAtMs !== null && nextRunAtMs < nowMs - catchupGraceMs) {
+      const overdueMs = nowMs - nextRunAtMs;
+      addRuntimeAdvisory(advisories, job, {
+        severity: overdueMs >= criticalCatchupAgeMs ? "critical" : "warning",
+        kind: "overdue_catchup",
+        reason: "runtime nextRunAtMs is in the past, so OpenClaw may run this job immediately after restart",
+        suggestedAction:
+          "Confirm catch-up is wanted. If not, update the job schedule or advance nextRunAtMs before restarting cron-heavy gateways.",
+        details: { nextRunAtMs, overdueMs, scheduleKind },
+      });
+    } else if (scheduleKind && nextRunAtMs === null && state.nextRunAtMs !== undefined) {
+      addRuntimeAdvisory(advisories, job, {
+        severity: "warning",
+        kind: "missing_next_run",
+        reason: "runtime nextRunAtMs is present but not a finite timestamp",
+        suggestedAction: "Let OpenClaw recompute the cron state, then verify the job appears in cron list output.",
+        details: { nextRunAtMs: state.nextRunAtMs, scheduleKind },
+      });
+    }
+
+    if (lastError && RATE_LIMIT_ERROR_RE.test(lastError)) {
+      addRuntimeAdvisory(advisories, job, {
+        severity: "warning",
+        kind: "rate_limit_backoff",
+        reason: "last cron error looks like a provider or auth rate limit",
+        suggestedAction:
+          "Use ZeroAPI model/fallback audit for this job, stagger its schedule, or move it to a less constrained subscription.",
+        details: { lastError, consecutiveErrors },
+      });
+    } else if (consecutiveErrors >= 3) {
+      addRuntimeAdvisory(advisories, job, {
+        severity: "warning",
+        kind: "repeated_errors",
+        reason: "cron job has repeated execution errors",
+        suggestedAction: "Inspect the last error and avoid restarting into repeated catch-up until the job is fixed.",
+        details: { lastError, consecutiveErrors },
+      });
+    }
+
+    if (
+      isAgentTurnJob(job) &&
+      nextRunAtMs !== null &&
+      nextRunAtMs >= nowMs - catchupGraceMs &&
+      nextRunAtMs <= nowMs + clusterHorizonMs
+    ) {
+      const minuteBucket = Math.floor(nextRunAtMs / 60_000);
+      dueBuckets.set(minuteBucket, [...(dueBuckets.get(minuteBucket) ?? []), job]);
+    }
+  }
+
+  for (const [minuteBucket, bucketJobs] of dueBuckets) {
+    if (bucketJobs.length < clusterMinJobs) continue;
+    const models = Array.from(new Set(
+      bucketJobs
+        .map((job) => (isRecord(job.payload) ? normalizeString(job.payload.model) : null))
+        .filter((model): model is string => Boolean(model)),
+    ));
+    const jobNames = bucketJobs.map((job) => buildItemBase(job).name);
+    addRuntimeAdvisory(advisories, bucketJobs[0], {
+      severity: "warning",
+      kind: "schedule_cluster",
+      reason: "multiple agentTurn cron jobs are scheduled in the same minute",
+      suggestedAction:
+        "Stagger these jobs by a few minutes so one provider or model does not receive a burst after restart or timer catch-up.",
+      details: {
+        minuteBucket,
+        jobCount: bucketJobs.length,
+        jobs: jobNames,
+        models,
+      },
+    });
+  }
+
+  const counts: Record<CronRuntimeAdvisorySeverity, number> = {
+    info: 0,
+    warning: 0,
+    critical: 0,
+  };
+  for (const advisory of advisories) {
+    counts[advisory.severity] += 1;
+  }
+
+  return {
+    generatedAtMs: nowMs,
+    totalJobs: jobs.length,
+    advisories,
     counts,
   };
 }

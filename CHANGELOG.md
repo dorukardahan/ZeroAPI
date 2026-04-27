@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-04-28
+
+### Added
+- Added read-only cron runtime preflight advisories to `cron:audit` for stale `runningAtMs` markers, overdue restart catch-up, provider rate-limit/backoff errors, repeated cron errors, and same-minute `agentTurn` bursts that should be staggered.
+- Added `--state` and `--no-state` options so operators can explicitly include or skip OpenClaw `jobs-state.json` diagnostics without allowing ZeroAPI to write runtime state.
+
 ## [3.7.9] - 2026-04-25
 
 ### Added

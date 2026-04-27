@@ -176,6 +176,11 @@ Log format:
 npm run cron:audit -- --openclaw-dir ~/.openclaw
 ```
 
+The same command also runs runtime preflight when `jobs-state.json` is present.
+If it reports stale running markers, overdue catch-up, rate-limit errors, or
+same-minute bursts, fix or stagger those jobs before restarting a busy gateway.
+These are diagnostics only; ZeroAPI does not edit `jobs-state.json`.
+
 **Apply approved cron patches with backup**:
 
 ```bash

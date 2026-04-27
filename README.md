@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.7.9-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.7.9)
+[![Version](https://img.shields.io/badge/version-3.8.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.0)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -106,7 +106,7 @@ Recommended path:
 6. Verify with bash scripts-zeroapi-doctor.sh or npm run simulate -- --prompt "refactor this auth module"
 7. Preview agent/model catalog alignment with npm run agent:audit -- --openclaw-dir ~/.openclaw
 8. Apply approved agent/model alignment with npm run agent:apply -- --openclaw-dir ~/.openclaw --yes
-9. Preview cron model alignment with npm run cron:audit -- --openclaw-dir ~/.openclaw
+9. Preview cron model alignment and runtime preflight advisories with npm run cron:audit -- --openclaw-dir ~/.openclaw
 10. Apply approved cron changes with npm run cron:apply -- --openclaw-dir ~/.openclaw --yes
 ```
 

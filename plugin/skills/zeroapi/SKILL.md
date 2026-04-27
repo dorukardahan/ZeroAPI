@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.7.9
+version: 3.8.0
 description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi, asks to set up model routing, pastes the ZeroAPI repo URL, or asks what the repo does or whether it would help.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
@@ -52,6 +52,7 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
    - preserve fixed-model specialist agents
    - for agents explicitly hinted in `workspace_hints`, set a safe baseline `agent.model`
    - for repo-local installs, prefer `npm run agent:audit` then `npm run agent:apply -- --yes`
+   - run `npm run cron:audit -- --openclaw-dir ~/.openclaw` when repo-local tools are available; treat stale running markers, overdue catch-up, rate-limit errors, and same-minute cron bursts as preflight advisories before restart.
 
 7. Verify after restart:
    - gateway is active
