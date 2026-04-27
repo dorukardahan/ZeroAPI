@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.1] - 2026-04-28
+
+### Fixed
+- Keep the runtime startup banner version aligned with package, plugin manifest, and skill metadata versions.
+- Added a version sync regression test so future releases cannot publish with mismatched visible versions.
+
 ## [3.8.0] - 2026-04-28
 
 ### Added
