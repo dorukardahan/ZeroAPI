@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.3] - 2026-04-28
+
+### Fixed
+- Added a cross-provider resilience fallback for fast cron audits when the normal TTFT filter leaves the chain inside one provider family.
+
 ## [3.8.2] - 2026-04-28
 
 ### Fixed

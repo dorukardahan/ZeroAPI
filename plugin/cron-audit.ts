@@ -287,18 +287,8 @@ function resolveWeightedCandidates(params: {
     requiresVision: likelyRequiresVision(config, prompt),
   };
   const capableByModel = filterCapableModels(config.models, filterOptions);
-  const subscriptionAllowed = Object.fromEntries(
-    Object.entries(capableByModel).filter(([modelKey]) =>
-      isModelAllowedBySubscriptions({
-        profile: config.subscription_profile,
-        inventory: config.subscription_inventory,
-        agentId,
-        modelKey,
-      }),
-    ),
-  );
-
-  return getSubscriptionWeightedCandidates(
+  const subscriptionAllowed = filterSubscriptionAllowedModels(config, capableByModel, agentId);
+  const candidates = getSubscriptionWeightedCandidates(
     category,
     subscriptionAllowed,
     config.routing_rules,
@@ -308,6 +298,58 @@ function resolveWeightedCandidates(params: {
     config.routing_mode ?? "balanced",
     config.routing_modifier,
   );
+
+  if (category !== "fast" || hasMultipleProviders(candidates)) {
+    return candidates;
+  }
+
+  const relaxedByModel = filterCapableModels(config.models, {
+    ...filterOptions,
+    maxTtftSeconds: undefined,
+  });
+  const relaxedAllowed = filterSubscriptionAllowedModels(config, relaxedByModel, agentId);
+  const relaxedCandidates = getSubscriptionWeightedCandidates(
+    category,
+    relaxedAllowed,
+    config.routing_rules,
+    config.subscription_profile,
+    config.subscription_inventory,
+    agentId,
+    config.routing_mode ?? "balanced",
+    config.routing_modifier,
+  );
+  const existingProviders = new Set(candidates.map(getProviderId));
+  const resilienceFallback = relaxedCandidates.find((candidate) => {
+    if (candidates.includes(candidate)) return false;
+    return !existingProviders.has(getProviderId(candidate));
+  });
+
+  return resilienceFallback ? [...candidates, resilienceFallback] : candidates;
+}
+
+function filterSubscriptionAllowedModels(
+  config: ZeroAPIConfig,
+  models: Record<string, ZeroAPIConfig["models"][string]>,
+  agentId: string | undefined,
+): Record<string, ZeroAPIConfig["models"][string]> {
+  return Object.fromEntries(
+    Object.entries(models).filter(([modelKey]) =>
+      isModelAllowedBySubscriptions({
+        profile: config.subscription_profile,
+        inventory: config.subscription_inventory,
+        agentId,
+        modelKey,
+      }),
+    ),
+  );
+}
+
+function getProviderId(modelKey: string): string {
+  return modelKey.split("/")[0] ?? modelKey;
+}
+
+function hasMultipleProviders(modelKeys: string[]): boolean {
+  return new Set(modelKeys.map(getProviderId)).size > 1;
 }
 
 function buildItemBase(job: CronAuditJob): Pick<

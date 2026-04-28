@@ -73,6 +73,12 @@ Specialist agents with `workspace_hints.<agentId> = null` are never patched auto
 3. Maximum 3 fallbacks per category (4 candidates including primary).
 4. Plugin does **not** implement retry logic — OpenClaw's built-in failover handles retries, auth rotation, and cross-provider failover.
 
+For `fast` cron jobs, the primary model and first fallbacks still honor
+`fast_ttft_max_seconds`. If that leaves the chain inside one provider family,
+the audit may add one slower cross-provider resilience fallback from the same
+routing rule. That fallback is for provider outage or 429 cases, not the normal
+fast path.
+
 Example fallback chains (5-provider setup):
 
 | Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |

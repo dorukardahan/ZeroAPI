@@ -25,6 +25,21 @@ const config: ZeroAPIConfig = {
         lcr: 0.74,
       },
     },
+    "openai-codex/gpt-5.4-mini": {
+      context_window: 272000,
+      supports_vision: false,
+      speed_tps: 175,
+      ttft_seconds: 7.3,
+      benchmarks: {
+        intelligence: 48.9,
+        coding: 51.5,
+        terminalbench: 0.523,
+        scicode: 0.499,
+        gpqa: 0.875,
+        hle: 0.266,
+        lcr: 0.693,
+      },
+    },
     "zai/glm-5.1": {
       context_window: 202800,
       supports_vision: false,
@@ -56,7 +71,7 @@ const config: ZeroAPIConfig = {
     research: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5.1"] },
     orchestration: { primary: "zai/glm-5.1", fallbacks: ["openai-codex/gpt-5.4", "zai/glm-5"] },
     math: { primary: "openai-codex/gpt-5.4", fallbacks: ["zai/glm-5.1"] },
-    fast: { primary: "zai/glm-5.1", fallbacks: ["zai/glm-5"] },
+    fast: { primary: "zai/glm-5.1", fallbacks: ["zai/glm-5", "openai-codex/gpt-5.4-mini"] },
     default: { primary: "zai/glm-5.1", fallbacks: ["openai-codex/gpt-5.4", "zai/glm-5"] },
   },
   workspace_hints: { codex: null, ops: ["orchestration"] },
@@ -79,6 +94,13 @@ const config: ZeroAPIConfig = {
         authProfile: "openai:pro",
         usagePriority: 1,
         intendedUse: ["code", "research", "math"],
+      },
+      "openai-plus": {
+        provider: "openai-codex",
+        tierId: "plus",
+        authProfile: "openai:plus",
+        usagePriority: 1,
+        intendedUse: ["fast", "default"],
       },
       "zai-max": {
         provider: "zai",
@@ -126,13 +148,37 @@ describe("auditCronJob", () => {
         kind: "agentTurn",
         message: "quickly list current service status",
         model: "zai/glm-5.1",
-        fallbacks: ["zai/glm-5"],
+        fallbacks: ["zai/glm-5", "openai-codex/gpt-5.4-mini"],
       },
     });
 
     expect(result.action).toBe("keep");
     expect(result.reason).toBe("keep:already_aligned");
     expect(result.patch).toBeNull();
+  });
+
+  it("adds a cross-provider resilience fallback for fast cron jobs", () => {
+    const result = auditCronJob(config, {
+      id: "fast-status",
+      name: "Quick status",
+      enabled: true,
+      payload: {
+        kind: "agentTurn",
+        message: "quickly list current service status",
+        model: "zai/glm-5.1",
+        fallbacks: ["zai/glm-5"],
+      },
+    });
+
+    expect(result.action).toBe("change");
+    expect(result.category).toBe("fast");
+    expect(result.suggestedModel).toBe("zai/glm-5.1");
+    expect(result.suggestedFallbacks).toEqual(["zai/glm-5", "openai-codex/gpt-5.4-mini"]);
+    expect(result.patch?.payload).toEqual({
+      kind: "agentTurn",
+      model: "zai/glm-5.1",
+      fallbacks: ["zai/glm-5", "openai-codex/gpt-5.4-mini"],
+    });
   });
 
   it("uses cron-specific hints for short health check prompts", () => {
