@@ -221,6 +221,44 @@ function isZeroAPIPluginPath(value) {
   return normalized.includes("/zeroapi") && normalized.endsWith("/plugin");
 }
 
+function syncOpenClawPluginRegistry({ openclawDir, pluginPath, installPath, version }) {
+  const registryPath = join(openclawDir, "plugins", "installs.json");
+  if (!existsSync(registryPath)) {
+    return { updated: false, reason: "registry_missing" };
+  }
+
+  const registry = readJson(registryPath);
+  registry.installRecords =
+    registry.installRecords && typeof registry.installRecords === "object" ? registry.installRecords : {};
+
+  const existingRecord = registry.installRecords["zeroapi-router"];
+  const source = existingRecord?.source === "clawhub" ? "clawhub" : "path";
+  registry.installRecords["zeroapi-router"] = {
+    ...(existingRecord ?? {}),
+    source,
+    installPath,
+    version,
+    updatedAt: new Date().toISOString(),
+    ...(source === "clawhub"
+      ? { spec: `clawhub:zeroapi@${version}`, clawhubPackage: "zeroapi" }
+      : { spec: pluginPath, sourcePath: pluginPath }),
+  };
+
+  if (Array.isArray(registry.plugins)) {
+    for (const plugin of registry.plugins) {
+      if (plugin?.pluginId !== "zeroapi-router") continue;
+      plugin.rootDir = installPath;
+      plugin.source = join(installPath, "index.js");
+      plugin.manifestPath = join(installPath, "openclaw.plugin.json");
+      plugin.packageName = "zeroapi";
+      plugin.packageVersion = version;
+    }
+  }
+
+  writeJsonAtomic(registryPath, registry);
+  return { updated: true, reason: source };
+}
+
 export function ensureManagedUpdateWrapper({ wrapperPath, nodePath, repoDir, openclawDir }) {
   const content = `#!/usr/bin/env bash
 set -euo pipefail
@@ -337,6 +375,7 @@ export function installOrUpdatePlugin(pluginPath, openclawDir) {
     config.plugins.allow = ["zeroapi-router"];
   }
   writeJsonAtomic(configPath, config);
+  syncOpenClawPluginRegistry({ openclawDir, pluginPath, installPath, version });
 }
 
 export function restartGatewayIfPossible() {

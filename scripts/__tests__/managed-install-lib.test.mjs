@@ -176,3 +176,45 @@ test("installOrUpdatePlugin appends zeroapi to an existing explicit plugins.allo
   const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
   assert.deepEqual(updated.plugins.allow, ["noldomem", "zeroapi-router"]);
 });
+
+test("installOrUpdatePlugin repairs stale clawhub install registry pins", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-registry-"));
+  const openclawDir = join(root, ".openclaw");
+  const pluginDir = join(root, "plugin");
+  mkdirSync(join(openclawDir, "plugins"), { recursive: true });
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: {} }));
+  writeFileSync(
+    join(openclawDir, "plugins", "installs.json"),
+    JSON.stringify({
+      installRecords: {
+        "zeroapi-router": {
+          source: "clawhub",
+          spec: "clawhub:zeroapi@3.8.2",
+          version: "3.8.2",
+          clawhubPackage: "zeroapi",
+          installPath: join(openclawDir, "extensions", "zeroapi-router"),
+        },
+      },
+      plugins: [
+        {
+          pluginId: "zeroapi-router",
+          packageName: "zeroapi",
+          packageVersion: "3.8.2",
+          rootDir: join(openclawDir, "extensions", "zeroapi-router"),
+        },
+      ],
+    }),
+  );
+  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.8.4"}\n');
+  writeFileSync(join(pluginDir, "index.js"), "export default {};\n");
+  writeFileSync(join(pluginDir, "openclaw.plugin.json"), '{"id":"zeroapi-router"}\n');
+
+  installOrUpdatePlugin(pluginDir, openclawDir);
+
+  const registry = JSON.parse(readFileSync(join(openclawDir, "plugins", "installs.json"), "utf-8"));
+  assert.equal(registry.installRecords["zeroapi-router"].source, "clawhub");
+  assert.equal(registry.installRecords["zeroapi-router"].spec, "clawhub:zeroapi@3.8.4");
+  assert.equal(registry.installRecords["zeroapi-router"].version, "3.8.4");
+  assert.equal(registry.plugins[0].packageVersion, "3.8.4");
+});

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.4] - 2026-04-28
+
+### Fixed
+- Repair stale OpenClaw plugin install registry pins during managed install/update, so older `clawhub:zeroapi@...` records cannot make `openclaw update` fetch a blocked historical package after the runtime has already moved forward.
+
 ## [3.8.3] - 2026-04-28
 
 ### Fixed
