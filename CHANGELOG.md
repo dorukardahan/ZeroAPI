@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.5] - 2026-04-30
+
+### Changed
+- Declare `activation.onStartup: true` in the OpenClaw plugin manifest so ZeroAPI keeps loading explicitly on OpenClaw 2026.4.27+ manifest-first startup paths.
+
 ## [3.8.4] - 2026-04-28
 
 ### Fixed

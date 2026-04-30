@@ -6,7 +6,10 @@ const pluginRoot = process.cwd();
 const repoRoot = join(pluginRoot, "..");
 
 function readJson(path: string) {
-  return JSON.parse(readFileSync(path, "utf-8")) as { version?: string };
+  return JSON.parse(readFileSync(path, "utf-8")) as {
+    activation?: { onStartup?: boolean };
+    version?: string;
+  };
 }
 
 describe("version sync", () => {
@@ -21,5 +24,11 @@ describe("version sync", () => {
     expect(manifestVersion).toBe(rootVersion);
     expect(skillText).toContain(`version: ${rootVersion}`);
     expect(runtimeText).toContain(`const PLUGIN_VERSION = "${rootVersion}"`);
+  });
+
+  it("declares explicit startup activation for OpenClaw manifest-first planning", () => {
+    const manifest = readJson(join(pluginRoot, "openclaw.plugin.json"));
+
+    expect(manifest.activation?.onStartup).toBe(true);
   });
 });
