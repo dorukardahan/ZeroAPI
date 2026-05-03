@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+      CLAWHUB_CLI_VERSION: "0.12.2"
+      OPENCLAW_VERIFY_VERSION: "2026.5.2"
     steps:
       - uses: actions/checkout@v5
 
@@ -40,8 +42,8 @@ jobs:
       - name: Publish plugin package
         if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
-          npx --yes clawhub@0.9.0 login --token "$CLAWHUB_TOKEN" --no-browser
-          npx --yes clawhub@0.9.0 package publish .tmp-clawhub-plugin \
+          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" login --token "$CLAWHUB_TOKEN" --no-browser
+          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package publish .tmp-clawhub-plugin \
             --family code-plugin \
             --name zeroapi \
             --display-name "ZeroAPI Router" \
@@ -55,9 +57,35 @@ jobs:
       - name: Verify ClawHub package is downloadable
         if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
-          npx --yes clawhub@0.9.0 package inspect zeroapi --version "${{ steps.version.outputs.value }}"
+          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --version "${{ steps.version.outputs.value }}" --json > .tmp-clawhub-inspect.json
+          node <<'NODE'
+          const fs = require("fs");
+          const raw = fs.readFileSync(".tmp-clawhub-inspect.json", "utf8");
+          const jsonStart = raw.indexOf("{");
+          if (jsonStart === -1) {
+            throw new Error("ClawHub inspect did not return JSON");
+          }
+          const detail = JSON.parse(raw.slice(jsonStart));
+          const version = detail.version;
+          if (!version) {
+            throw new Error("ClawHub inspect is missing version metadata");
+          }
+          if (typeof version.sha256hash !== "string" || !/^[a-f0-9]{64}$/i.test(version.sha256hash)) {
+            throw new Error("ClawHub version metadata is missing a valid sha256hash");
+          }
+          if (!Array.isArray(version.files) || version.files.length === 0) {
+            throw new Error("ClawHub version metadata is missing files[]");
+          }
+          const manifest = version.files.find((file) => file.path === "openclaw.plugin.json");
+          if (!manifest || typeof manifest.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(manifest.sha256)) {
+            throw new Error("ClawHub files[] is missing openclaw.plugin.json with sha256");
+          }
+          if (!version.artifact || typeof version.artifact.sha256 !== "string") {
+            throw new Error("ClawHub version metadata is missing artifact.sha256");
+          }
+          NODE
           tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
           cd "$tmp_dir"
-          openclaw_version="2026.4.23"
-          npm_config_yes=true npx --yes openclaw@"$openclaw_version" plugins install "clawhub:zeroapi@${{ steps.version.outputs.value }}" \
+          timeout 300s env npm_config_yes=true npx --yes "openclaw@$OPENCLAW_VERIFY_VERSION" plugins install "clawhub:zeroapi@${{ steps.version.outputs.value }}" \
             --dangerously-force-unsafe-install

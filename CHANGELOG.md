@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Update the ClawHub release workflow to publish with the current ClawHub CLI, validate archive/file metadata, and smoke-test installs against OpenClaw 2026.5.2.
+
 ## [3.8.5] - 2026-04-30
 
 ### Changed
