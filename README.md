@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.8-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.8)
+[![Version](https://img.shields.io/badge/version-3.8.9-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.9)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 

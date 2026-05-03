@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.9] - 2026-05-03
+
+### Fixed
+- Publish ClawHub packages with the legacy zip artifact path until OpenClaw 2026.5.2 can install ClawHub npm-pack artifacts reliably.
+- Retry the OpenClaw install smoke test so transient ClawHub metadata propagation does not fail a valid release.
+
 ## [3.8.8] - 2026-05-03
 
 ### Fixed
