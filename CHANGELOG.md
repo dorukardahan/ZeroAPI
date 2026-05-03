@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Keep the root repo `SKILL.md` version aligned with the plugin package version so GitHub-first agent onboarding does not describe an older ZeroAPI release.
+
 ## [3.8.9] - 2026-05-03
 
 ### Fixed

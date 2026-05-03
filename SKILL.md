@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.8.5
+version: 3.8.9
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when the user mentions model routing, multi-model setup, "which model should I use",
@@ -13,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.8.5 - Plugin-Based Model Routing
+# ZeroAPI v3.8.9 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -232,7 +232,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.8.5",
+  "version": "3.8.9",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",

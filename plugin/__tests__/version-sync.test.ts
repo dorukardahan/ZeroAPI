@@ -33,11 +33,14 @@ describe("version sync", () => {
     const rootVersion = readJson(join(repoRoot, "package.json")).version;
     const pluginVersion = readJson(join(pluginRoot, "package.json")).version;
     const manifestVersion = readJson(join(pluginRoot, "openclaw.plugin.json")).version;
+    const rootSkillText = readFileSync(join(repoRoot, "SKILL.md"), "utf-8");
     const skillText = readFileSync(join(pluginRoot, "skills", "zeroapi", "SKILL.md"), "utf-8");
     const runtimeText = readFileSync(join(pluginRoot, "index.ts"), "utf-8");
 
     expect(pluginVersion).toBe(rootVersion);
     expect(manifestVersion).toBe(rootVersion);
+    expect(rootSkillText).toContain(`version: ${rootVersion}`);
+    expect(rootSkillText).toContain(`# ZeroAPI v${rootVersion}`);
     expect(skillText).toContain(`version: ${rootVersion}`);
     expect(runtimeText).toContain(`const PLUGIN_VERSION = "${rootVersion}"`);
   });
