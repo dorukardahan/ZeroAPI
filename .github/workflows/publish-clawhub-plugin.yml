@@ -70,8 +70,12 @@ jobs:
           if (!version) {
             throw new Error("ClawHub inspect is missing version metadata");
           }
-          if (typeof version.sha256hash !== "string" || !/^[a-f0-9]{64}$/i.test(version.sha256hash)) {
-            throw new Error("ClawHub version metadata is missing a valid sha256hash");
+          if (
+            version.sha256hash !== null &&
+            version.sha256hash !== undefined &&
+            (typeof version.sha256hash !== "string" || !/^[a-f0-9]{64}$/i.test(version.sha256hash))
+          ) {
+            throw new Error("ClawHub version metadata has an invalid sha256hash");
           }
           if (!Array.isArray(version.files) || version.files.length === 0) {
             throw new Error("ClawHub version metadata is missing files[]");
@@ -80,7 +84,11 @@ jobs:
           if (!manifest || typeof manifest.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(manifest.sha256)) {
             throw new Error("ClawHub files[] is missing openclaw.plugin.json with sha256");
           }
-          if (!version.artifact || typeof version.artifact.sha256 !== "string") {
+          if (
+            !version.artifact ||
+            typeof version.artifact.sha256 !== "string" ||
+            !/^[a-f0-9]{64}$/i.test(version.artifact.sha256)
+          ) {
             throw new Error("ClawHub version metadata is missing artifact.sha256");
           }
           NODE

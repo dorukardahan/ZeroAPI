@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.7] - 2026-05-03
+
+### Fixed
+- Accept ClawHub's current artifact-hash metadata shape in release verification when the legacy `sha256hash` field is null.
+
 ## [3.8.6] - 2026-05-03
 
 ### Fixed
