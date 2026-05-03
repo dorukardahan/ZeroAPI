@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- Add an experimental Hermes Agent adapter that reads `zeroapi-config.json` and returns `pre_model_route` decisions without Node subprocesses, LLM calls, or external API calls in the hot path.
+
 ### Fixed
 - Keep the root repo `SKILL.md` version aligned with the plugin package version so GitHub-first agent onboarding does not describe an older ZeroAPI release.
 

@@ -7,13 +7,16 @@
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
-ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of OpenClaw runtime behavior - not a replacement for OpenClaw's own model defaults, per-agent configuration, or unrelated provider/API-key setups. By default, it stays on current models that sit outside the ZeroAPI policy pool and leaves agent-specific model assignments alone unless that agent is explicitly opted into routing.
+ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of host runtime behavior - not a replacement for OpenClaw's own model defaults, per-agent configuration, or unrelated provider/API-key setups. By default, it stays on current models that sit outside the ZeroAPI policy pool and leaves agent-specific model assignments alone unless that agent is explicitly opted into routing.
+
+An experimental Hermes Agent adapter now lives in [`integrations/hermes/`](integrations/hermes/). It uses the same `zeroapi-config.json` policy shape and Hermes' `pre_model_route` hook, so Hermes can make the same kind of deterministic subscription-aware routing decisions once that hook is available in Hermes releases.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
 The repo now separates:
 - `benchmarks.json` -> broad benchmark reference snapshot
 - `policy-families.json` -> conservative practical model families ZeroAPI currently documents as day-to-day routing targets
+- `integrations/hermes/` -> experimental Hermes Agent adapter for the same routing policy
 
 The public repo never ships the Artificial Analysis API key. Maintainers can set the repo secret `AA_API_KEY` to let the Sunday refresh workflow update `benchmarks.json`. Everyone else should consume the committed snapshot instead of hitting the AA API directly.
 
@@ -136,6 +139,18 @@ The `/zeroapi` skill is the primary public onboarding surface. It should feel na
 `scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. Run it with `npm run first-run`. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, can align OpenClaw's model catalog/routed agent baselines, and can hand off to managed install from the checked-out repo.
 
 For managed install/update behavior, rollback rules, and timer semantics, see [`references/managed-install.md`](references/managed-install.md).
+
+## Hermes Agent Adapter
+
+The Hermes adapter is intentionally separate from the OpenClaw package. Hermes plugins are Python, so the adapter mirrors the ZeroAPI hot-path policy in Python instead of shelling out to Node on every message.
+
+Use it when:
+
+- Hermes has `pre_model_route` hook support
+- you already have a ZeroAPI policy file
+- you want deterministic routing without an extra LLM/router call
+
+See [`integrations/hermes/README.md`](integrations/hermes/README.md) for install notes and provider ID mapping.
 
 For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). For rerun-first question behavior when drift is detected, see [`references/chat-rerun-playbook.md`](references/chat-rerun-playbook.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 
