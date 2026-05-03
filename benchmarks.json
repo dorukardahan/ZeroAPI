@@ -1,8 +1,8 @@
 {
-  "version": "3.7.9",
+  "version": "3.8.5",
   "source": "Artificial Analysis Data API v2",
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
-  "fetched": "2026-04-26",
+  "fetched": "2026-05-03",
   "methodology": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
   "note": "Anthropic excluded: Claude subscriptions no longer cover third-party tools as of April 4, 2026. Google excluded: CLI OAuth with third-party tools declared ToS violation as of March 25, 2026. This file is a creator-scoped benchmark reference snapshot, not the exact routeable allowlist. Sources: https://x.com/bcherny/status/2040206440556826908",
   "prompt_options": {
@@ -89,7 +89,7 @@
   "policy_families": {
     "version": "1.0.0",
     "description": "Conservative routeable model families that ZeroAPI currently documents as practical subscription-first policy targets.",
-    "included_model_count": 13,
+    "included_model_count": 12,
     "families": [
       {
         "id": "openai-gpt55-core",
@@ -189,9 +189,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.5",
       "release_date": "2026-04-23",
-      "speed_tps": 100.757,
-      "ttft_seconds": 27.148,
-      "ttfa_seconds": 27.148,
+      "speed_tps": 75.775,
+      "ttft_seconds": 45.743,
+      "ttfa_seconds": 45.743,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -227,9 +227,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 76.544,
-      "ttft_seconds": 9.31,
-      "ttfa_seconds": 9.31,
+      "speed_tps": 75.386,
+      "ttft_seconds": 23.33,
+      "ttfa_seconds": 23.33,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -265,9 +265,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.4",
       "release_date": "2026-03-05",
-      "speed_tps": 84.483,
-      "ttft_seconds": 170.813,
-      "ttfa_seconds": 170.813,
+      "speed_tps": 83.729,
+      "ttft_seconds": 155.423,
+      "ttfa_seconds": 155.423,
       "pricing": {
         "price_1m_blended_3_to_1": 5.625,
         "price_1m_input_tokens": 2.5,
@@ -303,9 +303,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 85.146,
-      "ttft_seconds": 2.744,
-      "ttfa_seconds": 2.744,
+      "speed_tps": 70.636,
+      "ttft_seconds": 6.228,
+      "ttfa_seconds": 6.228,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -341,9 +341,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.3-codex",
       "release_date": "2026-02-05",
-      "speed_tps": 90.54,
-      "ttft_seconds": 60.759,
-      "ttfa_seconds": 60.759,
+      "speed_tps": 93.114,
+      "ttft_seconds": 52.126,
+      "ttfa_seconds": 52.126,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -379,9 +379,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-12-11",
-      "speed_tps": 75.54,
-      "ttft_seconds": 80.253,
-      "ttfa_seconds": 80.253,
+      "speed_tps": 78.44,
+      "ttft_seconds": 96.38,
+      "ttfa_seconds": 96.38,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -417,9 +417,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 90.84,
-      "ttft_seconds": 1.628,
-      "ttfa_seconds": 1.628,
+      "speed_tps": 70.31,
+      "ttft_seconds": 1.84,
+      "ttfa_seconds": 1.84,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -455,9 +455,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-12-11",
-      "speed_tps": 106.175,
-      "ttft_seconds": 9.055,
-      "ttfa_seconds": 9.055,
+      "speed_tps": 111.91,
+      "ttft_seconds": 3.125,
+      "ttfa_seconds": 3.125,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -493,9 +493,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.4-mini",
       "release_date": "2026-03-17",
-      "speed_tps": 175.709,
-      "ttft_seconds": 4.771,
-      "ttfa_seconds": 4.771,
+      "speed_tps": 184.467,
+      "ttft_seconds": 9.207,
+      "ttfa_seconds": 9.207,
       "pricing": {
         "price_1m_blended_3_to_1": 1.688,
         "price_1m_input_tokens": 0.75,
@@ -524,6 +524,44 @@
       }
     },
     {
+      "name": "GPT-5.4 (low)",
+      "slug": "gpt-5-4-low",
+      "id": "538e945c-6c27-4fd3-995d-ded80a36cd10",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-03-05",
+      "speed_tps": 66.819,
+      "ttft_seconds": 1.871,
+      "ttfa_seconds": 1.871,
+      "pricing": {
+        "price_1m_blended_3_to_1": 5.625,
+        "price_1m_input_tokens": 2.5,
+        "price_1m_output_tokens": 15.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 47.9,
+        "coding": 45.6,
+        "math": null,
+        "tau2": 0.746,
+        "terminalbench": 0.432,
+        "ifbench": 0.659,
+        "gpqa": 0.871,
+        "lcr": 0.673,
+        "hle": 0.289,
+        "scicode": 0.503,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "GPT-5.1 (high)",
       "slug": "gpt-5-1",
       "id": "4dc12a38-b18f-4c43-8e1b-678f8434b5b1",
@@ -531,9 +569,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 135.817,
-      "ttft_seconds": 25.467,
-      "ttfa_seconds": 25.467,
+      "speed_tps": 148.827,
+      "ttft_seconds": 19.749,
+      "ttfa_seconds": 19.749,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -607,9 +645,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 198.476,
-      "ttft_seconds": 7.567,
-      "ttfa_seconds": 7.567,
+      "speed_tps": 210.362,
+      "ttft_seconds": 6.232,
+      "ttfa_seconds": 6.232,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -645,9 +683,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 92.211,
-      "ttft_seconds": 89.994,
-      "ttfa_seconds": 89.994,
+      "speed_tps": 100.667,
+      "ttft_seconds": 86.064,
+      "ttfa_seconds": 86.064,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -683,9 +721,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 148.733,
-      "ttft_seconds": 3.35,
-      "ttfa_seconds": 3.35,
+      "speed_tps": 162.266,
+      "ttft_seconds": 2.308,
+      "ttfa_seconds": 2.308,
       "pricing": {
         "price_1m_blended_3_to_1": 0.463,
         "price_1m_input_tokens": 0.2,
@@ -721,9 +759,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 178.729,
-      "ttft_seconds": 3.847,
-      "ttfa_seconds": 3.847,
+      "speed_tps": 186.8,
+      "ttft_seconds": 3.949,
+      "ttfa_seconds": 3.949,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -759,9 +797,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 81.13,
-      "ttft_seconds": 45.333,
-      "ttfa_seconds": 45.333,
+      "speed_tps": 88.214,
+      "ttft_seconds": 38.487,
+      "ttfa_seconds": 38.487,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -797,9 +835,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 83.688,
-      "ttft_seconds": 90.599,
-      "ttfa_seconds": 90.599,
+      "speed_tps": 72.272,
+      "ttft_seconds": 92.133,
+      "ttfa_seconds": 92.133,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -835,9 +873,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 77.415,
-      "ttft_seconds": 1.113,
-      "ttfa_seconds": 1.113,
+      "speed_tps": 64.678,
+      "ttft_seconds": 0.904,
+      "ttfa_seconds": 0.904,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -873,9 +911,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-06-10",
-      "speed_tps": 18.89,
-      "ttft_seconds": 105.887,
-      "ttfa_seconds": 105.887,
+      "speed_tps": 20.35,
+      "ttft_seconds": 92.372,
+      "ttfa_seconds": 92.372,
       "pricing": {
         "price_1m_blended_3_to_1": 35.0,
         "price_1m_input_tokens": 20.0,
@@ -911,9 +949,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 83.788,
-      "ttft_seconds": 9.537,
-      "ttfa_seconds": 9.537,
+      "speed_tps": 83.312,
+      "ttft_seconds": 8.64,
+      "ttfa_seconds": 8.64,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -949,9 +987,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 82.246,
-      "ttft_seconds": 18.232,
-      "ttfa_seconds": 18.232,
+      "speed_tps": 83.058,
+      "ttft_seconds": 24.222,
+      "ttfa_seconds": 24.222,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -987,9 +1025,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 212.443,
-      "ttft_seconds": 3.903,
-      "ttfa_seconds": 3.903,
+      "speed_tps": 205.645,
+      "ttft_seconds": 2.797,
+      "ttfa_seconds": 2.797,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -1025,9 +1063,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-16",
-      "speed_tps": 105.658,
-      "ttft_seconds": 8.368,
-      "ttfa_seconds": 8.368,
+      "speed_tps": 110.877,
+      "ttft_seconds": 6.842,
+      "ttfa_seconds": 6.842,
       "pricing": {
         "price_1m_blended_3_to_1": 3.5,
         "price_1m_input_tokens": 2.0,
@@ -1063,9 +1101,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 164.362,
-      "ttft_seconds": 2.701,
-      "ttfa_seconds": 2.701,
+      "speed_tps": 158.455,
+      "ttft_seconds": 3.442,
+      "ttfa_seconds": 3.442,
       "pricing": {
         "price_1m_blended_3_to_1": 0.463,
         "price_1m_input_tokens": 0.2,
@@ -1101,9 +1139,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 177.098,
-      "ttft_seconds": 3.984,
-      "ttfa_seconds": 3.984,
+      "speed_tps": 167.078,
+      "ttft_seconds": 4.565,
+      "ttfa_seconds": 4.565,
       "pricing": {
         "price_1m_blended_3_to_1": 1.688,
         "price_1m_input_tokens": 0.75,
@@ -1139,9 +1177,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-05",
-      "speed_tps": 65.186,
-      "ttft_seconds": 0.692,
-      "ttfa_seconds": 0.692,
+      "speed_tps": 61.908,
+      "ttft_seconds": 0.676,
+      "ttfa_seconds": 0.676,
       "pricing": {
         "price_1m_blended_3_to_1": 5.625,
         "price_1m_input_tokens": 2.5,
@@ -1177,9 +1215,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-12-11",
-      "speed_tps": 70.602,
-      "ttft_seconds": 0.649,
-      "ttfa_seconds": 0.649,
+      "speed_tps": 64.812,
+      "ttft_seconds": 0.753,
+      "ttfa_seconds": 0.753,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -1215,11 +1253,11 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 218.992,
-      "ttft_seconds": 0.491,
-      "ttfa_seconds": 9.624,
+      "speed_tps": 245.678,
+      "ttft_seconds": 0.48,
+      "ttfa_seconds": 8.62,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.263,
+        "price_1m_blended_3_to_1": 0.262,
         "price_1m_input_tokens": 0.15,
         "price_1m_output_tokens": 0.6
       },
@@ -1253,9 +1291,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-16",
-      "speed_tps": 139.72,
-      "ttft_seconds": 29.826,
-      "ttfa_seconds": 29.826,
+      "speed_tps": 141.553,
+      "ttft_seconds": 25.673,
+      "ttfa_seconds": 25.673,
       "pricing": {
         "price_1m_blended_3_to_1": 1.925,
         "price_1m_input_tokens": 1.1,
@@ -1291,9 +1329,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-12-05",
-      "speed_tps": 103.571,
-      "ttft_seconds": 21.541,
-      "ttfa_seconds": 21.541,
+      "speed_tps": 111.988,
+      "ttft_seconds": 19.003,
+      "ttfa_seconds": 19.003,
       "pricing": {
         "price_1m_blended_3_to_1": 26.25,
         "price_1m_input_tokens": 15.0,
@@ -1329,9 +1367,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 124.854,
-      "ttft_seconds": 0.725,
-      "ttfa_seconds": 0.725,
+      "speed_tps": 137.344,
+      "ttft_seconds": 0.757,
+      "ttfa_seconds": 0.757,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1367,9 +1405,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 169.539,
-      "ttft_seconds": 87.561,
-      "ttfa_seconds": 87.561,
+      "speed_tps": 153.276,
+      "ttft_seconds": 106.16,
+      "ttfa_seconds": 106.16,
       "pricing": {
         "price_1m_blended_3_to_1": 0.138,
         "price_1m_input_tokens": 0.05,
@@ -1405,9 +1443,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-14",
-      "speed_tps": 112.09,
-      "ttft_seconds": 0.541,
-      "ttfa_seconds": 0.541,
+      "speed_tps": 118.522,
+      "ttft_seconds": 0.651,
+      "ttfa_seconds": 0.651,
       "pricing": {
         "price_1m_blended_3_to_1": 3.5,
         "price_1m_input_tokens": 2.0,
@@ -1443,9 +1481,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 159.506,
-      "ttft_seconds": 37.365,
-      "ttfa_seconds": 37.365,
+      "speed_tps": 155.315,
+      "ttft_seconds": 41.559,
+      "ttfa_seconds": 41.559,
       "pricing": {
         "price_1m_blended_3_to_1": 0.138,
         "price_1m_input_tokens": 0.05,
@@ -1481,9 +1519,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-01-31",
-      "speed_tps": 150.604,
-      "ttft_seconds": 8.01,
-      "ttfa_seconds": 8.01,
+      "speed_tps": 164.778,
+      "ttft_seconds": 6.487,
+      "ttfa_seconds": 6.487,
       "pricing": {
         "price_1m_blended_3_to_1": 1.925,
         "price_1m_input_tokens": 1.1,
@@ -1557,9 +1595,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-01-31",
-      "speed_tps": 150.504,
-      "ttft_seconds": 25.63,
-      "ttfa_seconds": 25.63,
+      "speed_tps": 161.329,
+      "ttft_seconds": 22.545,
+      "ttfa_seconds": 22.545,
       "pricing": {
         "price_1m_blended_3_to_1": 1.925,
         "price_1m_input_tokens": 1.1,
@@ -1595,12 +1633,12 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 318.758,
-      "ttft_seconds": 0.347,
-      "ttfa_seconds": 6.622,
+      "speed_tps": 287.539,
+      "ttft_seconds": 0.366,
+      "ttfa_seconds": 7.322,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.1,
-        "price_1m_input_tokens": 0.07,
+        "price_1m_blended_3_to_1": 0.088,
+        "price_1m_input_tokens": 0.05,
         "price_1m_output_tokens": 0.2
       },
       "policy_family": {
@@ -1633,11 +1671,11 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 214.034,
-      "ttft_seconds": 0.49,
-      "ttfa_seconds": 9.834,
+      "speed_tps": 238.905,
+      "ttft_seconds": 0.469,
+      "ttfa_seconds": 8.841,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.263,
+        "price_1m_blended_3_to_1": 0.262,
         "price_1m_input_tokens": 0.15,
         "price_1m_output_tokens": 0.6
       },
@@ -1671,9 +1709,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 156.37,
-      "ttft_seconds": 0.552,
-      "ttfa_seconds": 0.552,
+      "speed_tps": 158.2,
+      "ttft_seconds": 0.553,
+      "ttfa_seconds": 0.553,
       "pricing": {
         "price_1m_blended_3_to_1": 0.463,
         "price_1m_input_tokens": 0.2,
@@ -1709,9 +1747,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 83.094,
-      "ttft_seconds": 1.103,
-      "ttfa_seconds": 1.103,
+      "speed_tps": 84.74,
+      "ttft_seconds": 1.058,
+      "ttfa_seconds": 1.058,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1785,9 +1823,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 162.192,
-      "ttft_seconds": 0.552,
-      "ttfa_seconds": 0.552,
+      "speed_tps": 181.705,
+      "ttft_seconds": 0.635,
+      "ttfa_seconds": 0.635,
       "pricing": {
         "price_1m_blended_3_to_1": 1.688,
         "price_1m_input_tokens": 0.75,
@@ -1823,9 +1861,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-14",
-      "speed_tps": 81.105,
-      "ttft_seconds": 0.654,
-      "ttfa_seconds": 0.654,
+      "speed_tps": 89.801,
+      "ttft_seconds": 0.563,
+      "ttfa_seconds": 0.563,
       "pricing": {
         "price_1m_blended_3_to_1": 0.7,
         "price_1m_input_tokens": 0.4,
@@ -1861,9 +1899,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 160.611,
-      "ttft_seconds": 0.692,
-      "ttfa_seconds": 0.692,
+      "speed_tps": 159.382,
+      "ttft_seconds": 0.621,
+      "ttfa_seconds": 0.621,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1899,13 +1937,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 286.859,
-      "ttft_seconds": 0.399,
-      "ttfa_seconds": 7.371,
+      "speed_tps": 279.995,
+      "ttft_seconds": 0.331,
+      "ttfa_seconds": 7.474,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.108,
-        "price_1m_input_tokens": 0.07,
-        "price_1m_output_tokens": 0.225
+        "price_1m_blended_3_to_1": 0.095,
+        "price_1m_input_tokens": 0.06,
+        "price_1m_output_tokens": 0.2
       },
       "policy_family": {
         "included": false,
@@ -1937,9 +1975,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 74.577,
-      "ttft_seconds": 0.953,
-      "ttfa_seconds": 0.953,
+      "speed_tps": 80.693,
+      "ttft_seconds": 1.071,
+      "ttfa_seconds": 1.071,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -1968,82 +2006,6 @@
       }
     },
     {
-      "name": "o1-mini",
-      "slug": "o1-mini",
-      "id": "b515503d-4d65-4a3f-8a4a-6c731e2b079f",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2024-09-12",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 20.4,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.603,
-        "lcr": null,
-        "hle": 0.049,
-        "scicode": 0.323,
-        "livecodebench": 0.576,
-        "mmlu_pro": 0.742,
-        "aime_25": null,
-        "math_500": 0.944,
-        "aime": 0.603
-      }
-    },
-    {
-      "name": "GPT-4.5 (Preview)",
-      "slug": "gpt-4-5",
-      "id": "5ce30d25-5353-45bb-bef9-6b87480ba3a2",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-02-27",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 20.0,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": null,
-        "lcr": null,
-        "hle": null,
-        "scicode": null,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "GPT-4o (Aug '24)",
       "slug": "gpt-4o-2024-08-06",
       "id": "8c1be908-67b6-4cf4-ba08-83ddbe44fde3",
@@ -2051,9 +2013,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-08-06",
-      "speed_tps": 96.676,
-      "ttft_seconds": 0.587,
-      "ttfa_seconds": 0.587,
+      "speed_tps": 119.769,
+      "ttft_seconds": 0.639,
+      "ttfa_seconds": 0.639,
       "pricing": {
         "price_1m_blended_3_to_1": 4.375,
         "price_1m_input_tokens": 2.5,
@@ -2082,44 +2044,6 @@
       }
     },
     {
-      "name": "GPT-4o (March 2025, chatgpt-4o-latest)",
-      "slug": "gpt-4o-chatgpt-03-25",
-      "id": "575498d6-60ec-466b-9372-fea19911fd07",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-03-27",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 18.6,
-        "coding": null,
-        "math": 25.7,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.655,
-        "lcr": null,
-        "hle": 0.05,
-        "scicode": 0.366,
-        "livecodebench": 0.425,
-        "mmlu_pro": 0.803,
-        "aime_25": 0.257,
-        "math_500": 0.893,
-        "aime": 0.327
-      }
-    },
-    {
       "name": "GPT-4o (Nov '24)",
       "slug": "gpt-4o",
       "id": "c1045dc0-4fd3-4adb-9548-18763e0d051f",
@@ -2127,9 +2051,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-11-20",
-      "speed_tps": 161.292,
-      "ttft_seconds": 0.509,
-      "ttfa_seconds": 0.509,
+      "speed_tps": 148.673,
+      "ttft_seconds": 0.448,
+      "ttfa_seconds": 0.448,
       "pricing": {
         "price_1m_blended_3_to_1": 4.375,
         "price_1m_input_tokens": 2.5,
@@ -2165,9 +2089,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-05-13",
-      "speed_tps": 100.711,
-      "ttft_seconds": 0.59,
-      "ttfa_seconds": 0.59,
+      "speed_tps": 105.338,
+      "ttft_seconds": 0.657,
+      "ttfa_seconds": 0.657,
       "pricing": {
         "price_1m_blended_3_to_1": 7.5,
         "price_1m_input_tokens": 5.0,
@@ -2196,44 +2120,6 @@
       }
     },
     {
-      "name": "GPT-4o (ChatGPT)",
-      "slug": "gpt-4o-chatgpt",
-      "id": "b4784397-aa28-411b-b011-9c4331bfa9c8",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-02-15",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 14.1,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.511,
-        "lcr": 0.53,
-        "hle": 0.037,
-        "scicode": 0.334,
-        "livecodebench": null,
-        "mmlu_pro": 0.773,
-        "aime_25": null,
-        "math_500": 0.797,
-        "aime": 0.103
-      }
-    },
-    {
       "name": "GPT-5 nano (minimal)",
       "slug": "gpt-5-nano-minimal",
       "id": "05e45a36-b5c6-47a1-8adb-9ddc19add5b3",
@@ -2241,9 +2127,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 157.146,
-      "ttft_seconds": 0.702,
-      "ttfa_seconds": 0.702,
+      "speed_tps": 136.442,
+      "ttft_seconds": 0.849,
+      "ttfa_seconds": 0.849,
       "pricing": {
         "price_1m_blended_3_to_1": 0.138,
         "price_1m_input_tokens": 0.05,
@@ -2279,9 +2165,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2023-11-06",
-      "speed_tps": 34.782,
-      "ttft_seconds": 0.912,
-      "ttfa_seconds": 0.912,
+      "speed_tps": 35.723,
+      "ttft_seconds": 0.896,
+      "ttfa_seconds": 0.896,
       "pricing": {
         "price_1m_blended_3_to_1": 15.0,
         "price_1m_input_tokens": 10.0,
@@ -2317,9 +2203,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-14",
-      "speed_tps": 164.243,
-      "ttft_seconds": 0.479,
-      "ttfa_seconds": 0.479,
+      "speed_tps": 155.876,
+      "ttft_seconds": 0.49,
+      "ttfa_seconds": 0.49,
       "pricing": {
         "price_1m_blended_3_to_1": 0.175,
         "price_1m_input_tokens": 0.1,
@@ -2355,9 +2241,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2023-03-14",
-      "speed_tps": 29.648,
-      "ttft_seconds": 0.784,
-      "ttfa_seconds": 0.784,
+      "speed_tps": 27.045,
+      "ttft_seconds": 0.922,
+      "ttfa_seconds": 0.922,
       "pricing": {
         "price_1m_blended_3_to_1": 37.5,
         "price_1m_input_tokens": 30.0,
@@ -2393,11 +2279,11 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-07-18",
-      "speed_tps": 72.0,
-      "ttft_seconds": 0.48,
-      "ttfa_seconds": 0.48,
+      "speed_tps": 70.805,
+      "ttft_seconds": 0.561,
+      "ttfa_seconds": 0.561,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.263,
+        "price_1m_blended_3_to_1": 0.262,
         "price_1m_input_tokens": 0.15,
         "price_1m_output_tokens": 0.6
       },
@@ -2431,9 +2317,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2022-11-30",
-      "speed_tps": 107.42,
-      "ttft_seconds": 0.538,
-      "ttfa_seconds": 0.538,
+      "speed_tps": 93.467,
+      "ttft_seconds": 0.557,
+      "ttfa_seconds": 0.557,
       "pricing": {
         "price_1m_blended_3_to_1": 0.75,
         "price_1m_input_tokens": 0.5,
@@ -2458,44 +2344,6 @@
         "mmlu_pro": 0.462,
         "aime_25": null,
         "math_500": 0.441,
-        "aime": null
-      }
-    },
-    {
-      "name": "GPT-3.5 Turbo (0613)",
-      "slug": "gpt-3-5-turbo-0613",
-      "id": "8b1a70d1-e05f-426b-9122-023d4629ab47",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2023-06-13",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": null,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": null,
-        "lcr": null,
-        "hle": null,
-        "scicode": null,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
         "aime": null
       }
     },
@@ -2545,9 +2393,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2.6",
       "release_date": "2026-04-20",
-      "speed_tps": 93.995,
-      "ttft_seconds": 0.715,
-      "ttfa_seconds": 48.068,
+      "speed_tps": 28.797,
+      "ttft_seconds": 1.481,
+      "ttfa_seconds": 156.045,
       "pricing": {
         "price_1m_blended_3_to_1": 1.712,
         "price_1m_input_tokens": 0.95,
@@ -2583,13 +2431,13 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2.5",
       "release_date": "2026-01-27",
-      "speed_tps": 33.194,
-      "ttft_seconds": 1.404,
-      "ttfa_seconds": 90.816,
+      "speed_tps": 41.763,
+      "ttft_seconds": 1.266,
+      "ttfa_seconds": 72.333,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.2,
-        "price_1m_input_tokens": 0.6,
-        "price_1m_output_tokens": 3.0
+        "price_1m_blended_3_to_1": 1.087,
+        "price_1m_input_tokens": 0.5,
+        "price_1m_output_tokens": 2.85
       },
       "policy_family": {
         "included": true,
@@ -2614,6 +2462,44 @@
       }
     },
     {
+      "name": "Kimi K2.6 (Non-reasoning)",
+      "slug": "kimi-k2-6-non-reasoning",
+      "id": "0fc6308e-fbd2-42d3-a216-06da3c43e34e",
+      "creator": "Kimi",
+      "openclaw_provider": "moonshot",
+      "openclaw_model": null,
+      "release_date": "2026-04-20",
+      "speed_tps": 27.612,
+      "ttft_seconds": 1.534,
+      "ttfa_seconds": 1.534,
+      "pricing": {
+        "price_1m_blended_3_to_1": 1.712,
+        "price_1m_input_tokens": 0.95,
+        "price_1m_output_tokens": 4.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 43.0,
+        "coding": 38.4,
+        "math": null,
+        "tau2": 0.939,
+        "terminalbench": 0.379,
+        "ifbench": 0.443,
+        "gpqa": 0.788,
+        "lcr": 0.577,
+        "hle": 0.182,
+        "scicode": 0.395,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Kimi K2 Thinking",
       "slug": "kimi-k2-thinking",
       "id": "bddebfd3-0a8d-47f5-b722-bc4c2ca5a5dc",
@@ -2621,9 +2507,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2-thinking",
       "release_date": "2025-11-06",
-      "speed_tps": 98.324,
-      "ttft_seconds": 1.081,
-      "ttfa_seconds": 21.422,
+      "speed_tps": 111.049,
+      "ttft_seconds": 1.068,
+      "ttfa_seconds": 19.078,
       "pricing": {
         "price_1m_blended_3_to_1": 1.075,
         "price_1m_input_tokens": 0.6,
@@ -2659,9 +2545,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2026-01-27",
-      "speed_tps": 33.175,
-      "ttft_seconds": 1.416,
-      "ttfa_seconds": 1.416,
+      "speed_tps": 40.709,
+      "ttft_seconds": 1.173,
+      "ttfa_seconds": 1.173,
       "pricing": {
         "price_1m_blended_3_to_1": 1.2,
         "price_1m_input_tokens": 0.6,
@@ -2697,9 +2583,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2025-09-05",
-      "speed_tps": 19.44,
-      "ttft_seconds": 1.772,
-      "ttfa_seconds": 1.772,
+      "speed_tps": 18.591,
+      "ttft_seconds": 1.702,
+      "ttfa_seconds": 1.702,
       "pricing": {
         "price_1m_blended_3_to_1": 1.075,
         "price_1m_input_tokens": 0.6,
@@ -2735,9 +2621,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2025-07-11",
-      "speed_tps": 34.302,
-      "ttft_seconds": 1.1,
-      "ttfa_seconds": 1.1,
+      "speed_tps": 38.13,
+      "ttft_seconds": 1.109,
+      "ttfa_seconds": 1.109,
       "pricing": {
         "price_1m_blended_3_to_1": 1.039,
         "price_1m_input_tokens": 0.585,
@@ -2766,44 +2652,6 @@
       }
     },
     {
-      "name": "Kimi Linear 48B A3B Instruct",
-      "slug": "kimi-linear-48b-a3b-instruct",
-      "id": "598de97d-029e-47b6-96ec-dbc1e0f9045a",
-      "creator": "Kimi",
-      "openclaw_provider": "moonshot",
-      "openclaw_model": null,
-      "release_date": "2025-10-30",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 14.4,
-        "coding": 14.2,
-        "math": 36.3,
-        "tau2": null,
-        "terminalbench": 0.114,
-        "ifbench": 0.281,
-        "gpqa": 0.412,
-        "lcr": 0.257,
-        "hle": 0.027,
-        "scicode": 0.199,
-        "livecodebench": 0.378,
-        "mmlu_pro": 0.585,
-        "aime_25": 0.363,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "GLM-5.1 (Reasoning)",
       "slug": "glm-5-1",
       "id": "5aa1c578-af76-4b91-8699-cdd43582b3af",
@@ -2811,9 +2659,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-5.1",
       "release_date": "2026-04-07",
-      "speed_tps": 51.563,
-      "ttft_seconds": 0.677,
-      "ttfa_seconds": 74.199,
+      "speed_tps": 55.801,
+      "ttft_seconds": 0.91,
+      "ttfa_seconds": 68.848,
       "pricing": {
         "price_1m_blended_3_to_1": 2.15,
         "price_1m_input_tokens": 1.4,
@@ -2849,9 +2697,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-5",
       "release_date": "2026-02-11",
-      "speed_tps": 67.008,
-      "ttft_seconds": 0.846,
-      "ttfa_seconds": 47.184,
+      "speed_tps": 67.513,
+      "ttft_seconds": 0.693,
+      "ttfa_seconds": 46.684,
       "pricing": {
         "price_1m_blended_3_to_1": 1.55,
         "price_1m_input_tokens": 1.0,
@@ -2880,44 +2728,6 @@
       }
     },
     {
-      "name": "GLM-5-Turbo",
-      "slug": "glm-5-turbo",
-      "id": "149096f3-57b7-4413-80c2-a2c010a2995a",
-      "creator": "Z AI",
-      "openclaw_provider": "zai",
-      "openclaw_model": "glm-5-turbo",
-      "release_date": "2026-03-15",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": true,
-        "family_id": "zai-glm-core"
-      },
-      "benchmarks": {
-        "intelligence": 46.8,
-        "coding": 36.8,
-        "math": null,
-        "tau2": 0.985,
-        "terminalbench": 0.333,
-        "ifbench": 0.732,
-        "gpqa": 0.847,
-        "lcr": 0.607,
-        "hle": 0.254,
-        "scicode": 0.436,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "GLM-5.1 (Non-reasoning)",
       "slug": "glm-5-1-non-reasoning",
       "id": "92f245a7-43b4-4ffd-8bfb-866746bf824d",
@@ -2925,9 +2735,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-04-07",
-      "speed_tps": 49.887,
-      "ttft_seconds": 1.155,
-      "ttfa_seconds": 1.155,
+      "speed_tps": 48.026,
+      "ttft_seconds": 1.046,
+      "ttfa_seconds": 1.046,
       "pricing": {
         "price_1m_blended_3_to_1": 2.15,
         "price_1m_input_tokens": 1.4,
@@ -2956,44 +2766,6 @@
       }
     },
     {
-      "name": "GLM 5V Turbo (Reasoning)",
-      "slug": "glm-5v-turbo",
-      "id": "248deb0d-426c-4fa9-86fa-bc60aa9c3719",
-      "creator": "Z AI",
-      "openclaw_provider": "zai",
-      "openclaw_model": null,
-      "release_date": "2026-04-01",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 42.9,
-        "coding": 36.2,
-        "math": null,
-        "tau2": 0.985,
-        "terminalbench": 0.326,
-        "ifbench": 0.611,
-        "gpqa": 0.809,
-        "lcr": 0.61,
-        "hle": 0.158,
-        "scicode": 0.435,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "GLM-4.7 (Reasoning)",
       "slug": "glm-4-7",
       "id": "6fc35842-0165-44cf-8570-c484a92b3d8c",
@@ -3001,9 +2773,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-22",
-      "speed_tps": 88.786,
-      "ttft_seconds": 0.791,
-      "ttfa_seconds": 23.317,
+      "speed_tps": 91.146,
+      "ttft_seconds": 0.848,
+      "ttfa_seconds": 22.791,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3039,9 +2811,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-02-11",
-      "speed_tps": 57.846,
-      "ttft_seconds": 1.297,
-      "ttfa_seconds": 1.297,
+      "speed_tps": 65.873,
+      "ttft_seconds": 1.408,
+      "ttfa_seconds": 1.408,
       "pricing": {
         "price_1m_blended_3_to_1": 1.55,
         "price_1m_input_tokens": 1.0,
@@ -3077,12 +2849,12 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-22",
-      "speed_tps": 86.44,
-      "ttft_seconds": 0.74,
-      "ttfa_seconds": 0.74,
+      "speed_tps": 80.055,
+      "ttft_seconds": 0.93,
+      "ttfa_seconds": 0.93,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.0,
-        "price_1m_input_tokens": 0.6,
+        "price_1m_blended_3_to_1": 0.944,
+        "price_1m_input_tokens": 0.525,
         "price_1m_output_tokens": 2.2
       },
       "policy_family": {
@@ -3115,9 +2887,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-09-30",
-      "speed_tps": 37.984,
-      "ttft_seconds": 0.774,
-      "ttfa_seconds": 53.428,
+      "speed_tps": 37.874,
+      "ttft_seconds": 0.787,
+      "ttfa_seconds": 53.593,
       "pricing": {
         "price_1m_blended_3_to_1": 0.963,
         "price_1m_input_tokens": 0.55,
@@ -3153,9 +2925,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-09-30",
-      "speed_tps": 38.093,
-      "ttft_seconds": 1.011,
-      "ttfa_seconds": 1.011,
+      "speed_tps": 42.73,
+      "ttft_seconds": 0.866,
+      "ttfa_seconds": 0.866,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3191,11 +2963,11 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-4.7-flash",
       "release_date": "2026-01-19",
-      "speed_tps": 128.335,
-      "ttft_seconds": 0.925,
-      "ttfa_seconds": 16.51,
+      "speed_tps": 88.793,
+      "ttft_seconds": 0.883,
+      "ttfa_seconds": 23.408,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.152,
+        "price_1m_blended_3_to_1": 0.153,
         "price_1m_input_tokens": 0.07,
         "price_1m_output_tokens": 0.4
       },
@@ -3229,9 +3001,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-07-28",
-      "speed_tps": 47.364,
-      "ttft_seconds": 0.882,
-      "ttfa_seconds": 43.109,
+      "speed_tps": 49.663,
+      "ttft_seconds": 0.895,
+      "ttfa_seconds": 41.167,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3267,9 +3039,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-08",
-      "speed_tps": 29.789,
-      "ttft_seconds": 1.502,
-      "ttfa_seconds": 68.642,
+      "speed_tps": 38.711,
+      "ttft_seconds": 1.429,
+      "ttfa_seconds": 53.094,
       "pricing": {
         "price_1m_blended_3_to_1": 0.45,
         "price_1m_input_tokens": 0.3,
@@ -3305,9 +3077,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-07-28",
-      "speed_tps": 35.871,
-      "ttft_seconds": 1.657,
-      "ttfa_seconds": 57.412,
+      "speed_tps": 77.29,
+      "ttft_seconds": 1.617,
+      "ttfa_seconds": 27.494,
       "pricing": {
         "price_1m_blended_3_to_1": 0.372,
         "price_1m_input_tokens": 0.17,
@@ -3343,11 +3115,11 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-01-19",
-      "speed_tps": 153.983,
-      "ttft_seconds": 0.933,
-      "ttfa_seconds": 0.933,
+      "speed_tps": 115.753,
+      "ttft_seconds": 1.054,
+      "ttfa_seconds": 1.054,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.152,
+        "price_1m_blended_3_to_1": 0.153,
         "price_1m_input_tokens": 0.07,
         "price_1m_output_tokens": 0.4
       },
@@ -3381,9 +3153,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-08",
-      "speed_tps": 31.092,
-      "ttft_seconds": 2.31,
-      "ttfa_seconds": 2.31,
+      "speed_tps": 38.156,
+      "ttft_seconds": 3.082,
+      "ttfa_seconds": 3.082,
       "pricing": {
         "price_1m_blended_3_to_1": 0.45,
         "price_1m_input_tokens": 0.3,
@@ -3419,9 +3191,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-08-11",
-      "speed_tps": 40.551,
-      "ttft_seconds": 1.111,
-      "ttfa_seconds": 50.432,
+      "speed_tps": 49.826,
+      "ttft_seconds": 1.28,
+      "ttfa_seconds": 41.42,
       "pricing": {
         "price_1m_blended_3_to_1": 0.9,
         "price_1m_input_tokens": 0.6,
@@ -3457,9 +3229,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-08-11",
-      "speed_tps": 44.617,
-      "ttft_seconds": 31.798,
-      "ttfa_seconds": 31.798,
+      "speed_tps": 44.47,
+      "ttft_seconds": 40.631,
+      "ttfa_seconds": 40.631,
       "pricing": {
         "price_1m_blended_3_to_1": 0.9,
         "price_1m_input_tokens": 0.6,
@@ -3495,9 +3267,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": "MiniMax-M2.7",
       "release_date": "2026-03-18",
-      "speed_tps": 51.794,
-      "ttft_seconds": 1.628,
-      "ttfa_seconds": 49.162,
+      "speed_tps": 56.731,
+      "ttft_seconds": 1.457,
+      "ttfa_seconds": 44.855,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3533,9 +3305,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2026-02-12",
-      "speed_tps": 96.295,
-      "ttft_seconds": 1.225,
-      "ttfa_seconds": 21.994,
+      "speed_tps": 107.187,
+      "ttft_seconds": 1.152,
+      "ttfa_seconds": 19.811,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3571,9 +3343,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2025-12-23",
-      "speed_tps": 99.963,
-      "ttft_seconds": 1.161,
-      "ttfa_seconds": 21.169,
+      "speed_tps": 104.491,
+      "ttft_seconds": 1.105,
+      "ttfa_seconds": 20.245,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3609,9 +3381,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2025-10-26",
-      "speed_tps": 98.041,
-      "ttft_seconds": 1.119,
-      "ttfa_seconds": 21.519,
+      "speed_tps": 112.358,
+      "ttft_seconds": 1.141,
+      "ttfa_seconds": 18.941,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3678,44 +3450,6 @@
       }
     },
     {
-      "name": "MiniMax M1 40k",
-      "slug": "minimax-m1-40k",
-      "id": "385376b1-9815-47dd-83cc-85aac34f247d",
-      "creator": "MiniMax",
-      "openclaw_provider": "minimax-portal",
-      "openclaw_model": null,
-      "release_date": "2025-06-17",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 20.9,
-        "coding": 14.1,
-        "math": 13.7,
-        "tau2": 0.316,
-        "terminalbench": 0.023,
-        "ifbench": 0.412,
-        "gpqa": 0.682,
-        "lcr": 0.517,
-        "hle": 0.075,
-        "scicode": 0.378,
-        "livecodebench": 0.657,
-        "mmlu_pro": 0.808,
-        "aime_25": 0.137,
-        "math_500": 0.972,
-        "aime": 0.813
-      }
-    },
-    {
       "name": "Qwen3.6 Max Preview",
       "slug": "qwen3-6-max",
       "id": "6000692c-f9a6-47f8-a5c0-e0874ac488bb",
@@ -3723,9 +3457,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-20",
-      "speed_tps": 34.157,
-      "ttft_seconds": 1.972,
-      "ttfa_seconds": 60.525,
+      "speed_tps": 36.765,
+      "ttft_seconds": 2.044,
+      "ttfa_seconds": 56.443,
       "pricing": {
         "price_1m_blended_3_to_1": 2.925,
         "price_1m_input_tokens": 1.3,
@@ -3761,9 +3495,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": "coder-model",
       "release_date": "2026-04-02",
-      "speed_tps": 52.767,
-      "ttft_seconds": 1.435,
-      "ttfa_seconds": 106.615,
+      "speed_tps": 53.153,
+      "ttft_seconds": 1.762,
+      "ttfa_seconds": 106.178,
       "pricing": {
         "price_1m_blended_3_to_1": 1.125,
         "price_1m_input_tokens": 0.5,
@@ -3799,9 +3533,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-22",
-      "speed_tps": 68.036,
-      "ttft_seconds": 1.734,
-      "ttfa_seconds": 31.131,
+      "speed_tps": 64.891,
+      "ttft_seconds": 1.506,
+      "ttfa_seconds": 32.326,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -3837,9 +3571,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-16",
-      "speed_tps": 51.273,
-      "ttft_seconds": 1.561,
-      "ttfa_seconds": 63.699,
+      "speed_tps": 51.775,
+      "ttft_seconds": 1.399,
+      "ttfa_seconds": 62.934,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -3875,13 +3609,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-16",
-      "speed_tps": 199.714,
-      "ttft_seconds": 1.429,
-      "ttfa_seconds": 11.444,
+      "speed_tps": 198.993,
+      "ttft_seconds": 1.422,
+      "ttfa_seconds": 11.473,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.844,
-        "price_1m_input_tokens": 0.375,
-        "price_1m_output_tokens": 2.25
+        "price_1m_blended_3_to_1": 0.557,
+        "price_1m_input_tokens": 0.248,
+        "price_1m_output_tokens": 1.485
       },
       "policy_family": {
         "included": false,
@@ -3913,9 +3647,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 91.484,
-      "ttft_seconds": 1.531,
-      "ttfa_seconds": 23.392,
+      "speed_tps": 88.418,
+      "ttft_seconds": 1.378,
+      "ttfa_seconds": 23.998,
       "pricing": {
         "price_1m_blended_3_to_1": 0.825,
         "price_1m_input_tokens": 0.3,
@@ -3951,9 +3685,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 154.101,
-      "ttft_seconds": 1.091,
-      "ttfa_seconds": 14.069,
+      "speed_tps": 157.271,
+      "ttft_seconds": 1.151,
+      "ttfa_seconds": 13.867,
       "pricing": {
         "price_1m_blended_3_to_1": 1.1,
         "price_1m_input_tokens": 0.4,
@@ -3989,9 +3723,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-16",
-      "speed_tps": 52.141,
-      "ttft_seconds": 1.487,
-      "ttfa_seconds": 1.487,
+      "speed_tps": 51.929,
+      "ttft_seconds": 1.46,
+      "ttfa_seconds": 1.46,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -4027,9 +3761,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-01-26",
-      "speed_tps": 35.017,
-      "ttft_seconds": 1.525,
-      "ttfa_seconds": 58.64,
+      "speed_tps": 44.815,
+      "ttft_seconds": 1.485,
+      "ttfa_seconds": 46.112,
       "pricing": {
         "price_1m_blended_3_to_1": 2.4,
         "price_1m_input_tokens": 1.2,
@@ -4065,9 +3799,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-30",
-      "speed_tps": 54.567,
-      "ttft_seconds": 1.437,
-      "ttfa_seconds": 1.437,
+      "speed_tps": 55.001,
+      "ttft_seconds": 1.264,
+      "ttfa_seconds": 1.264,
       "pricing": {
         "price_1m_blended_3_to_1": 1.5,
         "price_1m_input_tokens": 0.4,
@@ -4103,13 +3837,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 91.511,
-      "ttft_seconds": 1.449,
-      "ttfa_seconds": 1.449,
+      "speed_tps": 91.709,
+      "ttft_seconds": 1.498,
+      "ttfa_seconds": 1.498,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.825,
-        "price_1m_input_tokens": 0.3,
-        "price_1m_output_tokens": 2.4
+        "price_1m_blended_3_to_1": 0.835,
+        "price_1m_input_tokens": 0.28,
+        "price_1m_output_tokens": 2.5
       },
       "policy_family": {
         "included": false,
@@ -4141,9 +3875,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 137.472,
-      "ttft_seconds": 1.187,
-      "ttfa_seconds": 15.736,
+      "speed_tps": 126.776,
+      "ttft_seconds": 1.26,
+      "ttfa_seconds": 17.035,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -4179,9 +3913,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-22",
-      "speed_tps": 63.162,
-      "ttft_seconds": 1.682,
-      "ttfa_seconds": 1.682,
+      "speed_tps": 65.413,
+      "ttft_seconds": 1.568,
+      "ttfa_seconds": 1.568,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -4217,9 +3951,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 154.175,
-      "ttft_seconds": 1.059,
-      "ttfa_seconds": 1.059,
+      "speed_tps": 155.154,
+      "ttft_seconds": 1.199,
+      "ttfa_seconds": 1.199,
       "pricing": {
         "price_1m_blended_3_to_1": 1.1,
         "price_1m_input_tokens": 0.4,
@@ -4255,9 +3989,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-11-03",
-      "speed_tps": 39.843,
-      "ttft_seconds": 1.77,
-      "ttfa_seconds": 51.966,
+      "speed_tps": 46.044,
+      "ttft_seconds": 1.861,
+      "ttfa_seconds": 45.298,
       "pricing": {
         "price_1m_blended_3_to_1": 2.4,
         "price_1m_input_tokens": 1.2,
@@ -4293,9 +4027,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 59.047,
-      "ttft_seconds": 0.411,
-      "ttfa_seconds": 34.282,
+      "speed_tps": 51.675,
+      "ttft_seconds": 0.326,
+      "ttfa_seconds": 39.029,
       "pricing": {
         "price_1m_blended_3_to_1": 0.113,
         "price_1m_input_tokens": 0.1,
@@ -4331,9 +4065,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-16",
-      "speed_tps": 195.467,
-      "ttft_seconds": 1.396,
-      "ttfa_seconds": 1.396,
+      "speed_tps": 188.719,
+      "ttft_seconds": 1.33,
+      "ttfa_seconds": 1.33,
       "pricing": {
         "price_1m_blended_3_to_1": 0.844,
         "price_1m_input_tokens": 0.375,
@@ -4369,13 +4103,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 32.655,
-      "ttft_seconds": 1.968,
-      "ttfa_seconds": 1.968,
+      "speed_tps": 32.581,
+      "ttft_seconds": 1.81,
+      "ttfa_seconds": 1.81,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.4,
-        "price_1m_input_tokens": 1.2,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 3.047,
+        "price_1m_input_tokens": 1.655,
+        "price_1m_output_tokens": 7.225
       },
       "policy_family": {
         "included": false,
@@ -4407,9 +4141,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 137.455,
-      "ttft_seconds": 1.028,
-      "ttfa_seconds": 1.028,
+      "speed_tps": 132.719,
+      "ttft_seconds": 1.097,
+      "ttfa_seconds": 1.097,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -4445,13 +4179,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-25",
-      "speed_tps": 50.892,
-      "ttft_seconds": 1.286,
-      "ttfa_seconds": 40.584,
+      "speed_tps": 56.006,
+      "ttft_seconds": 1.389,
+      "ttfa_seconds": 37.1,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.625,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 8.4
+        "price_1m_blended_3_to_1": 0.838,
+        "price_1m_input_tokens": 0.4,
+        "price_1m_output_tokens": 2.15
       },
       "policy_family": {
         "included": false,
@@ -4483,11 +4217,11 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-03",
-      "speed_tps": 157.416,
-      "ttft_seconds": 0.769,
-      "ttfa_seconds": 0.769,
+      "speed_tps": 170.448,
+      "ttft_seconds": 0.811,
+      "ttfa_seconds": 0.811,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.6,
+        "price_1m_blended_3_to_1": 0.563,
         "price_1m_input_tokens": 0.35,
         "price_1m_output_tokens": 1.2
       },
@@ -4521,13 +4255,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 44.66,
-      "ttft_seconds": 1.252,
-      "ttfa_seconds": 46.035,
+      "speed_tps": 45.415,
+      "ttft_seconds": 1.303,
+      "ttfa_seconds": 45.341,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.625,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 8.4
+        "price_1m_blended_3_to_1": 2.174,
+        "price_1m_input_tokens": 0.84,
+        "price_1m_output_tokens": 6.175
       },
       "policy_family": {
         "included": false,
@@ -4552,44 +4286,6 @@
       }
     },
     {
-      "name": "Qwen3.5 9B (Non-reasoning)",
-      "slug": "qwen3-5-9b-non-reasoning",
-      "id": "20da3b31-fc0a-4359-abec-d59367bf1d9f",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2026-03-02",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 27.3,
-        "coding": 21.4,
-        "math": null,
-        "tau2": 0.851,
-        "terminalbench": 0.182,
-        "ifbench": 0.378,
-        "gpqa": 0.786,
-        "lcr": 0.38,
-        "hle": 0.086,
-        "scicode": 0.277,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3.5 4B (Reasoning)",
       "slug": "qwen3-5-4b",
       "id": "651ef7ae-9a8f-477e-9c8e-460aa156ba02",
@@ -4597,9 +4293,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 200.381,
-      "ttft_seconds": 0.468,
-      "ttfa_seconds": 10.449,
+      "speed_tps": 194.896,
+      "ttft_seconds": 0.401,
+      "ttfa_seconds": 10.663,
       "pricing": {
         "price_1m_blended_3_to_1": 0.06,
         "price_1m_input_tokens": 0.03,
@@ -4635,9 +4331,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-11",
-      "speed_tps": 164.736,
-      "ttft_seconds": 1.147,
-      "ttfa_seconds": 13.288,
+      "speed_tps": 163.214,
+      "ttft_seconds": 1.131,
+      "ttfa_seconds": 13.384,
       "pricing": {
         "price_1m_blended_3_to_1": 1.875,
         "price_1m_input_tokens": 0.5,
@@ -4673,9 +4369,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-05",
-      "speed_tps": 40.624,
-      "ttft_seconds": 1.804,
-      "ttfa_seconds": 1.804,
+      "speed_tps": 53.019,
+      "ttft_seconds": 1.709,
+      "ttfa_seconds": 1.709,
       "pricing": {
         "price_1m_blended_3_to_1": 2.4,
         "price_1m_input_tokens": 1.2,
@@ -4711,9 +4407,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-30",
-      "speed_tps": 170.216,
-      "ttft_seconds": 1.084,
-      "ttfa_seconds": 1.084,
+      "speed_tps": 241.263,
+      "ttft_seconds": 1.001,
+      "ttfa_seconds": 1.001,
       "pricing": {
         "price_1m_blended_3_to_1": 0.275,
         "price_1m_input_tokens": 0.1,
@@ -4749,13 +4445,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-21",
-      "speed_tps": 67.042,
-      "ttft_seconds": 1.134,
-      "ttfa_seconds": 1.134,
+      "speed_tps": 69.208,
+      "ttft_seconds": 1.186,
+      "ttfa_seconds": 1.186,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.225,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 2.8
+        "price_1m_blended_3_to_1": 0.356,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 0.825
       },
       "policy_family": {
         "included": false,
@@ -4787,13 +4483,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-22",
-      "speed_tps": 67.035,
-      "ttft_seconds": 1.728,
-      "ttfa_seconds": 1.728,
+      "speed_tps": 71.342,
+      "ttft_seconds": 1.652,
+      "ttfa_seconds": 1.652,
       "pricing": {
-        "price_1m_blended_3_to_1": 3.0,
-        "price_1m_input_tokens": 1.5,
-        "price_1m_output_tokens": 7.5
+        "price_1m_blended_3_to_1": 0.675,
+        "price_1m_input_tokens": 0.3,
+        "price_1m_output_tokens": 1.8
       },
       "policy_family": {
         "included": false,
@@ -4825,9 +4521,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-21",
-      "speed_tps": 96.706,
-      "ttft_seconds": 1.281,
-      "ttfa_seconds": 21.962,
+      "speed_tps": 96.602,
+      "ttft_seconds": 1.282,
+      "ttfa_seconds": 21.986,
       "pricing": {
         "price_1m_blended_3_to_1": 2.625,
         "price_1m_input_tokens": 0.7,
@@ -4863,9 +4559,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 202.117,
-      "ttft_seconds": 0.487,
-      "ttfa_seconds": 0.487,
+      "speed_tps": 202.372,
+      "ttft_seconds": 0.391,
+      "ttfa_seconds": 0.391,
       "pricing": {
         "price_1m_blended_3_to_1": 0.06,
         "price_1m_input_tokens": 0.03,
@@ -4901,13 +4597,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-30",
-      "speed_tps": 146.945,
-      "ttft_seconds": 0.968,
-      "ttfa_seconds": 14.579,
+      "speed_tps": 149.999,
+      "ttft_seconds": 1.011,
+      "ttfa_seconds": 14.345,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.75,
-        "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 2.4
+        "price_1m_blended_3_to_1": 0.673,
+        "price_1m_input_tokens": 0.28,
+        "price_1m_output_tokens": 1.85
       },
       "policy_family": {
         "included": false,
@@ -4939,13 +4635,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 51.997,
-      "ttft_seconds": 1.204,
-      "ttfa_seconds": 1.204,
+      "speed_tps": 52.097,
+      "ttft_seconds": 1.173,
+      "ttfa_seconds": 1.173,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.225,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 2.8
+        "price_1m_blended_3_to_1": 0.7,
+        "price_1m_input_tokens": 0.3,
+        "price_1m_output_tokens": 1.9
       },
       "policy_family": {
         "included": false,
@@ -4977,9 +4673,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-11",
-      "speed_tps": 168.519,
-      "ttft_seconds": 1.03,
-      "ttfa_seconds": 1.03,
+      "speed_tps": 169.345,
+      "ttft_seconds": 1.251,
+      "ttfa_seconds": 1.251,
       "pricing": {
         "price_1m_blended_3_to_1": 0.875,
         "price_1m_input_tokens": 0.5,
@@ -5015,13 +4711,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-31",
-      "speed_tps": 111.483,
-      "ttft_seconds": 1.474,
-      "ttfa_seconds": 1.474,
+      "speed_tps": 112.014,
+      "ttft_seconds": 1.582,
+      "ttfa_seconds": 1.582,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.9,
-        "price_1m_input_tokens": 0.45,
-        "price_1m_output_tokens": 2.25
+        "price_1m_blended_3_to_1": 0.352,
+        "price_1m_input_tokens": 0.19,
+        "price_1m_output_tokens": 0.839
       },
       "policy_family": {
         "included": false,
@@ -5053,9 +4749,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 63.799,
-      "ttft_seconds": 1.279,
-      "ttfa_seconds": 32.627,
+      "speed_tps": 64.451,
+      "ttft_seconds": 1.33,
+      "ttfa_seconds": 32.361,
       "pricing": {
         "price_1m_blended_3_to_1": 2.625,
         "price_1m_input_tokens": 0.7,
@@ -5091,13 +4787,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-03",
-      "speed_tps": 125.119,
-      "ttft_seconds": 0.995,
-      "ttfa_seconds": 16.979,
+      "speed_tps": 126.197,
+      "ttft_seconds": 1.135,
+      "ttfa_seconds": 16.983,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.75,
+        "price_1m_blended_3_to_1": 0.338,
         "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 2.4
+        "price_1m_output_tokens": 0.75
       },
       "policy_family": {
         "included": false,
@@ -5129,9 +4825,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-03-05",
-      "speed_tps": 31.507,
-      "ttft_seconds": 0.405,
-      "ttfa_seconds": 79.468,
+      "speed_tps": 31.048,
+      "ttft_seconds": 0.44,
+      "ttfa_seconds": 80.672,
       "pricing": {
         "price_1m_blended_3_to_1": 0.745,
         "price_1m_input_tokens": 0.66,
@@ -5160,44 +4856,6 @@
       }
     },
     {
-      "name": "Qwen3 4B 2507 (Reasoning)",
-      "slug": "qwen3-4b-2507-instruct-reasoning",
-      "id": "2aacdc07-5f4e-4ab9-8ea5-5f7ab93f9eeb",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-08-06",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 18.2,
-        "coding": 9.5,
-        "math": 82.7,
-        "tau2": 0.254,
-        "terminalbench": 0.015,
-        "ifbench": 0.498,
-        "gpqa": 0.667,
-        "lcr": 0.377,
-        "hle": 0.059,
-        "scicode": 0.256,
-        "livecodebench": 0.641,
-        "mmlu_pro": 0.743,
-        "aime_25": 0.827,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3 VL 32B Instruct",
       "slug": "qwen3-vl-32b-instruct",
       "id": "6da314d3-a984-4734-8f31-47dd32fb4699",
@@ -5205,9 +4863,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-21",
-      "speed_tps": 80.757,
-      "ttft_seconds": 1.259,
-      "ttfa_seconds": 1.259,
+      "speed_tps": 76.645,
+      "ttft_seconds": 1.249,
+      "ttfa_seconds": 1.249,
       "pricing": {
         "price_1m_blended_3_to_1": 1.225,
         "price_1m_input_tokens": 0.7,
@@ -5243,13 +4901,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 63.22,
-      "ttft_seconds": 1.197,
-      "ttfa_seconds": 1.197,
+      "speed_tps": 67.554,
+      "ttft_seconds": 1.227,
+      "ttfa_seconds": 1.227,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.225,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 2.8
+        "price_1m_blended_3_to_1": 0.787,
+        "price_1m_input_tokens": 0.45,
+        "price_1m_output_tokens": 1.8
       },
       "policy_family": {
         "included": false,
@@ -5281,9 +4939,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-14",
-      "speed_tps": 133.943,
-      "ttft_seconds": 1.183,
-      "ttfa_seconds": 16.114,
+      "speed_tps": 132.088,
+      "ttft_seconds": 1.091,
+      "ttfa_seconds": 16.233,
       "pricing": {
         "price_1m_blended_3_to_1": 0.66,
         "price_1m_input_tokens": 0.18,
@@ -5319,13 +4977,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 101.762,
-      "ttft_seconds": 1.172,
-      "ttfa_seconds": 20.825,
+      "speed_tps": 97.407,
+      "ttft_seconds": 1.212,
+      "ttfa_seconds": 21.745,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.625,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 8.4
+        "price_1m_blended_3_to_1": 0.276,
+        "price_1m_input_tokens": 0.195,
+        "price_1m_output_tokens": 0.52
       },
       "policy_family": {
         "included": false,
@@ -5395,9 +5053,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-01-28",
-      "speed_tps": 48.556,
-      "ttft_seconds": 1.129,
-      "ttfa_seconds": 1.129,
+      "speed_tps": 46.827,
+      "ttft_seconds": 1.209,
+      "ttfa_seconds": 1.209,
       "pricing": {
         "price_1m_blended_3_to_1": 2.8,
         "price_1m_input_tokens": 1.6,
@@ -5433,13 +5091,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 63.52,
-      "ttft_seconds": 1.172,
-      "ttfa_seconds": 32.658,
+      "speed_tps": 65.094,
+      "ttft_seconds": 1.092,
+      "ttfa_seconds": 31.817,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.313,
-        "price_1m_input_tokens": 0.35,
-        "price_1m_output_tokens": 4.2
+        "price_1m_blended_3_to_1": 0.731,
+        "price_1m_input_tokens": 0.235,
+        "price_1m_output_tokens": 2.22
       },
       "policy_family": {
         "included": false,
@@ -5471,13 +5129,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-03",
-      "speed_tps": 124.999,
-      "ttft_seconds": 0.992,
-      "ttfa_seconds": 0.992,
+      "speed_tps": 122.123,
+      "ttft_seconds": 1.164,
+      "ttfa_seconds": 1.164,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.35,
+        "price_1m_blended_3_to_1": 0.3,
         "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 0.8
+        "price_1m_output_tokens": 0.6
       },
       "policy_family": {
         "included": false,
@@ -5509,9 +5167,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-22",
-      "speed_tps": 92.653,
-      "ttft_seconds": 0.949,
-      "ttfa_seconds": 22.535,
+      "speed_tps": 96.703,
+      "ttft_seconds": 0.97,
+      "ttfa_seconds": 21.652,
       "pricing": {
         "price_1m_blended_3_to_1": 0.43,
         "price_1m_input_tokens": 0.25,
@@ -5547,13 +5205,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2024-09-19",
-      "speed_tps": 55.806,
-      "ttft_seconds": 1.131,
-      "ttfa_seconds": 1.131,
+      "speed_tps": 55.321,
+      "ttft_seconds": 1.279,
+      "ttfa_seconds": 1.279,
       "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
+        "price_1m_blended_3_to_1": 0.37,
+        "price_1m_input_tokens": 0.36,
+        "price_1m_output_tokens": 0.4
       },
       "policy_family": {
         "included": false,
@@ -5585,13 +5243,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 66.551,
-      "ttft_seconds": 1.219,
-      "ttfa_seconds": 31.271,
+      "speed_tps": 81.663,
+      "ttft_seconds": 1.283,
+      "ttfa_seconds": 25.774,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.75,
-        "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 2.4
+        "price_1m_blended_3_to_1": 0.18,
+        "price_1m_input_tokens": 0.09,
+        "price_1m_output_tokens": 0.45
       },
       "policy_family": {
         "included": false,
@@ -5616,44 +5274,6 @@
       }
     },
     {
-      "name": "QwQ 32B-Preview",
-      "slug": "QwQ-32B-Preview",
-      "id": "8823351e-8232-4c9c-8a1d-cd2c1d2c1196",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-11-27",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 15.2,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.557,
-        "lcr": null,
-        "hle": 0.048,
-        "scicode": 0.038,
-        "livecodebench": 0.337,
-        "mmlu_pro": 0.648,
-        "aime_25": null,
-        "math_500": 0.91,
-        "aime": 0.453
-      }
-    },
-    {
       "name": "Qwen3 30B A3B 2507 Instruct",
       "slug": "qwen3-30b-a3b-2507",
       "id": "7ec1065a-c90e-41e4-bd17-abb7042eed76",
@@ -5661,13 +5281,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-29",
-      "speed_tps": 76.253,
-      "ttft_seconds": 1.065,
-      "ttfa_seconds": 1.065,
+      "speed_tps": 115.795,
+      "ttft_seconds": 1.034,
+      "ttfa_seconds": 1.034,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.35,
-        "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 0.8
+        "price_1m_blended_3_to_1": 0.213,
+        "price_1m_input_tokens": 0.15,
+        "price_1m_output_tokens": 0.4
       },
       "policy_family": {
         "included": false,
@@ -5699,9 +5319,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 217.739,
-      "ttft_seconds": 0.339,
-      "ttfa_seconds": 0.339,
+      "speed_tps": 315.541,
+      "ttft_seconds": 0.47,
+      "ttfa_seconds": 0.47,
       "pricing": {
         "price_1m_blended_3_to_1": 0.04,
         "price_1m_input_tokens": 0.02,
@@ -5737,13 +5357,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 96.323,
-      "ttft_seconds": 1.042,
-      "ttfa_seconds": 1.042,
+      "speed_tps": 100.873,
+      "ttft_seconds": 1.073,
+      "ttfa_seconds": 1.073,
       "pricing": {
-        "price_1m_blended_3_to_1": 1.225,
-        "price_1m_input_tokens": 0.7,
-        "price_1m_output_tokens": 2.8
+        "price_1m_blended_3_to_1": 0.26,
+        "price_1m_input_tokens": 0.15,
+        "price_1m_output_tokens": 0.59
       },
       "policy_family": {
         "included": false,
@@ -5775,9 +5395,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-14",
-      "speed_tps": 146.721,
-      "ttft_seconds": 1.058,
-      "ttfa_seconds": 1.058,
+      "speed_tps": 145.695,
+      "ttft_seconds": 1.175,
+      "ttfa_seconds": 1.175,
       "pricing": {
         "price_1m_blended_3_to_1": 0.31,
         "price_1m_input_tokens": 0.18,
@@ -5813,9 +5433,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 103.985,
-      "ttft_seconds": 0.976,
-      "ttfa_seconds": 20.21,
+      "speed_tps": 103.924,
+      "ttft_seconds": 1.06,
+      "ttfa_seconds": 20.305,
       "pricing": {
         "price_1m_blended_3_to_1": 0.398,
         "price_1m_input_tokens": 0.11,
@@ -5844,44 +5464,6 @@
       }
     },
     {
-      "name": "Qwen3 VL 4B (Reasoning)",
-      "slug": "qwen3-vl-4b-reasoning",
-      "id": "f93d0750-b659-4ceb-a123-7e657904ef2b",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-10-14",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 13.7,
-        "coding": 6.7,
-        "math": 25.7,
-        "tau2": 0.155,
-        "terminalbench": 0.015,
-        "ifbench": 0.366,
-        "gpqa": 0.494,
-        "lcr": 0.213,
-        "hle": 0.044,
-        "scicode": 0.171,
-        "livecodebench": 0.32,
-        "mmlu_pro": 0.7,
-        "aime_25": 0.257,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3 8B (Reasoning)",
       "slug": "qwen3-8b-instruct-reasoning",
       "id": "9dba61f5-78ee-4190-8d1d-8e7063ffd386",
@@ -5889,13 +5471,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 89.096,
-      "ttft_seconds": 0.985,
-      "ttfa_seconds": 23.433,
+      "speed_tps": 88.685,
+      "ttft_seconds": 1.065,
+      "ttfa_seconds": 23.617,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.66,
-        "price_1m_input_tokens": 0.18,
-        "price_1m_output_tokens": 2.1
+        "price_1m_blended_3_to_1": 0.37,
+        "price_1m_input_tokens": 0.11,
+        "price_1m_output_tokens": 1.15
       },
       "policy_family": {
         "included": false,
@@ -5920,120 +5502,6 @@
       }
     },
     {
-      "name": "Qwen2.5 Instruct 32B",
-      "slug": "qwen2.5-32b-instruct",
-      "id": "1d0db5a3-3132-4213-a94b-c2e395d08283",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-09-19",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 13.2,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.466,
-        "lcr": null,
-        "hle": 0.038,
-        "scicode": 0.229,
-        "livecodebench": 0.248,
-        "mmlu_pro": 0.697,
-        "aime_25": null,
-        "math_500": 0.805,
-        "aime": 0.11
-      }
-    },
-    {
-      "name": "Qwen3 4B 2507 Instruct",
-      "slug": "qwen3-4b-2507-instruct",
-      "id": "b0249961-b8b2-479d-8325-a29ea17c7b89",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-08-06",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 12.9,
-        "coding": 9.1,
-        "math": 52.3,
-        "tau2": 0.266,
-        "terminalbench": 0.045,
-        "ifbench": 0.335,
-        "gpqa": 0.517,
-        "lcr": 0.073,
-        "hle": 0.047,
-        "scicode": 0.181,
-        "livecodebench": 0.377,
-        "mmlu_pro": 0.672,
-        "aime_25": 0.523,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
-      "name": "Qwen2.5 Coder Instruct 32B",
-      "slug": "qwen2-5-coder-32b-instruct",
-      "id": "04586102-6a28-48f8-a82e-85775d7ed779",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-11-11",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 12.9,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.417,
-        "lcr": null,
-        "hle": 0.038,
-        "scicode": 0.271,
-        "livecodebench": 0.295,
-        "mmlu_pro": 0.635,
-        "aime_25": null,
-        "math_500": 0.767,
-        "aime": 0.12
-      }
-    },
-    {
       "name": "Qwen3 14B (Non-reasoning)",
       "slug": "qwen3-14b-instruct",
       "id": "ecc6524a-d521-458a-8327-5009e8ce6549",
@@ -6041,13 +5509,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 64.119,
-      "ttft_seconds": 1.102,
-      "ttfa_seconds": 1.102,
+      "speed_tps": 65.385,
+      "ttft_seconds": 1.107,
+      "ttfa_seconds": 1.107,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.613,
-        "price_1m_input_tokens": 0.35,
-        "price_1m_output_tokens": 1.4
+        "price_1m_blended_3_to_1": 0.381,
+        "price_1m_input_tokens": 0.235,
+        "price_1m_output_tokens": 0.82
       },
       "policy_family": {
         "included": false,
@@ -6079,13 +5547,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 68.943,
-      "ttft_seconds": 1.1,
-      "ttfa_seconds": 1.1,
+      "speed_tps": 89.612,
+      "ttft_seconds": 1.215,
+      "ttfa_seconds": 1.215,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.35,
-        "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 0.8
+        "price_1m_blended_3_to_1": 0.133,
+        "price_1m_input_tokens": 0.08,
+        "price_1m_output_tokens": 0.29
       },
       "policy_family": {
         "included": false,
@@ -6117,9 +5585,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 104.334,
-      "ttft_seconds": 0.964,
-      "ttfa_seconds": 0.964,
+      "speed_tps": 103.849,
+      "ttft_seconds": 0.996,
+      "ttfa_seconds": 0.996,
       "pricing": {
         "price_1m_blended_3_to_1": 0.188,
         "price_1m_input_tokens": 0.11,
@@ -6155,11 +5623,11 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2024-11-18",
-      "speed_tps": 72.315,
-      "ttft_seconds": 1.151,
-      "ttfa_seconds": 1.151,
+      "speed_tps": 88.26,
+      "ttft_seconds": 1.149,
+      "ttfa_seconds": 1.149,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.087,
+        "price_1m_blended_3_to_1": 0.088,
         "price_1m_input_tokens": 0.05,
         "price_1m_output_tokens": 0.2
       },
@@ -6186,44 +5654,6 @@
       }
     },
     {
-      "name": "Qwen2 Instruct 72B",
-      "slug": "qwen2-72b-instruct",
-      "id": "7656c62b-5345-435b-bf12-b6ce2ca0d58d",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-06-07",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 11.7,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.371,
-        "lcr": null,
-        "hle": 0.037,
-        "scicode": 0.229,
-        "livecodebench": 0.159,
-        "mmlu_pro": 0.622,
-        "aime_25": null,
-        "math_500": 0.701,
-        "aime": 0.147
-      }
-    },
-    {
       "name": "Qwen3 Omni 30B A3B Instruct",
       "slug": "qwen3-omni-30b-a3b-instruct",
       "id": "0b226b82-1462-4860-bf1a-f8aed7024791",
@@ -6231,9 +5661,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-22",
-      "speed_tps": 108.946,
-      "ttft_seconds": 0.916,
-      "ttfa_seconds": 0.916,
+      "speed_tps": 108.239,
+      "ttft_seconds": 1.023,
+      "ttfa_seconds": 1.023,
       "pricing": {
         "price_1m_blended_3_to_1": 0.43,
         "price_1m_input_tokens": 0.25,
@@ -6269,13 +5699,13 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 89.443,
-      "ttft_seconds": 1.03,
-      "ttfa_seconds": 1.03,
+      "speed_tps": 90.622,
+      "ttft_seconds": 1.148,
+      "ttfa_seconds": 1.148,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.31,
+        "price_1m_blended_3_to_1": 0.185,
         "price_1m_input_tokens": 0.18,
-        "price_1m_output_tokens": 0.7
+        "price_1m_output_tokens": 0.2
       },
       "policy_family": {
         "included": false,
@@ -6338,44 +5768,6 @@
       }
     },
     {
-      "name": "Qwen2.5 Coder Instruct 7B ",
-      "slug": "qwen2-5-coder-7b-instruct",
-      "id": "e410e854-104d-4b35-a171-899ff9d974bb",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-09-19",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 10.0,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.339,
-        "lcr": null,
-        "hle": 0.048,
-        "scicode": 0.148,
-        "livecodebench": 0.126,
-        "mmlu_pro": 0.473,
-        "aime_25": null,
-        "math_500": 0.66,
-        "aime": 0.053
-      }
-    },
-    {
       "name": "Qwen3.5 0.8B (Non-reasoning)",
       "slug": "qwen3-5-0-8b-non-reasoning",
       "id": "405e2235-0925-4634-a3c7-fbd5f6394bc0",
@@ -6383,9 +5775,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 266.903,
-      "ttft_seconds": 0.439,
-      "ttfa_seconds": 0.439,
+      "speed_tps": 346.863,
+      "ttft_seconds": 0.312,
+      "ttfa_seconds": 0.312,
       "pricing": {
         "price_1m_blended_3_to_1": 0.02,
         "price_1m_input_tokens": 0.01,
@@ -6414,120 +5806,6 @@
       }
     },
     {
-      "name": "Qwen3 VL 4B Instruct",
-      "slug": "qwen3-vl-4b-instruct",
-      "id": "f5d83128-047f-496d-ba49-8a428abe8345",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-10-14",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 9.6,
-        "coding": 4.5,
-        "math": 37.0,
-        "tau2": 0.234,
-        "terminalbench": null,
-        "ifbench": 0.318,
-        "gpqa": 0.371,
-        "lcr": 0.13,
-        "hle": 0.037,
-        "scicode": 0.137,
-        "livecodebench": 0.29,
-        "mmlu_pro": 0.634,
-        "aime_25": 0.37,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
-      "name": "Qwen1.5 Chat 110B",
-      "slug": "qwen1.5-110b-chat",
-      "id": "d1768b3a-0a21-4e08-b3f6-56a9ab6cfbf3",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-04-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 9.5,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.289,
-        "lcr": null,
-        "hle": null,
-        "scicode": null,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
-      "name": "Qwen Chat 72B",
-      "slug": "qwen-chat-72b",
-      "id": "41f73c27-880c-4f30-8b07-9999ce89a4ae",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2023-11-30",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 8.8,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": null,
-        "lcr": null,
-        "hle": null,
-        "scicode": null,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3 1.7B (Reasoning)",
       "slug": "qwen3-1.7b-instruct-reasoning",
       "id": "5962d643-0a6f-4630-bb08-ab5720d80056",
@@ -6535,9 +5813,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 139.296,
-      "ttft_seconds": 0.927,
-      "ttfa_seconds": 15.285,
+      "speed_tps": 138.824,
+      "ttft_seconds": 1.047,
+      "ttfa_seconds": 15.453,
       "pricing": {
         "price_1m_blended_3_to_1": 0.398,
         "price_1m_input_tokens": 0.11,
@@ -6566,44 +5844,6 @@
       }
     },
     {
-      "name": "Qwen Chat 14B",
-      "slug": "qwen-chat-14b",
-      "id": "c43aa1f9-31bd-4a99-be70-84c5e6bd2e75",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2023-09-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 7.4,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": null,
-        "lcr": null,
-        "hle": null,
-        "scicode": null,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3 1.7B (Non-reasoning)",
       "slug": "qwen3-1.7b-instruct",
       "id": "2bb84433-f38e-4edc-9b65-4d7b1f473db9",
@@ -6611,9 +5851,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 138.586,
-      "ttft_seconds": 0.897,
-      "ttfa_seconds": 0.897,
+      "speed_tps": 139.83,
+      "ttft_seconds": 0.909,
+      "ttfa_seconds": 0.909,
       "pricing": {
         "price_1m_blended_3_to_1": 0.188,
         "price_1m_input_tokens": 0.11,
@@ -6649,9 +5889,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 189.807,
-      "ttft_seconds": 0.988,
-      "ttfa_seconds": 11.525,
+      "speed_tps": 211.217,
+      "ttft_seconds": 0.913,
+      "ttfa_seconds": 10.382,
       "pricing": {
         "price_1m_blended_3_to_1": 0.398,
         "price_1m_input_tokens": 0.11,
@@ -6687,9 +5927,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 185.958,
-      "ttft_seconds": 0.876,
-      "ttfa_seconds": 0.876,
+      "speed_tps": 215.782,
+      "ttft_seconds": 0.886,
+      "ttfa_seconds": 0.886,
       "pricing": {
         "price_1m_blended_3_to_1": 0.188,
         "price_1m_input_tokens": 0.11,
