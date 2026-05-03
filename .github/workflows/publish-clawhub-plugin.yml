@@ -43,6 +43,7 @@ jobs:
         if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
           npx --yes "clawhub@$CLAWHUB_CLI_VERSION" login --token "$CLAWHUB_TOKEN" --no-browser
+          set +e
           npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package publish .tmp-clawhub-plugin \
             --family code-plugin \
             --name zeroapi \
@@ -52,13 +53,23 @@ jobs:
             --source-repo dorukardahan/ZeroAPI \
             --source-commit "$GITHUB_SHA" \
             --source-ref "$GITHUB_REF_NAME" \
-            --source-path "plugin"
+            --source-path "plugin" 2>&1 | tee .tmp-clawhub-publish.log
+          status="${PIPESTATUS[0]}"
+          set -e
+          if [ "$status" -ne 0 ]; then
+            if grep -Eiq 'already exists|version .* exists|duplicate' .tmp-clawhub-publish.log; then
+              echo "ClawHub package version already exists; continuing to verification."
+            else
+              exit "$status"
+            fi
+          fi
 
       - name: Verify ClawHub package is downloadable
         if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
-          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --version "${{ steps.version.outputs.value }}" --json > .tmp-clawhub-inspect.json
-          node <<'NODE'
+          for attempt in $(seq 1 18); do
+            npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --version "${{ steps.version.outputs.value }}" --json > .tmp-clawhub-inspect.json
+            if node <<'NODE'
           const fs = require("fs");
           const raw = fs.readFileSync(".tmp-clawhub-inspect.json", "utf8");
           const jsonStart = raw.indexOf("{");
@@ -70,12 +81,8 @@ jobs:
           if (!version) {
             throw new Error("ClawHub inspect is missing version metadata");
           }
-          if (
-            version.sha256hash !== null &&
-            version.sha256hash !== undefined &&
-            (typeof version.sha256hash !== "string" || !/^[a-f0-9]{64}$/i.test(version.sha256hash))
-          ) {
-            throw new Error("ClawHub version metadata has an invalid sha256hash");
+          if (typeof version.sha256hash !== "string" || !/^[a-f0-9]{64}$/i.test(version.sha256hash)) {
+            throw new Error("ClawHub version metadata is not ready: missing sha256hash");
           }
           if (!Array.isArray(version.files) || version.files.length === 0) {
             throw new Error("ClawHub version metadata is missing files[]");
@@ -92,6 +99,16 @@ jobs:
             throw new Error("ClawHub version metadata is missing artifact.sha256");
           }
           NODE
+            then
+              break
+            fi
+            if [ "$attempt" -eq 18 ]; then
+              echo "ClawHub metadata did not become installable in time."
+              exit 1
+            fi
+            echo "ClawHub metadata not ready yet; retrying in 10s ($attempt/18)."
+            sleep 10
+          done
           tmp_dir="$(mktemp -d)"
           trap 'rm -rf "$tmp_dir"' EXIT
           cd "$tmp_dir"

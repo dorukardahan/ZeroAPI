@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.8] - 2026-05-03
+
+### Fixed
+- Make the ClawHub publish workflow rerun-safe and wait for ClawHub archive hash metadata before running the OpenClaw install smoke test.
+
 ## [3.8.7] - 2026-05-03
 
 ### Fixed
