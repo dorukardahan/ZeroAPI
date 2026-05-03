@@ -1,6 +1,6 @@
 {
   "name": "zeroapi",
-  "version": "3.8.5",
+  "version": "3.8.6",
   "private": true,
   "description": "ZeroAPI - balanced benchmark-aware routing for OpenClaw",
   "type": "module",
@@ -11,13 +11,18 @@
     "extensions": [
       "./index.ts"
     ],
+    "install": {
+      "clawhubSpec": "clawhub:zeroapi",
+      "defaultChoice": "clawhub",
+      "minHostVersion": ">=2026.5.2"
+    },
     "compat": {
-      "pluginApi": ">=2026.4.2",
-      "minGatewayVersion": "2026.4.2"
+      "pluginApi": ">=2026.5.2",
+      "minGatewayVersion": "2026.5.2"
     },
     "build": {
-      "openclawVersion": "2026.4.21",
-      "pluginSdkVersion": "2026.4.21"
+      "openclawVersion": "2026.5.2",
+      "pluginSdkVersion": "2026.5.2"
     }
   },
   "devDependencies": {

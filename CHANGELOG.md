@@ -2,8 +2,13 @@
 
 ## [Unreleased]
 
+## [3.8.6] - 2026-05-03
+
 ### Fixed
 - Update the ClawHub release workflow to publish with the current ClawHub CLI, validate archive/file metadata, and smoke-test installs against OpenClaw 2026.5.2.
+
+### Changed
+- Refresh OpenClaw plugin package metadata for the 2026.5.2 plugin installer path, including ClawHub install hints, current compatibility/build versions, and Node 22 staging output.
 
 ## [3.8.5] - 2026-04-30
 

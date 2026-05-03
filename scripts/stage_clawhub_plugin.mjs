@@ -50,7 +50,7 @@ const esbuild = spawnSync(
     `--outdir=${outputDir}`,
     "--format=esm",
     "--platform=node",
-    "--target=node20",
+    "--target=node22",
     "--packages=external",
     "--log-level=warning",
   ],
