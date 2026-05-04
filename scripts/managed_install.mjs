@@ -14,6 +14,7 @@ import {
   managedPaths,
   removeDuplicateZeroAPILoadPaths,
   restartGatewayIfPossible,
+  stageManagedRuntimePlugin,
   writeManagedInstallState,
   writeManagedSystemdUnits,
 } from "./managed-install-lib.mjs";
@@ -58,13 +59,14 @@ function parseArgs(argv) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const version = loadPluginVersion(REPO_ROOT);
-  const { managedRoot, repoDir, skillDir, wrapperPath } = managedPaths(args.openclawDir);
+  const { managedRoot, repoDir, runtimePluginDir, skillDir, wrapperPath } = managedPaths(args.openclawDir);
   mkdirSync(args.openclawDir, { recursive: true });
   mkdirSync(managedRoot, { recursive: true });
 
   copyRepoSnapshot(REPO_ROOT, repoDir);
   copyRepoSnapshot(repoDir, skillDir);
-  installOrUpdatePlugin(resolve(repoDir, "plugin"), args.openclawDir);
+  stageManagedRuntimePlugin(repoDir, runtimePluginDir);
+  installOrUpdatePlugin(runtimePluginDir, args.openclawDir);
   const removedLoadPaths = removeDuplicateZeroAPILoadPaths(args.openclawDir);
 
   let timerEnabled = false;
@@ -104,6 +106,7 @@ function main() {
   console.log("ZeroAPI managed install tamamlandı.");
   console.log(`- version: ${version}`);
   console.log(`- managed repo: ${repoDir}`);
+  console.log(`- runtime plugin: ${runtimePluginDir}`);
   console.log(`- skill sync: ${skillDir}`);
   console.log(`- auto-update timer: ${timerEnabled ? "enabled" : `skipped (${timerReason})`}`);
   console.log(`- gateway restart: ${restartResult.restarted ? restartResult.reason : `skipped (${restartResult.reason})`}`);

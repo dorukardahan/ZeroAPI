@@ -99,11 +99,12 @@ function loadPluginDirectoryVersion(pluginDir) {
 export function managedPaths(openclawDir) {
   const managedRoot = join(openclawDir, MANAGED_ROOT_NAME);
   const repoDir = join(managedRoot, "repo");
+  const runtimePluginDir = join(managedRoot, "runtime-plugin");
   const skillDir = join(openclawDir, "skills", "zeroapi");
   const backupsDir = join(managedRoot, "backups");
   const statePath = join(openclawDir, STATE_FILE_NAME);
   const wrapperPath = join(managedRoot, "run-managed-update.sh");
-  return { managedRoot, repoDir, skillDir, backupsDir, statePath, wrapperPath };
+  return { managedRoot, repoDir, runtimePluginDir, skillDir, backupsDir, statePath, wrapperPath };
 }
 
 function shouldCopyPath(srcPath) {
@@ -187,6 +188,15 @@ export function loadManagedInstallState(openclawDir) {
 export function writeManagedInstallState(openclawDir, state) {
   const { statePath } = managedPaths(openclawDir);
   writeJsonAtomic(statePath, state);
+}
+
+export function stageManagedRuntimePlugin(repoDir, runtimePluginDir) {
+  const scriptPath = join(repoDir, "scripts", "stage_clawhub_plugin.mjs");
+  if (!existsSync(scriptPath)) {
+    fail(`ZeroAPI runtime staging script not found at ${scriptPath}`);
+  }
+  runCommand(process.execPath, [scriptPath, runtimePluginDir], { cwd: repoDir });
+  return runtimePluginDir;
 }
 
 export function removeDuplicateZeroAPILoadPaths(openclawDir) {

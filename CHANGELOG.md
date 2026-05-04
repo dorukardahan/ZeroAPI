@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.11] - 2026-05-04
+
+### Fixed
+- Install managed ZeroAPI updates from the staged JavaScript runtime package instead of copying the TypeScript source plugin into OpenClaw extensions.
+
 ## [3.8.10] - 2026-05-04
 
 ### Added

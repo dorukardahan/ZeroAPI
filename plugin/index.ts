@@ -8,7 +8,7 @@ import { syncSessionAuthProfileOverride } from "./session-auth.js";
 import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 
-const PLUGIN_VERSION = "3.8.10";
+const PLUGIN_VERSION = "3.8.11";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {

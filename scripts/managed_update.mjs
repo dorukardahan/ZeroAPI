@@ -16,6 +16,7 @@ import {
   pruneBackupSnapshots,
   removeDuplicateZeroAPILoadPaths,
   restartGatewayIfPossible,
+  stageManagedRuntimePlugin,
   writeManagedInstallState,
 } from "./managed-install-lib.mjs";
 
@@ -53,7 +54,7 @@ function persistStatus(openclawDir, state, patch) {
   return next;
 }
 
-function restoreBackup(backupRepoDir, backupSkillDir, repoDir, skillDir, openclawDir) {
+function restoreBackup(backupRepoDir, backupSkillDir, repoDir, runtimePluginDir, skillDir, openclawDir) {
   if (existsSync(backupRepoDir)) {
     copyRepoSnapshot(backupRepoDir, repoDir);
   }
@@ -61,7 +62,8 @@ function restoreBackup(backupRepoDir, backupSkillDir, repoDir, skillDir, opencla
     copyRepoSnapshot(backupSkillDir, skillDir);
   }
   if (existsSync(join(repoDir, "plugin"))) {
-    installOrUpdatePlugin(join(repoDir, "plugin"), openclawDir);
+    stageManagedRuntimePlugin(repoDir, runtimePluginDir);
+    installOrUpdatePlugin(runtimePluginDir, openclawDir);
     removeDuplicateZeroAPILoadPaths(openclawDir);
     restartGatewayIfPossible();
   }
@@ -74,7 +76,7 @@ function main() {
     throw new Error(`Managed ZeroAPI state not found in ${args.openclawDir}`);
   }
 
-  const { repoDir, skillDir, managedRoot, backupsDir } = managedPaths(args.openclawDir);
+  const { repoDir, runtimePluginDir, skillDir, managedRoot, backupsDir } = managedPaths(args.openclawDir);
   const installedVersion = loadPluginVersion(repoDir);
   const latestVersion = latestTaggedVersion(state.repo.url);
   if (!latestVersion) {
@@ -134,7 +136,8 @@ function main() {
     createBackupSnapshot(skillDir, skillBackupDir);
     copyRepoSnapshot(stageDir, repoDir);
     copyRepoSnapshot(repoDir, skillDir);
-    installOrUpdatePlugin(join(repoDir, "plugin"), args.openclawDir);
+    stageManagedRuntimePlugin(repoDir, runtimePluginDir);
+    installOrUpdatePlugin(runtimePluginDir, args.openclawDir);
     removeDuplicateZeroAPILoadPaths(args.openclawDir);
 
     const next = persistStatus(args.openclawDir, state, {
@@ -158,7 +161,7 @@ function main() {
     console.log(`ZeroAPI updated: ${installedVersion} -> ${latestVersion}`);
   } catch (error) {
     try {
-      restoreBackup(repoBackupDir, skillBackupDir, repoDir, skillDir, args.openclawDir);
+      restoreBackup(repoBackupDir, skillBackupDir, repoDir, runtimePluginDir, skillDir, args.openclawDir);
     } catch (rollbackError) {
       persistStatus(args.openclawDir, state, {
         lastKnownVersion: latestVersion,
