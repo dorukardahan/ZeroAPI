@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Align the README version badge with the current 3.8.12 release.
+
 ## [3.8.12] - 2026-05-04
 
 ### Fixed
