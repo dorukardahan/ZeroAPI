@@ -2,10 +2,13 @@
 
 ## [Unreleased]
 
+## [3.8.10] - 2026-05-04
+
 ### Added
 - Add an experimental Hermes Agent adapter that reads `zeroapi-config.json` and returns `pre_model_route` decisions without Node subprocesses, LLM calls, or external API calls in the hot path.
 
 ### Fixed
+- Publish ClawHub packages with the current ClawHub CLI so new releases use ClawPack artifact metadata and install as compiled runtime packages on OpenClaw 2026.5.3+.
 - Keep the root repo `SKILL.md` version aligned with the plugin package version so GitHub-first agent onboarding does not describe an older ZeroAPI release.
 
 ## [3.8.9] - 2026-05-03

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
-      CLAWHUB_CLI_VERSION: "0.9.0"
+      CLAWHUB_CLI_VERSION: "0.12.2"
       OPENCLAW_VERIFY_VERSION: "latest"
     steps:
       - uses: actions/checkout@v5
