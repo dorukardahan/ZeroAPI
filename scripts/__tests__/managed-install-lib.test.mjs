@@ -192,6 +192,9 @@ test("installOrUpdatePlugin repairs stale clawhub install registry pins", () => 
           source: "clawhub",
           spec: "clawhub:zeroapi@3.8.2",
           version: "3.8.2",
+          integrity: "sha256-old",
+          artifactKind: "legacy-zip",
+          artifactFormat: "zip",
           clawhubPackage: "zeroapi",
           installPath: join(openclawDir, "extensions", "zeroapi-router"),
         },
@@ -216,5 +219,8 @@ test("installOrUpdatePlugin repairs stale clawhub install registry pins", () => 
   assert.equal(registry.installRecords["zeroapi-router"].source, "clawhub");
   assert.equal(registry.installRecords["zeroapi-router"].spec, "clawhub:zeroapi@3.8.4");
   assert.equal(registry.installRecords["zeroapi-router"].version, "3.8.4");
+  assert.equal(registry.installRecords["zeroapi-router"].integrity, undefined);
+  assert.equal(registry.installRecords["zeroapi-router"].artifactKind, undefined);
+  assert.equal(registry.installRecords["zeroapi-router"].artifactFormat, undefined);
   assert.equal(registry.plugins[0].packageVersion, "3.8.4");
 });

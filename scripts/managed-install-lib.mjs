@@ -243,8 +243,17 @@ function syncOpenClawPluginRegistry({ openclawDir, pluginPath, installPath, vers
 
   const existingRecord = registry.installRecords["zeroapi-router"];
   const source = existingRecord?.source === "clawhub" ? "clawhub" : "path";
+  const nextRecord = { ...(existingRecord ?? {}) };
+  delete nextRecord.integrity;
+  delete nextRecord.resolvedAt;
+  delete nextRecord.installedAt;
+  delete nextRecord.artifactKind;
+  delete nextRecord.artifactFormat;
+  delete nextRecord.archiveSha256;
+  delete nextRecord.npmIntegrity;
+  delete nextRecord.npmShasum;
   registry.installRecords["zeroapi-router"] = {
-    ...(existingRecord ?? {}),
+    ...nextRecord,
     source,
     installPath,
     version,

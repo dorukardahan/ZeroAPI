@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.12] - 2026-05-04
+
+### Fixed
+- Drop stale ClawHub artifact metadata from the OpenClaw install ledger when managed updates repin ZeroAPI to a newer version.
+
 ## [3.8.11] - 2026-05-04
 
 ### Fixed
