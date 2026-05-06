@@ -103,8 +103,8 @@ test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths on
       plugins: {
         load: {
           paths: [
-            "/opt/asuman/noldomem",
-            "/opt/asuman/ZeroAPI/plugin",
+            "/opt/openclaw/sample-memory-plugin",
+            "/opt/openclaw/ZeroAPI/plugin",
             "/root/.openclaw/zeroapi-managed/repo/plugin",
           ],
         },
@@ -114,10 +114,10 @@ test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths on
   const removed = removeDuplicateZeroAPILoadPaths(openclawDir);
   const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
   assert.deepEqual(removed, [
-    "/opt/asuman/ZeroAPI/plugin",
+    "/opt/openclaw/ZeroAPI/plugin",
     "/root/.openclaw/zeroapi-managed/repo/plugin",
   ]);
-  assert.deepEqual(updated.plugins.load.paths, ["/opt/asuman/noldomem"]);
+  assert.deepEqual(updated.plugins.load.paths, ["/opt/openclaw/sample-memory-plugin"]);
 });
 
 test("installOrUpdatePlugin copies plugin files and updates openclaw config without CLI", () => {
@@ -126,7 +126,7 @@ test("installOrUpdatePlugin copies plugin files and updates openclaw config with
   const pluginDir = join(root, "plugin");
   mkdirSync(openclawDir, { recursive: true });
   mkdirSync(pluginDir, { recursive: true });
-  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: { load: { paths: ["/opt/asuman/noldomem"] } } }));
+  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: { load: { paths: ["/opt/openclaw/sample-memory-plugin"] } } }));
   writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
   writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
 
@@ -166,7 +166,7 @@ test("installOrUpdatePlugin appends zeroapi to an existing explicit plugins.allo
   mkdirSync(pluginDir, { recursive: true });
   writeFileSync(
     join(openclawDir, "openclaw.json"),
-    JSON.stringify({ plugins: { allow: ["noldomem"] } }),
+    JSON.stringify({ plugins: { allow: ["existing-plugin"] } }),
   );
   writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
   writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
@@ -174,7 +174,7 @@ test("installOrUpdatePlugin appends zeroapi to an existing explicit plugins.allo
   installOrUpdatePlugin(pluginDir, openclawDir);
 
   const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
-  assert.deepEqual(updated.plugins.allow, ["noldomem", "zeroapi-router"]);
+  assert.deepEqual(updated.plugins.allow, ["existing-plugin", "zeroapi-router"]);
 });
 
 test("installOrUpdatePlugin repairs stale clawhub install registry pins", () => {

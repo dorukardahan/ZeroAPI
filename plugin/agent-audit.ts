@@ -50,7 +50,7 @@ export type AgentApplyResult = {
 const TOOL_HEAVY_HINTS: Array<{ pattern: RegExp; categories: TaskCategory[] }> = [
   { pattern: /(twitter|x-|twitterapi|social|engage|content)/i, categories: ["research", "code"] },
   { pattern: /(github|repo|code|codex|dev|ci|build|test|deploy|api|integration|webhook)/i, categories: ["code", "research"] },
-  { pattern: /(memory|noldo|search|knowledge)/i, categories: ["research", "code"] },
+  { pattern: /(memory|search|knowledge)/i, categories: ["research", "code"] },
   { pattern: /(track|monitor|ops|hermes|watch|status)/i, categories: ["orchestration", "fast"] },
   { pattern: /(senti|sentiment|moderation)/i, categories: ["research", "fast"] },
 ];

@@ -2,8 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.13] - 2026-05-06
+
 ### Fixed
-- Align the README version badge with the current 3.8.12 release.
+- Remove deployment-specific example names and paths from public docs/tests.
+- Keep ZeroAPI's offline autoresearch reference generic instead of pointing at an internal implementation.
+- Remove the custom memory product keyword from agent audit heuristics so public inference stays generic.
 
 ## [3.8.12] - 2026-05-04
 
@@ -332,7 +336,7 @@ Config-driven policy tuning, subscription-aware routing, and autoresearch-inspir
 - `plugin/router.ts` — subscription-weighted candidate ordering
 - `plugin/subscriptions.ts` — provider subscription catalog
 - `scripts/eval.ts` — routing log analyzer
-- `references/mahmory-autoresearch-usage.md` — autoresearch pattern reference
+- `references/offline-routing-autoresearch.md` — autoresearch pattern reference
 
 ---
 

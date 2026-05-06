@@ -1,8 +1,10 @@
-# Routing Autoresearch Pattern
+# Offline Routing Autoresearch Pattern
 
-This document describes how the broader OpenClaw stack uses autoresearch in a real production repository, beyond ZeroAPI's own routing policy layer.
+This document describes a generic autoresearch pattern for improving routing
+policy outside the live request path.
 
-The concrete reference implementation lives in `mahobrain/scripts/autoresearch/` and currently runs multiple optimization lanes:
+The reference shape is an offline experiment loop with multiple optimization
+lanes:
 
 1. `skill-routing` — keyword + semantic threshold tuning for skill dispatch
 2. other lanes for unrelated product surfaces
@@ -21,7 +23,8 @@ ZeroAPI already does all of the hard runtime work:
 
 What autoresearch adds is a disciplined way to tune the constants around that logic.
 
-Instead of "threshold feels too strict" or "this provider bias seems right", the Mahobrain pattern asks:
+Instead of "threshold feels too strict" or "this provider bias seems right", the
+offline pattern asks:
 
 - What do we optimize?
 - What eval set proves it?
@@ -30,9 +33,10 @@ Instead of "threshold feels too strict" or "this provider bias seems right", the
 
 That same workflow can be applied to ZeroAPI category thresholds, provider weighting, or fallback policy later.
 
-## Framework shape
+## Framework Shape
 
-Mahobrain uses a generic experiment framework plus target-specific tuners:
+A useful implementation keeps a generic experiment framework plus target-specific
+tuners:
 
 ```text
 scripts/autoresearch/
@@ -81,9 +85,9 @@ In production this lane is optimized against a fixed eval corpus and guardrailed
 
 That is exactly the kind of loop ZeroAPI would benefit from if routing thresholds, provider bias, or override confidence start drifting away from real user outcomes.
 
-## Execution model
+## Execution Model
 
-Mahobrain runs two modes:
+The workflow usually has two modes:
 
 ### Direct/manual run
 
@@ -140,7 +144,7 @@ For ZeroAPI, this pattern is preferable to writing ad hoc notes into config comm
 
 ## What ZeroAPI can borrow
 
-If ZeroAPI later adds its own autoresearch lane, the Mahobrain pattern suggests:
+If ZeroAPI later adds its own autoresearch lane, this pattern suggests:
 
 1. Keep runtime routing cheap and synchronous.
 2. Keep tuning offline and file-backed.
@@ -159,8 +163,8 @@ Concrete candidate targets for ZeroAPI:
 
 ## What not to copy blindly
 
-Mahobrain's framework is broad because it serves memory, skills, and content quality.
-ZeroAPI should stay narrower.
+Generic autoresearch frameworks can grow broad because they often serve several
+product surfaces. ZeroAPI should stay narrower.
 
 Good fit:
 
@@ -177,7 +181,7 @@ ZeroAPI should use autoresearch to refine policy, not to make routing depend on 
 
 ## Bottom line
 
-Mahobrain proves that autoresearch is useful when:
+Autoresearch is useful when:
 
 - the runtime policy is deterministic
 - the optimization target is explicit

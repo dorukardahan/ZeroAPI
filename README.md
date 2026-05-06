@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.12-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.12)
+[![Version](https://img.shields.io/badge/version-3.8.13-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.13)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -285,7 +285,7 @@ npm run simulate -- --prompt "quickly format this JSON payload"
 
 **The loop:** run eval, change one constant, restart gateway, wait for traffic, re-run eval. Keep what improves routing, revert what doesn't.
 
-This pattern is inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — the same measure-experiment-promote cycle, applied to routing policy instead of model training. For a production example of this pattern in the broader OpenClaw stack, see [`references/mahmory-autoresearch-usage.md`](references/mahmory-autoresearch-usage.md).
+This pattern is inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — the same measure-experiment-promote cycle, applied to routing policy instead of model training. For a generic version of the pattern, see [`references/offline-routing-autoresearch.md`](references/offline-routing-autoresearch.md).
 
 ## Repository Structure
 
@@ -356,7 +356,7 @@ ZeroAPI/
     ├── cron-config.md
     ├── risk-policy.md
     ├── cost-summary.md
-    ├── mahmory-autoresearch-usage.md
+    ├── offline-routing-autoresearch.md
     ├── oauth-setup.md
     ├── product-roadmap.md
     ├── provider-config.md
