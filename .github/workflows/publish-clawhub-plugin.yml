@@ -35,12 +35,14 @@ jobs:
       - name: Stage runtime plugin package
         run: node scripts/stage_clawhub_plugin.mjs .tmp-clawhub-plugin
 
-      - name: Skip when ClawHub token is not configured
-        if: ${{ env.CLAWHUB_TOKEN == '' }}
-        run: echo "CLAWHUB_TOKEN secret is not configured. Skipping ClawHub plugin publish."
+      - name: Require ClawHub token
+        run: |
+          if [ -z "$CLAWHUB_TOKEN" ]; then
+            echo "::error::CLAWHUB_TOKEN secret is required to publish ZeroAPI to ClawHub."
+            exit 1
+          fi
 
       - name: Publish plugin package
-        if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
           npx --yes "clawhub@$CLAWHUB_CLI_VERSION" login --token "$CLAWHUB_TOKEN" --no-browser
           set +e
@@ -64,8 +66,51 @@ jobs:
             fi
           fi
 
+      - name: Verify ClawHub package metadata
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --json > .tmp-clawhub-inspect.json
+          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --versions --json > .tmp-clawhub-versions.json
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const expected = process.env.EXPECTED_VERSION;
+          const inspect = JSON.parse(fs.readFileSync(".tmp-clawhub-inspect.json", "utf8"));
+          const versionsPayload = JSON.parse(fs.readFileSync(".tmp-clawhub-versions.json", "utf8"));
+
+          const latest =
+            inspect.latestVersion ??
+            inspect.tags?.latest ??
+            inspect.package?.latestVersion ??
+            inspect.package?.tags?.latest;
+
+          if (latest !== expected) {
+            throw new Error(`ClawHub latest version mismatch: expected ${expected}, got ${latest ?? "missing"}`);
+          }
+
+          const versions = new Set();
+          const collectVersions = (value) => {
+            if (!value) return;
+            if (Array.isArray(value)) {
+              for (const item of value) collectVersions(item);
+              return;
+            }
+            if (typeof value === "object") {
+              if (typeof value.version === "string") versions.add(value.version);
+              for (const item of Object.values(value)) collectVersions(item);
+            }
+          };
+          collectVersions(versionsPayload);
+
+          if (!versions.has(expected)) {
+            throw new Error(`ClawHub exact version ${expected} was not found in version metadata`);
+          }
+
+          console.log(`ClawHub metadata verified for zeroapi@${expected}`);
+          NODE
+
       - name: Verify ClawHub package is downloadable
-        if: ${{ env.CLAWHUB_TOKEN != '' }}
         run: |
           tmp_dir="$(mktemp -d)"
           trap 'rm -rf "$tmp_dir"' EXIT
