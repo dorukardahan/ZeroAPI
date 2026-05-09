@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.14] - 2026-05-09
+
+### Added
+- Document ClawHub install verification, exact-version pinning, and source-linked package expectations.
+- Mark the ClawHub plugin manifest description as source-linked so public package surfaces show the supply-chain posture clearly.
+
 ## [3.8.13] - 2026-05-06
 
 ### Fixed

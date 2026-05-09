@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.13-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.13)
+[![Version](https://img.shields.io/badge/version-3.8.14-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.14)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -149,7 +149,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.13` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.14` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require a `curl | bash` installer. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
