@@ -101,7 +101,7 @@ ZeroAPI is a **gateway plugin**. That means setup has two layers:
 Recommended path:
 
 ```
-1. Install the ClawHub plugin package with openclaw plugins install clawhub:zeroapi
+1. Install the ClawHub plugin package with openclaw plugins install clawhub:zeroapi@<version>
 2. Or clone the repo and run npm run managed:install once on the OpenClaw host
 3. Open any OpenClaw chat channel
 4. Run /zeroapi (or /skill zeroapi if the channel exposes only generic skill commands)
@@ -139,6 +139,19 @@ The `/zeroapi` skill is the primary public onboarding surface. It should feel na
 `scripts/first_run.ts` is the **terminal-only fallback** for repo-local setups, operators who prefer shell access, or cases where the plugin/skill is not yet reachable from a chat surface. Run it with `npm run first-run`. It asks which providers and tiers you want, optionally captures same-provider multi-account inventories, reuses current provider/modifier choices as defaults on reruns, writes `~/.openclaw/zeroapi-config.json`, can align OpenClaw's model catalog/routed agent baselines, and can hand off to managed install from the checked-out repo.
 
 For managed install/update behavior, rollback rules, and timer semantics, see [`references/managed-install.md`](references/managed-install.md).
+
+## Install Security
+
+ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, verify that the package points back to this repo:
+
+- package: `zeroapi`
+- source repo: `dorukardahan/ZeroAPI`
+- source path: `plugin`
+- source tag or commit: matches the GitHub release you intend to install
+
+Prefer exact version installs such as `clawhub:zeroapi@3.8.13` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+
+ZeroAPI does not require a `curl | bash` installer. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
 ## Hermes Agent Adapter
 
