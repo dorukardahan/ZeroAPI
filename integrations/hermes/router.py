@@ -79,6 +79,15 @@ HERMES_PROVIDER_MAP = {
     "qwen-dashscope": "alibaba-coding-plan",
 }
 
+DEFAULT_RISK_LEVELS: dict[str, str] = {
+    "code": "medium",
+    "research": "low",
+    "orchestration": "medium",
+    "math": "low",
+    "fast": "low",
+    "default": "low",
+}
+
 
 def load_config(path: str | None = None) -> Config | None:
     config_path = path or os.getenv("ZEROAPI_CONFIG_PATH")
@@ -151,14 +160,16 @@ def _has_keyword(text: str, keywords: list[Any]) -> bool:
     return any(isinstance(keyword, str) and _keyword_regex(keyword).search(lower) for keyword in keywords)
 
 
-def _classify(config: Config, prompt: str) -> tuple[TaskCategory, str, bool]:
+def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = None) -> tuple[TaskCategory, str, str]:
     lower = prompt.lower().strip()
     if not lower:
-        return "default", "empty_prompt", False
+        return "default", "empty_prompt", "low"
 
+    matched_high_risk = ""
     for keyword in config.get("high_risk_keywords", []):
         if isinstance(keyword, str) and _keyword_regex(keyword).search(lower):
-            return "default", f"high_risk_keyword:{keyword}", True
+            matched_high_risk = keyword
+            break
 
     best_category = "default"
     best_reason = "no_match"
@@ -182,7 +193,24 @@ def _classify(config: Config, prompt: str) -> tuple[TaskCategory, str, bool]:
                 best_reason = f"keyword:{first}" if first else "no_match"
                 best_score = score
 
-    return best_category, best_reason, False
+    if best_score == 0 and workspace_hints and len(workspace_hints) == 1 and not matched_high_risk:
+        hint = workspace_hints[0]
+        if isinstance(hint, str) and hint:
+            best_category = hint
+            best_reason = f"workspace_hint:{hint}"
+
+    risk_levels = {**DEFAULT_RISK_LEVELS}
+    configured_risk_levels = config.get("risk_levels")
+    if isinstance(configured_risk_levels, dict):
+        for category, level in configured_risk_levels.items():
+            if isinstance(category, str) and level in {"low", "medium", "high"}:
+                risk_levels[category] = level
+
+    risk = "high" if matched_high_risk else risk_levels.get(best_category, "low")
+    if matched_high_risk:
+        best_reason = f"{best_reason}:high_risk_keyword:{matched_high_risk}"
+
+    return best_category, best_reason, risk
 
 
 def _normalize_benchmark(value: Any) -> float | None:
@@ -266,7 +294,7 @@ def _usage_priority_factor(priority: Any) -> float:
     return 0.8 + (0.2 * bounded)
 
 
-def _capacity(config: Config, provider: str, category: TaskCategory) -> tuple[bool, float]:
+def _capacity(config: Config, provider: str, category: TaskCategory, agent_id: str | None = None) -> tuple[bool, float]:
     canonical = _canonical_provider(provider)
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
@@ -296,15 +324,63 @@ def _capacity(config: Config, provider: str, category: TaskCategory) -> tuple[bo
         redundancy_bonus = min(1.0, 0.25 * max(0, len(scoring_accounts) - 1))
         return True, max(scoring_accounts) + redundancy_bonus
 
-    profile = config.get("subscription_profile", {})
-    global_profile = profile.get("global", {}) if isinstance(profile, dict) else {}
-    entry = global_profile.get(provider) or global_profile.get(canonical)
+    entry = _profile_selection(config, provider, agent_id)
     if isinstance(entry, dict):
         if entry.get("enabled") is False:
             return False, 0.0
         return True, _tier_weight(provider, entry.get("tierId"))
 
     return True, 1.0
+
+
+def _profile_selection(config: Config, provider: str, agent_id: str | None) -> dict[str, Any] | None:
+    profile = config.get("subscription_profile", {})
+    if not isinstance(profile, dict):
+        return None
+
+    canonical = _canonical_provider(provider)
+
+    def find_selection(selections: Any) -> dict[str, Any] | None:
+        if not isinstance(selections, dict):
+            return None
+        for key in {provider, canonical, *PROVIDER_CATALOG.get(canonical, {}).get("aliases", [])}:
+            value = selections.get(key)
+            if isinstance(value, dict):
+                return value
+        return None
+
+    agent_overrides = profile.get("agentOverrides")
+    override = None
+    if agent_id and isinstance(agent_overrides, dict):
+        override = find_selection(agent_overrides.get(agent_id))
+    global_selection = find_selection(profile.get("global"))
+    if override is None:
+        return global_selection
+    merged = dict(global_selection or {})
+    merged.update(override)
+    return merged
+
+
+def _allowed_by_subscriptions(config: Config, model_key: str, agent_id: str | None) -> bool:
+    provider = _provider_id(model_key)
+    canonical = _canonical_provider(provider)
+    inventory = config.get("subscription_inventory", {})
+    accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
+    inventory_configured = False
+
+    if isinstance(accounts, dict):
+        for account in accounts.values():
+            if isinstance(account, dict) and _canonical_provider(str(account.get("provider", ""))) == canonical:
+                inventory_configured = True
+                if account.get("enabled") is not False:
+                    return True
+        if inventory_configured:
+            return False
+
+    selection = _profile_selection(config, provider, agent_id)
+    if selection is None:
+        return True
+    return selection.get("enabled") is not False
 
 
 def _allowed_drop(tier_weight: float, provider_bias: float, category: TaskCategory, modifier: str | None) -> float:
@@ -331,9 +407,30 @@ class ZeroAPIRouter:
         prompt: str,
         current_model: str | None = None,
         platform: str | None = None,
+        agent_id: str | None = None,
+        trigger: str | None = None,
     ) -> dict[str, str] | None:
-        category, reason, high_risk = _classify(self.config, prompt)
-        if high_risk or category == "default":
+        configured_workspace_hints = self.config.get("workspace_hints", {})
+        workspace_hints_by_agent = configured_workspace_hints if isinstance(configured_workspace_hints, dict) else {}
+        workspace_hints = None
+        if agent_id and isinstance(workspace_hints_by_agent, dict):
+            workspace_hints = workspace_hints_by_agent.get(agent_id)
+
+        if agent_id and workspace_hints is None and agent_id in workspace_hints_by_agent:
+            return None
+
+        if agent_id and workspace_hints is None and current_model and current_model != self.config.get("default_model"):
+            return None
+
+        if trigger in {"cron", "heartbeat"}:
+            return None
+
+        category, reason, risk = _classify(
+            self.config,
+            prompt,
+            workspace_hints if isinstance(workspace_hints, list) else None,
+        )
+        if risk == "high" or category == "default":
             return None
 
         current = current_model or self.config.get("default_model")
@@ -360,6 +457,8 @@ class ZeroAPIRouter:
         for index, candidate in enumerate(candidates):
             if not isinstance(candidate, str) or candidate not in models:
                 continue
+            if not _allowed_by_subscriptions(self.config, candidate, agent_id):
+                continue
             caps = models[candidate]
             if not isinstance(caps, dict):
                 continue
@@ -374,7 +473,7 @@ class ZeroAPIRouter:
                     continue
 
             provider = _provider_id(candidate)
-            enabled, tier_weight = _capacity(self.config, provider, category)
+            enabled, tier_weight = _capacity(self.config, provider, category, agent_id)
             if not enabled or tier_weight <= 0:
                 continue
 
@@ -387,6 +486,7 @@ class ZeroAPIRouter:
                     "tier_weight": tier_weight,
                     "provider_bias": bias,
                     "pressure": tier_weight * bias,
+                    "speed_priority": 0.0 if not isinstance(caps.get("ttft_seconds"), (int, float)) else 1 / max(float(caps["ttft_seconds"]), 0.25),
                     "strength": _benchmark_strength(category, caps, modifier),
                 }
             )
@@ -399,14 +499,34 @@ class ZeroAPIRouter:
             allowed = _allowed_drop(item["tier_weight"], item["provider_bias"], category, modifier)
             item["within_frontier"] = item["index"] == 0 if strongest <= 0 else item["strength"] >= strongest * (1 - allowed)
 
-        ranked.sort(
-            key=lambda item: (
-                0 if item["within_frontier"] else 1,
-                -item["pressure"] if item["within_frontier"] else -item["strength"],
-                -item["strength"] if item["within_frontier"] else item["index"],
-                item["index"],
+        if modifier in {"coding-aware", "research-aware"} and category in {"code", "research"}:
+            ranked.sort(
+                key=lambda item: (
+                    0 if item["within_frontier"] else 1,
+                    -item["strength"],
+                    -item["pressure"] if item["within_frontier"] else item["index"],
+                    item["index"],
+                )
             )
-        )
+        elif modifier == "speed-aware" and category in {"fast", "default"}:
+            ranked.sort(
+                key=lambda item: (
+                    0 if item["within_frontier"] else 1,
+                    -item["speed_priority"] if item["within_frontier"] else -item["strength"],
+                    -item["pressure"] if item["within_frontier"] else item["index"],
+                    -item["strength"] if item["within_frontier"] else 0,
+                    item["index"],
+                )
+            )
+        else:
+            ranked.sort(
+                key=lambda item: (
+                    0 if item["within_frontier"] else 1,
+                    -item["pressure"] if item["within_frontier"] else -item["strength"],
+                    -item["strength"] if item["within_frontier"] else item["index"],
+                    item["index"],
+                )
+            )
 
         selected = ranked[0]["model_key"]
         if selected == current:

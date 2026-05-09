@@ -1,11 +1,12 @@
 # ZeroAPI for Hermes Agent
 
-This directory contains an experimental Hermes Agent adapter for ZeroAPI.
+This directory contains the Hermes Agent adapter for ZeroAPI.
 
 Hermes plugins are Python, so this adapter runs ZeroAPI policy directly in
 Python instead of spawning Node on every message. It reads the same
 `zeroapi-config.json` shape used by the OpenClaw plugin and returns a
-`pre_model_route` proposal to Hermes.
+`pre_model_route` proposal to Hermes. Hermes still owns credential lookup,
+provider normalization, base URLs, API modes, and model switching.
 
 ## Requirements
 
@@ -15,8 +16,10 @@ Python instead of spawning Node on every message. It reads the same
   - `~/.hermes/zeroapi-config.json`
   - `~/.openclaw/zeroapi-config.json`
 
-Until `pre_model_route` is available in a Hermes release, this adapter should
-be treated as integration-ready source, not a guaranteed stable install path.
+Current upstream Hermes releases may not expose `pre_model_route` yet. Do not
+work around that by mutating private gateway internals from
+`pre_gateway_dispatch`; that path is session-scoped and can leak across turns.
+Use the small Hermes core hook patch until the hook is released upstream.
 
 ## Install
 
@@ -35,6 +38,18 @@ plugins:
     - zeroapi-router
 ```
 
+Run the compatibility doctor from the Hermes environment:
+
+```bash
+python ~/.hermes/plugins/zeroapi-router/doctor.py
+```
+
+Expected output:
+
+```text
+OK Hermes exposes pre_model_route. ZeroAPI Hermes routing can be enabled.
+```
+
 ## Provider Mapping
 
 ZeroAPI config files may use OpenClaw provider IDs. The adapter maps those to
@@ -50,8 +65,28 @@ Hermes provider IDs before returning a route:
 You can override these defaults with a `hermes_provider_map` object in
 `zeroapi-config.json`.
 
+## Runtime Contract
+
+ZeroAPI returns only:
+
+```json
+{"provider": "zai", "model": "glm-5.1", "reason": "zeroapi:orchestration:keyword:workflow"}
+```
+
+It never returns API keys, auth profiles, base URLs, or transport settings.
+Hermes resolves those through its own model switch pipeline.
+
+The adapter also mirrors the important OpenClaw safety gates:
+
+- explicit specialist agents in `workspace_hints` with `null` are skipped
+- unhinted agents already running a non-default model are skipped
+- `cron` and `heartbeat` triggers are skipped when Hermes supplies them
+- high-risk messages stay on the current model
+- external current models are left alone unless `external_model_policy` is `allow`
+
 ## Test
 
 ```bash
 python3 integrations/hermes/test_router.py
+python3 integrations/hermes/doctor.py
 ```

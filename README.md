@@ -163,7 +163,7 @@ Use it when:
 - you already have a ZeroAPI policy file
 - you want deterministic routing without an extra LLM/router call
 
-See [`integrations/hermes/README.md`](integrations/hermes/README.md) for install notes and provider ID mapping.
+See [`integrations/hermes/README.md`](integrations/hermes/README.md) for install notes, provider ID mapping, and the compatibility doctor. If an upstream Hermes release does not expose `pre_model_route` yet, use the small Hermes core hook patch; do not emulate routing by mutating private gateway session state from `pre_gateway_dispatch`.
 
 For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). For rerun-first question behavior when drift is detected, see [`references/chat-rerun-playbook.md`](references/chat-rerun-playbook.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 

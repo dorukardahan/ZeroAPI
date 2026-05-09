@@ -40,6 +40,7 @@ CONFIG = {
         "fast": {"primary": "zai/glm-5.1", "fallbacks": ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"]},
         "default": {"primary": "openai-codex/gpt-5.4", "fallbacks": ["zai/glm-5.1"]},
     },
+    "workspace_hints": {},
     "keywords": {
         "code": ["implement", "refactor", "fix", "debug"],
         "orchestration": ["coordinate", "workflow"],
@@ -82,6 +83,72 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             current_model="anthropic/claude-opus-4-6",
         )
         self.assertIsNone(route)
+
+    def test_skips_explicit_specialist_agent(self):
+        config = {**CONFIG, "workspace_hints": {"codex": None}}
+        route = ZeroAPIRouter(config).resolve(
+            "coordinate this workflow",
+            current_model="openai-codex/gpt-5.4",
+            agent_id="codex",
+        )
+        self.assertIsNone(route)
+
+    def test_skips_unhinted_agent_with_non_default_model(self):
+        route = ZeroAPIRouter(CONFIG).resolve(
+            "coordinate this workflow",
+            current_model="moonshot/kimi-k2.5",
+            agent_id="research-agent",
+        )
+        self.assertIsNone(route)
+
+    def test_workspace_hint_routes_without_keyword(self):
+        config = {**CONFIG, "workspace_hints": {"ops": ["orchestration"]}}
+        route = ZeroAPIRouter(config).resolve(
+            "please handle this",
+            current_model="openai-codex/gpt-5.4",
+            agent_id="ops",
+        )
+        self.assertEqual(route["provider"], "zai")
+        self.assertEqual(route["model"], "glm-5.1")
+        self.assertIn("zeroapi:orchestration:workspace_hint", route["reason"])
+
+    def test_skips_cron_and_heartbeat_triggers(self):
+        for trigger in ("cron", "heartbeat"):
+            route = ZeroAPIRouter(CONFIG).resolve(
+                "coordinate this workflow",
+                current_model="openai-codex/gpt-5.4",
+                trigger=trigger,
+            )
+            self.assertIsNone(route)
+
+    def test_risk_levels_can_hold_a_category(self):
+        config = {**CONFIG, "risk_levels": {"orchestration": "high"}}
+        route = ZeroAPIRouter(config).resolve(
+            "coordinate this workflow",
+            current_model="openai-codex/gpt-5.4",
+        )
+        self.assertIsNone(route)
+
+    def test_agent_override_can_disable_provider(self):
+        config = {
+            **CONFIG,
+            "workspace_hints": {"ops": ["orchestration"]},
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {
+                    "openai-codex": {"enabled": True, "tierId": "plus"},
+                    "zai": {"enabled": True, "tierId": "max"},
+                    "moonshot": {"enabled": True, "tierId": "moderato"},
+                },
+                "agentOverrides": {"ops": {"zai": {"enabled": False, "tierId": "max"}}},
+            },
+        }
+        route = ZeroAPIRouter(config).resolve(
+            "coordinate this workflow",
+            current_model="openai-codex/gpt-5.4",
+            agent_id="ops",
+        )
+        self.assertNotEqual(route["provider"], "zai")
 
     def test_maps_moonshot_to_hermes_kimi_provider(self):
         config = {

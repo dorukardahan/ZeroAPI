@@ -2,8 +2,8 @@
 
 This adapter is intentionally small: it reads the same zeroapi-config.json
 policy shape as the OpenClaw plugin and returns a Hermes pre_model_route
-proposal. Hermes itself still owns provider credential resolution and model
-switching.
+proposal. Hermes itself still owns provider credential resolution, model
+normalization, transport setup, and credential rotation.
 """
 
 from __future__ import annotations
@@ -59,6 +59,8 @@ def _pre_model_route(**kwargs: Any) -> dict[str, str] | None:
         prompt=user_message,
         current_model=_current_model_key(kwargs.get("provider"), kwargs.get("model")),
         platform=kwargs.get("platform") if isinstance(kwargs.get("platform"), str) else None,
+        agent_id=kwargs.get("agent_id") if isinstance(kwargs.get("agent_id"), str) else None,
+        trigger=kwargs.get("trigger") if isinstance(kwargs.get("trigger"), str) else None,
     )
     if route is None:
         return None
