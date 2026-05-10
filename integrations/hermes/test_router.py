@@ -205,5 +205,89 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             os.unlink(path)
 
 
+class VisionCapabilityEscapeTest(unittest.TestCase):
+    """Tests for the vision capability escape in the Hermes adapter.
+
+    When a message has vision signals (keywords or image attachments) but the
+    current model does not support vision, the router should override the
+    default-category stay and route to a vision-capable model.
+    """
+
+    VISION_CONFIG = {
+        **CONFIG,
+        "default_model": "zai/glm-5.1",
+        "models": {
+            **CONFIG["models"],
+            "openai-codex/gpt-5.5": {
+                "context_window": 272000,
+                "supports_vision": True,
+                "speed_tps": 90,
+                "ttft_seconds": 120,
+                "benchmarks": {"intelligence": 60.2, "coding": 59.1, "terminalbench": 0.606, "tau2": 0.939},
+            },
+        },
+        "routing_rules": {
+            **CONFIG["routing_rules"],
+            "default": {"primary": "openai-codex/gpt-5.5", "fallbacks": ["openai-codex/gpt-5.4", "zai/glm-5.1"]},
+        },
+    }
+
+    def test_routes_screenshot_keyword_to_vision_model(self):
+        route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+            "what does this screenshot show",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.5")
+        self.assertIn("vision_capability_escape", route["reason"])
+
+    def test_routes_image_attachment_flag_without_keywords(self):
+        route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+            "buna bi bak",
+            current_model="zai/glm-5.1",
+            has_image_attachment=True,
+        )
+        self.assertIsNotNone(route)
+        self.assertEqual(route["model"], "gpt-5.5")
+        self.assertIn("vision_capability_escape", route["reason"])
+
+    def test_no_escape_when_current_model_has_vision(self):
+        route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+            "what does this screenshot show",
+            current_model="openai-codex/gpt-5.5",
+        )
+        self.assertIsNone(route)
+
+    def test_no_escape_without_vision_signals(self):
+        route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+            "buna bi bak",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNone(route)
+
+    def test_no_escape_for_high_risk_with_vision(self):
+        route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+            "deploy this screenshot to production",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNone(route)
+
+    def test_stays_when_no_vision_model_available(self):
+        no_vision_config = {
+            **CONFIG,
+            "default_model": "zai/glm-5.1",
+            "models": {
+                "zai/glm-5.1": CONFIG["models"]["zai/glm-5.1"],
+                "openai-codex/gpt-5.4": CONFIG["models"]["openai-codex/gpt-5.4"],
+            },
+        }
+        route = ZeroAPIRouter(no_vision_config).resolve(
+            "look at this image",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNone(route)
+
+
 if __name__ == "__main__":
     unittest.main()

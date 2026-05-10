@@ -27,6 +27,9 @@ export type ResolveRoutingOptions = {
   trigger?: string;
   currentModel?: string | null;
   includeDiagnostics?: boolean;
+  /** When true, the incoming message carries at least one image/attachment
+   *  that requires a vision-capable model, regardless of text content. */
+  hasImageAttachment?: boolean;
 };
 
 export type RoutingResolution = {
@@ -190,6 +193,13 @@ export function resolveRoutingDecision(
     };
   }
 
+  // Detect vision signals early — needed for capability escape even when
+  // the classifier falls back to "default" (e.g. short screenshot captions).
+  const visionKeywords = config.vision_keywords ?? DEFAULT_VISION_KEYWORDS;
+  const promptLower = options.prompt.toLowerCase();
+  const likelyVision = visionKeywords.some((keyword) => buildKeywordRegex(keyword).test(promptLower))
+    || options.hasImageAttachment === true;
+
   const rawDecision = classifyTask(
     options.prompt,
     config.keywords,
@@ -210,7 +220,7 @@ export function resolveRoutingDecision(
       reason: finalDecision.reason,
       ...baseContext,
       tokenEstimate: null,
-      likelyVision: false,
+      likelyVision,
       capableModels: [],
       capabilityRejected: [],
       subscriptionRejected: [],
@@ -223,6 +233,71 @@ export function resolveRoutingDecision(
       authProfileOverride: null,
       selectedAccountId: null,
     };
+  }
+
+  // Vision capability escape: when vision is required (detected via keywords
+  // or image attachment) but the current model does not support vision,
+  // override the default-category stay and route to a vision-capable model.
+  if (rawDecision.category === "default" && likelyVision && currentModel) {
+    const currentCaps = config.models[currentModel];
+    if (currentCaps && !currentCaps.supports_vision) {
+      const visionCapable = Object.entries(config.models)
+        .filter(([, caps]) => caps.supports_vision)
+        .filter(([modelKey]) => isModelAllowedBySubscriptions({
+          profile: config.subscription_profile,
+          inventory: config.subscription_inventory,
+          agentId,
+          modelKey,
+        }));
+
+      if (visionCapable.length > 0) {
+        // Use the default routing rule to pick the best vision-capable candidate.
+        const defaultRule = config.routing_rules.default;
+        const ordered = defaultRule
+          ? [defaultRule.primary, ...defaultRule.fallbacks]
+            .filter((key): key is string => typeof key === "string")
+            .filter((key) => visionCapable.some(([k]) => k === key))
+          : visionCapable.map(([key]) => key);
+
+        const targetModel = ordered.length > 0 ? ordered[0] : visionCapable[0][0];
+
+        if (targetModel !== currentModel) {
+          const { provider, model } = splitModelKey(targetModel);
+          const resolvedCapacity = resolveProviderCapacity({
+            profile: config.subscription_profile,
+            inventory: config.subscription_inventory,
+            agentId,
+            providerId: provider,
+            category: "default",
+          });
+          const finalDecision: RoutingDecision = {
+            category: "default",
+            model: targetModel,
+            provider,
+            reason: "vision_capability_escape",
+            risk: "low",
+          };
+          return {
+            action: "route",
+            reason: "vision_capability_escape",
+            ...baseContext,
+            tokenEstimate: null,
+            likelyVision: true,
+            capableModels: visionCapable.map(([key]) => key),
+            capabilityRejected: [],
+            subscriptionRejected: [],
+            weightedCandidates: ordered.length > 0 ? ordered : [targetModel],
+            rawDecision,
+            finalDecision,
+            selectedModel: targetModel,
+            providerOverride: provider,
+            modelOverride: model,
+            authProfileOverride: resolvedCapacity?.preferredAuthProfile ?? null,
+            selectedAccountId: resolvedCapacity?.preferredAccountId ?? null,
+          };
+        }
+      }
+    }
   }
 
   if (rawDecision.category === "default") {
@@ -232,7 +307,7 @@ export function resolveRoutingDecision(
       reason: finalDecision.reason,
       ...baseContext,
       tokenEstimate: null,
-      likelyVision: false,
+      likelyVision,
       capableModels: [],
       capabilityRejected: [],
       subscriptionRejected: [],
@@ -246,10 +321,6 @@ export function resolveRoutingDecision(
       selectedAccountId: null,
     };
   }
-
-  const visionKeywords = config.vision_keywords ?? DEFAULT_VISION_KEYWORDS;
-  const promptLower = options.prompt.toLowerCase();
-  const likelyVision = visionKeywords.some((keyword) => buildKeywordRegex(keyword).test(promptLower));
 
   const tokenEstimate = estimateTokens(options.prompt);
   const isFast = rawDecision.category === "fast";

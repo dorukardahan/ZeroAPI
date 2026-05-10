@@ -285,4 +285,128 @@ describe("resolveRoutingDecision", () => {
     expect(result.reason).toContain("high_risk:");
     expect(result.finalDecision?.risk).toBe("high");
   });
+
+  describe("vision capability escape", () => {
+    const visionConfig: ZeroAPIConfig = {
+      ...config,
+      default_model: "zai/glm-5",
+      models: {
+        ...config.models,
+        "openai-codex/gpt-5.5": {
+          context_window: 272000,
+          supports_vision: true,
+          speed_tps: 90,
+          ttft_seconds: 120,
+          benchmarks: { intelligence: 60.2, coding: 59.1, tau2: 0.939 },
+        },
+      },
+      routing_rules: {
+        ...config.routing_rules,
+        default: { primary: "openai-codex/gpt-5.5", fallbacks: ["openai-codex/gpt-5.4", "zai/glm-5"] },
+      },
+      subscription_profile: {
+        version: "1.0.0",
+        global: {
+          "openai-codex": { enabled: true, tierId: "pro" },
+          "zai": { enabled: true, tierId: "max" },
+        },
+      },
+      subscription_inventory: undefined,
+    };
+
+    it("routes to a vision-capable model when screenshot keyword is used on a non-vision default", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "what does this screenshot show",
+        currentModel: "zai/glm-5",
+      });
+      expect(result.action).toBe("route");
+      expect(result.reason).toBe("vision_capability_escape");
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+      expect(result.likelyVision).toBe(true);
+    });
+
+    it("routes on hasImageAttachment flag even without vision keywords in text", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "buna bi bak",
+        currentModel: "zai/glm-5",
+        hasImageAttachment: true,
+      });
+      expect(result.action).toBe("route");
+      expect(result.reason).toBe("vision_capability_escape");
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+    });
+
+    it("does not escape when current model already supports vision", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "what does this screenshot show",
+        currentModel: "openai-codex/gpt-5.5",
+      });
+      // Current model already has vision, so no routing needed
+      expect(result.action).toBe("stay");
+    });
+
+    it("does not escape for non-vision default-category messages", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "buna bi bak",
+        currentModel: "zai/glm-5",
+      });
+      expect(result.action).toBe("stay");
+      expect(result.reason).toBe("no_match");
+    });
+
+    it("uses default routing rule ordering for vision candidates", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "check this image",
+        currentModel: "zai/glm-5",
+      });
+      expect(result.action).toBe("route");
+      // gpt-5.5 is primary in default rule AND supports vision
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+    });
+
+    it("falls back to any vision-capable model when default rule has no vision candidates", () => {
+      const noVisionDefaultRule: ZeroAPIConfig = {
+        ...visionConfig,
+        routing_rules: {
+          ...visionConfig.routing_rules,
+          default: { primary: "zai/glm-5", fallbacks: [] },
+        },
+      };
+      const result = resolveRoutingDecision(noVisionDefaultRule, {
+        prompt: "look at this photo",
+        currentModel: "zai/glm-5",
+      });
+      expect(result.action).toBe("route");
+      // zai/glm-5 is not vision-capable, moonshot is disabled in subscription,
+      // so gpt-5.5 (the remaining vision model) is selected
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+    });
+
+    it("stays when no vision-capable model is available", () => {
+      const noVisionModels: ZeroAPIConfig = {
+        ...config,
+        default_model: "openai-codex/gpt-5.4",
+        models: {
+          "openai-codex/gpt-5.4": { ...config.models["openai-codex/gpt-5.4"] },
+          "zai/glm-5": { ...config.models["zai/glm-5"] },
+        },
+        subscription_inventory: undefined,
+      };
+      const result = resolveRoutingDecision(noVisionModels, {
+        prompt: "what does this screenshot show",
+        currentModel: "openai-codex/gpt-5.4",
+      });
+      // No vision models available, so stays
+      expect(result.action).toBe("stay");
+    });
+
+    it("does not trigger vision escape for high-risk messages", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "deploy this screenshot to production",
+        currentModel: "zai/glm-5",
+      });
+      expect(result.action).toBe("stay");
+      expect(result.reason).toContain("high_risk:");
+    });
+  });
 });
