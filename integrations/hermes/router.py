@@ -409,6 +409,7 @@ class ZeroAPIRouter:
         platform: str | None = None,
         agent_id: str | None = None,
         trigger: str | None = None,
+        has_image_attachment: bool = False,
     ) -> dict[str, str] | None:
         configured_workspace_hints = self.config.get("workspace_hints", {})
         workspace_hints_by_agent = configured_workspace_hints if isinstance(configured_workspace_hints, dict) else {}
@@ -430,11 +431,52 @@ class ZeroAPIRouter:
             prompt,
             workspace_hints if isinstance(workspace_hints, list) else None,
         )
-        if risk == "high" or category == "default":
+
+        # Detect vision signals early — needed for capability escape even when
+        # the classifier falls back to "default" (e.g. short screenshot captions).
+        likely_vision = _has_keyword(prompt, self.config.get("vision_keywords", VISION_KEYWORDS)) or has_image_attachment
+
+        if risk == "high":
             return None
 
+        # Vision capability escape: when vision is required (detected via keywords
+        # or image attachment) but the current model does not support vision,
+        # override the default-category stay and route to a vision-capable model.
         current = current_model or self.config.get("default_model")
         models = self.config.get("models", {})
+
+        if category == "default" and likely_vision and current:
+            current_caps = models.get(current)
+            if isinstance(current_caps, dict) and not current_caps.get("supports_vision", False):
+                vision_capable = []
+                for model_key, caps in models.items():
+                    if not isinstance(caps, dict) or not caps.get("supports_vision", False):
+                        continue
+                    if not _allowed_by_subscriptions(self.config, model_key, agent_id):
+                        continue
+                    vision_capable.append(model_key)
+
+                if vision_capable:
+                    default_rule = self.config.get("routing_rules", {}).get("default")
+                    if isinstance(default_rule, dict):
+                        ordered = [
+                            c for c in [default_rule.get("primary"), *default_rule.get("fallbacks", [])]
+                            if isinstance(c, str) and c in vision_capable
+                        ]
+                    else:
+                        ordered = vision_capable
+
+                    target = ordered[0] if ordered else vision_capable[0]
+                    if target != current:
+                        provider = _provider_id(target)
+                        return {
+                            "provider": _hermes_provider(provider, self.config),
+                            "model": _model_id(target),
+                            "reason": "zeroapi:default:vision_capability_escape",
+                        }
+
+        if risk == "high" or category == "default":
+            return None
         if (
             isinstance(current, str)
             and current
@@ -449,7 +491,7 @@ class ZeroAPIRouter:
 
         candidates = [rule.get("primary"), *rule.get("fallbacks", [])]
         token_estimate = _estimate_tokens(prompt)
-        likely_vision = _has_keyword(prompt, self.config.get("vision_keywords", VISION_KEYWORDS))
+        # likely_vision already computed above (includes has_image_attachment)
         modifier = self.config.get("routing_modifier")
         modifier = modifier if isinstance(modifier, str) else None
 

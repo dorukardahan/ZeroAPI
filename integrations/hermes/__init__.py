@@ -55,12 +55,17 @@ def _pre_model_route(**kwargs: Any) -> dict[str, str] | None:
     if not isinstance(user_message, str):
         return None
 
+    # Detect image attachments from the gateway hook payload.
+    # Hermes passes this when the inbound message carries media.
+    has_images = bool(kwargs.get("has_images", False))
+
     route = router.resolve(
         prompt=user_message,
         current_model=_current_model_key(kwargs.get("provider"), kwargs.get("model")),
         platform=kwargs.get("platform") if isinstance(kwargs.get("platform"), str) else None,
         agent_id=kwargs.get("agent_id") if isinstance(kwargs.get("agent_id"), str) else None,
         trigger=kwargs.get("trigger") if isinstance(kwargs.get("trigger"), str) else None,
+        has_image_attachment=has_images,
     )
     if route is None:
         return None
