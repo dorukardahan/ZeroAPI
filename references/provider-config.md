@@ -284,6 +284,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
   "default_model": "<provider>/<model-id>",
   "routing_modifier": "coding-aware",
   "external_model_policy": "stay",
+  "disabled_providers": [],
   "models": {
     "<provider>/<model-id>": {
       "context_window": 272000,
@@ -336,6 +337,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
 | `routing_modifier` | Optional task-aware overlay on top of `routing_mode: "balanced"`. Valid values: `coding-aware`, `research-aware`, `speed-aware`. See [`routing-modifiers-spec.md`](routing-modifiers-spec.md). |
 | `external_model_policy` | How ZeroAPI behaves when the active current model is outside its own `models` pool. `stay` keeps that foreign or external model. `allow` lets ZeroAPI re-enter and route back into its subscription pool. |
+| `disabled_providers` | Emergency provider kill switch. Matching providers are never selected even if they have enabled subscription inventory. The Hermes adapter also supports `ZEROAPI_DISABLED_PROVIDERS=openai-codex,zai`. |
 | `models.<id>.context_window` | Maximum tokens the model can accept |
 | `models.<id>.supports_vision` | Whether image attachments can be sent |
 | `models.<id>.speed_tps` | Output tokens per second (for fast-path TTFT filtering) |

@@ -124,6 +124,24 @@ describe("resolveRoutingDecision", () => {
     expect(result.selectedModel).toBe("openai-codex/gpt-5.4");
   });
 
+  it("never selects globally disabled providers", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        disabled_providers: ["openai-codex"],
+      },
+      {
+        prompt: "refactor the worker queue",
+        currentModel: "moonshot/kimi-k2.5",
+      },
+    );
+
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("zai/glm-5");
+    expect(result.providerOverride).toBe("zai");
+    expect(result.subscriptionRejected).toEqual([]);
+  });
+
   it("skips cron and heartbeat triggers", () => {
     const cron = resolveRoutingDecision(config, {
       prompt: "quick format this output",

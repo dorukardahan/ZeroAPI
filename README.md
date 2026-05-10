@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.14-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.14)
+[![Version](https://img.shields.io/badge/version-3.8.15-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.15)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -149,7 +149,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.14` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.15` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
@@ -264,6 +264,14 @@ For the exact rules and formulas, see [`references/account-pool-spec.md`](refere
 When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride` for forward compatibility, and also performs a best-effort session-store sync so the active session can prefer the right auth profile. Current stable OpenClaw releases still do not merge `authProfileOverride` from `before_model_resolve`, so the session-store path remains the runtime path for same-provider account steering until native hook support lands. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
 
 Important: the compatibility fallback only updates sessions that already exist in OpenClaw's session store and it never overwrites a user-pinned auth profile. If the session store is unavailable, `subscription_inventory` still improves provider weighting and the final same-provider account choice falls back to OpenClaw `auth.order`.
+
+If a provider needs emergency shutdown because its OAuth token was revoked or a credential was copied into the wrong runtime, set:
+
+```json
+"disabled_providers": ["openai-codex"]
+```
+
+OpenClaw and Hermes users can also set `ZEROAPI_DISABLED_PROVIDERS=openai-codex`. ZeroAPI will keep the provider out of routing until the runtime is re-authorized cleanly.
 
 Before turning routing loose on real traffic, inspect a sample decision:
 

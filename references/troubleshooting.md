@@ -255,7 +255,12 @@ Ensure the model ID in your config exactly matches the provider's catalog. Some 
 - **MiniMax**: Use the tmux OAuth flow with `openclaw onboard --auth-choice minimax-portal`.
 - **Qwen Portal**: Use the tmux OAuth flow with `openclaw models auth login --provider qwen-portal --set-default`.
 
-After manual renewal, sync the new token across all locations. See `references/oauth-setup.md` → "Token Storage Architecture".
+After manual renewal, sync the new token only across the auth stores that
+belong to the same runtime identity. Do not copy OAuth credentials between
+separate Hermes homes or separate agents; many OAuth providers rotate refresh
+tokens and one instance can invalidate the other. Re-authorize each Hermes home
+separately, or set `disabled_providers: ["openai-codex"]` /
+`ZEROAPI_DISABLED_PROVIDERS=openai-codex` until re-auth is complete.
 
 ---
 

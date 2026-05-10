@@ -150,6 +150,32 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         )
         self.assertNotEqual(route["provider"], "zai")
 
+    def test_disabled_providers_are_never_selected(self):
+        config = {**CONFIG, "disabled_providers": ["zai"]}
+        route = ZeroAPIRouter(config).resolve(
+            "coordinate this workflow",
+            current_model="openai-codex/gpt-5.4",
+        )
+        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["model"], "kimi-k2.5")
+
+    def test_disabled_provider_env_is_honored(self):
+        config = {**CONFIG, "disabled_providers": []}
+        previous = os.environ.get("ZEROAPI_DISABLED_PROVIDERS")
+        os.environ["ZEROAPI_DISABLED_PROVIDERS"] = "zai"
+        try:
+            route = ZeroAPIRouter(config).resolve(
+                "coordinate this workflow",
+                current_model="openai-codex/gpt-5.4",
+            )
+            self.assertEqual(route["provider"], "kimi-for-coding")
+            self.assertEqual(route["model"], "kimi-k2.5")
+        finally:
+            if previous is None:
+                os.environ.pop("ZEROAPI_DISABLED_PROVIDERS", None)
+            else:
+                os.environ["ZEROAPI_DISABLED_PROVIDERS"] = previous
+
     def test_maps_moonshot_to_hermes_kimi_provider(self):
         config = {
             **CONFIG,

@@ -5,6 +5,13 @@ import type { ZeroAPIConfig } from "./types.js";
 let cachedConfig: ZeroAPIConfig | null = null;
 let configPath: string | null = null;
 
+function parseDisabledProvidersEnv(): string[] {
+  return (process.env.ZEROAPI_DISABLED_PROVIDERS ?? "")
+    .split(",")
+    .map((provider) => provider.trim())
+    .filter(Boolean);
+}
+
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   if (typeof obj !== "object" || obj === null) return false;
   const cfg = obj as Record<string, unknown>;
@@ -36,6 +43,8 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     );
   const visionKeywordsValid =
     cfg.vision_keywords === undefined || Array.isArray(cfg.vision_keywords);
+  const disabledProvidersValid =
+    cfg.disabled_providers === undefined || Array.isArray(cfg.disabled_providers);
   const workspaceHintsValid =
     cfg.workspace_hints === undefined ||
     (typeof cfg.workspace_hints === "object" && cfg.workspace_hints !== null && !Array.isArray(cfg.workspace_hints));
@@ -56,6 +65,7 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     typeof cfg.fast_ttft_max_seconds === "number" &&
     workspaceHintsValid &&
     visionKeywordsValid &&
+    disabledProvidersValid &&
     riskLevelsValid &&
     subscriptionProfileValid &&
     subscriptionInventoryValid
@@ -81,6 +91,10 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
       routing_mode: parsed.routing_mode ?? "balanced",
       external_model_policy: parsed.external_model_policy ?? "stay",
       workspace_hints: parsed.workspace_hints ?? {},
+      disabled_providers: [
+        ...((parsed.disabled_providers ?? []).filter((provider: unknown): provider is string => typeof provider === "string")),
+        ...parseDisabledProvidersEnv(),
+      ],
     };
     return cachedConfig;
   } catch {

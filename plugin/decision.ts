@@ -71,6 +71,33 @@ function splitModelKey(modelKey: string): { provider: string; model: string } {
   };
 }
 
+function normalizeProviderId(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function isProviderDisabled(config: ZeroAPIConfig, providerId: string): boolean {
+  const disabled = config.disabled_providers ?? [];
+  const normalized = normalizeProviderId(providerId);
+  return disabled.some((entry) => typeof entry === "string" && normalizeProviderId(entry) === normalized);
+}
+
+function isModelEligibleBySubscriptions(
+  config: ZeroAPIConfig,
+  modelKey: string,
+  agentId: string | undefined,
+): boolean {
+  const { provider } = splitModelKey(modelKey);
+  if (isProviderDisabled(config, provider)) {
+    return false;
+  }
+  return isModelAllowedBySubscriptions({
+    profile: config.subscription_profile,
+    inventory: config.subscription_inventory,
+    agentId,
+    modelKey,
+  });
+}
+
 function shouldStayOnExternalCurrentModel(
   config: ZeroAPIConfig,
   currentModel: string | null,
@@ -243,12 +270,7 @@ export function resolveRoutingDecision(
     if (currentCaps && !currentCaps.supports_vision) {
       const visionCapable = Object.entries(config.models)
         .filter(([, caps]) => caps.supports_vision)
-        .filter(([modelKey]) => isModelAllowedBySubscriptions({
-          profile: config.subscription_profile,
-          inventory: config.subscription_inventory,
-          agentId,
-          modelKey,
-        }));
+        .filter(([modelKey]) => isModelEligibleBySubscriptions(config, modelKey, agentId));
 
       if (visionCapable.length > 0) {
         // Use the default routing rule to pick the best vision-capable candidate.
@@ -341,21 +363,11 @@ export function resolveRoutingDecision(
 
   const capabilityPassed = filterCapableModels(config.models, filterOptions);
   const subscriptionRejected = includeDiagnostics
-    ? Object.keys(capabilityPassed).filter((modelKey) => !isModelAllowedBySubscriptions({
-      profile: config.subscription_profile,
-      inventory: config.subscription_inventory,
-      agentId,
-      modelKey,
-    }))
+    ? Object.keys(capabilityPassed).filter((modelKey) => !isModelEligibleBySubscriptions(config, modelKey, agentId))
     : [];
 
   const capable = Object.fromEntries(
-    Object.entries(capabilityPassed).filter(([modelKey]) => isModelAllowedBySubscriptions({
-      profile: config.subscription_profile,
-      inventory: config.subscription_inventory,
-      agentId,
-      modelKey,
-    })),
+    Object.entries(capabilityPassed).filter(([modelKey]) => isModelEligibleBySubscriptions(config, modelKey, agentId)),
   );
 
   const weightedCandidates = getSubscriptionWeightedCandidates(

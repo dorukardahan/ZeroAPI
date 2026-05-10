@@ -58,6 +58,7 @@ export type ZeroAPIConfig = {
   high_risk_keywords: string[];
   fast_ttft_max_seconds: number;
   vision_keywords?: string[];
+  disabled_providers?: string[];
   risk_levels?: Partial<Record<TaskCategory, RiskLevel>>;
   subscription_catalog_version?: string;
   subscription_profile?: SubscriptionProfile;

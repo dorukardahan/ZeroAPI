@@ -78,15 +78,40 @@ Hermes resolves those through its own model switch pipeline.
 
 The adapter also mirrors the important OpenClaw safety gates:
 
+- providers listed in `disabled_providers` or `ZEROAPI_DISABLED_PROVIDERS`
+  are never selected
 - explicit specialist agents in `workspace_hints` with `null` are skipped
 - unhinted agents already running a non-default model are skipped
 - `cron` and `heartbeat` triggers are skipped when Hermes supplies them
 - high-risk messages stay on the current model
 - external current models are left alone unless `external_model_policy` is `allow`
 
+For emergency provider shutdowns, use either config or env:
+
+```json
+{
+  "disabled_providers": ["openai-codex"]
+}
+```
+
+```bash
+export ZEROAPI_DISABLED_PROVIDERS=openai-codex
+```
+
+This is useful when an OAuth provider needs re-authorization. ZeroAPI does not
+copy, refresh, or store OAuth tokens. Re-authorize every Hermes home separately;
+do not copy one Hermes `auth.json` into another instance.
+
+To check for accidental OAuth credential reuse across Hermes homes:
+
+```bash
+python3 integrations/hermes/auth_audit.py ~/.hermes /opt/other-hermes-home
+```
+
 ## Test
 
 ```bash
 python3 integrations/hermes/test_router.py
+python3 integrations/hermes/test_auth_audit.py
 python3 integrations/hermes/doctor.py
 ```

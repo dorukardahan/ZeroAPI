@@ -138,6 +138,26 @@ def _canonical_provider(provider: str) -> str:
     return provider
 
 
+def _disabled_providers(config: Config) -> set[str]:
+    disabled: set[str] = set()
+    configured = config.get("disabled_providers")
+    if isinstance(configured, list):
+        for provider in configured:
+            if isinstance(provider, str) and provider.strip():
+                disabled.add(_canonical_provider(provider.strip()))
+
+    env_value = os.getenv("ZEROAPI_DISABLED_PROVIDERS", "")
+    for provider in env_value.split(","):
+        if provider.strip():
+            disabled.add(_canonical_provider(provider.strip()))
+
+    return disabled
+
+
+def _provider_disabled(config: Config, provider: str) -> bool:
+    return _canonical_provider(provider) in _disabled_providers(config)
+
+
 def _hermes_provider(provider: str, config: Config) -> str:
     aliases = config.get("hermes_provider_map")
     if isinstance(aliases, dict):
@@ -296,6 +316,9 @@ def _usage_priority_factor(priority: Any) -> float:
 
 def _capacity(config: Config, provider: str, category: TaskCategory, agent_id: str | None = None) -> tuple[bool, float]:
     canonical = _canonical_provider(provider)
+    if _provider_disabled(config, provider):
+        return False, 0.0
+
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
     all_accounts: list[tuple[float, list[Any]]] = []
@@ -364,6 +387,9 @@ def _profile_selection(config: Config, provider: str, agent_id: str | None) -> d
 def _allowed_by_subscriptions(config: Config, model_key: str, agent_id: str | None) -> bool:
     provider = _provider_id(model_key)
     canonical = _canonical_provider(provider)
+    if _provider_disabled(config, provider):
+        return False
+
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
     inventory_configured = False

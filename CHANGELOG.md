@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [3.8.15] - 2026-05-11
+
+### Added
+- Add `disabled_providers` / `ZEROAPI_DISABLED_PROVIDERS` emergency provider shutdown support for OpenClaw and Hermes routing.
+- Add a Hermes OAuth auth audit helper that detects copied OAuth credentials across separate Hermes homes without printing token material.
+
+### Fixed
+- Document that Hermes OAuth credentials must be re-authorized per Hermes home instead of copied across agent instances.
+
 ## [3.8.14] - 2026-05-09
 
 ### Added

@@ -13,6 +13,7 @@ describe("config", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     try {
       rmSync(testDir, { recursive: true, force: true });
     } catch {
@@ -156,6 +157,26 @@ describe("config", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null when disabled_providers is not an array", async () => {
+    const bad = {
+      version: "3.0.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "foo/bar",
+      disabled_providers: "openai-codex",
+      models: {},
+      routing_rules: {},
+      workspace_hints: {},
+      keywords: {},
+      high_risk_keywords: [],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(bad));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
   it("loads and caches valid config", async () => {
     const valid = {
       version: "3.3.0",
@@ -201,6 +222,27 @@ describe("config", () => {
     expect(result!.external_model_policy).toBe("allow");
     expect(result!.subscription_inventory?.accounts["openai-work-max"]?.provider).toBe("openai-codex");
     expect(getConfig()).toBe(result);
+  });
+
+  it("merges disabled providers from environment", async () => {
+    const valid = {
+      version: "3.3.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "openai-codex/gpt-5.4",
+      disabled_providers: ["zai"],
+      models: { "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
+      routing_rules: { default: { primary: "openai-codex/gpt-5.4", fallbacks: [] } },
+      workspace_hints: {},
+      keywords: { code: ["implement"] },
+      high_risk_keywords: ["deploy"],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(valid));
+    vi.stubEnv("ZEROAPI_DISABLED_PROVIDERS", "openai-codex, moonshot");
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result?.disabled_providers).toEqual(["zai", "openai-codex", "moonshot"]);
   });
 
   it("loads valid inventory-only config without requiring subscription_profile", async () => {
