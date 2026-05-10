@@ -151,7 +151,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 
 Prefer exact version installs such as `clawhub:zeroapi@3.8.14` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
-ZeroAPI does not require a `curl | bash` installer. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
+ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
 ## Hermes Agent Adapter
 
