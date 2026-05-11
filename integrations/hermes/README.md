@@ -108,10 +108,47 @@ To check for accidental OAuth credential reuse across Hermes homes:
 python3 integrations/hermes/auth_audit.py ~/.hermes /opt/other-hermes-home
 ```
 
+## Vision Auxiliary Routing
+
+Hermes image turns have two model decisions:
+
+- the main reply model, routed by the `pre_model_route` hook
+- the `vision_analyze` auxiliary model, configured under `auxiliary.vision`
+
+If `auxiliary.vision.provider` is left as `auto`, Hermes can try the main
+provider's own vision model before ZeroAPI gets a chance to route the main
+turn. That is not always subscription-safe. For example, a Z.AI Coding Plan
+subscription can include GLM text models without including GLM-5V-Turbo API
+access.
+
+Use the helper below to derive a safe `auxiliary.vision` override from the
+same `zeroapi-config.json` policy:
+
+```bash
+python3 integrations/hermes/vision_aux.py \
+  --hermes-config ~/.hermes/config.yaml \
+  --zeroapi-config ~/.hermes/zeroapi-config.json
+```
+
+For a `zai/glm-5.1` main model with an available OpenAI Codex vision model,
+this writes:
+
+```yaml
+auxiliary:
+  vision:
+    provider: openai-codex
+    model: gpt-5.5
+    timeout: 120
+```
+
+Run this after the ZeroAPI policy changes or after adding/removing a vision
+capable subscription.
+
 ## Test
 
 ```bash
 python3 integrations/hermes/test_router.py
 python3 integrations/hermes/test_auth_audit.py
+python3 integrations/hermes/test_vision_aux.py
 python3 integrations/hermes/doctor.py
 ```

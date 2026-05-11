@@ -1,6 +1,6 @@
 {
   "name": "zeroapi",
-  "version": "3.8.15",
+  "version": "3.8.16",
   "private": true,
   "description": "ZeroAPI - balanced benchmark-aware routing for OpenClaw",
   "type": "module",

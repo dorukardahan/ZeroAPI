@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [3.8.16] - 2026-05-11
+
+### Added
+- Add a Hermes auxiliary vision helper that derives `auxiliary.vision` from ZeroAPI policy so image turns can use a real vision-capable subscription model instead of Hermes provider defaults.
+- Add Hermes regression coverage for appending and updating `auxiliary.vision` config from `zeroapi-config.json`.
+
+### Fixed
+- Document the Hermes split between main model routing and `vision_analyze` auxiliary routing, including the Z.AI Coding Plan / GLM-5V-Turbo access trap.
+
 ## [3.8.15] - 2026-05-11
 
 ### Added
