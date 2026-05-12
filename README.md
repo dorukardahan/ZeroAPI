@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.17-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.17)
+[![Version](https://img.shields.io/badge/version-3.8.18-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.18)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -153,7 +153,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.17` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.18` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
@@ -323,7 +323,7 @@ ZeroAPI/
 │       └── test.yml
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── package.json                          # Root scripts for tests and repo-local tools
-├── benchmarks.json                       # 172 benchmark reference models, plus policy-family tags
+├── benchmarks.json                       # 175 benchmark reference models, plus policy-family tags
 ├── policy-families.json                  # 13 practical policy-family members across 5 providers
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
@@ -393,7 +393,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current leaders per category from `benchmarks.json` (fetched 2026-04-24). The snapshot now tracks 172 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Qwen. `benchmarks.json` also tags 13 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current leaders per category from `benchmarks.json` (fetched 2026-05-10). The snapshot now tracks 175 benchmark reference models from the provider ecosystems ZeroAPI supports: OpenAI, Kimi, Z AI, MiniMax, and Qwen. `benchmarks.json` also tags 13 of those as current `policy_family` members. This is a reference dataset, not the exact day-to-day routing allowlist. Maintainers refresh it with a weekly GitHub Actions workflow backed by a private repo secret, so public users do not need AA API access. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 | Category | Leader | Score | Provider |
 |----------|--------|-------|----------|

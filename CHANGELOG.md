@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.18] - 2026-05-12
+
+### Fixed
+- Update benchmark snapshot docs to match the current 2026-05-10 Artificial Analysis refresh.
+
 ## [3.8.17] - 2026-05-12
 
 ### Changed

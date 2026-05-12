@@ -1,6 +1,6 @@
-# Benchmark Data (April 2026)
+# Benchmark Data (May 2026)
 
-Current leaders from `benchmarks.json` (fetched 2026-04-24). The snapshot covers 172 benchmark reference models from the five provider ecosystems ZeroAPI supports. It also marks 13 models as current `policy_family` members. Qwen rows come from Alibaba's named model benchmarks; OpenClaw exposes the routeable account model as `qwen-portal/coder-model`, so ZeroAPI treats Qwen3.6 Plus as a benchmark proxy for that portal route.
+Current leaders from `benchmarks.json` (fetched 2026-05-10). The snapshot covers 175 benchmark reference models from the five provider ecosystems ZeroAPI supports. It also marks 13 models as current `policy_family` members. Qwen rows come from Alibaba's named model benchmarks; OpenClaw exposes the routeable account model as `qwen-portal/coder-model`, so ZeroAPI treats Qwen3.6 Plus as a benchmark proxy for that portal route.
 
 | Category | Leader | Score | Provider | Notes |
 |----------|--------|-------|----------|-------|
@@ -35,4 +35,4 @@ GLM-5.1 is now both the practical orchestration recommendation and the raw compo
 
 Context windows and exact OpenClaw runtime IDs live in `references/provider-config.md`. This page focuses on the benchmark reference snapshot only. The practical routing pool is narrower and is defined by the user's `zeroapi-config.json`, the documented provider mappings, and `policy-families.json`.
 
-Source: Artificial Analysis Data API v2, fetched 2026-04-24. Full data lives in `benchmarks.json`.
+Source: Artificial Analysis Data API v2, fetched 2026-05-10. Full data lives in `benchmarks.json`.
