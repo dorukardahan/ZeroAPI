@@ -65,6 +65,37 @@ VISION_KEYWORDS = [
     "tasarim",
 ]
 
+CONTINUATION_KEYWORDS = [
+    "continue",
+    "keep going",
+    "go on",
+    "next",
+    "proceed",
+    "resume",
+    "continue working",
+    "devam",
+    "devam et",
+    "devam et kral",
+    "devam et canım",
+    "sürdür",
+    "surdur",
+    "ilerle",
+    "başla",
+    "basla",
+    "yap",
+    "hallet",
+    "go",
+    "go go",
+    "tamam",
+    "tamamdır",
+    "evet",
+    "olur",
+    "kabul",
+    "wp",
+]
+
+CONTINUATION_ROUTE_CATEGORIES = ["code", "research", "math"]
+
 PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
     "openai-codex": {
         "canonical": "openai-codex",
@@ -210,6 +241,82 @@ def _keyword_regex(keyword: str) -> re.Pattern[str]:
 def _has_keyword(text: str, keywords: list[Any]) -> bool:
     lower = text.lower()
     return any(isinstance(keyword, str) and _keyword_regex(keyword).search(lower) for keyword in keywords)
+
+
+def _message_content_to_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(_message_content_to_text(part) for part in content)
+    if isinstance(content, dict):
+        for key in ("text", "content", "output"):
+            value = content.get(key)
+            if isinstance(value, str):
+                return value
+        try:
+            return json.dumps(content, ensure_ascii=False)
+        except TypeError:
+            return ""
+    return "" if content is None else str(content)
+
+
+def _is_continuation_prompt(config: Config, prompt: str) -> bool:
+    compact = re.sub(r"[.!?…\\s]+$", "", prompt.lower().strip())
+    if not compact:
+        return False
+    configured = config.get("continuation_keywords", CONTINUATION_KEYWORDS)
+    keywords = configured if isinstance(configured, list) else CONTINUATION_KEYWORDS
+    normalized = [kw.lower() for kw in keywords if isinstance(kw, str)]
+    if compact in normalized:
+        return True
+    if len(compact) > 80:
+        return False
+    return any(_keyword_regex(keyword).search(compact) for keyword in normalized)
+
+
+def _continuation_categories(config: Config) -> list[str]:
+    configured = config.get("continuation_route_categories")
+    if not isinstance(configured, list) or not configured:
+        return CONTINUATION_ROUTE_CATEGORIES
+    return [category for category in configured if isinstance(category, str)]
+
+
+def _history_continuation_category(
+    config: Config,
+    conversation_history: list[Any] | None,
+    allowed: list[str],
+) -> tuple[str, str] | None:
+    if not conversation_history:
+        return None
+
+    recent_parts: list[str] = []
+    for message in conversation_history[-12:]:
+        if isinstance(message, dict):
+            recent_parts.append(_message_content_to_text(message.get("content")))
+        else:
+            recent_parts.append(_message_content_to_text(message))
+    recent = "\n".join(part for part in recent_parts if part.strip())
+    if not recent.strip():
+        return None
+
+    category, reason, risk = _classify(config, recent)
+    if category != "default" and risk != "high" and category in allowed:
+        return category, f"history:{reason}"
+    return None
+
+
+def _resolve_continuation_category(
+    config: Config,
+    prompt: str,
+    conversation_history: list[Any] | None,
+    previous_category: str | None,
+) -> tuple[str, str] | None:
+    if not _is_continuation_prompt(config, prompt):
+        return None
+    allowed = _continuation_categories(config)
+    if previous_category in allowed:
+        return previous_category, "state:last_strong_category"
+    return _history_continuation_category(config, conversation_history, allowed)
 
 
 def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = None) -> tuple[TaskCategory, str, str]:
@@ -540,6 +647,8 @@ class ZeroAPIRouter:
         agent_id: str | None = None,
         trigger: str | None = None,
         has_image_attachment: bool = False,
+        conversation_history: list[Any] | None = None,
+        previous_category: str | None = None,
     ) -> dict[str, str] | None:
         configured_workspace_hints = self.config.get("workspace_hints", {})
         workspace_hints_by_agent = configured_workspace_hints if isinstance(configured_workspace_hints, dict) else {}
@@ -568,6 +677,18 @@ class ZeroAPIRouter:
 
         if risk == "high":
             return None
+
+        if category == "default":
+            continuation = _resolve_continuation_category(
+                self.config,
+                prompt,
+                conversation_history,
+                previous_category,
+            )
+            if continuation is not None:
+                category, continuation_reason = continuation
+                reason = f"continuation:{continuation_reason}"
+                risk = "medium" if category == "code" else "low"
 
         # Vision capability escape: when vision is required (detected via keywords
         # or image attachment) but the current model does not support vision,
@@ -599,6 +720,7 @@ class ZeroAPIRouter:
                             "provider": _hermes_provider(provider, self.config),
                             "model": _model_id(target),
                             "reason": "zeroapi:default:vision_capability_escape",
+                            "category": "default",
                         }
 
         if risk == "high" or category == "default":
@@ -703,4 +825,5 @@ class ZeroAPIRouter:
             "provider": _hermes_provider(provider, self.config),
             "model": _model_id(selected),
             "reason": f"zeroapi:{category}:{reason}",
+            "category": category,
         }

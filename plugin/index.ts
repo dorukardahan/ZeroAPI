@@ -7,13 +7,15 @@ import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { syncSessionAuthProfileOverride } from "./session-auth.js";
 import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
+import type { TaskCategory } from "./types.js";
 
-const PLUGIN_VERSION = "3.8.18";
+const PLUGIN_VERSION = "3.8.19";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
   advisoryMonitorStarted?: boolean;
   registered: boolean;
+  continuationState?: Map<string, { category: TaskCategory; updatedAt: number }>;
 };
 
 function getRegisterState(): RegisterState {
@@ -36,6 +38,27 @@ function resolveOpenClawDir(env: NodeJS.ProcessEnv = process.env): string {
   }
 
   return env.HOME ? `${env.HOME}/.openclaw` : "/root/.openclaw";
+}
+
+function getContinuationState(registerState: RegisterState): Map<string, { category: TaskCategory; updatedAt: number }> {
+  registerState.continuationState ??= new Map();
+  return registerState.continuationState;
+}
+
+function routeStateKey(ctx: Record<string, unknown>): string {
+  const sessionKey = typeof ctx.sessionKey === "string" && ctx.sessionKey.trim()
+    ? ctx.sessionKey.trim()
+    : "";
+  const agentId = typeof ctx.agentId === "string" && ctx.agentId.trim()
+    ? ctx.agentId.trim()
+    : "main";
+  return sessionKey || `agent:${agentId}`;
+}
+
+function continuationCategories(config: { continuation_route_categories?: TaskCategory[] }): Set<TaskCategory> {
+  return new Set(config.continuation_route_categories?.length
+    ? config.continuation_route_categories
+    : ["code", "research", "math"]);
 }
 
 export default definePluginEntry({
@@ -99,11 +122,21 @@ export default definePluginEntry({
       const currentModel = ctx.modelId
         ? `${ctx.modelProviderId}/${ctx.modelId}`
         : config.default_model;
+      const stateKey = routeStateKey(ctx as Record<string, unknown>);
+      const state = getContinuationState(registerState);
+      const previous = state.get(stateKey);
+      const previousCategory = previous && Date.now() - previous.updatedAt < 1000 * 60 * 90
+        ? previous.category
+        : null;
+      if (previous && previousCategory === null) {
+        state.delete(stateKey);
+      }
       const resolution = resolveRoutingDecision(config, {
         prompt: event.prompt,
         agentId: ctx.agentId,
         trigger: ctx.trigger,
         currentModel,
+        previousCategory,
       });
 
       if (resolution.action === "skip") {
@@ -154,6 +187,13 @@ export default definePluginEntry({
         }
       }
       if (resolution.action === "route") {
+        const categories = continuationCategories(config);
+        if (resolution.finalDecision && categories.has(resolution.finalDecision.category)) {
+          state.set(stateKey, {
+            category: resolution.finalDecision.category,
+            updatedAt: Date.now(),
+          });
+        }
         return {
           providerOverride: resolution.providerOverride!,
           modelOverride: resolution.modelOverride!,

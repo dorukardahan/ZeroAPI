@@ -16,6 +16,19 @@ from .router import ZeroAPIRouter, load_config
 logger = logging.getLogger(__name__)
 
 _router: ZeroAPIRouter | None = None
+_route_state: dict[str, str] = {}
+
+
+def _route_state_key(kwargs: dict[str, Any]) -> str:
+    platform = kwargs.get("platform") if isinstance(kwargs.get("platform"), str) else ""
+    sender_id = kwargs.get("sender_id") if isinstance(kwargs.get("sender_id"), str) else ""
+    agent_id = kwargs.get("agent_id") if isinstance(kwargs.get("agent_id"), str) else "main"
+    session_id = kwargs.get("session_id") if isinstance(kwargs.get("session_id"), str) else ""
+    # Prefer the sender/chat key over session_id so compression splits keep the
+    # active task route. Fall back to session_id for non-channel use.
+    if platform or sender_id:
+        return f"{platform}:{sender_id}:{agent_id}"
+    return f"session:{session_id}:{agent_id}"
 
 
 def _get_router() -> ZeroAPIRouter | None:
@@ -58,6 +71,7 @@ def _pre_model_route(**kwargs: Any) -> dict[str, str] | None:
     # Detect image attachments from the gateway hook payload.
     # Hermes passes this when the inbound message carries media.
     has_images = bool(kwargs.get("has_images", False))
+    state_key = _route_state_key(kwargs)
 
     route = router.resolve(
         prompt=user_message,
@@ -66,9 +80,15 @@ def _pre_model_route(**kwargs: Any) -> dict[str, str] | None:
         agent_id=kwargs.get("agent_id") if isinstance(kwargs.get("agent_id"), str) else None,
         trigger=kwargs.get("trigger") if isinstance(kwargs.get("trigger"), str) else None,
         has_image_attachment=has_images,
+        conversation_history=kwargs.get("conversation_history") if isinstance(kwargs.get("conversation_history"), list) else None,
+        previous_category=_route_state.get(state_key),
     )
     if route is None:
         return None
+
+    category = route.get("category")
+    if category in {"code", "research", "math"}:
+        _route_state[state_key] = category
 
     return {
         "provider": route["provider"],

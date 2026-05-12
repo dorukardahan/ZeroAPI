@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.19] - 2026-05-12
+
+### Fixed
+- Keep short continuation turns like "devam et" on the previous strong code/research/math route instead of falling back to the default model after a Hermes/OpenClaw session resumes or compresses.
+- Let the Hermes adapter use recent conversation history and in-process route state when resolving continuation prompts, so long-running build tasks keep the intended model across context compression.
+
 ## [3.8.18] - 2026-05-12
 
 ### Fixed

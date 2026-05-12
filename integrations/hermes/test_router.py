@@ -73,6 +73,35 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         route = ZeroAPIRouter(CONFIG).resolve("buna bir bak", current_model="openai-codex/gpt-5.4")
         self.assertIsNone(route)
 
+    def test_default_continuation_without_history_stays(self):
+        route = ZeroAPIRouter(CONFIG).resolve("devam et", current_model="zai/glm-5.1")
+        self.assertIsNone(route)
+
+    def test_continues_recent_code_task_from_history(self):
+        route = ZeroAPIRouter(CONFIG).resolve(
+            "devam et",
+            current_model="zai/glm-5.1",
+            conversation_history=[
+                {"role": "user", "content": "implement the web search MCP server in Go"},
+                {"role": "assistant", "content": "I implemented provider adapters and debugged the tests"},
+            ],
+        )
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.4")
+        self.assertIn("zeroapi:code:continuation:history", route["reason"])
+
+    def test_continues_last_strong_runtime_category(self):
+        route = ZeroAPIRouter(CONFIG).resolve(
+            "evet devam",
+            current_model="zai/glm-5.1",
+            previous_category="code",
+        )
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.4")
+        self.assertIn("zeroapi:code:continuation:state", route["reason"])
+
     def test_skips_high_risk_messages(self):
         route = ZeroAPIRouter(CONFIG).resolve("deploy this to production", current_model="zai/glm-5.1")
         self.assertIsNone(route)

@@ -63,6 +63,8 @@ export type ZeroAPIConfig = {
   subscription_catalog_version?: string;
   subscription_profile?: SubscriptionProfile;
   subscription_inventory?: SubscriptionInventory;
+  continuation_keywords?: string[];
+  continuation_route_categories?: TaskCategory[];
 };
 
 export type RoutingDecision = {
@@ -71,4 +73,9 @@ export type RoutingDecision = {
   provider: string | null;
   reason: string;
   risk: RiskLevel;
+};
+
+export type ConversationMessage = {
+  role?: string;
+  content?: unknown;
 };

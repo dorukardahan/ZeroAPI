@@ -304,6 +304,47 @@ describe("resolveRoutingDecision", () => {
     expect(result.finalDecision?.risk).toBe("high");
   });
 
+  describe("continuation routing", () => {
+    it("does not route a short continuation prompt without prior task context", () => {
+      const result = resolveRoutingDecision(config, {
+        prompt: "devam et",
+        currentModel: "zai/glm-5",
+      });
+
+      expect(result.action).toBe("stay");
+      expect(result.reason).toBe("no_match");
+    });
+
+    it("continues a recent code task instead of falling back to the default model", () => {
+      const result = resolveRoutingDecision(config, {
+        prompt: "devam et",
+        currentModel: "zai/glm-5",
+        conversationHistory: [
+          { role: "user", content: "build the web search MCP server in Go" },
+          { role: "assistant", content: "I implemented provider adapters and ran go test ./..." },
+        ],
+      });
+
+      expect(result.action).toBe("route");
+      expect(result.finalDecision?.category).toBe("code");
+      expect(result.reason).toContain("continuation:history");
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.4");
+    });
+
+    it("can reuse the last strong session category when runtime state is available", () => {
+      const result = resolveRoutingDecision(config, {
+        prompt: "evet devam",
+        currentModel: "zai/glm-5",
+        previousCategory: "code",
+      });
+
+      expect(result.action).toBe("route");
+      expect(result.finalDecision?.category).toBe("code");
+      expect(result.reason).toContain("continuation:state:last_strong_category");
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.4");
+    });
+  });
+
   describe("vision capability escape", () => {
     const visionConfig: ZeroAPIConfig = {
       ...config,

@@ -3,7 +3,7 @@ import { filterCapableModels, estimateTokens, getCapabilityFilterFailure } from 
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
 import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool } from "./router.js";
 import { selectModel } from "./selector.js";
-import type { RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
+import type { ConversationMessage, RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
 
 export const DEFAULT_VISION_KEYWORDS = [
   "image",
@@ -53,6 +53,37 @@ export const DEFAULT_VISION_KEYWORDS = [
   "tasarim",
 ];
 
+export const DEFAULT_CONTINUATION_KEYWORDS = [
+  "continue",
+  "keep going",
+  "go on",
+  "next",
+  "proceed",
+  "resume",
+  "continue working",
+  "devam",
+  "devam et",
+  "devam et kral",
+  "devam et canım",
+  "sürdür",
+  "surdur",
+  "ilerle",
+  "başla",
+  "basla",
+  "yap",
+  "hallet",
+  "go",
+  "go go",
+  "tamam",
+  "tamamdır",
+  "evet",
+  "olur",
+  "kabul",
+  "wp",
+];
+
+const DEFAULT_CONTINUATION_ROUTE_CATEGORIES: TaskCategory[] = ["code", "research", "math"];
+
 export type ResolveRoutingOptions = {
   prompt: string;
   agentId?: string;
@@ -62,6 +93,8 @@ export type ResolveRoutingOptions = {
   /** When true, the incoming message carries at least one image/attachment
    *  that requires a vision-capable model, regardless of text content. */
   hasImageAttachment?: boolean;
+  conversationHistory?: ConversationMessage[];
+  previousCategory?: TaskCategory | null;
 };
 
 export type RoutingResolution = {
@@ -93,6 +126,99 @@ function escapeRegex(value: string): string {
 
 function buildKeywordRegex(keyword: string): RegExp {
   return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`);
+}
+
+function messageContentToText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content.map((part) => messageContentToText(part)).filter(Boolean).join("\n");
+  }
+  if (content && typeof content === "object") {
+    const record = content as Record<string, unknown>;
+    if (typeof record.text === "string") return record.text;
+    if (typeof record.content === "string") return record.content;
+    if (typeof record.output === "string") return record.output;
+    try {
+      return JSON.stringify(record);
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
+function isContinuationPrompt(prompt: string, keywords: string[]): boolean {
+  const lower = prompt.toLowerCase().trim();
+  if (!lower) return false;
+  const compact = lower.replace(/[.!?…\s]+$/u, "").trim();
+
+  if (keywords.some((keyword) => compact === keyword.toLowerCase())) {
+    return true;
+  }
+
+  if (compact.length > 80) {
+    return false;
+  }
+
+  return keywords.some((keyword) => buildKeywordRegex(keyword).test(compact));
+}
+
+function allowedContinuationCategories(config: ZeroAPIConfig): TaskCategory[] {
+  const configured = config.continuation_route_categories;
+  if (!Array.isArray(configured) || configured.length === 0) {
+    return DEFAULT_CONTINUATION_ROUTE_CATEGORIES;
+  }
+  return configured;
+}
+
+function categoryFromHistory(
+  config: ZeroAPIConfig,
+  conversationHistory: ConversationMessage[] | undefined,
+  allowed: TaskCategory[],
+): { category: TaskCategory; reason: string } | null {
+  if (!conversationHistory?.length) return null;
+
+  const recent = conversationHistory
+    .slice(-12)
+    .map((message) => messageContentToText(message.content))
+    .filter(Boolean)
+    .join("\n");
+  if (!recent.trim()) return null;
+
+  const decision = classifyTask(
+    recent,
+    config.keywords,
+    config.high_risk_keywords,
+    undefined,
+    config.risk_levels,
+  );
+
+  if (decision.category !== "default" && decision.risk !== "high" && allowed.includes(decision.category)) {
+    return {
+      category: decision.category,
+      reason: `history:${decision.reason}`,
+    };
+  }
+
+  return null;
+}
+
+function resolveContinuationCategory(
+  config: ZeroAPIConfig,
+  options: ResolveRoutingOptions,
+): { category: TaskCategory; reason: string } | null {
+  const keywords = config.continuation_keywords ?? DEFAULT_CONTINUATION_KEYWORDS;
+  if (!isContinuationPrompt(options.prompt, keywords)) return null;
+
+  const allowed = allowedContinuationCategories(config);
+  if (options.previousCategory && allowed.includes(options.previousCategory)) {
+    return {
+      category: options.previousCategory,
+      reason: "state:last_strong_category",
+    };
+  }
+
+  return categoryFromHistory(config, options.conversationHistory, allowed);
 }
 
 function splitModelKey(modelKey: string): { provider: string; model: string } {
@@ -294,10 +420,24 @@ export function resolveRoutingDecision(
     };
   }
 
+  const continuation = rawDecision.category === "default"
+    ? resolveContinuationCategory(config, options)
+    : null;
+  const effectiveDecision: RoutingDecision = continuation
+    ? {
+        ...rawDecision,
+        category: continuation.category,
+        reason: `continuation:${continuation.reason}`,
+        risk: (config.risk_levels?.[continuation.category] ?? (
+          continuation.category === "code" ? "medium" : "low"
+        )),
+      }
+    : rawDecision;
+
   // Vision capability escape: when vision is required (detected via keywords
   // or image attachment) but the current model does not support vision,
   // override the default-category stay and route to a vision-capable model.
-  if (rawDecision.category === "default" && likelyVision && currentModel) {
+  if (effectiveDecision.category === "default" && likelyVision && currentModel) {
     const currentCaps = config.models[currentModel];
     if (currentCaps && !currentCaps.supports_vision) {
       const visionCapable = Object.fromEntries(Object.entries(config.models)
@@ -357,8 +497,8 @@ export function resolveRoutingDecision(
     }
   }
 
-  if (rawDecision.category === "default") {
-    const finalDecision = { ...rawDecision, model: null, provider: null };
+  if (effectiveDecision.category === "default") {
+    const finalDecision = { ...effectiveDecision, model: null, provider: null };
     return {
       action: "stay",
       reason: finalDecision.reason,
@@ -380,7 +520,7 @@ export function resolveRoutingDecision(
   }
 
   const tokenEstimate = estimateTokens(options.prompt);
-  const isFast = rawDecision.category === "fast";
+  const isFast = effectiveDecision.category === "fast";
   const filterOptions = {
     estimatedTokens: tokenEstimate,
     maxTtftSeconds: isFast ? config.fast_ttft_max_seconds : undefined,
@@ -406,7 +546,7 @@ export function resolveRoutingDecision(
   );
 
   const weightedCandidates = getSubscriptionWeightedCandidates(
-    rawDecision.category,
+    effectiveDecision.category,
     capable,
     config.routing_rules,
     config.subscription_profile,
@@ -418,10 +558,10 @@ export function resolveRoutingDecision(
 
   if (Object.keys(capable).length === 0 || weightedCandidates.length === 0) {
     const finalDecision = {
-      ...rawDecision,
+      ...effectiveDecision,
       model: null,
       provider: null,
-      reason: `${rawDecision.reason}:no_eligible_candidate`,
+      reason: `${effectiveDecision.reason}:no_eligible_candidate`,
     };
     return {
       action: "stay",
@@ -445,11 +585,11 @@ export function resolveRoutingDecision(
 
   const selectedModel = weightedCandidates.length > 0
     ? selectModel(
-        rawDecision.category,
+        effectiveDecision.category,
         Object.fromEntries(weightedCandidates.map((candidate) => [candidate, capable[candidate]])),
         {
           ...config.routing_rules,
-          [rawDecision.category]: {
+          [effectiveDecision.category]: {
             primary: weightedCandidates[0],
             fallbacks: weightedCandidates.slice(1),
           },
@@ -467,16 +607,16 @@ export function resolveRoutingDecision(
         inventory: config.subscription_inventory,
         agentId,
         providerId: splitModelKey(targetModel).provider,
-        category: rawDecision.category,
+        category: effectiveDecision.category,
       })
     : null;
 
   if (!targetModel) {
     const finalDecision = {
-      ...rawDecision,
+      ...effectiveDecision,
       model: null,
       provider: null,
-      reason: `${rawDecision.reason}:no_switch_needed`,
+      reason: `${effectiveDecision.reason}:no_switch_needed`,
     };
     return {
       action: "stay",
@@ -504,10 +644,10 @@ export function resolveRoutingDecision(
     !resolvedCapacity?.preferredAuthProfile
   ) {
     const finalDecision = {
-      ...rawDecision,
+      ...effectiveDecision,
       model: null,
       provider: null,
-      reason: `${rawDecision.reason}:no_switch_needed`,
+      reason: `${effectiveDecision.reason}:no_switch_needed`,
     };
     return {
       action: "stay",
@@ -531,7 +671,7 @@ export function resolveRoutingDecision(
 
   const { provider, model } = splitModelKey(targetModel);
   const finalDecision = {
-    ...rawDecision,
+    ...effectiveDecision,
     model: targetModel,
     provider,
   };

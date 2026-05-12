@@ -234,4 +234,151 @@ describe("plugin entry registration", () => {
       rmSync(home, { recursive: true, force: true });
     }
   });
+
+  it("passes the last strong route category into the next turn for continuation prompts", async () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
+    const previousHome = process.env.HOME;
+    process.env.HOME = home;
+
+    const resolveRoutingDecision = vi.fn()
+      .mockReturnValueOnce({
+        action: "route",
+        reason: "keyword:implement",
+        agentId: "main",
+        routingModifier: null,
+        currentModel: "zai/glm-5.1",
+        workspaceHints: null,
+        tokenEstimate: 8,
+        likelyVision: false,
+        capableModels: ["openai-codex/gpt-5.5"],
+        capabilityRejected: [],
+        subscriptionRejected: [],
+        weightedCandidates: ["openai-codex/gpt-5.5"],
+        rawDecision: {
+          category: "code",
+          model: null,
+          provider: null,
+          reason: "keyword:implement",
+          risk: "medium",
+        },
+        finalDecision: {
+          category: "code",
+          model: "openai-codex/gpt-5.5",
+          provider: "openai-codex",
+          reason: "keyword:implement",
+          risk: "medium",
+        },
+        selectedModel: "openai-codex/gpt-5.5",
+        providerOverride: "openai-codex",
+        modelOverride: "gpt-5.5",
+        authProfileOverride: null,
+        selectedAccountId: null,
+      })
+      .mockReturnValueOnce({
+        action: "stay",
+        reason: "continuation:state:last_strong_category:no_switch_needed",
+        agentId: "main",
+        routingModifier: null,
+        currentModel: "zai/glm-5.1",
+        workspaceHints: null,
+        tokenEstimate: 2,
+        likelyVision: false,
+        capableModels: ["openai-codex/gpt-5.5"],
+        capabilityRejected: [],
+        subscriptionRejected: [],
+        weightedCandidates: ["openai-codex/gpt-5.5"],
+        rawDecision: {
+          category: "default",
+          model: null,
+          provider: null,
+          reason: "no_match",
+          risk: "low",
+        },
+        finalDecision: {
+          category: "code",
+          model: null,
+          provider: null,
+          reason: "continuation:state:last_strong_category:no_switch_needed",
+          risk: "medium",
+        },
+        selectedModel: null,
+        providerOverride: null,
+        modelOverride: null,
+        authProfileOverride: null,
+        selectedAccountId: null,
+      });
+
+    vi.doMock("../config.js", () => ({
+      loadConfig: () => ({
+        version: "3.8.19",
+        generated: "2026-05-12",
+        benchmarks_date: "2026-05-12",
+        default_model: "zai/glm-5.1",
+        routing_mode: "balanced",
+        models: {},
+        routing_rules: {},
+        keywords: {},
+        high_risk_keywords: [],
+        fast_ttft_max_seconds: 5,
+        workspace_hints: {},
+      }),
+    }));
+    vi.doMock("../decision.js", () => ({ resolveRoutingDecision }));
+    vi.doMock("../logger.js", () => ({
+      initLogger: vi.fn(),
+      logRouting: vi.fn(),
+      logRoutingEvent: vi.fn(),
+    }));
+    vi.doMock("../session-auth.js", () => ({
+      syncSessionAuthProfileOverride: () => ({
+        action: "noop",
+        reason: "already_current",
+        sessionKey: "agent:main:signal:dm:u1",
+      }),
+    }));
+
+    const on = vi.fn();
+    const api = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+      },
+      on,
+    };
+
+    try {
+      const mod = await import("../index.js");
+      mod.default.register(api);
+
+      const handler = on.mock.calls[0]?.[1];
+      expect(typeof handler).toBe("function");
+
+      handler(
+        { prompt: "implement the provider adapter" },
+        {
+          agentId: "main",
+          modelId: "glm-5.1",
+          modelProviderId: "zai",
+          sessionKey: "agent:main:signal:dm:u1",
+        },
+      );
+      handler(
+        { prompt: "devam et" },
+        {
+          agentId: "main",
+          modelId: "glm-5.1",
+          modelProviderId: "zai",
+          sessionKey: "agent:main:signal:dm:u1",
+        },
+      );
+
+      expect(resolveRoutingDecision).toHaveBeenCalledTimes(2);
+      expect(resolveRoutingDecision.mock.calls[1]?.[1]).toEqual(
+        expect.objectContaining({ previousCategory: "code" }),
+      );
+    } finally {
+      process.env.HOME = previousHome;
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
 });
