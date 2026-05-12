@@ -157,7 +157,7 @@
         "benchmark_slugs": [
           "minimax-m2-7"
         ],
-        "notes": "OpenClaw exposes MiniMax subscription routing through minimax-portal. The benchmark snapshot currently has a direct row only for MiniMax-M2.7."
+        "notes": "OpenClaw exposes MiniMax subscription routing through minimax-portal. The benchmark snapshot currently has a direct row only for MiniMax-M2.7. Starter metadata keeps the core M2.7 route text-only unless the runtime config explicitly marks an image-capable MiniMax model."
       },
       {
         "id": "qwen-portal-coder-core",
@@ -169,7 +169,7 @@
         "benchmark_slugs": [
           "qwen3-6-plus"
         ],
-        "notes": "OpenClaw currently exposes Qwen through qwen-portal/coder-model. Artificial Analysis tracks named Qwen releases, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for this portal route."
+        "notes": "OpenClaw currently exposes Qwen through qwen-portal/coder-model. Artificial Analysis tracks named Qwen releases, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for this portal route. Qwen VL or Omni routes are not auto-added to starter configs unless a user explicitly configures an image-capable runtime model."
       }
     ]
   },

@@ -278,6 +278,58 @@ class VisionCapabilityEscapeTest(unittest.TestCase):
         self.assertEqual(route["model"], "gpt-5.5")
         self.assertIn("vision_capability_escape", route["reason"])
 
+    def test_ranks_vision_candidates_across_subscribed_providers(self):
+        config = {
+            **self.VISION_CONFIG,
+            "models": {
+                **self.VISION_CONFIG["models"],
+                "moonshot/kimi-k2.6": {
+                    "context_window": 262144,
+                    "supports_vision": True,
+                    "speed_tps": 35,
+                    "ttft_seconds": 1.4,
+                    "benchmarks": {"intelligence": 59.4, "coding": 56.5, "gpqa": 0.91},
+                },
+            },
+            "routing_rules": {
+                **self.VISION_CONFIG["routing_rules"],
+                "default": {"primary": "openai-codex/gpt-5.5", "fallbacks": ["zai/glm-5.1"]},
+            },
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {
+                    "openai-codex": {"enabled": True, "tierId": "plus"},
+                    "zai": {"enabled": True, "tierId": "max"},
+                    "moonshot": {"enabled": True, "tierId": "vivace"},
+                },
+            },
+        }
+
+        route = ZeroAPIRouter(config).resolve(
+            "check this screenshot",
+            current_model="zai/glm-5.1",
+        )
+
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["model"], "kimi-k2.6")
+
+    def test_routes_turkish_vision_keywords(self):
+        for prompt in ("bu ss'e bak", "şu görseli yorumla", "fotoğrafta ne var", "ekran görüntüsünü incele"):
+            route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+                prompt,
+                current_model="zai/glm-5.1",
+            )
+            self.assertIsNotNone(route)
+            self.assertEqual(route["model"], "gpt-5.5")
+
+    def test_does_not_treat_embedded_ss_as_screenshot(self):
+        route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
+            "process listesini kontrol et",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNone(route)
+
     def test_no_escape_when_current_model_has_vision(self):
         route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
             "what does this screenshot show",

@@ -36,8 +36,8 @@ class HermesAuthAuditTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             refs = collect_credentials([
-                write_auth(root / "dobby", "same-refresh-token"),
-                write_auth(root / "dorry", "same-refresh-token"),
+                write_auth(root / "agent-a", "same-refresh-token"),
+                write_auth(root / "agent-b", "same-refresh-token"),
             ])
             duplicates = duplicate_groups(refs)
             self.assertTrue(any(key[0] == "openai-codex" and key[1] == "refresh_token" for key in duplicates))
@@ -46,8 +46,8 @@ class HermesAuthAuditTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             refs = collect_credentials([
-                write_auth(root / "dobby", "refresh-token-a"),
-                write_auth(root / "dorry", "refresh-token-b"),
+                write_auth(root / "agent-a", "refresh-token-a"),
+                write_auth(root / "agent-b", "refresh-token-b"),
             ])
             self.assertEqual(duplicate_groups(refs), {})
 

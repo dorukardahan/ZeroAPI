@@ -37,7 +37,7 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
   "zai/glm-5.1": { context_window: 202800, supports_vision: false },
   "moonshot/kimi-k2.6": { context_window: 262144, supports_vision: true },
   "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
-  "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: true },
+  "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
   "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
 };
 

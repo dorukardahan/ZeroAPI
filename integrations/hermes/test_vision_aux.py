@@ -39,6 +39,42 @@ class HermesVisionAuxiliaryConfigTest(unittest.TestCase):
         self.assertEqual(route["model"], "gpt-5.5")
         self.assertIn("vision_capability_escape", route["reason"])
 
+    def test_resolves_best_subscribed_vision_auxiliary_not_just_openai(self):
+        config = {
+            **VISION_CONFIG,
+            "models": {
+                **VISION_CONFIG["models"],
+                "moonshot/kimi-k2.6": {
+                    "context_window": 262144,
+                    "supports_vision": True,
+                    "speed_tps": 35,
+                    "ttft_seconds": 1.4,
+                    "benchmarks": {"intelligence": 59.4, "coding": 56.5, "gpqa": 0.91},
+                },
+            },
+            "routing_rules": {
+                **VISION_CONFIG["routing_rules"],
+                "default": {"primary": "openai-codex/gpt-5.5", "fallbacks": ["zai/glm-5.1"]},
+            },
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {
+                    "openai-codex": {"enabled": True, "tierId": "plus"},
+                    "zai": {"enabled": True, "tierId": "max"},
+                    "moonshot": {"enabled": True, "tierId": "vivace"},
+                },
+            },
+        }
+
+        route = resolve_auxiliary_vision_route(
+            config,
+            current_provider="zai",
+            current_model="glm-5.1",
+        )
+
+        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["model"], "kimi-k2.6")
+
     def test_updates_existing_auxiliary_vision_auto_section(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -130,8 +130,8 @@ python3 integrations/hermes/vision_aux.py \
   --zeroapi-config ~/.hermes/zeroapi-config.json
 ```
 
-For a `zai/glm-5.1` main model with an available OpenAI Codex vision model,
-this writes:
+For a `zai/glm-5.1` main model with OpenAI Codex as the best eligible vision
+subscription, this writes:
 
 ```yaml
 auxiliary:
@@ -143,6 +143,12 @@ auxiliary:
 
 Run this after the ZeroAPI policy changes or after adding/removing a vision
 capable subscription.
+
+The helper does not hardcode OpenAI. It runs the same subscription-aware ZeroAPI
+ranking as the hot-path router. If another configured provider has the best
+eligible vision model, the helper writes that provider/model instead. Z.AI
+Coding Plan text subscriptions do not make `glm-5v-turbo` eligible unless the
+user explicitly adds a VLM/API route with image-capable runtime metadata.
 
 ## Test
 

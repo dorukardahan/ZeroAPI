@@ -1,24 +1,56 @@
 import { classifyTask } from "./classifier.js";
 import { filterCapableModels, estimateTokens, getCapabilityFilterFailure } from "./filter.js";
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
-import { getSubscriptionWeightedCandidates } from "./router.js";
+import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool } from "./router.js";
 import { selectModel } from "./selector.js";
 import type { RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
 
 export const DEFAULT_VISION_KEYWORDS = [
   "image",
   "screenshot",
+  "ss",
   "photo",
   "picture",
+  "foto",
+  "fotoğraf",
+  "fotoğrafı",
+  "fotoğrafta",
+  "fotoğrafa",
+  "fotograf",
+  "fotografi",
+  "fotografta",
+  "fotografa",
+  "resim",
+  "resmi",
+  "resimde",
+  "resme",
   "diagram",
   "chart",
   "graph",
   "visual",
+  "vision",
+  "görsel",
+  "görseli",
+  "görselde",
+  "görsele",
+  "gorsel",
+  "gorseli",
+  "gorselde",
+  "gorsele",
+  "ekran",
+  "ekran görüntüsü",
+  "ekran görüntüsünü",
+  "ekran görüntüsünde",
+  "ekran goruntusu",
+  "ekran goruntusunu",
+  "ekran goruntusunde",
   "logo",
   "icon",
   "UI",
   "mockup",
   "design",
+  "tasarım",
+  "tasarim",
 ];
 
 export type ResolveRoutingOptions = {
@@ -268,20 +300,23 @@ export function resolveRoutingDecision(
   if (rawDecision.category === "default" && likelyVision && currentModel) {
     const currentCaps = config.models[currentModel];
     if (currentCaps && !currentCaps.supports_vision) {
-      const visionCapable = Object.entries(config.models)
+      const visionCapable = Object.fromEntries(Object.entries(config.models)
         .filter(([, caps]) => caps.supports_vision)
-        .filter(([modelKey]) => isModelEligibleBySubscriptions(config, modelKey, agentId));
+        .filter(([modelKey]) => isModelEligibleBySubscriptions(config, modelKey, agentId)));
 
-      if (visionCapable.length > 0) {
-        // Use the default routing rule to pick the best vision-capable candidate.
-        const defaultRule = config.routing_rules.default;
-        const ordered = defaultRule
-          ? [defaultRule.primary, ...defaultRule.fallbacks]
-            .filter((key): key is string => typeof key === "string")
-            .filter((key) => visionCapable.some(([k]) => k === key))
-          : visionCapable.map(([key]) => key);
+      if (Object.keys(visionCapable).length > 0) {
+        const rankedVision = getSubscriptionWeightedCandidatesFromPool(
+          "default",
+          visionCapable,
+          config.subscription_profile,
+          config.subscription_inventory,
+          agentId,
+          config.routing_mode ?? "balanced",
+          config.routing_modifier,
+        );
+        const ordered = rankedVision.length > 0 ? rankedVision : Object.keys(visionCapable);
 
-        const targetModel = ordered.length > 0 ? ordered[0] : visionCapable[0][0];
+        const targetModel = ordered[0];
 
         if (targetModel !== currentModel) {
           const { provider, model } = splitModelKey(targetModel);
@@ -305,10 +340,10 @@ export function resolveRoutingDecision(
             ...baseContext,
             tokenEstimate: null,
             likelyVision: true,
-            capableModels: visionCapable.map(([key]) => key),
+            capableModels: Object.keys(visionCapable),
             capabilityRejected: [],
             subscriptionRejected: [],
-            weightedCandidates: ordered.length > 0 ? ordered : [targetModel],
+            weightedCandidates: ordered,
             rawDecision,
             finalDecision,
             selectedModel: targetModel,

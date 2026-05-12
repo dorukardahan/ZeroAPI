@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.16-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.16)
+[![Version](https://img.shields.io/badge/version-3.8.17-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.17)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -56,6 +56,8 @@ The default policy mode is `balanced`. That means ZeroAPI will not blindly force
 
 Important: ZeroAPI does **not** read provider dashboards, live remaining quota, billing counters, or private usage telemetry. In v1, "headroom" means a static policy signal derived from configured tier, `usagePriority`, `intendedUse`, and account count.
 
+Vision routing uses the same policy. Image attachments and visual requests are routed to the best eligible vision-capable model in the configured subscription pool, not to a hardcoded provider. For example, GPT-5.5 can win in an OpenAI + Z AI setup because Z AI Coding Plan text models do not include GLM-5V-Turbo API access by default. A different user with a configured Kimi vision subscription can route vision turns to Kimi instead.
+
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
 If the current runtime model is outside `zeroapi-config.json`'s `models` pool, ZeroAPI now defaults to `stay` instead of forcefully re-entering. This keeps subscription routing from hijacking unrelated API-key providers. Advanced users can opt back in with `"external_model_policy": "allow"`.
@@ -75,6 +77,8 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
 | Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | Free OAuth | $0 | $0 | coder-model |
+
+Vision capability is tracked per model in `zeroapi-config.json`. Starter configs only mark models as vision-capable when the OpenClaw runtime route is known to accept images. Provider-specific VLM/API models such as `zai/glm-5v-turbo` or custom Qwen VL routes should be added only when the user has explicit access and runtime metadata confirms image input.
 
 ## Task Categories
 
@@ -149,7 +153,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.16` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.17` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 

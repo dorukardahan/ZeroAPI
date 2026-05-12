@@ -189,8 +189,8 @@ openclaw onboard --auth-choice minimax-portal
 
 | Model ID | Notes |
 |----------|-------|
-| `MiniMax-M2.7` | Flagship |
-| `MiniMax-M2.7-highspeed` | Fast variant |
+| `MiniMax-M2.7` | Flagship text route in starter metadata |
+| `MiniMax-M2.7-highspeed` | Fast text variant |
 
 **Provider entry** (in `openclaw.json`):
 
@@ -201,8 +201,8 @@ openclaw onboard --auth-choice minimax-portal
       "minimax-portal": {
         "api": "anthropic-messages",
         "models": [
-          { "id": "MiniMax-M2.7" },
-          { "id": "MiniMax-M2.7-highspeed" }
+          { "id": "MiniMax-M2.7", "input": ["text"] },
+          { "id": "MiniMax-M2.7-highspeed", "input": ["text"] }
         ]
       }
     }
@@ -226,7 +226,7 @@ openclaw models auth login --provider qwen-portal --set-default
 | Model ID | Notes |
 |----------|-------|
 | `coder-model` | Qwen Portal coder route |
-| `vision-model` | Qwen Portal vision route |
+| custom VL/Omni route | Only when explicitly configured with image-capable runtime metadata |
 
 **Note**: Artificial Analysis tracks named Qwen releases like Qwen3.6 Plus. OpenClaw exposes the subscription route as `qwen-portal/coder-model`, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for that route.
 

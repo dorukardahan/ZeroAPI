@@ -372,7 +372,7 @@ describe("resolveRoutingDecision", () => {
       expect(result.reason).toBe("no_match");
     });
 
-    it("uses default routing rule ordering for vision candidates", () => {
+    it("keeps the default-rule leader when it remains the best subscribed vision candidate", () => {
       const result = resolveRoutingDecision(visionConfig, {
         prompt: "check this image",
         currentModel: "zai/glm-5",
@@ -380,6 +380,65 @@ describe("resolveRoutingDecision", () => {
       expect(result.action).toBe("route");
       // gpt-5.5 is primary in default rule AND supports vision
       expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+    });
+
+    it("ranks vision candidates across subscribed providers instead of hardcoding the default rule", () => {
+      const subscriptionAwareVisionConfig: ZeroAPIConfig = {
+        ...visionConfig,
+        models: {
+          ...visionConfig.models,
+          "moonshot/kimi-k2.6": {
+            context_window: 262144,
+            supports_vision: true,
+            speed_tps: 35,
+            ttft_seconds: 1.4,
+            benchmarks: { intelligence: 59.4, coding: 56.5, gpqa: 0.91 },
+          },
+        },
+        routing_rules: {
+          ...visionConfig.routing_rules,
+          default: { primary: "openai-codex/gpt-5.5", fallbacks: ["zai/glm-5"] },
+        },
+        subscription_profile: {
+          version: "1.0.0",
+          global: {
+            "openai-codex": { enabled: true, tierId: "plus" },
+            "zai": { enabled: true, tierId: "max" },
+            "moonshot": { enabled: true, tierId: "vivace" },
+          },
+        },
+      };
+
+      const result = resolveRoutingDecision(subscriptionAwareVisionConfig, {
+        prompt: "check this screenshot",
+        currentModel: "zai/glm-5",
+      });
+
+      expect(result.action).toBe("route");
+      expect(result.selectedModel).toBe("moonshot/kimi-k2.6");
+      expect(result.weightedCandidates[0]).toBe("moonshot/kimi-k2.6");
+    });
+
+    it("detects Turkish and shorthand visual requests without an attachment flag", () => {
+      for (const prompt of ["bu ss'e bak", "şu görseli yorumla", "fotoğrafta ne var", "ekran görüntüsünü incele"]) {
+        const result = resolveRoutingDecision(visionConfig, {
+          prompt,
+          currentModel: "zai/glm-5",
+        });
+        expect(result.action).toBe("route");
+        expect(result.likelyVision).toBe(true);
+        expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+      }
+    });
+
+    it("does not treat words containing ss as screenshot requests", () => {
+      const result = resolveRoutingDecision(visionConfig, {
+        prompt: "process listesini kontrol et",
+        currentModel: "zai/glm-5",
+      });
+
+      expect(result.action).toBe("stay");
+      expect(result.likelyVision).toBe(false);
     });
 
     it("falls back to any vision-capable model when default rule has no vision candidates", () => {

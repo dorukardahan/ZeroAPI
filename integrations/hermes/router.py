@@ -20,17 +20,49 @@ Config = dict[str, Any]
 VISION_KEYWORDS = [
     "image",
     "screenshot",
+    "ss",
     "photo",
     "picture",
+    "foto",
+    "fotoğraf",
+    "fotoğrafı",
+    "fotoğrafta",
+    "fotoğrafa",
+    "fotograf",
+    "fotografi",
+    "fotografta",
+    "fotografa",
+    "resim",
+    "resmi",
+    "resimde",
+    "resme",
     "diagram",
     "chart",
     "graph",
     "visual",
+    "vision",
+    "görsel",
+    "görseli",
+    "görselde",
+    "görsele",
+    "gorsel",
+    "gorseli",
+    "gorselde",
+    "gorsele",
+    "ekran",
+    "ekran görüntüsü",
+    "ekran görüntüsünü",
+    "ekran görüntüsünde",
+    "ekran goruntusu",
+    "ekran goruntusunu",
+    "ekran goruntusunde",
     "logo",
     "icon",
     "ui",
     "mockup",
     "design",
+    "tasarım",
+    "tasarim",
 ]
 
 PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
@@ -424,6 +456,78 @@ def _allowed_drop(tier_weight: float, provider_bias: float, category: TaskCatego
     return base
 
 
+def _rank_candidate_pool(
+    config: Config,
+    candidates: list[str],
+    models: Config,
+    category: TaskCategory,
+    modifier: str | None,
+    agent_id: str | None,
+) -> list[str]:
+    ranked: list[dict[str, Any]] = []
+    for index, candidate in enumerate(candidates):
+        caps = models.get(candidate)
+        if not isinstance(caps, dict):
+            continue
+        provider = _provider_id(candidate)
+        enabled, tier_weight = _capacity(config, provider, category, agent_id)
+        if not enabled or tier_weight <= 0:
+            continue
+
+        bias = _provider_bias(provider)
+        ranked.append(
+            {
+                "model_key": candidate,
+                "index": index,
+                "provider": provider,
+                "tier_weight": tier_weight,
+                "provider_bias": bias,
+                "pressure": tier_weight * bias,
+                "speed_priority": 0.0 if not isinstance(caps.get("ttft_seconds"), (int, float)) else 1 / max(float(caps["ttft_seconds"]), 0.25),
+                "strength": _benchmark_strength(category, caps, modifier),
+            }
+        )
+
+    if not ranked:
+        return []
+
+    strongest = max(item["strength"] for item in ranked)
+    for item in ranked:
+        allowed = _allowed_drop(item["tier_weight"], item["provider_bias"], category, modifier)
+        item["within_frontier"] = item["index"] == 0 if strongest <= 0 else item["strength"] >= strongest * (1 - allowed)
+
+    if modifier in {"coding-aware", "research-aware"} and category in {"code", "research"}:
+        ranked.sort(
+            key=lambda item: (
+                0 if item["within_frontier"] else 1,
+                -item["strength"],
+                -item["pressure"] if item["within_frontier"] else item["index"],
+                item["index"],
+            )
+        )
+    elif modifier == "speed-aware" and category in {"fast", "default"}:
+        ranked.sort(
+            key=lambda item: (
+                0 if item["within_frontier"] else 1,
+                -item["speed_priority"] if item["within_frontier"] else -item["strength"],
+                -item["pressure"] if item["within_frontier"] else item["index"],
+                -item["strength"] if item["within_frontier"] else 0,
+                item["index"],
+            )
+        )
+    else:
+        ranked.sort(
+            key=lambda item: (
+                0 if item["within_frontier"] else 1,
+                -item["pressure"] if item["within_frontier"] else -item["strength"],
+                -item["strength"] if item["within_frontier"] else item["index"],
+                item["index"],
+            )
+        )
+
+    return [item["model_key"] for item in ranked]
+
+
 class ZeroAPIRouter:
     def __init__(self, config: Config):
         self.config = config
@@ -470,6 +574,8 @@ class ZeroAPIRouter:
         # override the default-category stay and route to a vision-capable model.
         current = current_model or self.config.get("default_model")
         models = self.config.get("models", {})
+        modifier = self.config.get("routing_modifier")
+        modifier = modifier if isinstance(modifier, str) else None
 
         if category == "default" and likely_vision and current:
             current_caps = models.get(current)
@@ -483,15 +589,9 @@ class ZeroAPIRouter:
                     vision_capable.append(model_key)
 
                 if vision_capable:
-                    default_rule = self.config.get("routing_rules", {}).get("default")
-                    if isinstance(default_rule, dict):
-                        ordered = [
-                            c for c in [default_rule.get("primary"), *default_rule.get("fallbacks", [])]
-                            if isinstance(c, str) and c in vision_capable
-                        ]
-                    else:
+                    ordered = _rank_candidate_pool(self.config, vision_capable, models, "default", modifier, agent_id)
+                    if not ordered:
                         ordered = vision_capable
-
                     target = ordered[0] if ordered else vision_capable[0]
                     if target != current:
                         provider = _provider_id(target)
@@ -518,8 +618,6 @@ class ZeroAPIRouter:
         candidates = [rule.get("primary"), *rule.get("fallbacks", [])]
         token_estimate = _estimate_tokens(prompt)
         # likely_vision already computed above (includes has_image_attachment)
-        modifier = self.config.get("routing_modifier")
-        modifier = modifier if isinstance(modifier, str) else None
 
         ranked: list[dict[str, Any]] = []
         for index, candidate in enumerate(candidates):

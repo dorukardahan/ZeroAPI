@@ -324,3 +324,35 @@ export function getSubscriptionWeightedCandidates(
 
   return ranked.map((item) => item.candidate);
 }
+
+export function getSubscriptionWeightedCandidatesFromPool(
+  category: TaskCategory,
+  availableModels: Record<string, ModelCapabilities>,
+  profile: SubscriptionProfile | undefined,
+  inventory: SubscriptionInventory | undefined,
+  agentId: string | undefined,
+  routingMode: RoutingMode = "balanced",
+  routingModifier?: RoutingModifier,
+): string[] {
+  const candidates = Object.keys(availableModels);
+  if (candidates.length === 0) return [];
+
+  const poolRule = {
+    primary: candidates[0],
+    fallbacks: candidates.slice(1),
+  };
+
+  return getSubscriptionWeightedCandidates(
+    category,
+    availableModels,
+    {
+      [category]: poolRule,
+      default: poolRule,
+    },
+    profile,
+    inventory,
+    agentId,
+    routingMode,
+    routingModifier,
+  );
+}

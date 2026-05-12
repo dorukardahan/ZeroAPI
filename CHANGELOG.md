@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [3.8.17] - 2026-05-12
+
+### Changed
+- Route vision turns through the same subscription-aware benchmark frontier as normal routing instead of picking the first vision model in the default rule. Hermes `auxiliary.vision` now inherits that policy as well, so GPT-5.5 is only selected when it is the best eligible vision model for the configured subscriptions.
+- Expand built-in vision detection for Turkish and English visual requests, including image attachments, screenshots, `ss`, `görsel`, `fotoğraf`, `resim`, and `ekran görüntüsü` phrasing while preserving word-boundary false-positive protection.
+- Keep MiniMax M2.7 starter metadata text-only unless a runtime config explicitly marks an image-capable MiniMax model. Keep Z.AI Coding Plan starter configs on text GLM models only; GLM-5V-Turbo remains explicit-access only.
+
+### Fixed
+- Avoid routing Hermes image analysis to Z.AI GLM-5V-Turbo from a normal Z.AI Coding Plan subscription.
+
 ## [3.8.16] - 2026-05-11
 
 ### Added
@@ -289,7 +299,7 @@
 
 ## [3.2.3] — 2026-04-18
 
-Kimi Coding alias follow-up after checking current OpenClaw provider docs and Asuman's runtime config.
+Kimi Coding alias follow-up after checking current OpenClaw provider docs and a live runtime config.
 
 ### Fixed
 - Added `kimi` as a Kimi provider alias alongside legacy `kimi-coding`, while keeping `moonshot` as the canonical Moonshot/Kimi K2 provider id
@@ -321,7 +331,7 @@ OpenClaw source-alignment patch, benchmark refresh, and public configuration har
 - Benchmark snapshot refreshed to 162 benchmark reference models from ZeroAPI's supported provider ecosystems (AA API v2, fetched 2026-04-18)
 - Practical policy pool source-aligned with upstream OpenClaw provider catalogs: `moonshot/kimi-k2.5`, `minimax-portal/MiniMax-M2.7`, `qwen-portal/coder-model`, `zai/glm-5.1`, and `openai-codex/gpt-5.4`
 - `gpt-5.4-nano` removed from the subscription-focused OpenAI Codex policy pool because upstream OpenClaw exposes it under the direct OpenAI provider, not `openai-codex`
-- Example configs now use OpenClaw runtime capability limits, including the `openai-codex` 272K context cap and source-confirmed vision support for Kimi, MiniMax, and Qwen
+- Example configs now use OpenClaw runtime capability limits, including the `openai-codex` 272K context cap and provider-specific vision metadata only when a runtime route is known to accept images
 - Subscription routing now uses a benchmark frontier plus subscription pressure instead of pure tier-weight reordering
 
 ### Fixed

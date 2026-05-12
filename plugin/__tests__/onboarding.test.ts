@@ -56,6 +56,23 @@ describe("buildStarterConfig", () => {
     expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
   });
 
+  it("keeps MiniMax M2.7 text-only in starter runtime metadata", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "minimax-portal", tierId: "starter" }],
+    });
+
+    expect(config.models["minimax-portal/MiniMax-M2.7"]?.supports_vision).toBe(false);
+  });
+
+  it("does not add Z.AI VLM models to Coding Plan starter configs", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "zai", tierId: "max" }],
+    });
+
+    expect(Object.keys(config.models)).toEqual(["zai/glm-5.1"]);
+    expect(Object.keys(config.models).some((model) => model.includes("glm-5v"))).toBe(false);
+  });
+
   it("prefers inventory for multi-account providers and keeps modifier selection", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "zai", tierId: "pro" }],

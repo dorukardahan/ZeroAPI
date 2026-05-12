@@ -8,7 +8,7 @@ const models: Record<string, ModelCapabilities> = {
     benchmarks: { intelligence: 57.2, coding: 57.3, terminalbench: 0.576, tau2: 0.915, ifbench: 0.739 },
   },
   "minimax-portal/MiniMax-M2.7": {
-    context_window: 204800, supports_vision: true, speed_tps: 41, ttft_seconds: 1.75,
+    context_window: 204800, supports_vision: false, speed_tps: 41, ttft_seconds: 1.75,
     benchmarks: { intelligence: 49.6, coding: 41.9, terminalbench: 0.394, tau2: 0.848, ifbench: 0.757 },
   },
   "zai/glm-5": {
