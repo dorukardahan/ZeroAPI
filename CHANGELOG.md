@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.20] - 2026-05-13
+
+### Fixed
+- Do not treat defensive secret-handling constraints like "do not print/log/commit secrets" as high-risk routing blockers. Unsafe credential requests still stay on the current model.
+- Align the Hermes adapter with the same defensive credential-context handling so long coding prompts with normal secret-safety instructions can still route to the intended model.
+
 ## [3.8.19] - 2026-05-12
 
 ### Fixed

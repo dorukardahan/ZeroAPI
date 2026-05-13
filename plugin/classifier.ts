@@ -8,6 +8,45 @@ function buildKeywordRegex(keyword: string, flags?: string): RegExp {
   return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`, flags);
 }
 
+const SAFE_CREDENTIAL_RISK_KEYWORDS = new Set([
+  "credential",
+  "credentials",
+  "secret",
+  "secrets",
+  "password",
+  "passwords",
+]);
+
+function isCredentialRiskKeyword(keyword: string): boolean {
+  return SAFE_CREDENTIAL_RISK_KEYWORDS.has(keyword.toLowerCase());
+}
+
+function hasSafeCredentialHandlingContext(lower: string, index: number, keyword: string): boolean {
+  const before = lower.slice(Math.max(0, index - 90), index);
+  const after = lower.slice(index + keyword.length, index + keyword.length + 140);
+  const around = `${before} ${after}`;
+  return (
+    /\b(do not|don't|dont|never|without|avoid|redact|mask|hide|prevent|must not|should not|shouldn't)\b/.test(around) ||
+    /\b(not print|not log|not commit|not expose|not leak|not show|not display|not use|redacted)\b/.test(around) ||
+    /\b(asla|sakın|sakin|gizle|redakte|maskele|gösterme|gosterme|yazdırma|yazdirma|loglama|kullanma|paylaşma|paylasma|sızdırma|sizdirma)\b/.test(around) ||
+    /\bcommit etme\b/.test(around)
+  );
+}
+
+function findHighRiskKeyword(lower: string, highRiskKeywords: string[]): string | undefined {
+  for (const kw of highRiskKeywords) {
+    const regex = buildKeywordRegex(kw, "g");
+    for (const match of lower.matchAll(regex)) {
+      const index = match.index ?? 0;
+      if (isCredentialRiskKeyword(kw) && hasSafeCredentialHandlingContext(lower, index, kw)) {
+        continue;
+      }
+      return kw;
+    }
+  }
+  return undefined;
+}
+
 const DEFAULT_RISK_LEVELS: Record<TaskCategory, RiskLevel> = {
   code: "medium",
   research: "low",
@@ -30,7 +69,7 @@ export function classifyTask(
     return { category: "default", model: null, provider: null, reason: "empty_prompt", risk: "low" };
   }
 
-  const matchedHighRisk = highRiskKeywords.find((kw) => buildKeywordRegex(kw).test(lower));
+  const matchedHighRisk = findHighRiskKeyword(lower, highRiskKeywords);
   const isHighRisk = Boolean(matchedHighRisk);
 
   let bestCategory: TaskCategory = "default";

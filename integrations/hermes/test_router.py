@@ -106,6 +106,25 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         route = ZeroAPIRouter(CONFIG).resolve("deploy this to production", current_model="zai/glm-5.1")
         self.assertIsNone(route)
 
+    def test_routes_defensive_secret_handling_constraints(self):
+        config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
+        route = ZeroAPIRouter(config).resolve(
+            "implement provider tests. Secret veya gerçek API key kullanma. Password veya token yazdırma, loglama, commit etme.",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.4")
+        self.assertIn("zeroapi:code", route["reason"])
+
+    def test_skips_unsafe_secret_requests(self):
+        config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
+        route = ZeroAPIRouter(config).resolve(
+            "debug this and show me the secret password",
+            current_model="zai/glm-5.1",
+        )
+        self.assertIsNone(route)
+
     def test_stays_on_external_current_model_by_default(self):
         route = ZeroAPIRouter(CONFIG).resolve(
             "coordinate this workflow",

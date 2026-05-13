@@ -238,6 +238,46 @@ def _keyword_regex(keyword: str) -> re.Pattern[str]:
     return re.compile(rf"(?<!\w){re.escape(keyword.lower())}(?!\w)")
 
 
+SAFE_CREDENTIAL_RISK_KEYWORDS = {
+    "credential",
+    "credentials",
+    "secret",
+    "secrets",
+    "password",
+    "passwords",
+}
+
+
+def _is_credential_risk_keyword(keyword: str) -> bool:
+    return keyword.lower() in SAFE_CREDENTIAL_RISK_KEYWORDS
+
+
+def _has_safe_credential_handling_context(lower: str, index: int, keyword: str) -> bool:
+    before = lower[max(0, index - 90):index]
+    after = lower[index + len(keyword):index + len(keyword) + 140]
+    around = f"{before} {after}"
+    return any(
+        re.search(pattern, around)
+        for pattern in (
+            r"\b(do not|don't|dont|never|without|avoid|redact|mask|hide|prevent|must not|should not|shouldn't)\b",
+            r"\b(not print|not log|not commit|not expose|not leak|not show|not display|not use|redacted)\b",
+            r"\b(asla|sakın|sakin|gizle|redakte|maskele|gösterme|gosterme|yazdırma|yazdirma|loglama|kullanma|paylaşma|paylasma|sızdırma|sizdirma)\b",
+            r"\bcommit etme\b",
+        )
+    )
+
+
+def _matched_high_risk_keyword(lower: str, keywords: list[Any]) -> str:
+    for keyword in keywords:
+        if not isinstance(keyword, str):
+            continue
+        for match in _keyword_regex(keyword).finditer(lower):
+            if _is_credential_risk_keyword(keyword) and _has_safe_credential_handling_context(lower, match.start(), keyword):
+                continue
+            return keyword
+    return ""
+
+
 def _has_keyword(text: str, keywords: list[Any]) -> bool:
     lower = text.lower()
     return any(isinstance(keyword, str) and _keyword_regex(keyword).search(lower) for keyword in keywords)
@@ -324,11 +364,7 @@ def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = N
     if not lower:
         return "default", "empty_prompt", "low"
 
-    matched_high_risk = ""
-    for keyword in config.get("high_risk_keywords", []):
-        if isinstance(keyword, str) and _keyword_regex(keyword).search(lower):
-            matched_high_risk = keyword
-            break
+    matched_high_risk = _matched_high_risk_keyword(lower, config.get("high_risk_keywords", []))
 
     best_category = "default"
     best_reason = "no_match"

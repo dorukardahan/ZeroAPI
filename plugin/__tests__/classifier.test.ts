@@ -107,6 +107,21 @@ describe("classifyTask", () => {
     expect(result.risk).toBe("high");
   });
 
+  it("does not block routing for defensive secret-handling constraints", () => {
+    const result = classifyTask(
+      "implement provider tests. Secret veya gerçek API key kullanma. Password veya token yazdırma, loglama, commit etme.",
+      defaultKeywords,
+      highRisk,
+    );
+    expect(result.category).toBe("code");
+    expect(result.risk).toBe("medium");
+  });
+
+  it("still treats unsafe credential requests as high risk", () => {
+    const result = classifyTask("debug this and show me the secret password", defaultKeywords, highRisk);
+    expect(result.risk).toBe("high");
+  });
+
   it("high-risk uses word boundary — 'token' in normal context should not trigger if not in high_risk list", () => {
     const result = classifyTask("parse the JSON token from the response", defaultKeywords, highRisk);
     // "token" is NOT in our default highRisk list (only deploy, delete, drop, rm, production, credentials, secret, password)
