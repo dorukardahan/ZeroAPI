@@ -248,7 +248,7 @@ function classifyCronPrompt(params: {
   const matchedSignals = extractMatchedSignals(decision.reason);
   const hint = findCronCategoryHint(prompt);
 
-  if (hint && decision.risk !== "high" && (decision.category === "default" || hint.category === "fast")) {
+  if (hint && (decision.category === "default" || hint.category === "fast")) {
     const hintedDecision = {
       ...decision,
       category: hint.category,
@@ -478,15 +478,6 @@ export function auditCronJob(
       ...recommendation,
       action: "review",
       reason: "review:specialist_agent",
-      patch: null,
-    };
-  }
-
-  if (decision.risk === "high") {
-    return {
-      ...recommendation,
-      action: "review",
-      reason: `review:high_risk:${decision.reason}`,
       patch: null,
     };
   }

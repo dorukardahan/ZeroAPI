@@ -1,14 +1,18 @@
 # Risk Policy, Observability, and Staleness
 
-## Risk-tiered failure policy
+## Risk-tiered observability policy
 
-| Risk Level | Examples | On Failure |
-|-----------|----------|------------|
-| Low | format, translate, simple query | fall back to default silently |
-| Medium | code changes, research | fall back to next category model and log routing event |
-| High | deploys, destructive ops, credential handling | do **not** auto-route; stay on default and log warning |
+| Risk Level | Examples | Routing Behavior |
+|-----------|----------|------------------|
+| Low | format, translate, simple query | route normally |
+| Medium | code changes, research | route normally |
+| High | deploys, destructive ops, credential handling | route normally and log the diagnostic signal |
 
 High-risk keywords: `deploy`, `delete`, `drop`, `rm`, `production`, `credentials`, `secret`, `password`.
+
+ZeroAPI is a model router, not a content moderation or security enforcement
+layer. Risk levels are diagnostics for observability and tuning. They must not
+block or downgrade a user's requested task.
 
 ## Observability
 

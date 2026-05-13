@@ -160,14 +160,12 @@ After ordering, ZeroAPI picks the first surviving candidate unless staying is mo
 ### Stay cases
 
 - category is `default`
-- risk is `high`
 - no eligible candidate remains
 - weighted first choice is already the current model and no auth-profile reroute is needed
 
 These produce `action: "stay"` with reasons such as:
 
 - `no_match`
-- `high_risk:*`
 - `*:no_eligible_candidate`
 - `*:no_switch_needed`
 

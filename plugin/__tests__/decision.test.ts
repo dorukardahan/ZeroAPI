@@ -294,14 +294,15 @@ describe("resolveRoutingDecision", () => {
     expect(result.subscriptionRejected).toEqual(["zai/glm-5", "moonshot/kimi-k2.5"]);
   });
 
-  it("preserves high-risk stays with explicit reason", () => {
+  it("does not let high-risk diagnostics block routing", () => {
     const result = resolveRoutingDecision(config, {
-      prompt: "deploy this to production",
+      prompt: "debug this production credential issue",
       currentModel: config.default_model,
     });
-    expect(result.action).toBe("stay");
-    expect(result.reason).toContain("high_risk:");
+    expect(result.action).toBe("route");
+    expect(result.reason).toContain("keyword:debug");
     expect(result.finalDecision?.risk).toBe("high");
+    expect(result.finalDecision?.category).toBe("code");
   });
 
   describe("continuation routing", () => {
@@ -518,13 +519,15 @@ describe("resolveRoutingDecision", () => {
       expect(result.action).toBe("stay");
     });
 
-    it("does not trigger vision escape for high-risk messages", () => {
+    it("lets vision escape work even when the prompt has high-risk diagnostics", () => {
       const result = resolveRoutingDecision(visionConfig, {
         prompt: "deploy this screenshot to production",
         currentModel: "zai/glm-5",
       });
-      expect(result.action).toBe("stay");
-      expect(result.reason).toContain("high_risk:");
+      expect(result.action).toBe("route");
+      expect(result.reason).toBe("vision_capability_escape");
+      expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
+      expect(result.rawDecision?.risk).toBe("high");
     });
   });
 });

@@ -48,7 +48,7 @@ describe("classifyTask", () => {
     expect(result.category).toBe("default");
   });
 
-  it("detects high risk keywords", () => {
+  it("keeps high-risk keywords as diagnostics", () => {
     const result = classifyTask("deploy this to production", defaultKeywords, highRisk);
     expect(result.risk).toBe("high");
   });
@@ -107,18 +107,22 @@ describe("classifyTask", () => {
     expect(result.risk).toBe("high");
   });
 
-  it("does not block routing for defensive secret-handling constraints", () => {
-    const result = classifyTask(
-      "implement provider tests. Secret veya gerçek API key kullanma. Password veya token yazdırma, loglama, commit etme.",
-      defaultKeywords,
-      highRisk,
-    );
+  it.each([
+    ["English", "implement provider tests. Do not use real API keys. Do not print, log, or commit secrets."],
+    ["Turkish", "implement provider tests. Secret veya gerçek API key kullanma. Password veya token yazdırma, loglama, commit etme."],
+    ["Spanish", "implement provider tests. No usar API keys reales. No mostrar secretos."],
+    ["Chinese", "implement provider tests. 不要显示或提交 secret."],
+    ["Japanese", "implement provider tests. secret を表示しないでコミットしないでください."],
+    ["Korean", "implement provider tests. secret 표시하지 말고 커밋하지 말아 주세요."],
+  ])("keeps defensive credential-handling constraints routeable (%s)", (_language, prompt) => {
+    const result = classifyTask(prompt, defaultKeywords, highRisk);
     expect(result.category).toBe("code");
     expect(result.risk).toBe("medium");
   });
 
-  it("still treats unsafe credential requests as high risk", () => {
+  it("marks unsafe credential requests as diagnostic high risk only", () => {
     const result = classifyTask("debug this and show me the secret password", defaultKeywords, highRisk);
+    expect(result.category).toBe("code");
     expect(result.risk).toBe("high");
   });
 

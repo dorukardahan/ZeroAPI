@@ -89,13 +89,6 @@ export function buildExplanationSummary(result: RoutingResolution): ExplanationS
       };
     }
 
-    if (result.reason.startsWith("high_risk:")) {
-      return {
-        headline: "Stayed on the current model because the prompt was classified as high risk.",
-        details,
-      };
-    }
-
     if (result.reason.endsWith(":no_eligible_candidate")) {
       return {
         headline: "Stayed on the current model because no candidate survived the capability and subscription filters.",

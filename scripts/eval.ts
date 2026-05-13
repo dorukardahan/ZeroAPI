@@ -4,7 +4,7 @@
  *
  * Reads ~/.openclaw/logs/zeroapi-routing.log and reports:
  *   - category distribution
- *   - risk override rate
+ *   - diagnostic risk rate
  *   - model/provider concentration
  *   - no-route (default) rate
  *   - keyword hit distribution
@@ -178,17 +178,17 @@ if (Object.keys(modifiers).some((modifier) => modifier !== "none")) {
   }
 }
 
-// Routing activity — distinguish between no-keyword-match, high-risk blocks, and no-switch-needed
-const highRiskBlocked = entries.filter((e) => e.reason.startsWith("high_risk:")).length;
+// Routing activity — distinguish between no-keyword-match, diagnostic high-risk signals, and no-switch-needed
+const highRiskDiagnostic = entries.filter((e) => e.risk === "high").length;
 const noKeywordMatch = entries.filter((e) => e.reason === "no_match" || e.reason.endsWith(":no_match")).length;
 const noSwitchNeeded = entries.filter((e) => e.reason.includes("no_switch_needed")).length;
-const activelyRouted = total - highRiskBlocked - noKeywordMatch - noSwitchNeeded;
+const activelyRouted = total - noKeywordMatch - noSwitchNeeded;
 
 console.log(`\n## Routing Activity`);
 console.log(`  ${pad("Actively routed", 20)} ${padNum(activelyRouted, 4)} (${pct(activelyRouted, total).padStart(5)})`);
 console.log(`  ${pad("No keyword match", 20)} ${padNum(noKeywordMatch, 4)} (${pct(noKeywordMatch, total).padStart(5)})`);
 console.log(`  ${pad("No switch needed", 20)} ${padNum(noSwitchNeeded, 4)} (${pct(noSwitchNeeded, total).padStart(5)})`);
-console.log(`  ${pad("High-risk blocked", 20)} ${padNum(highRiskBlocked, 4)} (${pct(highRiskBlocked, total).padStart(5)})`);
+console.log(`  ${pad("High-risk signal", 20)} ${padNum(highRiskDiagnostic, 4)} (${pct(highRiskDiagnostic, total).padStart(5)})`);
 
 if (noKeywordMatch / total > 0.5) {
   console.log(`  ⚠ ${pct(noKeywordMatch, total)} of prompts have no keyword match. Consider expanding keywords.`);
@@ -215,7 +215,7 @@ console.log(`\n## Tuning Suggestions`);
 const suggestions: string[] = [];
 
 if (highRiskRate > 0.2) {
-  suggestions.push("High-risk override rate >20%. Review high_risk_keywords — some may be too broad.");
+  suggestions.push("High-risk diagnostic rate >20%. Review high_risk_keywords if the metric is noisy.");
 }
 if (noKeywordMatch / total > 0.5) {
   suggestions.push("Over half of prompts have no keyword match. Add keywords for common task patterns.");

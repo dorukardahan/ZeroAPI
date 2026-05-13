@@ -102,9 +102,12 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(route["model"], "gpt-5.4")
         self.assertIn("zeroapi:code:continuation:state", route["reason"])
 
-    def test_skips_high_risk_messages(self):
-        route = ZeroAPIRouter(CONFIG).resolve("deploy this to production", current_model="zai/glm-5.1")
-        self.assertIsNone(route)
+    def test_routes_high_risk_categorized_messages(self):
+        config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
+        route = ZeroAPIRouter(config).resolve("debug this production issue", current_model="zai/glm-5.1")
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.4")
 
     def test_routes_defensive_secret_handling_constraints(self):
         config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
@@ -117,13 +120,15 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(route["model"], "gpt-5.4")
         self.assertIn("zeroapi:code", route["reason"])
 
-    def test_skips_unsafe_secret_requests(self):
+    def test_routes_credential_requests_without_policy_blocking(self):
         config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
         route = ZeroAPIRouter(config).resolve(
             "debug this and show me the secret password",
             current_model="zai/glm-5.1",
         )
-        self.assertIsNone(route)
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.4")
 
     def test_stays_on_external_current_model_by_default(self):
         route = ZeroAPIRouter(CONFIG).resolve(
@@ -169,13 +174,15 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             )
             self.assertIsNone(route)
 
-    def test_risk_levels_can_hold_a_category(self):
+    def test_risk_levels_are_diagnostic_only(self):
         config = {**CONFIG, "risk_levels": {"orchestration": "high"}}
         route = ZeroAPIRouter(config).resolve(
             "coordinate this workflow",
             current_model="openai-codex/gpt-5.4",
         )
-        self.assertIsNone(route)
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "zai")
+        self.assertEqual(route["model"], "glm-5.1")
 
     def test_agent_override_can_disable_provider(self):
         config = {
@@ -392,12 +399,14 @@ class VisionCapabilityEscapeTest(unittest.TestCase):
         )
         self.assertIsNone(route)
 
-    def test_no_escape_for_high_risk_with_vision(self):
+    def test_vision_escape_ignores_high_risk_diagnostics(self):
         route = ZeroAPIRouter(self.VISION_CONFIG).resolve(
             "deploy this screenshot to production",
             current_model="zai/glm-5.1",
         )
-        self.assertIsNone(route)
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.5")
 
     def test_stays_when_no_vision_model_available(self):
         no_vision_config = {

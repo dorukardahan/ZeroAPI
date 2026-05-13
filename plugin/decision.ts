@@ -5,12 +5,26 @@ import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFro
 import { selectModel } from "./selector.js";
 import type { ConversationMessage, RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
 
-export const DEFAULT_VISION_KEYWORDS = [
+const ENGLISH_VISION_KEYWORDS = [
   "image",
   "screenshot",
   "ss",
   "photo",
   "picture",
+  "diagram",
+  "chart",
+  "graph",
+  "visual",
+  "vision",
+  "logo",
+  "icon",
+  "UI",
+  "mockup",
+  "design",
+];
+
+const LOCALIZED_VISION_KEYWORDS = [
+  // Turkish image and screenshot phrasing.
   "foto",
   "fotoğraf",
   "fotoğrafı",
@@ -24,11 +38,6 @@ export const DEFAULT_VISION_KEYWORDS = [
   "resmi",
   "resimde",
   "resme",
-  "diagram",
-  "chart",
-  "graph",
-  "visual",
-  "vision",
   "görsel",
   "görseli",
   "görselde",
@@ -44,16 +53,13 @@ export const DEFAULT_VISION_KEYWORDS = [
   "ekran goruntusu",
   "ekran goruntusunu",
   "ekran goruntusunde",
-  "logo",
-  "icon",
-  "UI",
-  "mockup",
-  "design",
   "tasarım",
   "tasarim",
 ];
 
-export const DEFAULT_CONTINUATION_KEYWORDS = [
+export const DEFAULT_VISION_KEYWORDS = [...ENGLISH_VISION_KEYWORDS, ...LOCALIZED_VISION_KEYWORDS];
+
+const ENGLISH_CONTINUATION_KEYWORDS = [
   "continue",
   "keep going",
   "go on",
@@ -61,10 +67,14 @@ export const DEFAULT_CONTINUATION_KEYWORDS = [
   "proceed",
   "resume",
   "continue working",
+  "go",
+  "go go",
+];
+
+const LOCALIZED_CONTINUATION_KEYWORDS = [
+  // Turkish continuation acknowledgements used in chat channels.
   "devam",
   "devam et",
-  "devam et kral",
-  "devam et canım",
   "sürdür",
   "surdur",
   "ilerle",
@@ -72,15 +82,14 @@ export const DEFAULT_CONTINUATION_KEYWORDS = [
   "basla",
   "yap",
   "hallet",
-  "go",
-  "go go",
   "tamam",
   "tamamdır",
   "evet",
   "olur",
   "kabul",
-  "wp",
 ];
+
+export const DEFAULT_CONTINUATION_KEYWORDS = [...ENGLISH_CONTINUATION_KEYWORDS, ...LOCALIZED_CONTINUATION_KEYWORDS];
 
 const DEFAULT_CONTINUATION_ROUTE_CATEGORIES: TaskCategory[] = ["code", "research", "math"];
 
@@ -193,7 +202,7 @@ function categoryFromHistory(
     config.risk_levels,
   );
 
-  if (decision.category !== "default" && decision.risk !== "high" && allowed.includes(decision.category)) {
+  if (decision.category !== "default" && allowed.includes(decision.category)) {
     return {
       category: decision.category,
       reason: `history:${decision.reason}`,
@@ -392,33 +401,6 @@ export function resolveRoutingDecision(
     workspaceHints,
     config.risk_levels,
   );
-
-  if (rawDecision.risk === "high") {
-    const finalDecision = {
-      ...rawDecision,
-      model: null,
-      provider: null,
-      reason: `high_risk:${rawDecision.reason}`,
-    };
-    return {
-      action: "stay",
-      reason: finalDecision.reason,
-      ...baseContext,
-      tokenEstimate: null,
-      likelyVision,
-      capableModels: [],
-      capabilityRejected: [],
-      subscriptionRejected: [],
-      weightedCandidates: [],
-      rawDecision,
-      finalDecision,
-      selectedModel: null,
-      providerOverride: null,
-      modelOverride: null,
-      authProfileOverride: null,
-      selectedAccountId: null,
-    };
-  }
 
   const continuation = rawDecision.category === "default"
     ? resolveContinuationCategory(config, options)

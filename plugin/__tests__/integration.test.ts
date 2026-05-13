@@ -76,7 +76,7 @@ describe("full routing pipeline", () => {
     expect(model).toBeNull();
   });
 
-  it("blocks high-risk tasks from routing", () => {
+  it("keeps high-risk keywords as diagnostics only", () => {
     const decision = classifyTask("deploy this to production", config.keywords, config.high_risk_keywords);
     expect(decision.risk).toBe("high");
   });

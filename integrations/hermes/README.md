@@ -76,14 +76,14 @@ ZeroAPI returns only:
 It never returns API keys, auth profiles, base URLs, or transport settings.
 Hermes resolves those through its own model switch pipeline.
 
-The adapter also mirrors the important OpenClaw safety gates:
+The adapter also mirrors the important OpenClaw routing gates:
 
 - providers listed in `disabled_providers` or `ZEROAPI_DISABLED_PROVIDERS`
   are never selected
 - explicit specialist agents in `workspace_hints` with `null` are skipped
 - unhinted agents already running a non-default model are skipped
 - `cron` and `heartbeat` triggers are skipped when Hermes supplies them
-- high-risk messages stay on the current model
+- high-risk keyword matches are diagnostic only and do not block routing
 - external current models are left alone unless `external_model_policy` is `allow`
 
 For emergency provider shutdowns, use either config or env:

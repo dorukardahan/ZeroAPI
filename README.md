@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.20-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.20)
+[![Version](https://img.shields.io/badge/version-3.8.21-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.21)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -153,7 +153,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.20` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.21` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
@@ -296,7 +296,7 @@ Every routing decision is logged to `~/.openclaw/logs/zeroapi-routing.log`. The 
 npm run eval -- --last 500
 ```
 
-The report shows category distribution, risk override rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants - keywords, risk levels, vision detection, TTFT thresholds, fallback ordering, and external-model handling - live in `zeroapi-config.json` and can be changed without touching code.
+The report shows category distribution, diagnostic risk rate, provider diversity, keyword hit rates, and concrete tuning suggestions. All routing constants - keywords, risk levels, vision detection, TTFT thresholds, fallback ordering, and external-model handling - live in `zeroapi-config.json` and can be changed without touching code.
 
 One important knob is `external_model_policy`:
 - `"stay"` (default) - if the current runtime model is outside ZeroAPI's configured pool, do not override it

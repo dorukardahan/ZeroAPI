@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.8.21] - 2026-05-13
+
+### Changed
+- Treat high-risk keyword matches as diagnostics only. ZeroAPI no longer blocks or downgrades routing for prompts that mention production, credentials, secrets, or passwords.
+- Keep localized credential-safety phrases as English-named pattern data, including Turkish, Spanish, French, German, Chinese, Japanese, Korean, and Hindi defensive wording.
+- Normalize first-run CLI copy to English while preserving multilingual routing support in data and tests.
+
 ## [3.8.20] - 2026-05-13
 
 ### Fixed

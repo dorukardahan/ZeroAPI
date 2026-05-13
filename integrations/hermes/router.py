@@ -17,12 +17,26 @@ from typing import Any
 TaskCategory = str
 Config = dict[str, Any]
 
-VISION_KEYWORDS = [
+ENGLISH_VISION_KEYWORDS = [
     "image",
     "screenshot",
     "ss",
     "photo",
     "picture",
+    "diagram",
+    "chart",
+    "graph",
+    "visual",
+    "vision",
+    "logo",
+    "icon",
+    "ui",
+    "mockup",
+    "design",
+]
+
+LOCALIZED_VISION_KEYWORDS = [
+    # Turkish image and screenshot phrasing.
     "foto",
     "fotoğraf",
     "fotoğrafı",
@@ -36,11 +50,6 @@ VISION_KEYWORDS = [
     "resmi",
     "resimde",
     "resme",
-    "diagram",
-    "chart",
-    "graph",
-    "visual",
-    "vision",
     "görsel",
     "görseli",
     "görselde",
@@ -56,16 +65,13 @@ VISION_KEYWORDS = [
     "ekran goruntusu",
     "ekran goruntusunu",
     "ekran goruntusunde",
-    "logo",
-    "icon",
-    "ui",
-    "mockup",
-    "design",
     "tasarım",
     "tasarim",
 ]
 
-CONTINUATION_KEYWORDS = [
+VISION_KEYWORDS = ENGLISH_VISION_KEYWORDS + LOCALIZED_VISION_KEYWORDS
+
+ENGLISH_CONTINUATION_KEYWORDS = [
     "continue",
     "keep going",
     "go on",
@@ -73,10 +79,14 @@ CONTINUATION_KEYWORDS = [
     "proceed",
     "resume",
     "continue working",
+    "go",
+    "go go",
+]
+
+LOCALIZED_CONTINUATION_KEYWORDS = [
+    # Turkish continuation acknowledgements used in chat channels.
     "devam",
     "devam et",
-    "devam et kral",
-    "devam et canım",
     "sürdür",
     "surdur",
     "ilerle",
@@ -84,14 +94,40 @@ CONTINUATION_KEYWORDS = [
     "basla",
     "yap",
     "hallet",
-    "go",
-    "go go",
     "tamam",
     "tamamdır",
     "evet",
     "olur",
     "kabul",
-    "wp",
+]
+
+CONTINUATION_KEYWORDS = ENGLISH_CONTINUATION_KEYWORDS + LOCALIZED_CONTINUATION_KEYWORDS
+
+ENGLISH_SAFE_CREDENTIAL_CONTEXT_PATTERNS = [
+    r"\b(do not|don't|dont|never|without|avoid|redact|mask|hide|prevent|must not|should not|shouldn't)\b",
+    r"\b(not print|not log|not commit|not expose|not leak|not show|not display|not use|redacted)\b",
+]
+
+LOCALIZED_SAFE_CREDENTIAL_CONTEXT_PATTERNS = [
+    # Turkish defensive phrasing, for example "do not show/log/use/share/leak".
+    r"\b(asla|sakın|sakin|gizle|redakte|maskele|gösterme|gosterme|yazdırma|yazdirma|loglama|kullanma|paylaşma|paylasma|sızdırma|sizdirma)\b",
+    r"\bcommit etme\b",
+    # Spanish defensive phrasing.
+    r"\b(no mostrar|no imprimir|no registrar|no usar|no exponer|no filtrar|redactar)\b",
+    # French defensive phrasing.
+    r"\b(ne pas afficher|ne pas imprimer|ne pas journaliser|ne pas utiliser|ne pas exposer|masquer)\b",
+    # German defensive phrasing.
+    r"\b(nicht anzeigen|nicht drucken|nicht protokollieren|nicht verwenden|nicht offenlegen|maskieren)\b",
+    # Chinese, Japanese, Korean, and Hindi defensive phrasing.
+    r"不要(显示|打印|记录|使用|提交|泄露)|请勿(显示|打印|记录|使用|提交|泄露)|脱敏|打码|隐藏",
+    r"(表示|出力|記録|使用|コミット|漏洩|漏ら)しない|ログしない|マスク",
+    r"(표시|출력|기록|사용|커밋|유출)하지\s*말|가려|마스킹",
+    r"(मत\s*(दिखाओ|छापो|लॉग|लिखो|उपयोग|कमिट)|छुपा|मास्क)",
+]
+
+SAFE_CREDENTIAL_CONTEXT_PATTERNS = [
+    *ENGLISH_SAFE_CREDENTIAL_CONTEXT_PATTERNS,
+    *LOCALIZED_SAFE_CREDENTIAL_CONTEXT_PATTERNS,
 ]
 
 CONTINUATION_ROUTE_CATEGORIES = ["code", "research", "math"]
@@ -256,15 +292,7 @@ def _has_safe_credential_handling_context(lower: str, index: int, keyword: str) 
     before = lower[max(0, index - 90):index]
     after = lower[index + len(keyword):index + len(keyword) + 140]
     around = f"{before} {after}"
-    return any(
-        re.search(pattern, around)
-        for pattern in (
-            r"\b(do not|don't|dont|never|without|avoid|redact|mask|hide|prevent|must not|should not|shouldn't)\b",
-            r"\b(not print|not log|not commit|not expose|not leak|not show|not display|not use|redacted)\b",
-            r"\b(asla|sakın|sakin|gizle|redakte|maskele|gösterme|gosterme|yazdırma|yazdirma|loglama|kullanma|paylaşma|paylasma|sızdırma|sizdirma)\b",
-            r"\bcommit etme\b",
-        )
-    )
+    return any(re.search(pattern, around) for pattern in SAFE_CREDENTIAL_CONTEXT_PATTERNS)
 
 
 def _matched_high_risk_keyword(lower: str, keywords: list[Any]) -> str:
@@ -340,7 +368,7 @@ def _history_continuation_category(
         return None
 
     category, reason, risk = _classify(config, recent)
-    if category != "default" and risk != "high" and category in allowed:
+    if category != "default" and category in allowed:
         return category, f"history:{reason}"
     return None
 
@@ -388,7 +416,7 @@ def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = N
                 best_reason = f"keyword:{first}" if first else "no_match"
                 best_score = score
 
-    if best_score == 0 and workspace_hints and len(workspace_hints) == 1 and not matched_high_risk:
+    if best_score == 0 and workspace_hints and len(workspace_hints) == 1:
         hint = workspace_hints[0]
         if isinstance(hint, str) and hint:
             best_category = hint
@@ -711,9 +739,6 @@ class ZeroAPIRouter:
         # the classifier falls back to "default" (e.g. short screenshot captions).
         likely_vision = _has_keyword(prompt, self.config.get("vision_keywords", VISION_KEYWORDS)) or has_image_attachment
 
-        if risk == "high":
-            return None
-
         if category == "default":
             continuation = _resolve_continuation_category(
                 self.config,
@@ -759,7 +784,7 @@ class ZeroAPIRouter:
                             "category": "default",
                         }
 
-        if risk == "high" or category == "default":
+        if category == "default":
             return None
         if (
             isinstance(current, str)

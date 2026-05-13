@@ -84,7 +84,7 @@ async function askNonEmpty(
     const answer = (await rl.question(`${prompt}${suffix}: `)).trim();
     const value = answer || defaultValue;
     if (value && value.trim()) return value.trim();
-    console.log("Boş bırakılamaz.");
+    console.log("This value cannot be empty.");
   }
 }
 
@@ -97,9 +97,9 @@ async function askYesNo(
   while (true) {
     const answer = (await rl.question(`${prompt}${suffix}: `)).trim().toLowerCase();
     if (!answer) return defaultValue;
-    if (["y", "yes", "e", "evet"].includes(answer)) return true;
-    if (["n", "no", "h", "hayır", "hayir"].includes(answer)) return false;
-    console.log("Lütfen y veya n gir.");
+    if (["y", "yes"].includes(answer)) return true;
+    if (["n", "no"].includes(answer)) return false;
+    console.log("Please enter y or n.");
   }
 }
 
@@ -165,7 +165,7 @@ async function askInt(
     if (Number.isFinite(value) && value >= min && value <= max) {
       return value;
     }
-    console.log(`Lütfen ${min}-${max} arası bir sayı gir.`);
+    console.log(`Please enter a number between ${min} and ${max}.`);
   }
 }
 
@@ -234,16 +234,16 @@ async function main() {
 
   try {
     console.log("ZeroAPI First Run Wizard");
-    console.log("Bu araç başlangıç için çalışan bir zeroapi-config.json üretir.");
+    console.log("This tool creates a working starter zeroapi-config.json.");
 
     if (!existsSync(args.openclawDir)) {
       const createDir = await askYesNo(
         rl,
-        `${args.openclawDir} bulunamadı. Klasör oluşturulsun mu?`,
+        `${args.openclawDir} was not found. Create it?`,
         true,
       );
       if (!createDir) {
-        fail("OpenClaw dizini olmadan devam edemem.");
+        fail("Cannot continue without an OpenClaw directory.");
       }
       mkdirSync(args.openclawDir, { recursive: true });
     }
@@ -283,23 +283,23 @@ async function main() {
       .filter(([, hint]) => Array.isArray(hint) && hint.length > 0)
       .map(([agentId, hint]) => `${agentId} (${(hint as TaskCategory[]).join(",")})`);
     if (routedAgents.length > 0) {
-      console.log(`\nZeroAPI-managed agent adayları: ${routedAgents.join(", ")}`);
-      console.log("- Bu agent'lar için OpenClaw model kataloğu ve güvenli başlangıç modeli hizalanabilir.");
+      console.log(`\nZeroAPI-managed agent candidates: ${routedAgents.join(", ")}`);
+      console.log("- OpenClaw model catalog entries and safe startup models can be aligned for these agents.");
     }
 
     const pendingAdvisory = readPendingSubscriptionAdvisory(args.openclawDir);
     if (pendingAdvisory) {
-      console.log("\nZeroAPI bu yeniden çalıştırma için yeni drift tespit etti");
+      console.log("\nZeroAPI detected new subscription drift for this rerun");
       for (const item of listPendingSubscriptionAdvisoryItems(pendingAdvisory)) {
         console.log(`- ${item}`);
       }
-      console.log("- Bu koşu sonunda policy bu eklemeleri kapsayacak şekilde güncellenecek.");
+      console.log("- The policy will be updated to include these additions at the end of this run.");
     }
 
     if (existsSync(targetFile)) {
       const overwrite = await askYesNo(
         rl,
-        `${targetFile} zaten var. Yeniden üretip üzerine yazılsın mı?`,
+        `${targetFile} already exists. Regenerate and overwrite it?`,
         Boolean(pendingAdvisory),
       );
       if (!overwrite) {
@@ -348,7 +348,7 @@ async function main() {
       const provider = providers[providerIndex];
       const tierChoices = getStarterTierChoices(provider.openclawProviderId);
       if (tierChoices.length === 0) {
-        fail(`${provider.label} için kullanılabilir tier bulunamadı.`);
+        fail(`No available tiers found for ${provider.label}.`);
       }
 
       const existingAccounts = inventoryDefaultsByProvider.get(provider.openclawProviderId) ?? [];
@@ -480,15 +480,15 @@ async function main() {
         const agentReport = auditOpenClawAgentModels(config, openclawConfig);
         const needsAgentAlignment = agentReport.catalogMissing.length > 0 || agentReport.counts.change > 0;
         if (needsAgentAlignment) {
-          console.log("\nOpenClaw agent/model hizalama özeti");
-          console.log(`- model catalog eksiği: ${agentReport.catalogMissing.length}`);
-          console.log(`- agent baseline değişikliği: ${agentReport.counts.change}`);
+          console.log("\nOpenClaw agent/model alignment summary");
+          console.log(`- missing model catalog entries: ${agentReport.catalogMissing.length}`);
+          console.log(`- agent baseline changes: ${agentReport.counts.change}`);
           for (const item of agentReport.items.filter((entry) => entry.action === "change")) {
-            console.log(`- ${item.id}: ${item.suggestedModel} (${item.suggestedFallbacks.join(", ") || "fallback yok"})`);
+            console.log(`- ${item.id}: ${item.suggestedModel} (${item.suggestedFallbacks.join(", ") || "no fallbacks"})`);
           }
           const alignNow = await askYesNo(
             rl,
-            "OpenClaw model catalog ve routed agent başlangıç modellerini hizalayayım mı?",
+            "Align OpenClaw model catalog entries and routed agent startup models now?",
             true,
           );
           if (alignNow) {
@@ -497,61 +497,61 @@ async function main() {
             copyFileSync(openclawConfigPath, backupPath);
             writeFileSync(openclawConfigPath, `${JSON.stringify(result.config, null, 2)}\n`, "utf-8");
             console.log(`- openclaw.json backup: ${backupPath}`);
-            console.log(`- catalog eklenen: ${result.catalogAdded.length}`);
-            console.log(`- agent hizalanan: ${result.applied.length}`);
+            console.log(`- catalog entries added: ${result.catalogAdded.length}`);
+            console.log(`- agents aligned: ${result.applied.length}`);
           }
         }
       } catch (error) {
-        console.log(`\nOpenClaw agent/model hizalama atlandı: ${error instanceof Error ? error.message : String(error)}`);
+        console.log(`\nOpenClaw agent/model alignment skipped: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     const selectedProviderIds = providerSelections.map((provider) => provider.providerId);
     const authCommands = getStarterAuthCommands(selectedProviderIds);
     if (authCommands.length > 0) {
-      console.log("\nGerekli auth komutları:");
+      console.log("\nRequired auth commands:");
       authCommands.forEach((command) => console.log(`- ${command}`));
     }
 
     if (commandExists("openclaw")) {
       const managedInstall = await askYesNo(
         rl,
-        "ZeroAPI'yi managed modda kurayım mı? Bu mod skill + plugin'i birlikte senkronlar ve otomatik minor/patch update timer'ı kurmayı dener.",
+        "Install ZeroAPI in managed mode? This syncs the skill and plugin together and tries to install an automatic minor/patch update timer.",
         true,
       );
 
       if (managedInstall) {
         const result = runCommand(process.execPath, [resolve(REPO_ROOT, "scripts", "managed_install.mjs"), "--openclaw-dir", args.openclawDir]);
         if (result.status !== 0) {
-          console.log("\nManaged kurulum başarısız oldu. Fallback olarak elle çalıştır:");
+          console.log("\nManaged install failed. Run this manually as a fallback:");
           console.log(`${process.execPath} ${resolve(REPO_ROOT, "scripts", "managed_install.mjs")} --openclaw-dir ${args.openclawDir}`);
         }
       } else {
         const installPlugin = await askYesNo(
           rl,
-          "Sadece plugin'i bu repo'daki plugin klasöründen şimdi kurayım mı?",
+          "Install only the plugin from this repo's plugin directory now?",
           true,
         );
 
         if (installPlugin) {
           const result = runCommand("openclaw", ["plugins", "install", resolve(REPO_ROOT, "plugin")]);
           if (result.status !== 0) {
-            console.log("\nPlugin kurulumu başarısız oldu. Elle çalıştır:");
+            console.log("\nPlugin install failed. Run this manually:");
             console.log(`openclaw plugins install ${resolve(REPO_ROOT, "plugin")}`);
           }
         }
       }
     } else {
-      console.log("\nopenclaw CLI PATH içinde görünmüyor. Plugin'i sonra elle kur:");
+      console.log("\nopenclaw CLI is not visible in PATH. Install the plugin manually later:");
       console.log(`openclaw plugins install ${resolve(REPO_ROOT, "plugin")}`);
     }
 
-    console.log("\nSonraki adımlar");
-    console.log("1. Yukarıdaki auth komutlarıyla seçtiğin provider'ları bağla.");
+    console.log("\nNext steps");
+    console.log("1. Connect the selected providers with the auth commands above.");
     console.log("2. openclaw models status");
     console.log("3. bash scripts-zeroapi-doctor.sh");
     console.log('4. npm run simulate -- --prompt "refactor the auth module"');
-    console.log("5. Gerekirse modifier davranışını compare_modifiers ile kıyasla.");
+    console.log("5. Compare modifier behavior with compare_modifiers if needed.");
   } finally {
     rl.close();
   }

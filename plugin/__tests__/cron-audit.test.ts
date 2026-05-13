@@ -266,23 +266,23 @@ describe("auditCronJob", () => {
     expect(result.suggestedModel).toBe("openai-codex/gpt-5.4");
   });
 
-  it("sends high-risk cron jobs to manual review", () => {
+  it("does not force high-risk cron jobs to manual review", () => {
     const result = auditCronJob(config, {
       id: "prod-deploy",
       name: "Production deploy",
       enabled: true,
       payload: {
         kind: "agentTurn",
-        message: "deploy this to production",
+        message: "build and deploy this to production",
         model: "zai/glm-5.1",
       },
     });
 
-    expect(result.action).toBe("review");
-    expect(result.reason).toContain("review:high_risk");
+    expect(result.action).toBe("change");
+    expect(result.reason).toContain("change:keyword:build");
     expect(result.confidence).toBe("high");
     expect(result.matchedSignals).toContain("high_risk_keyword:deploy");
-    expect(result.patch).toBeNull();
+    expect(result.patch?.payload.model).toBe("openai-codex/gpt-5.4");
   });
 });
 
