@@ -10,16 +10,22 @@ provider normalization, base URLs, API modes, and model switching.
 
 ## Requirements
 
-- Hermes Agent with `pre_model_route` hook support.
+- Hermes Agent with a working `pre_model_route` runtime path.
 - A ZeroAPI policy file at one of:
   - `$ZEROAPI_CONFIG_PATH`
   - `~/.hermes/zeroapi-config.json`
   - `~/.openclaw/zeroapi-config.json`
 
-Current upstream Hermes releases may not expose `pre_model_route` yet. Do not
-work around that by mutating private gateway internals from
-`pre_gateway_dispatch`; that path is session-scoped and can leak across turns.
-Use the small Hermes core hook patch until the hook is released upstream.
+The compatibility requirement is stricter than "the hook name exists."
+Hermes must actually invoke `pre_model_route` during the agent turn, discover
+plugins before invoking it, and rebuild the system prompt when a route switch
+changes provider/model. Otherwise the model can route correctly at runtime while
+the prompt still tells the agent it is running on the old model.
+
+Do not work around missing runtime support by mutating private gateway internals
+from `pre_gateway_dispatch`; that path is session-scoped and can leak across
+turns. Use the doctor and optional runtime patch below until the behavior lands
+in the Hermes release you use.
 
 ## Install
 
@@ -47,8 +53,25 @@ python ~/.hermes/plugins/zeroapi-router/doctor.py
 Expected output:
 
 ```text
-OK Hermes exposes pre_model_route. ZeroAPI Hermes routing can be enabled.
+OK Hermes runtime can apply ZeroAPI pre_model_route safely.
 ```
+
+If the doctor fails on a Hermes install you control, preview the compatibility
+patch:
+
+```bash
+python ~/.hermes/plugins/zeroapi-router/patch_runtime.py --dry-run
+```
+
+Then apply it and restart Hermes:
+
+```bash
+python ~/.hermes/plugins/zeroapi-router/patch_runtime.py
+```
+
+The patch writes a timestamped backup next to `run_agent.py` and is designed to
+be idempotent. Run the doctor again after restart. If a future Hermes release
+passes the doctor without the patch, prefer the upstream runtime.
 
 ## Provider Mapping
 
@@ -156,5 +179,7 @@ user explicitly adds a VLM/API route with image-capable runtime metadata.
 python3 integrations/hermes/test_router.py
 python3 integrations/hermes/test_auth_audit.py
 python3 integrations/hermes/test_vision_aux.py
+python3 integrations/hermes/test_doctor.py
+python3 integrations/hermes/test_runtime_patch.py
 python3 integrations/hermes/doctor.py
 ```

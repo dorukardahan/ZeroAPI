@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [3.8.22] - 2026-05-13
+
+### Added
+- Add a stricter Hermes compatibility doctor that verifies the real runtime path, not just `VALID_HOOKS`.
+- Add an idempotent Hermes runtime patch helper for controlled installs where `run_agent.py` does not invoke `pre_model_route`, does not discover plugins before the hook, or can reuse stale system prompt cache after a route switch.
+- Add regression coverage for Hermes runtime compatibility checks and the runtime patch helper.
+
+### Fixed
+- Prevent false "Hermes-compatible" results when Hermes exposes the hook name but the agent turn cannot actually apply ZeroAPI routing safely.
+
 ## [3.8.21] - 2026-05-13
 
 ### Changed

@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.21-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.21)
+[![Version](https://img.shields.io/badge/version-3.8.22-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.22)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -153,7 +153,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.21` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.22` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
@@ -167,7 +167,7 @@ Use it when:
 - you already have a ZeroAPI policy file
 - you want deterministic routing without an extra LLM/router call
 
-See [`integrations/hermes/README.md`](integrations/hermes/README.md) for install notes, provider ID mapping, and the compatibility doctor. If an upstream Hermes release does not expose `pre_model_route` yet, use the small Hermes core hook patch; do not emulate routing by mutating private gateway session state from `pre_gateway_dispatch`.
+See [`integrations/hermes/README.md`](integrations/hermes/README.md) for install notes, provider ID mapping, the compatibility doctor, and the optional runtime patch for Hermes installs that expose `pre_model_route` but do not actually invoke it safely. Do not emulate routing by mutating private gateway session state from `pre_gateway_dispatch`.
 
 For the exact channel-vs-host contract, see [`references/channel-onboarding.md`](references/channel-onboarding.md). For rerun-first question behavior when drift is detected, see [`references/chat-rerun-playbook.md`](references/chat-rerun-playbook.md). `openclaw.json` remains the runtime authority for defaults, provider setup, and agent model state. `zeroapi-config.json` is ZeroAPI policy config only.
 

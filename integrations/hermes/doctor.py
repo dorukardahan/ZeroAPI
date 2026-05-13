@@ -1,14 +1,123 @@
 """ZeroAPI Hermes compatibility doctor.
 
-This checks whether the active Hermes Python environment exposes the
+This checks whether the active Hermes Python environment can actually run the
 ``pre_model_route`` hook that ZeroAPI needs for real runtime routing.
-It does not print secrets and does not mutate config.
+
+The check is intentionally stricter than "does VALID_HOOKS contain the hook?"
+because Hermes versions can expose the hook name without invoking it from the
+agent turn, or can invoke it while still reusing a stale system-prompt cache
+after a route switch.
+
+The doctor is read-only: it does not print secrets and does not mutate config.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import importlib
+import importlib.util
+import inspect
+import re
 import sys
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class Check:
+    level: str
+    message: str
+
+
+def _source_for_module(module_name: str) -> tuple[Path | None, str | None]:
+    try:
+        spec = importlib.util.find_spec(module_name)
+    except (ImportError, ValueError):
+        return None, None
+    if spec is None or spec.origin is None:
+        return None, None
+    path = Path(spec.origin)
+    try:
+        return path, path.read_text(encoding="utf-8")
+    except OSError:
+        return path, None
+
+
+def _function_body(source: str, name: str) -> str:
+    pattern = re.compile(rf"^def {re.escape(name)}\(.*?(?=^def |^class |\Z)", re.M | re.S)
+    match = pattern.search(source)
+    return match.group(0) if match else ""
+
+
+def _invoke_hook_discovers_plugins(plugins_source: str) -> bool:
+    body = _function_body(plugins_source, "invoke_hook")
+    return "_ensure_plugins_discovered" in body or "discover_plugins" in body or "discover_and_load" in body
+
+
+def _run_agent_invokes_pre_model_route(run_agent_source: str) -> bool:
+    return '"pre_model_route"' in run_agent_source and "_apply_pre_model_route_hook" in run_agent_source
+
+
+def _run_agent_discovers_before_pre_model_route(run_agent_source: str) -> bool:
+    if "_apply_pre_model_route_hook" not in run_agent_source:
+        return False
+    method = run_agent_source.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
+    return "discover_plugins" in method and "_discover_plugins()" in method
+
+
+def _run_agent_refreshes_system_prompt_after_route(run_agent_source: str) -> bool:
+    return (
+        "_pre_model_route_switched_this_turn" in run_agent_source
+        and 'not getattr(self, "_pre_model_route_switched_this_turn", False)' in run_agent_source
+    )
+
+
+def analyze_runtime_sources(
+    *,
+    valid_hooks: set[str],
+    plugins_source: str | None,
+    run_agent_source: str | None,
+) -> list[Check]:
+    checks: list[Check] = []
+
+    if "pre_model_route" not in valid_hooks:
+        checks.append(Check("FAIL", "Hermes does not expose VALID_HOOKS['pre_model_route']."))
+        return checks
+    checks.append(Check("OK", "Hermes exposes VALID_HOOKS['pre_model_route']."))
+
+    if not plugins_source:
+        checks.append(Check("FAIL", "Could not read hermes_cli.plugins source."))
+    if not run_agent_source:
+        checks.append(Check("FAIL", "Could not read run_agent.py source."))
+        return checks
+
+    if not _run_agent_invokes_pre_model_route(run_agent_source):
+        checks.append(Check("FAIL", "Hermes run_agent.py does not invoke pre_model_route during the agent turn."))
+        return checks
+    checks.append(Check("OK", "Hermes run_agent.py invokes pre_model_route."))
+
+    invoke_auto_discovers = bool(plugins_source and _invoke_hook_discovers_plugins(plugins_source))
+    run_agent_discovers = _run_agent_discovers_before_pre_model_route(run_agent_source)
+    if not (invoke_auto_discovers or run_agent_discovers):
+        checks.append(
+            Check(
+                "FAIL",
+                "pre_model_route can run with an empty plugin registry. Ensure discover_plugins() runs before invoke_hook().",
+            )
+        )
+    else:
+        checks.append(Check("OK", "pre_model_route discovery path is present."))
+
+    if not _run_agent_refreshes_system_prompt_after_route(run_agent_source):
+        checks.append(
+            Check(
+                "FAIL",
+                "Route switches can reuse a stale system_prompt cache, so the model may still see the old provider/model.",
+            )
+        )
+    else:
+        checks.append(Check("OK", "System prompt cache is refreshed after pre_model_route switches model."))
+
+    return checks
 
 
 def main() -> int:
@@ -19,11 +128,37 @@ def main() -> int:
         return 1
 
     hooks = getattr(plugins, "VALID_HOOKS", set())
-    if "pre_model_route" not in hooks:
-        print("FAIL Hermes does not expose pre_model_route. Install the Hermes core hook patch before enabling ZeroAPI routing.")
+    if not isinstance(hooks, set):
+        hooks = set(hooks or [])
+
+    plugins_path = Path(inspect.getsourcefile(plugins) or "")
+    try:
+        plugins_source = plugins_path.read_text(encoding="utf-8") if plugins_path else None
+    except OSError:
+        plugins_source = None
+
+    run_agent_path, run_agent_source = _source_for_module("run_agent")
+    checks = analyze_runtime_sources(
+        valid_hooks=hooks,
+        plugins_source=plugins_source,
+        run_agent_source=run_agent_source,
+    )
+
+    if plugins_path:
+        print(f"INFO hermes_cli.plugins={plugins_path}")
+    if run_agent_path:
+        print(f"INFO run_agent={run_agent_path}")
+
+    failed = False
+    for check in checks:
+        print(f"{check.level} {check.message}")
+        failed = failed or check.level == "FAIL"
+
+    if failed:
+        print("FAIL Hermes runtime is not ZeroAPI-compatible yet. Run patch_runtime.py or install an upstream Hermes release with this fix.")
         return 2
 
-    print("OK Hermes exposes pre_model_route. ZeroAPI Hermes routing can be enabled.")
+    print("OK Hermes runtime can apply ZeroAPI pre_model_route safely.")
     return 0
 
 
