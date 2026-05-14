@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.26] - 2026-05-14
+
+### Fixed
+- Extend the Hermes runtime patch to repair stale inherited API keys even when the child provider URL and API mode already match.
+- Prevent Hermes delegated child agents from reusing a stale parent credential pool after ZeroAPI has routed the parent turn to another provider.
+
 ## [3.8.25] - 2026-05-14
 
 ### Fixed

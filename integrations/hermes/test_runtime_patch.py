@@ -91,6 +91,30 @@ def _build_child_agent(parent_agent, override_base_url=None, override_acp_comman
 
     # Resolve reasoning config: delegation override > parent inherit
     child_reasoning = None
+
+
+def _resolve_child_credential_pool(effective_provider, parent_agent):
+    if not effective_provider:
+        return getattr(parent_agent, "_credential_pool", None)
+
+    parent_provider = getattr(parent_agent, "provider", None) or ""
+    parent_pool = getattr(parent_agent, "_credential_pool", None)
+    if parent_pool is not None and effective_provider == parent_provider:
+        return parent_pool
+
+    try:
+        from agent.credential_pool import load_pool
+
+        pool = load_pool(effective_provider)
+        if pool is not None and pool.has_credentials():
+            return pool
+    except Exception:
+        pass
+    return None
+
+
+def _resolve_delegation_credentials(cfg, parent_agent):
+    return {}
 '''
 
 
@@ -125,6 +149,8 @@ class HermesRuntimePatchTest(unittest.TestCase):
         self.assertIn("def _normalize_child_runtime_tuple(", patched)
         self.assertIn("detect_provider_for_model(", patched)
         self.assertIn("resolve_runtime_provider(", patched)
+        self.assertIn("api_key_mismatch", patched)
+        self.assertIn("parent_pool_provider", patched)
         self.assertIn("explicit_provider=override_provider is not None", patched)
         self.assertIn("explicit_base_url=override_base_url is not None", patched)
         self.assertIn(
@@ -145,13 +171,37 @@ class HermesRuntimePatchTest(unittest.TestCase):
         patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
         legacy = patched.replace("    explicit_provider: bool,\n", "")
         legacy = legacy.replace("detect_provider_for_model(", "detect_provider_for_model_old(")
+        legacy = legacy.replace(
+            "    api_key_mismatch = bool(resolved_api_key and api_key != resolved_api_key)\n",
+            "",
+        )
+        legacy = legacy.replace("        or api_key_mismatch\n", "")
 
         upgraded, changes = patch_delegate_tool_source(legacy)
 
         self.assertIn("updated delegate runtime tuple normalizer", changes)
         self.assertIn("explicit_provider: bool", upgraded)
         self.assertIn("detect_provider_for_model(", upgraded)
+        self.assertIn("api_key_mismatch", upgraded)
         self.assertNotIn("detect_provider_for_model_old(", upgraded)
+
+    def test_delegate_tool_patch_upgrades_stale_parent_pool_resolver(self):
+        patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+        legacy = patched.replace(
+            '''        parent_pool_provider = getattr(parent_pool, "provider", None)
+        if not isinstance(parent_pool_provider, str) or (
+            parent_pool_provider == effective_provider
+        ):
+            return parent_pool
+''',
+            "        return parent_pool\n",
+        )
+
+        upgraded, changes = patch_delegate_tool_source(legacy)
+
+        self.assertIn("updated delegate credential pool resolver", changes)
+        self.assertIn("parent_pool_provider", upgraded)
+        self.assertIn("parent_pool_provider == effective_provider", upgraded)
 
     def test_delegate_tool_patch_upgrades_legacy_normalization_call(self):
         patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)

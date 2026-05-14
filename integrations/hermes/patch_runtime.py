@@ -214,9 +214,16 @@ def _normalize_child_runtime_tuple(
         resolved_base_url and current_base_url != resolved_base_url
     )
     api_mode_mismatch = bool(resolved_api_mode and api_mode != resolved_api_mode)
+    api_key_mismatch = bool(resolved_api_key and api_key != resolved_api_key)
     missing_base_url = current_base_url is None and resolved_base_url is not None
 
-    if not (provider_mismatch or missing_base_url or base_url_mismatch or api_mode_mismatch):
+    if not (
+        provider_mismatch
+        or missing_base_url
+        or base_url_mismatch
+        or api_mode_mismatch
+        or api_key_mismatch
+    ):
         return provider, base_url, api_key, api_mode
 
     logger.info(
@@ -230,6 +237,46 @@ def _normalize_child_runtime_tuple(
         resolved_api_key or api_key,
         resolved_api_mode or api_mode,
     )
+'''
+
+
+DELEGATE_CREDENTIAL_POOL_RESOLVER = r'''
+def _resolve_child_credential_pool(effective_provider: Optional[str], parent_agent):
+    """Resolve a credential pool for the child agent.
+
+    Rules:
+    1. Same provider and same pool provider as the parent -> share the parent's
+       pool so cooldown state and rotation stay synchronized.
+    2. Different provider, or stale parent pool -> try to load that provider's
+       own pool.
+    3. No pool available -> return None and let the child keep the inherited
+       fixed credential behavior.
+    """
+    if not effective_provider:
+        return getattr(parent_agent, "_credential_pool", None)
+
+    parent_provider = getattr(parent_agent, "provider", None) or ""
+    parent_pool = getattr(parent_agent, "_credential_pool", None)
+    if parent_pool is not None and effective_provider == parent_provider:
+        parent_pool_provider = getattr(parent_pool, "provider", None)
+        if not isinstance(parent_pool_provider, str) or (
+            parent_pool_provider == effective_provider
+        ):
+            return parent_pool
+
+    try:
+        from agent.credential_pool import load_pool
+
+        pool = load_pool(effective_provider)
+        if pool is not None and pool.has_credentials():
+            return pool
+    except Exception as exc:
+        logger.debug(
+            "Could not load credential pool for child provider '%s': %s",
+            effective_provider,
+            exc,
+        )
+    return None
 '''
 
 
@@ -306,7 +353,11 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
         if start == -1 or end == -1:
             raise ValueError("Could not locate existing delegate runtime normalizer block.")
         normalizer = text[start:end]
-        if "explicit_provider: bool" not in normalizer or "detect_provider_for_model(" not in normalizer:
+        if (
+            "explicit_provider: bool" not in normalizer
+            or "detect_provider_for_model(" not in normalizer
+            or "api_key_mismatch" not in normalizer
+        ):
             text = text[:start] + DELEGATE_RUNTIME_NORMALIZER + text[end:]
             changes.append("updated delegate runtime tuple normalizer")
 
@@ -348,6 +399,20 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
         if not changed:
             raise ValueError("Could not update existing delegate runtime normalization call.")
         changes.append("updated delegate runtime normalization call")
+
+    resolver_start = text.find("\ndef _resolve_child_credential_pool(")
+    if resolver_start != -1:
+        resolver_end = text.find("\ndef _resolve_delegation_credentials(", resolver_start)
+        if resolver_end == -1:
+            raise ValueError("Could not locate existing delegate credential pool resolver block.")
+        resolver = text[resolver_start:resolver_end]
+        if "parent_pool_provider" not in resolver:
+            text = (
+                text[:resolver_start]
+                + DELEGATE_CREDENTIAL_POOL_RESOLVER
+                + text[resolver_end:]
+            )
+            changes.append("updated delegate credential pool resolver")
 
     return text, changes
 
