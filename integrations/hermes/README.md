@@ -22,6 +22,11 @@ plugins before invoking it, and rebuild the system prompt when a route switch
 changes provider/model. Otherwise the model can route correctly at runtime while
 the prompt still tells the agent it is running on the old model.
 
+For multi-agent use, Hermes must also build delegated child agents with a
+consistent `provider` / `model` / `base_url` / `api_mode` tuple. A parent turn
+can route to the right model but still spawn a child that inherits the old
+endpoint unless the delegation runtime path is normalized.
+
 Do not work around missing runtime support by mutating private gateway internals
 from `pre_gateway_dispatch`; that path is session-scoped and can leak across
 turns. Use the doctor and optional runtime patch below until the behavior lands
@@ -69,9 +74,10 @@ Then apply it and restart Hermes:
 python ~/.hermes/plugins/zeroapi-router/patch_runtime.py
 ```
 
-The patch writes a timestamped backup next to `run_agent.py` and is designed to
-be idempotent. Run the doctor again after restart. If a future Hermes release
-passes the doctor without the patch, prefer the upstream runtime.
+The patch writes timestamped backups next to `run_agent.py` and
+`tools/delegate_tool.py`, and is designed to be idempotent. Run the doctor again
+after restart. If a future Hermes release passes the doctor without the patch,
+prefer the upstream runtime.
 
 ## Provider Mapping
 

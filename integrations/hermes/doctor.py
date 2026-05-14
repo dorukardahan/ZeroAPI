@@ -71,11 +71,20 @@ def _run_agent_refreshes_system_prompt_after_route(run_agent_source: str) -> boo
     )
 
 
+def _delegate_tool_normalizes_runtime_tuple(delegate_tool_source: str) -> bool:
+    return (
+        "def _normalize_child_runtime_tuple(" in delegate_tool_source
+        and "resolve_runtime_provider(" in delegate_tool_source
+        and "explicit_base_url=override_base_url is not None" in delegate_tool_source
+    )
+
+
 def analyze_runtime_sources(
     *,
     valid_hooks: set[str],
     plugins_source: str | None,
     run_agent_source: str | None,
+    delegate_tool_source: str | None = None,
 ) -> list[Check]:
     checks: list[Check] = []
 
@@ -117,6 +126,18 @@ def analyze_runtime_sources(
     else:
         checks.append(Check("OK", "System prompt cache is refreshed after pre_model_route switches model."))
 
+    if not delegate_tool_source:
+        checks.append(Check("FAIL", "Could not read tools.delegate_tool source."))
+    elif not _delegate_tool_normalizes_runtime_tuple(delegate_tool_source):
+        checks.append(
+            Check(
+                "FAIL",
+                "delegate_task child runtime can inherit stale base_url/api_mode after a provider/model route switch.",
+            )
+        )
+    else:
+        checks.append(Check("OK", "delegate_task child runtime tuple normalization is present."))
+
     return checks
 
 
@@ -138,16 +159,20 @@ def main() -> int:
         plugins_source = None
 
     run_agent_path, run_agent_source = _source_for_module("run_agent")
+    delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool")
     checks = analyze_runtime_sources(
         valid_hooks=hooks,
         plugins_source=plugins_source,
         run_agent_source=run_agent_source,
+        delegate_tool_source=delegate_tool_source,
     )
 
     if plugins_path:
         print(f"INFO hermes_cli.plugins={plugins_path}")
     if run_agent_path:
         print(f"INFO run_agent={run_agent_path}")
+    if delegate_tool_path:
+        print(f"INFO tools.delegate_tool={delegate_tool_path}")
 
     failed = False
     for check in checks:

@@ -1,6 +1,6 @@
 import unittest
 
-from patch_runtime import patch_run_agent_source
+from patch_runtime import patch_delegate_tool_source, patch_run_agent_source
 
 
 UPSTREAM_LIKE_RUN_AGENT = '''
@@ -60,6 +60,40 @@ class AIAgent:
 '''
 
 
+UPSTREAM_LIKE_DELEGATE_TOOL = '''
+import logging
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+
+def _subagent_auto_approve(command: str, description: str, **kwargs) -> str:
+    return "once"
+
+
+def _get_subagent_approval_callback():
+    return None
+
+
+def _build_child_agent(parent_agent, override_base_url=None, override_acp_command=None):
+    effective_model = "gpt-5.5"
+    effective_provider = "openai-codex"
+    effective_base_url = override_base_url or parent_agent.base_url
+    effective_api_key = parent_agent.api_key
+    effective_api_mode = parent_agent.api_mode
+    effective_acp_command = override_acp_command
+
+    if override_acp_command:
+        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp
+        # so run_agent.py initializes the CopilotACPClient.
+        effective_provider = "copilot-acp"
+        effective_api_mode = "chat_completions"
+
+    # Resolve reasoning config: delegation override > parent inherit
+    child_reasoning = None
+'''
+
+
 class HermesRuntimePatchTest(unittest.TestCase):
     def test_patches_upstream_like_run_agent_runtime_contract(self):
         patched, changes = patch_run_agent_source(UPSTREAM_LIKE_RUN_AGENT)
@@ -79,6 +113,24 @@ class HermesRuntimePatchTest(unittest.TestCase):
         self.assertTrue(changes)
 
         patched_again, second_changes = patch_run_agent_source(patched)
+
+        self.assertEqual(second_changes, [])
+        self.assertEqual(patched_again, patched)
+
+    def test_patches_delegate_tool_runtime_normalization(self):
+        patched, changes = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+
+        self.assertIn("inserted delegate runtime tuple normalizer", changes)
+        self.assertIn("inserted delegate runtime normalization call", changes)
+        self.assertIn("def _normalize_child_runtime_tuple(", patched)
+        self.assertIn("resolve_runtime_provider(", patched)
+        self.assertIn("explicit_base_url=override_base_url is not None", patched)
+
+    def test_delegate_tool_patch_is_idempotent(self):
+        patched, changes = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+        self.assertTrue(changes)
+
+        patched_again, second_changes = patch_delegate_tool_source(patched)
 
         self.assertEqual(second_changes, [])
         self.assertEqual(patched_again, patched)

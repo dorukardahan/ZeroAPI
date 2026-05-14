@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [3.8.23] - 2026-05-14
+
+### Added
+- Extend the Hermes runtime patch helper to cover `tools/delegate_tool.py`, so delegated child agents cannot keep a stale inherited `base_url` / `api_mode` after ZeroAPI routes the parent turn to another provider.
+- Extend the Hermes compatibility doctor to verify delegate runtime tuple normalization in addition to `pre_model_route` support.
+
+### Fixed
+- Prevent Hermes subagent routing regressions where the child model/provider is correct but the request still goes to the previous provider endpoint.
+
 ## [3.8.22] - 2026-05-13
 
 ### Added

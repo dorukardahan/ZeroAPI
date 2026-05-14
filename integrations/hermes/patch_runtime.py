@@ -143,6 +143,75 @@ PRE_MODEL_ROUTE_METHOD = r'''
 '''
 
 
+DELEGATE_RUNTIME_NORMALIZER = r'''
+def _normalize_child_runtime_tuple(
+    *,
+    provider: Optional[str],
+    model: Optional[str],
+    base_url: Optional[str],
+    api_key: Optional[str],
+    api_mode: Optional[str],
+    explicit_base_url: bool,
+    acp_command: Optional[str],
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    """Keep child provider/model/base_url/api_mode tuples internally consistent.
+
+    Explicit ``delegation.base_url`` is a direct endpoint contract and must not
+    be rewritten. For inherited/provider-routed children, resolve the canonical
+    provider runtime and repair stale inherited transport fields when they do
+    not match the selected provider/model.
+    """
+    provider_name = (provider or "").strip()
+    if (
+        not provider_name
+        or explicit_base_url
+        or acp_command
+        or provider_name in {"custom", "copilot-acp"}
+    ):
+        return base_url, api_key, api_mode
+
+    try:
+        from hermes_cli.runtime_provider import resolve_runtime_provider
+
+        runtime = resolve_runtime_provider(
+            requested=provider_name,
+            target_model=(model or None),
+        )
+    except Exception as exc:
+        logger.debug(
+            "Could not normalize child runtime for provider '%s': %s",
+            provider_name,
+            exc,
+        )
+        return base_url, api_key, api_mode
+
+    resolved_base_url = (runtime.get("base_url") or "").rstrip("/") or None
+    resolved_api_mode = runtime.get("api_mode") or None
+    resolved_api_key = runtime.get("api_key") or None
+    current_base_url = (base_url or "").rstrip("/") or None
+
+    base_url_mismatch = bool(
+        resolved_base_url and current_base_url != resolved_base_url
+    )
+    api_mode_mismatch = bool(resolved_api_mode and api_mode != resolved_api_mode)
+    missing_base_url = current_base_url is None and resolved_base_url is not None
+
+    if not (missing_base_url or base_url_mismatch or api_mode_mismatch):
+        return base_url, api_key, api_mode
+
+    logger.info(
+        "Normalizing child runtime for provider '%s' and model '%s'",
+        provider_name,
+        model or "",
+    )
+    return (
+        resolved_base_url or base_url,
+        resolved_api_key or api_key,
+        resolved_api_mode or api_mode,
+    )
+'''
+
+
 def _replace_once(text: str, old: str, new: str, label: str) -> tuple[str, bool]:
     if old not in text:
         return text, False
@@ -199,6 +268,30 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
     return text, changes
 
 
+def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
+    """Return patched ``tools/delegate_tool.py`` source and applied changes."""
+    changes: list[str] = []
+    text = source
+
+    if "def _normalize_child_runtime_tuple(" not in text:
+        anchor = "\ndef _get_subagent_approval_callback():"
+        if anchor not in text:
+            raise ValueError("Could not find _get_subagent_approval_callback anchor for delegate runtime normalizer.")
+        text = text.replace(anchor, DELEGATE_RUNTIME_NORMALIZER + anchor, 1)
+        changes.append("inserted delegate runtime tuple normalizer")
+
+    route_call_marker = "_normalize_child_runtime_tuple(\n            provider=effective_provider,"
+    if route_call_marker not in text:
+        old = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
+        new = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    effective_base_url, effective_api_key, effective_api_mode = (\n        _normalize_child_runtime_tuple(\n            provider=effective_provider,\n            model=effective_model,\n            base_url=effective_base_url,\n            api_key=effective_api_key,\n            api_mode=effective_api_mode,\n            explicit_base_url=override_base_url is not None,\n            acp_command=effective_acp_command,\n        )\n    )\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
+        text, changed = _replace_once(text, old, new, "delegate runtime normalization call")
+        if not changed:
+            raise ValueError("Could not find ACP override anchor for delegate runtime normalization call.")
+        changes.append("inserted delegate runtime normalization call")
+
+    return text, changes
+
+
 def _auto_run_agent_path() -> Path:
     spec = importlib.util.find_spec("run_agent")
     if spec is None or spec.origin is None:
@@ -206,31 +299,53 @@ def _auto_run_agent_path() -> Path:
     return Path(spec.origin)
 
 
+def _auto_delegate_tool_path() -> Path:
+    spec = importlib.util.find_spec("tools.delegate_tool")
+    if spec is None or spec.origin is None:
+        raise SystemExit("Could not locate tools/delegate_tool.py. Pass --delegate-tool explicitly.")
+    return Path(spec.origin)
+
+
+def _patch_file(path: Path, patcher, label: str, dry_run: bool) -> list[str]:
+    source = path.read_text(encoding="utf-8")
+    patched, changes = patcher(source)
+    if not changes:
+        return []
+
+    print(f"PATCH {path}")
+    for change in changes:
+        print(f"- {change}")
+    if dry_run:
+        return [f"{label}: {change}" for change in changes]
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    backup = path.with_name(f"{path.name}.bak-zeroapi-{stamp}")
+    shutil.copy2(path, backup)
+    path.write_text(patched, encoding="utf-8")
+    print(f"OK wrote patch. Backup: {backup}")
+    return [f"{label}: {change}" for change in changes]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Patch Hermes run_agent.py for ZeroAPI pre_model_route compatibility.")
     parser.add_argument("--run-agent", type=Path, help="Path to Hermes run_agent.py. Defaults to importlib discovery.")
+    parser.add_argument("--delegate-tool", type=Path, help="Path to Hermes tools/delegate_tool.py. Defaults to importlib discovery.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print planned changes without writing.")
     args = parser.parse_args()
 
     run_agent = args.run_agent or _auto_run_agent_path()
-    source = run_agent.read_text(encoding="utf-8")
-    patched, changes = patch_run_agent_source(source)
+    delegate_tool = args.delegate_tool or _auto_delegate_tool_path()
+    changes = []
+    changes.extend(_patch_file(run_agent, patch_run_agent_source, "run_agent", args.dry_run))
+    changes.extend(_patch_file(delegate_tool, patch_delegate_tool_source, "delegate_tool", args.dry_run))
     if not changes:
-        print(f"OK {run_agent} already has the ZeroAPI Hermes runtime compatibility patch.")
+        print("OK Hermes already has the ZeroAPI runtime compatibility patch.")
         return 0
 
-    print(f"PATCH {run_agent}")
-    for change in changes:
-        print(f"- {change}")
     if args.dry_run:
         print("DRY-RUN no files written.")
         return 0
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    backup = run_agent.with_name(f"{run_agent.name}.bak-zeroapi-{stamp}")
-    shutil.copy2(run_agent, backup)
-    run_agent.write_text(patched, encoding="utf-8")
-    print(f"OK wrote patch. Backup: {backup}")
     return 0
 
 

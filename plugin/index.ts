@@ -9,7 +9,7 @@ import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 import type { TaskCategory } from "./types.js";
 
-const PLUGIN_VERSION = "3.8.22";
+const PLUGIN_VERSION = "3.8.23";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {

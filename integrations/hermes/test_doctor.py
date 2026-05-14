@@ -68,6 +68,24 @@ class AIAgent:
 '''
 
 
+DELEGATE_TOOL_NO_NORMALIZATION = '''
+def _build_child_agent():
+    pass
+'''
+
+
+DELEGATE_TOOL_PATCHED = '''
+def _normalize_child_runtime_tuple():
+    from hermes_cli.runtime_provider import resolve_runtime_provider
+    resolve_runtime_provider()
+
+def _build_child_agent():
+    _normalize_child_runtime_tuple(
+        explicit_base_url=override_base_url is not None,
+    )
+'''
+
+
 def levels(checks):
     return [check.level for check in checks]
 
@@ -82,6 +100,7 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
             valid_hooks={"pre_model_route"},
             plugins_source=PLUGINS_NO_DISCOVERY,
             run_agent_source=RUN_AGENT_NO_ROUTE,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
 
         self.assertIn("FAIL", levels(checks))
@@ -92,6 +111,7 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
             valid_hooks={"pre_model_route"},
             plugins_source=PLUGINS_NO_DISCOVERY,
             run_agent_source=RUN_AGENT_ROUTE_NO_DISCOVERY,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
 
         self.assertIn("FAIL", levels(checks))
@@ -102,6 +122,7 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
             valid_hooks={"pre_model_route"},
             plugins_source=PLUGINS_NO_DISCOVERY,
             run_agent_source=RUN_AGENT_ROUTE_NO_CACHE_GUARD,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
 
         self.assertIn("FAIL", levels(checks))
@@ -112,9 +133,21 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
             valid_hooks={"pre_model_route"},
             plugins_source=PLUGINS_WITH_DISCOVERY,
             run_agent_source=RUN_AGENT_PATCHED,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
 
         self.assertNotIn("FAIL", levels(checks))
+
+    def test_fails_when_delegate_tool_can_inherit_stale_runtime_tuple(self):
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=RUN_AGENT_PATCHED,
+            delegate_tool_source=DELEGATE_TOOL_NO_NORMALIZATION,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+        self.assertTrue(any("stale base_url" in message for message in messages(checks)))
 
 
 if __name__ == "__main__":
