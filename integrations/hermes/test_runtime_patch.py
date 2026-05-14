@@ -123,8 +123,14 @@ class HermesRuntimePatchTest(unittest.TestCase):
         self.assertIn("inserted delegate runtime tuple normalizer", changes)
         self.assertIn("inserted delegate runtime normalization call", changes)
         self.assertIn("def _normalize_child_runtime_tuple(", patched)
+        self.assertIn("detect_provider_for_model(", patched)
         self.assertIn("resolve_runtime_provider(", patched)
+        self.assertIn("explicit_provider=override_provider is not None", patched)
         self.assertIn("explicit_base_url=override_base_url is not None", patched)
+        self.assertIn(
+            "effective_provider, effective_base_url, effective_api_key, effective_api_mode",
+            patched,
+        )
 
     def test_delegate_tool_patch_is_idempotent(self):
         patched, changes = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)

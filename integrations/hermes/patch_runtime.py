@@ -151,9 +151,10 @@ def _normalize_child_runtime_tuple(
     base_url: Optional[str],
     api_key: Optional[str],
     api_mode: Optional[str],
+    explicit_provider: bool,
     explicit_base_url: bool,
     acp_command: Optional[str],
-) -> tuple[Optional[str], Optional[str], Optional[str]]:
+) -> tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
     """Keep child provider/model/base_url/api_mode tuples internally consistent.
 
     Explicit ``delegation.base_url`` is a direct endpoint contract and must not
@@ -161,14 +162,31 @@ def _normalize_child_runtime_tuple(
     provider runtime and repair stale inherited transport fields when they do
     not match the selected provider/model.
     """
-    provider_name = (provider or "").strip()
     if (
-        not provider_name
-        or explicit_base_url
+        explicit_base_url
         or acp_command
-        or provider_name in {"custom", "copilot-acp"}
+        or (provider or "").strip() in {"custom", "copilot-acp"}
     ):
-        return base_url, api_key, api_mode
+        return provider, base_url, api_key, api_mode
+
+    provider_name = (provider or "").strip()
+    if not explicit_provider:
+        try:
+            from hermes_cli.models import detect_provider_for_model
+
+            detected = detect_provider_for_model(model or "", provider_name or "auto")
+        except Exception as exc:
+            logger.debug(
+                "Could not infer child provider from model '%s': %s",
+                model or "",
+                exc,
+            )
+            detected = None
+        if detected:
+            provider_name = detected[0] or provider_name
+
+    if not provider_name:
+        return provider, base_url, api_key, api_mode
 
     try:
         from hermes_cli.runtime_provider import resolve_runtime_provider
@@ -183,28 +201,31 @@ def _normalize_child_runtime_tuple(
             provider_name,
             exc,
         )
-        return base_url, api_key, api_mode
+        return provider, base_url, api_key, api_mode
 
+    resolved_provider = runtime.get("provider") or provider_name
     resolved_base_url = (runtime.get("base_url") or "").rstrip("/") or None
     resolved_api_mode = runtime.get("api_mode") or None
     resolved_api_key = runtime.get("api_key") or None
     current_base_url = (base_url or "").rstrip("/") or None
 
+    provider_mismatch = bool(resolved_provider and provider != resolved_provider)
     base_url_mismatch = bool(
         resolved_base_url and current_base_url != resolved_base_url
     )
     api_mode_mismatch = bool(resolved_api_mode and api_mode != resolved_api_mode)
     missing_base_url = current_base_url is None and resolved_base_url is not None
 
-    if not (missing_base_url or base_url_mismatch or api_mode_mismatch):
-        return base_url, api_key, api_mode
+    if not (provider_mismatch or missing_base_url or base_url_mismatch or api_mode_mismatch):
+        return provider, base_url, api_key, api_mode
 
     logger.info(
         "Normalizing child runtime for provider '%s' and model '%s'",
-        provider_name,
+        resolved_provider,
         model or "",
     )
     return (
+        resolved_provider or provider,
         resolved_base_url or base_url,
         resolved_api_key or api_key,
         resolved_api_mode or api_mode,
@@ -283,7 +304,7 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
     route_call_marker = "_normalize_child_runtime_tuple(\n            provider=effective_provider,"
     if route_call_marker not in text:
         old = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
-        new = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    effective_base_url, effective_api_key, effective_api_mode = (\n        _normalize_child_runtime_tuple(\n            provider=effective_provider,\n            model=effective_model,\n            base_url=effective_base_url,\n            api_key=effective_api_key,\n            api_mode=effective_api_mode,\n            explicit_base_url=override_base_url is not None,\n            acp_command=effective_acp_command,\n        )\n    )\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
+        new = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    effective_provider, effective_base_url, effective_api_key, effective_api_mode = (\n        _normalize_child_runtime_tuple(\n            provider=effective_provider,\n            model=effective_model,\n            base_url=effective_base_url,\n            api_key=effective_api_key,\n            api_mode=effective_api_mode,\n            explicit_provider=override_provider is not None,\n            explicit_base_url=override_base_url is not None,\n            acp_command=effective_acp_command,\n        )\n    )\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
         text, changed = _replace_once(text, old, new, "delegate runtime normalization call")
         if not changed:
             raise ValueError("Could not find ACP override anchor for delegate runtime normalization call.")

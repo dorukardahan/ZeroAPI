@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.24] - 2026-05-14
+
+### Fixed
+- Harden the Hermes delegate runtime compatibility patch for children that inherit a routed model but not a provider. ZeroAPI now lets the Hermes shim infer the child provider from the child model before normalizing provider/base_url/api_mode together, preventing `gpt-5.5` child runs from falling back to stale non-Codex endpoints.
+
 ## [3.8.23] - 2026-05-14
 
 ### Added
