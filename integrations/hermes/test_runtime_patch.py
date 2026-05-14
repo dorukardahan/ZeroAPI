@@ -141,6 +141,38 @@ class HermesRuntimePatchTest(unittest.TestCase):
         self.assertEqual(second_changes, [])
         self.assertEqual(patched_again, patched)
 
+    def test_delegate_tool_patch_upgrades_legacy_normalizer(self):
+        patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+        legacy = patched.replace("    explicit_provider: bool,\n", "")
+        legacy = legacy.replace("detect_provider_for_model(", "detect_provider_for_model_old(")
+
+        upgraded, changes = patch_delegate_tool_source(legacy)
+
+        self.assertIn("updated delegate runtime tuple normalizer", changes)
+        self.assertIn("explicit_provider: bool", upgraded)
+        self.assertIn("detect_provider_for_model(", upgraded)
+        self.assertNotIn("detect_provider_for_model_old(", upgraded)
+
+    def test_delegate_tool_patch_upgrades_legacy_normalization_call(self):
+        patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+        legacy = patched.replace(
+            "effective_provider, effective_base_url, effective_api_key, effective_api_mode = (",
+            "effective_base_url, effective_api_key, effective_api_mode = (",
+        )
+        legacy = legacy.replace(
+            "            explicit_provider=override_provider is not None,\n",
+            "",
+        )
+
+        upgraded, changes = patch_delegate_tool_source(legacy)
+
+        self.assertIn("updated delegate runtime normalization call", changes)
+        self.assertIn(
+            "effective_provider, effective_base_url, effective_api_key, effective_api_mode",
+            upgraded,
+        )
+        self.assertIn("explicit_provider=override_provider is not None", upgraded)
+
 
 if __name__ == "__main__":
     unittest.main()

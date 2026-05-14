@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.25] - 2026-05-14
+
+### Fixed
+- Make the Hermes runtime patch upgrader replace older ZeroAPI delegate normalization patches in place. This lets existing Hermes installs move from the 3.8.23/3.8.24 patch to the provider-inference patch without manually restoring upstream files first.
+
 ## [3.8.24] - 2026-05-14
 
 ### Fixed

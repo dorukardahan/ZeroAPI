@@ -300,15 +300,54 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
             raise ValueError("Could not find _get_subagent_approval_callback anchor for delegate runtime normalizer.")
         text = text.replace(anchor, DELEGATE_RUNTIME_NORMALIZER + anchor, 1)
         changes.append("inserted delegate runtime tuple normalizer")
+    else:
+        start = text.find("\ndef _normalize_child_runtime_tuple(")
+        end = text.find("\ndef _get_subagent_approval_callback():", start)
+        if start == -1 or end == -1:
+            raise ValueError("Could not locate existing delegate runtime normalizer block.")
+        normalizer = text[start:end]
+        if "explicit_provider: bool" not in normalizer or "detect_provider_for_model(" not in normalizer:
+            text = text[:start] + DELEGATE_RUNTIME_NORMALIZER + text[end:]
+            changes.append("updated delegate runtime tuple normalizer")
 
     route_call_marker = "_normalize_child_runtime_tuple(\n            provider=effective_provider,"
+    old_route_call = '''    effective_base_url, effective_api_key, effective_api_mode = (
+        _normalize_child_runtime_tuple(
+            provider=effective_provider,
+            model=effective_model,
+            base_url=effective_base_url,
+            api_key=effective_api_key,
+            api_mode=effective_api_mode,
+            explicit_base_url=override_base_url is not None,
+            acp_command=effective_acp_command,
+        )
+    )
+'''
+    new_route_call = '''    effective_provider, effective_base_url, effective_api_key, effective_api_mode = (
+        _normalize_child_runtime_tuple(
+            provider=effective_provider,
+            model=effective_model,
+            base_url=effective_base_url,
+            api_key=effective_api_key,
+            api_mode=effective_api_mode,
+            explicit_provider=override_provider is not None,
+            explicit_base_url=override_base_url is not None,
+            acp_command=effective_acp_command,
+        )
+    )
+'''
     if route_call_marker not in text:
         old = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
-        new = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n    effective_provider, effective_base_url, effective_api_key, effective_api_mode = (\n        _normalize_child_runtime_tuple(\n            provider=effective_provider,\n            model=effective_model,\n            base_url=effective_base_url,\n            api_key=effective_api_key,\n            api_mode=effective_api_mode,\n            explicit_provider=override_provider is not None,\n            explicit_base_url=override_base_url is not None,\n            acp_command=effective_acp_command,\n        )\n    )\n\n    # Resolve reasoning config: delegation override > parent inherit\n'''
+        new = '''    if override_acp_command:\n        # If explicitly forcing an ACP transport override, the provider MUST be copilot-acp\n        # so run_agent.py initializes the CopilotACPClient.\n        effective_provider = "copilot-acp"\n        effective_api_mode = "chat_completions"\n\n''' + new_route_call + '''\n    # Resolve reasoning config: delegation override > parent inherit\n'''
         text, changed = _replace_once(text, old, new, "delegate runtime normalization call")
         if not changed:
             raise ValueError("Could not find ACP override anchor for delegate runtime normalization call.")
         changes.append("inserted delegate runtime normalization call")
+    elif "explicit_provider=override_provider is not None" not in text:
+        text, changed = _replace_once(text, old_route_call, new_route_call, "delegate runtime normalization call update")
+        if not changed:
+            raise ValueError("Could not update existing delegate runtime normalization call.")
+        changes.append("updated delegate runtime normalization call")
 
     return text, changes
 
