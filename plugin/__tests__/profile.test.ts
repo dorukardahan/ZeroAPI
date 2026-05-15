@@ -63,4 +63,12 @@ describe("profile", () => {
   it("blocks model when provider is disabled by override", () => {
     expect(isModelAllowedBySubscriptionProfile(profile, "research-agent", "openai-codex/gpt-5.4")).toBe(false);
   });
+
+  it("resolves OpenClaw 2026.5.12 openai model ids through the Codex subscription profile", () => {
+    const resolved = resolveProviderSubscription(profile, undefined, "openai");
+    expect(resolved).not.toBeNull();
+    expect(resolved?.enabled).toBe(true);
+    expect(resolved?.tierId).toBe("plus");
+    expect(isModelAllowedBySubscriptionProfile(profile, undefined, "openai/gpt-5.5")).toBe(true);
+  });
 });

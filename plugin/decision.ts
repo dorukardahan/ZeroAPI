@@ -3,6 +3,7 @@ import { filterCapableModels, estimateTokens, getCapabilityFilterFailure } from 
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
 import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool } from "./router.js";
 import { selectModel } from "./selector.js";
+import { getCanonicalOpenClawProviderId } from "./subscriptions.js";
 import type { ConversationMessage, RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
 
 const ENGLISH_VISION_KEYWORDS = [
@@ -244,8 +245,10 @@ function normalizeProviderId(value: string): string {
 
 function isProviderDisabled(config: ZeroAPIConfig, providerId: string): boolean {
   const disabled = config.disabled_providers ?? [];
-  const normalized = normalizeProviderId(providerId);
-  return disabled.some((entry) => typeof entry === "string" && normalizeProviderId(entry) === normalized);
+  const normalized = normalizeProviderId(getCanonicalOpenClawProviderId(providerId));
+  return disabled.some((entry) =>
+    typeof entry === "string" && normalizeProviderId(getCanonicalOpenClawProviderId(entry)) === normalized,
+  );
 }
 
 function isModelEligibleBySubscriptions(

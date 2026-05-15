@@ -121,8 +121,14 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
 ];
 
 export function getProviderCatalogEntry(openclawProviderId: string): ProviderCatalogEntry | null {
+  const normalized = openclawProviderId.trim().toLowerCase();
   return SUBSCRIPTION_CATALOG.find((entry) =>
-    entry.openclawProviderId === openclawProviderId ||
-    entry.openclawProviderAliases?.includes(openclawProviderId),
+    entry.providerId === normalized ||
+    entry.openclawProviderId === normalized ||
+    entry.openclawProviderAliases?.includes(normalized),
   ) ?? null;
+}
+
+export function getCanonicalOpenClawProviderId(providerId: string): string {
+  return getProviderCatalogEntry(providerId)?.openclawProviderId ?? providerId;
 }

@@ -62,7 +62,7 @@ When the hook returns an override, the model is switched for that turn only. The
 
 If the current runtime model is outside `zeroapi-config.json`'s `models` pool, ZeroAPI now defaults to `stay` instead of forcefully re-entering. This keeps subscription routing from hijacking unrelated API-key providers. Advanced users can opt back in with `"external_model_policy": "allow"`.
 
-If an OpenClaw agent is already running a non-default model and that agent has no `workspace_hints` entry, ZeroAPI skips routing for that turn. This protects specialist agents such as a `codex` agent pinned to `openai-codex/gpt-5.5` or `openai-codex/gpt-5.4`. To intentionally route a specialist agent, add a category list under `workspace_hints`; to hard-disable routing for it, set the value to `null`.
+If an OpenClaw agent is already running a non-default model and that agent has no `workspace_hints` entry, ZeroAPI skips routing for that turn. This protects specialist agents such as a `codex` agent pinned to `openai/gpt-5.5` or `openai/gpt-5.4`. To intentionally route a specialist agent, add a category list under `workspace_hints`; to hard-disable routing for it, set the value to `null`.
 
 For agents without an explicit model, ZeroAPI setup can now align two OpenClaw runtime details:
 - `agents.defaults.models` gets every model used by the ZeroAPI policy, so OpenClaw does not reject cron or agent selections as "model not allowed".
@@ -77,6 +77,12 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
 | Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | Free OAuth | $0 | $0 | coder-model |
+
+OpenAI has one important split in recent OpenClaw releases: auth/subscription
+state still uses the `openai-codex` provider, while runtime model IDs are
+`openai/gpt-*` starting with OpenClaw 2026.5.12. ZeroAPI treats these as the
+same subscription pool, so an `openai-codex` account can route to
+`openai/gpt-5.5`, `openai/gpt-5.4`, or `openai/gpt-5.4-mini`.
 
 Vision capability is tracked per model in `zeroapi-config.json`. Starter configs only mark models as vision-capable when the OpenClaw runtime route is known to accept images. Provider-specific VLM/API models such as `zai/glm-5v-turbo` or custom Qwen VL routes should be added only when the user has explicit access and runtime metadata confirms image input.
 

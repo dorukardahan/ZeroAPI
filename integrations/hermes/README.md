@@ -84,7 +84,7 @@ prefer the upstream runtime.
 ZeroAPI config files may use OpenClaw provider IDs. The adapter maps those to
 Hermes provider IDs before returning a route:
 
-- `openai-codex` -> `openai-codex`
+- `openai`, `openai-codex` -> `openai-codex`
 - `zai` -> `zai`
 - `moonshot`, `kimi`, `kimi-coding` -> `kimi-for-coding`
 - `minimax-portal`, `minimax` -> `minimax-oauth`

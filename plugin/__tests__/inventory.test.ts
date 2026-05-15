@@ -212,4 +212,36 @@ describe("subscription inventory", () => {
     expect(resolved?.preferredAccountId).toBe("openai-primary");
     expect(resolved?.routingWeight).toBeCloseTo(1.65, 5);
   });
+
+  it("matches OpenClaw 2026.5.12 openai runtime models to openai-codex inventory accounts", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "openai-pro": {
+          provider: "openai-codex",
+          tierId: "pro",
+          authProfile: "openai:pro",
+          intendedUse: ["code"],
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile,
+      inventory,
+      agentId: undefined,
+      providerId: "openai",
+      category: "code",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.enabled).toBe(true);
+    expect(resolved?.preferredAuthProfile).toBe("openai:pro");
+    expect(isModelAllowedBySubscriptions({
+      profile,
+      inventory,
+      agentId: undefined,
+      modelKey: "openai/gpt-5.5",
+    })).toBe(true);
+  });
 });

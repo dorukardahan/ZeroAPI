@@ -142,6 +142,88 @@ describe("resolveRoutingDecision", () => {
     expect(result.subscriptionRejected).toEqual([]);
   });
 
+  it("routes OpenClaw 2026.5.12 openai model ids while using openai-codex subscription inventory", () => {
+    const canonicalConfig: ZeroAPIConfig = {
+      ...config,
+      default_model: "zai/glm-5",
+      models: {
+        "openai/gpt-5.5": {
+          context_window: 272000,
+          supports_vision: true,
+          speed_tps: 90,
+          ttft_seconds: 120,
+          benchmarks: { intelligence: 60.2, coding: 59.1, terminalbench: 0.74 },
+        },
+        "zai/glm-5": config.models["zai/glm-5"],
+      },
+      routing_rules: {
+        ...config.routing_rules,
+        code: { primary: "openai/gpt-5.5", fallbacks: ["zai/glm-5"] },
+        default: { primary: "openai/gpt-5.5", fallbacks: ["zai/glm-5"] },
+      },
+      subscription_profile: {
+        version: "1.0.0",
+        global: {
+          "openai-codex": { enabled: true, tierId: "pro" },
+          "zai": { enabled: true, tierId: "max" },
+        },
+      },
+      subscription_inventory: {
+        version: "1.0.0",
+        accounts: {
+          "openai-pro": {
+            provider: "openai-codex",
+            tierId: "pro",
+            authProfile: "openai:pro",
+            intendedUse: ["code"],
+          },
+        },
+      },
+    };
+
+    const result = resolveRoutingDecision(canonicalConfig, {
+      prompt: "implement this feature",
+      currentModel: "zai/glm-5",
+    });
+
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("openai/gpt-5.5");
+    expect(result.providerOverride).toBe("openai");
+    expect(result.modelOverride).toBe("gpt-5.5");
+    expect(result.authProfileOverride).toBe("openai:pro");
+  });
+
+  it("lets openai-codex disabled provider entries block canonical openai runtime models", () => {
+    const result = resolveRoutingDecision(
+      {
+        ...config,
+        default_model: "zai/glm-5",
+        models: {
+          "openai/gpt-5.5": {
+            context_window: 272000,
+            supports_vision: true,
+            speed_tps: 90,
+            ttft_seconds: 120,
+            benchmarks: { intelligence: 60.2, coding: 59.1, terminalbench: 0.74 },
+          },
+          "zai/glm-5": config.models["zai/glm-5"],
+        },
+        routing_rules: {
+          ...config.routing_rules,
+          code: { primary: "openai/gpt-5.5", fallbacks: ["zai/glm-5"] },
+        },
+        disabled_providers: ["openai-codex"],
+      },
+      {
+        prompt: "implement this feature",
+        currentModel: "zai/glm-5",
+      },
+    );
+
+    expect(result.selectedModel).toBe("zai/glm-5");
+    expect(result.providerOverride).toBe("zai");
+  });
+
   it("skips cron and heartbeat triggers", () => {
     const cron = resolveRoutingDecision(config, {
       prompt: "quick format this output",

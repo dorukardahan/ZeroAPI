@@ -102,6 +102,38 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(route["model"], "gpt-5.4")
         self.assertIn("zeroapi:code:continuation:state", route["reason"])
 
+    def test_maps_openclaw_2026_5_openai_model_ids_to_hermes_codex_provider(self):
+        config = {
+            **CONFIG,
+            "default_model": "zai/glm-5.1",
+            "models": {
+                "openai/gpt-5.5": {
+                    "context_window": 272000,
+                    "supports_vision": True,
+                    "speed_tps": 90,
+                    "ttft_seconds": 120,
+                    "benchmarks": {"intelligence": 60.2, "coding": 59.1, "terminalbench": 0.606},
+                },
+                "zai/glm-5.1": CONFIG["models"]["zai/glm-5.1"],
+            },
+            "routing_rules": {
+                **CONFIG["routing_rules"],
+                "code": {"primary": "openai/gpt-5.5", "fallbacks": ["zai/glm-5.1"]},
+            },
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {
+                    "openai-codex": {"enabled": True, "tierId": "pro"},
+                    "zai": {"enabled": True, "tierId": "max"},
+                },
+            },
+        }
+
+        route = ZeroAPIRouter(config).resolve("implement this feature", current_model="zai/glm-5.1")
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+        self.assertEqual(route["model"], "gpt-5.5")
+
     def test_routes_high_risk_categorized_messages(self):
         config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
         route = ZeroAPIRouter(config).resolve("debug this production issue", current_model="zai/glm-5.1")

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.8.27] - 2026-05-15
+
+### Fixed
+- Support OpenClaw 2026.5.12 OpenAI runtime model IDs (`openai/gpt-*`) while preserving `openai-codex` auth and subscription profiles.
+- Install the ZeroAPI OpenClaw plugin with `hooks.allowConversationAccess=true`, which is required for typed routing hooks that inspect conversation content on current OpenClaw builds.
+- Map `openai/gpt-*` routes back to Hermes' `openai-codex` provider runtime so Hermes installs can use the same policy shape as OpenClaw.
+
 ## [3.8.26] - 2026-05-14
 
 ### Fixed

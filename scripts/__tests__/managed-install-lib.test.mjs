@@ -134,6 +134,7 @@ test("installOrUpdatePlugin copies plugin files and updates openclaw config with
 
   const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
   assert.equal(updated.plugins.entries["zeroapi-router"].enabled, true);
+  assert.equal(updated.plugins.entries["zeroapi-router"].hooks.allowConversationAccess, true);
   assert.equal(updated.plugins.installs["zeroapi-router"].sourcePath, pluginDir);
   assert.equal(updated.plugins.allow, undefined);
   assert.equal(
@@ -175,6 +176,38 @@ test("installOrUpdatePlugin appends zeroapi to an existing explicit plugins.allo
 
   const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
   assert.deepEqual(updated.plugins.allow, ["existing-plugin", "zeroapi-router"]);
+});
+
+test("installOrUpdatePlugin preserves existing entry fields while enabling conversation hook access", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-hooks-"));
+  const openclawDir = join(root, ".openclaw");
+  const pluginDir = join(root, "plugin");
+  mkdirSync(openclawDir, { recursive: true });
+  mkdirSync(pluginDir, { recursive: true });
+  writeFileSync(
+    join(openclawDir, "openclaw.json"),
+    JSON.stringify({
+      plugins: {
+        entries: {
+          "zeroapi-router": {
+            enabled: false,
+            hooks: {
+              timeoutMs: 5000,
+            },
+          },
+        },
+      },
+    }),
+  );
+  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
+  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
+
+  installOrUpdatePlugin(pluginDir, openclawDir);
+
+  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
+  assert.equal(updated.plugins.entries["zeroapi-router"].enabled, true);
+  assert.equal(updated.plugins.entries["zeroapi-router"].hooks.timeoutMs, 5000);
+  assert.equal(updated.plugins.entries["zeroapi-router"].hooks.allowConversationAccess, true);
 });
 
 test("installOrUpdatePlugin repairs stale clawhub install registry pins", () => {

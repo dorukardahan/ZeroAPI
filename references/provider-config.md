@@ -369,6 +369,11 @@ Every fallback chain should span at least two providers — same-provider fallba
 
 ### Benchmark slugs vs model IDs
 
-`benchmarks.json` uses short slugs (e.g. `glm-5`, `gpt-5-5`) while OpenClaw uses provider-prefixed IDs (e.g. `zai/glm-5`, `openai-codex/gpt-5.5`). These are different namespaces. The plugin matches by OpenClaw model ID, not benchmark slug.
+`benchmarks.json` uses short slugs (e.g. `glm-5`, `gpt-5-5`) while OpenClaw uses provider-prefixed IDs (e.g. `zai/glm-5`, `openai/gpt-5.5`). These are different namespaces. The plugin matches by OpenClaw model ID, not benchmark slug.
+
+OpenClaw 2026.5.12 canonicalizes OpenAI runtime model IDs to `openai/gpt-*`.
+The OpenAI Codex auth and subscription profile may still be named
+`openai-codex`; ZeroAPI treats those as the same subscription pool for model
+eligibility.
 
 `policy-families.json` bridges that gap for the currently documented practical families by storing both the OpenClaw model IDs and the benchmark slugs. The refreshed `benchmarks.json` also carries per-model `policy_family` metadata for those members.

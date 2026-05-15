@@ -156,7 +156,7 @@ tail -f ~/.openclaw/logs/zeroapi-routing.log
 
 Log format:
 ```
-2026-04-05T10:30:15Z agent=senti action=route category=code current=zai/glm-5.1 model=openai-codex/gpt-5.4 risk=medium reason=keyword:refactor candidates=openai-codex/gpt-5.4,zai/glm-5.1
+2026-04-05T10:30:15Z agent=senti action=route category=code current=zai/glm-5.1 model=openai/gpt-5.4 risk=medium reason=keyword:refactor candidates=openai/gpt-5.4,zai/glm-5.1
 2026-04-05T10:30:45Z agent=main action=stay category=default current=zai/glm-5.1 model=default risk=low reason=no_match
 ```
 

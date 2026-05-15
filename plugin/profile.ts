@@ -29,6 +29,7 @@ function normalizeSelection(selection?: ProviderSubscriptionSelection): Provider
 function providerProfileKeys(openclawProviderId: string, catalog: ProviderCatalogEntry): string[] {
   return Array.from(new Set([
     openclawProviderId,
+    catalog.providerId,
     catalog.openclawProviderId,
     ...(catalog.openclawProviderAliases ?? []),
   ]));

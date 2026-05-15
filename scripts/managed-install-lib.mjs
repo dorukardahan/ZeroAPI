@@ -375,7 +375,21 @@ export function installOrUpdatePlugin(pluginPath, openclawDir) {
   const existingPluginIds = Object.keys(config.plugins.entries);
   const loadPaths = Array.isArray(config.plugins.load?.paths) ? config.plugins.load.paths : [];
   const nonZeroAPILoadPaths = loadPaths.filter((value) => typeof value === "string" && !isZeroAPIPluginPath(value));
-  config.plugins.entries["zeroapi-router"] = { enabled: true };
+  const existingEntry = config.plugins.entries["zeroapi-router"];
+  const entry = existingEntry && typeof existingEntry === "object" && !Array.isArray(existingEntry)
+    ? { ...existingEntry }
+    : {};
+  const existingHooks = entry.hooks && typeof entry.hooks === "object" && !Array.isArray(entry.hooks)
+    ? entry.hooks
+    : {};
+  config.plugins.entries["zeroapi-router"] = {
+    ...entry,
+    enabled: true,
+    hooks: {
+      ...existingHooks,
+      allowConversationAccess: true,
+    },
+  };
   config.plugins.installs["zeroapi-router"] = {
     source: "path",
     sourcePath: pluginPath,

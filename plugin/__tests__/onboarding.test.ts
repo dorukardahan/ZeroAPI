@@ -19,11 +19,11 @@ describe("buildStarterConfig", () => {
     expect(config.routing_mode).toBe("balanced");
     expect(config.default_model).toBe("zai/glm-5.1");
     expect(Object.keys(config.models)).toEqual([
-      "openai-codex/gpt-5.5",
-      "openai-codex/gpt-5.4",
+      "openai/gpt-5.5",
+      "openai/gpt-5.4",
       "zai/glm-5.1",
     ]);
-    expect(config.routing_rules.code.primary).toBe("openai-codex/gpt-5.5");
+    expect(config.routing_rules.code.primary).toBe("openai/gpt-5.5");
     expect(config.routing_rules.orchestration.primary).toBe("zai/glm-5.1");
     expect(config.subscription_profile?.global).toEqual({
       "openai-codex": { enabled: true, tierId: "plus" },
@@ -38,11 +38,11 @@ describe("buildStarterConfig", () => {
     });
 
     expect(Object.keys(config.models)).toEqual([
-      "openai-codex/gpt-5.5",
-      "openai-codex/gpt-5.4",
-      "openai-codex/gpt-5.4-mini",
+      "openai/gpt-5.5",
+      "openai/gpt-5.4",
+      "openai/gpt-5.4-mini",
     ]);
-    expect(config.routing_rules.fast.primary).toBe("openai-codex/gpt-5.4-mini");
+    expect(config.routing_rules.fast.primary).toBe("openai/gpt-5.4-mini");
     expect(config.fast_ttft_max_seconds).toBe(8);
   });
 
@@ -108,8 +108,8 @@ describe("buildStarterConfig", () => {
     });
     expect(Object.keys(config.models)).toEqual([
       "zai/glm-5.1",
-      "openai-codex/gpt-5.5",
-      "openai-codex/gpt-5.4",
+      "openai/gpt-5.5",
+      "openai/gpt-5.4",
     ]);
   });
 

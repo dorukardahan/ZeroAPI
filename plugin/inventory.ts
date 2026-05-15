@@ -1,5 +1,5 @@
 import { resolveProviderSubscription } from "./profile.js";
-import { getProviderCatalogEntry } from "./subscriptions.js";
+import { getCanonicalOpenClawProviderId, getProviderCatalogEntry } from "./subscriptions.js";
 import type { SubscriptionInventory, SubscriptionProfile, TaskCategory } from "./types.js";
 
 export type ResolvedProviderCapacity = {
@@ -18,7 +18,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function normalizeOpenClawProviderId(providerId: string): string {
-  return getProviderCatalogEntry(providerId)?.openclawProviderId ?? providerId;
+  return getCanonicalOpenClawProviderId(providerId);
 }
 
 function getAccountBaseWeight(providerId: string, tierId: string | null | undefined): number {

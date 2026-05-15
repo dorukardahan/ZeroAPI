@@ -166,6 +166,7 @@ PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
 }
 
 HERMES_PROVIDER_MAP = {
+    "openai": "openai-codex",
     "openai-codex": "openai-codex",
     "moonshot": "kimi-for-coding",
     "kimi": "kimi-for-coding",
@@ -260,10 +261,12 @@ def _provider_disabled(config: Config, provider: str) -> bool:
 def _hermes_provider(provider: str, config: Config) -> str:
     aliases = config.get("hermes_provider_map")
     if isinstance(aliases, dict):
-        mapped = aliases.get(provider)
-        if isinstance(mapped, str) and mapped.strip():
-            return mapped.strip()
-    return HERMES_PROVIDER_MAP.get(provider, provider)
+        for candidate in (provider, _canonical_provider(provider)):
+            mapped = aliases.get(candidate)
+            if isinstance(mapped, str) and mapped.strip():
+                return mapped.strip()
+    canonical = _canonical_provider(provider)
+    return HERMES_PROVIDER_MAP.get(provider) or HERMES_PROVIDER_MAP.get(canonical, provider)
 
 
 def _estimate_tokens(text: str) -> int:
