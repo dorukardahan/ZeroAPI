@@ -37,6 +37,11 @@ PRE_MODEL_ROUTE_METHOD = r'''
                 invoke_hook as _invoke_hook,
             )
             _discover_plugins()
+            _zeroapi_has_images = any(
+                isinstance(message, dict)
+                and self._content_has_image_parts(message.get("content"))
+                for message in (conversation_history or [])
+            )
             _route_results = _invoke_hook(
                 "pre_model_route",
                 session_id=self.session_id,
@@ -47,6 +52,12 @@ PRE_MODEL_ROUTE_METHOD = r'''
                 provider=self.provider,
                 platform=getattr(self, "platform", None) or "",
                 sender_id=getattr(self, "_user_id", None) or "",
+                chat_id=getattr(self, "_chat_id", None) or "",
+                chat_name=getattr(self, "_chat_name", None) or "",
+                chat_type=getattr(self, "_chat_type", None) or "",
+                thread_id=getattr(self, "_thread_id", None) or "",
+                gateway_session_key=getattr(self, "_gateway_session_key", None) or "",
+                has_images=_zeroapi_has_images,
             )
         except Exception as exc:
             logger.warning("pre_model_route hook failed: %s", exc)
@@ -286,6 +297,29 @@ def _replace_once(text: str, old: str, new: str, label: str) -> tuple[str, bool]
     return text.replace(old, new, 1), True
 
 
+def patch_plugins_source(source: str) -> tuple[str, list[str]]:
+    """Return patched ``hermes_cli/plugins.py`` source and applied changes."""
+    changes: list[str] = []
+    text = source
+
+    if '"pre_model_route"' in text:
+        return text, changes
+
+    anchor = '    "pre_llm_call",\n'
+    if anchor not in text:
+        raise ValueError("Could not find VALID_HOOKS anchor for pre_model_route.")
+
+    text = text.replace(
+        anchor,
+        anchor
+        + '    # ZeroAPI compatibility: route the active provider/model before the LLM call.\n'
+        + '    "pre_model_route",\n',
+        1,
+    )
+    changes.append("added pre_model_route to VALID_HOOKS")
+    return text, changes
+
+
 def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
     """Return patched ``run_agent.py`` source and a list of applied changes."""
     changes: list[str] = []
@@ -299,11 +333,36 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
         changes.append("inserted _apply_pre_model_route_hook")
     elif "_discover_plugins()" not in text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]:
         old = '''        try:\n            from hermes_cli.plugins import invoke_hook as _invoke_hook\n            _route_results = _invoke_hook(\n'''
-        new = '''        self._pre_model_route_switched_this_turn = False\n        try:\n            from hermes_cli.plugins import (\n                discover_plugins as _discover_plugins,\n                invoke_hook as _invoke_hook,\n            )\n            _discover_plugins()\n            _route_results = _invoke_hook(\n'''
+        new = '''        self._pre_model_route_switched_this_turn = False\n        try:\n            from hermes_cli.plugins import (\n                discover_plugins as _discover_plugins,\n                invoke_hook as _invoke_hook,\n            )\n            _discover_plugins()\n            _zeroapi_has_images = any(\n                isinstance(message, dict)\n                and self._content_has_image_parts(message.get("content"))\n                for message in (conversation_history or [])\n            )\n            _route_results = _invoke_hook(\n'''
         text, changed = _replace_once(text, old, new, "discover_plugins")
         if not changed:
             raise ValueError("Could not patch existing pre_model_route discovery path.")
         changes.append("added discover_plugins before invoke_hook")
+
+    if "_apply_pre_model_route_hook" in text:
+        method = text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
+        if "_zeroapi_has_images" not in method:
+            text, changed = _replace_once(
+                text,
+                "            _discover_plugins()\n            _route_results = _invoke_hook(\n",
+                '''            _discover_plugins()\n            _zeroapi_has_images = any(\n                isinstance(message, dict)\n                and self._content_has_image_parts(message.get("content"))\n                for message in (conversation_history or [])\n            )\n            _route_results = _invoke_hook(\n''',
+                "image attachment detection",
+            )
+            if not changed:
+                raise ValueError("Could not patch existing pre_model_route image detection.")
+            changes.append("added image attachment detection to pre_model_route")
+
+        method = text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
+        if "gateway_session_key=getattr(self, \"_gateway_session_key\"" not in method:
+            text, changed = _replace_once(
+                text,
+                '                sender_id=getattr(self, "_user_id", None) or "",\n            )\n',
+                '''                sender_id=getattr(self, "_user_id", None) or "",\n                chat_id=getattr(self, "_chat_id", None) or "",\n                chat_name=getattr(self, "_chat_name", None) or "",\n                chat_type=getattr(self, "_chat_type", None) or "",\n                thread_id=getattr(self, "_thread_id", None) or "",\n                gateway_session_key=getattr(self, "_gateway_session_key", None) or "",\n                has_images=_zeroapi_has_images,\n            )\n''',
+                "gateway metadata kwargs",
+            )
+            if not changed:
+                raise ValueError("Could not patch existing pre_model_route gateway metadata kwargs.")
+            changes.append("added gateway metadata kwargs to pre_model_route")
 
     route_call_marker = "self._apply_pre_model_route_hook(\n            original_user_message,"
     if route_call_marker not in text:
@@ -424,6 +483,13 @@ def _auto_run_agent_path() -> Path:
     return Path(spec.origin)
 
 
+def _auto_plugins_path() -> Path:
+    spec = importlib.util.find_spec("hermes_cli.plugins")
+    if spec is None or spec.origin is None:
+        raise SystemExit("Could not locate hermes_cli/plugins.py. Pass --plugins explicitly.")
+    return Path(spec.origin)
+
+
 def _auto_delegate_tool_path() -> Path:
     spec = importlib.util.find_spec("tools.delegate_tool")
     if spec is None or spec.origin is None:
@@ -453,14 +519,17 @@ def _patch_file(path: Path, patcher, label: str, dry_run: bool) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Patch Hermes run_agent.py for ZeroAPI pre_model_route compatibility.")
+    parser.add_argument("--plugins", type=Path, help="Path to Hermes hermes_cli/plugins.py. Defaults to importlib discovery.")
     parser.add_argument("--run-agent", type=Path, help="Path to Hermes run_agent.py. Defaults to importlib discovery.")
     parser.add_argument("--delegate-tool", type=Path, help="Path to Hermes tools/delegate_tool.py. Defaults to importlib discovery.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print planned changes without writing.")
     args = parser.parse_args()
 
+    plugins = args.plugins or _auto_plugins_path()
     run_agent = args.run_agent or _auto_run_agent_path()
     delegate_tool = args.delegate_tool or _auto_delegate_tool_path()
     changes = []
+    changes.extend(_patch_file(plugins, patch_plugins_source, "plugins", args.dry_run))
     changes.extend(_patch_file(run_agent, patch_run_agent_source, "run_agent", args.dry_run))
     changes.extend(_patch_file(delegate_tool, patch_delegate_tool_source, "delegate_tool", args.dry_run))
     if not changes:

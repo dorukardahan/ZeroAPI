@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.28] - 2026-05-17
+
+### Fixed
+- Update the Hermes runtime patch for Hermes Agent v2026.5.16/v0.14.0 so it also registers `pre_model_route` in `VALID_HOOKS`, avoiding false doctor failures and unknown-hook warnings after applying the compatibility patch.
+- Pass Hermes gateway chat/session metadata and image-attachment state into the ZeroAPI `pre_model_route` hook, so Signal/WhatsApp image turns and continuation state route reliably after Hermes upgrades.
+
 ## [3.8.27] - 2026-05-15
 
 ### Fixed

@@ -1,6 +1,6 @@
 import unittest
 
-from patch_runtime import patch_delegate_tool_source, patch_run_agent_source
+from patch_runtime import patch_delegate_tool_source, patch_plugins_source, patch_run_agent_source
 
 
 UPSTREAM_LIKE_RUN_AGENT = '''
@@ -119,6 +119,25 @@ def _resolve_delegation_credentials(cfg, parent_agent):
 
 
 class HermesRuntimePatchTest(unittest.TestCase):
+    def test_patches_valid_hooks_for_pre_model_route(self):
+        plugins_source = '''
+VALID_HOOKS = {
+    "pre_llm_call",
+    "post_llm_call",
+}
+'''
+
+        patched, changes = patch_plugins_source(plugins_source)
+
+        self.assertIn("added pre_model_route to VALID_HOOKS", changes)
+        self.assertIn('"pre_model_route"', patched)
+
+    def test_plugins_patch_is_idempotent(self):
+        patched, changes = patch_plugins_source('VALID_HOOKS = {"pre_model_route"}')
+
+        self.assertEqual(changes, [])
+        self.assertIn("pre_model_route", patched)
+
     def test_patches_upstream_like_run_agent_runtime_contract(self):
         patched, changes = patch_run_agent_source(UPSTREAM_LIKE_RUN_AGENT)
 
@@ -128,6 +147,8 @@ class HermesRuntimePatchTest(unittest.TestCase):
         self.assertIn("guarded on_session_start on continuation prompt rebuild", changes)
         self.assertIn("discover_plugins as _discover_plugins", patched)
         self.assertIn("_discover_plugins()", patched)
+        self.assertIn("_zeroapi_has_images", patched)
+        self.assertIn('gateway_session_key=getattr(self, "_gateway_session_key"', patched)
         self.assertIn("self._apply_pre_model_route_hook(\n            original_user_message,", patched)
         self.assertIn('not getattr(self, "_pre_model_route_switched_this_turn", False)', patched)
         self.assertIn("if not conversation_history:", patched)

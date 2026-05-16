@@ -1,6 +1,6 @@
 {
   "name": "zeroapi-workspace",
-  "version": "3.8.27",
+  "version": "3.8.28",
   "private": true,
   "description": "Benchmark-driven model routing for OpenClaw",
   "type": "module",
@@ -11,7 +11,7 @@
     "test": "npm run test:plugin && npm run test:scripts && npm run test:hermes",
     "test:plugin": "npm --workspace zeroapi test",
     "test:scripts": "node --test scripts/__tests__/*.test.mjs",
-    "test:hermes": "python3 integrations/hermes/test_router.py && python3 integrations/hermes/test_auth_audit.py && python3 integrations/hermes/test_vision_aux.py && python3 integrations/hermes/test_doctor.py && python3 integrations/hermes/test_runtime_patch.py",
+    "test:hermes": "python3 integrations/hermes/test_router.py && python3 integrations/hermes/test_adapter.py && python3 integrations/hermes/test_auth_audit.py && python3 integrations/hermes/test_vision_aux.py && python3 integrations/hermes/test_doctor.py && python3 integrations/hermes/test_runtime_patch.py",
     "simulate": "tsx scripts/simulate.ts",
     "eval": "tsx scripts/eval.ts",
     "compare:modifiers": "tsx scripts/compare_modifiers.ts",

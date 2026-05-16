@@ -74,10 +74,10 @@ Then apply it and restart Hermes:
 python ~/.hermes/plugins/zeroapi-router/patch_runtime.py
 ```
 
-The patch writes timestamped backups next to `run_agent.py` and
-`tools/delegate_tool.py`, and is designed to be idempotent. Run the doctor again
-after restart. If a future Hermes release passes the doctor without the patch,
-prefer the upstream runtime.
+The patch writes timestamped backups next to `hermes_cli/plugins.py`,
+`run_agent.py`, and `tools/delegate_tool.py`, and is designed to be idempotent.
+Run the doctor again after restart. If a future Hermes release passes the doctor
+without the patch, prefer the upstream runtime.
 
 ## Provider Mapping
 

@@ -19,13 +19,40 @@ _router: ZeroAPIRouter | None = None
 _route_state: dict[str, str] = {}
 
 
+def _payload_has_image_attachment(value: Any, *, _depth: int = 0) -> bool:
+    """Return True when a Hermes hook payload/history contains image parts."""
+    if _depth > 8:
+        return False
+    if isinstance(value, list):
+        return any(_payload_has_image_attachment(item, _depth=_depth + 1) for item in value)
+    if not isinstance(value, dict):
+        return False
+
+    part_type = value.get("type")
+    if part_type in {"image_url", "input_image", "image"}:
+        return True
+
+    for key in ("content", "parts", "attachments", "media", "images", "files", "message"):
+        if key in value and _payload_has_image_attachment(value[key], _depth=_depth + 1):
+            return True
+
+    return False
+
+
 def _route_state_key(kwargs: dict[str, Any]) -> str:
     platform = kwargs.get("platform") if isinstance(kwargs.get("platform"), str) else ""
     sender_id = kwargs.get("sender_id") if isinstance(kwargs.get("sender_id"), str) else ""
     agent_id = kwargs.get("agent_id") if isinstance(kwargs.get("agent_id"), str) else "main"
     session_id = kwargs.get("session_id") if isinstance(kwargs.get("session_id"), str) else ""
+    gateway_session_key = kwargs.get("gateway_session_key") if isinstance(kwargs.get("gateway_session_key"), str) else ""
+    chat_id = kwargs.get("chat_id") if isinstance(kwargs.get("chat_id"), str) else ""
+    thread_id = kwargs.get("thread_id") if isinstance(kwargs.get("thread_id"), str) else ""
     # Prefer the sender/chat key over session_id so compression splits keep the
     # active task route. Fall back to session_id for non-channel use.
+    if gateway_session_key:
+        return f"gateway:{gateway_session_key}:{agent_id}"
+    if platform and chat_id:
+        return f"{platform}:chat:{chat_id}:{thread_id}:{agent_id}"
     if platform or sender_id:
         return f"{platform}:{sender_id}:{agent_id}"
     return f"session:{session_id}:{agent_id}"
@@ -68,9 +95,15 @@ def _pre_model_route(**kwargs: Any) -> dict[str, str] | None:
     if not isinstance(user_message, str):
         return None
 
-    # Detect image attachments from the gateway hook payload.
-    # Hermes passes this when the inbound message carries media.
-    has_images = bool(kwargs.get("has_images", False))
+    # Detect image attachments from the gateway hook payload. Hermes versions
+    # differ on whether they pass a flag, a message object, or only structured
+    # content in conversation_history, so inspect all available payload shapes.
+    has_images = (
+        bool(kwargs.get("has_images", False))
+        or _payload_has_image_attachment(kwargs.get("message"))
+        or _payload_has_image_attachment(kwargs.get("event"))
+        or _payload_has_image_attachment(kwargs.get("conversation_history"))
+    )
     state_key = _route_state_key(kwargs)
 
     route = router.resolve(
