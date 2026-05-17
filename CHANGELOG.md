@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.30] - 2026-05-17
+
+### Fixed
+- Let the Hermes compatibility doctor inspect an explicit `--hermes-root` source tree instead of accidentally importing a different Hermes checkout from `PYTHONPATH` or the current user home.
+
 ## [3.8.29] - 2026-05-17
 
 ### Fixed

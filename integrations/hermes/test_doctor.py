@@ -1,6 +1,8 @@
 import unittest
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
-from doctor import analyze_runtime_sources
+from doctor import _source_for_module, _valid_hooks_from_source, analyze_runtime_sources
 
 
 PLUGINS_NO_DISCOVERY = '''
@@ -95,6 +97,38 @@ def messages(checks):
 
 
 class HermesDoctorRuntimeContractTest(unittest.TestCase):
+    def test_reads_runtime_sources_from_explicit_hermes_root(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "hermes_cli").mkdir()
+            (root / "tools").mkdir()
+            plugins = root / "hermes_cli" / "plugins.py"
+            run_agent = root / "run_agent.py"
+            delegate_tool = root / "tools" / "delegate_tool.py"
+            plugins.write_text('VALID_HOOKS = {"pre_model_route", "pre_tool_call"}\n', encoding="utf-8")
+            run_agent.write_text(RUN_AGENT_PATCHED, encoding="utf-8")
+            delegate_tool.write_text(DELEGATE_TOOL_PATCHED, encoding="utf-8")
+
+            plugins_path, plugins_source = _source_for_module("hermes_cli.plugins", search_root=root)
+            run_agent_path, run_agent_source = _source_for_module("run_agent", search_root=root)
+            delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool", search_root=root)
+
+            self.assertEqual(plugins_path, plugins)
+            self.assertEqual(run_agent_path, run_agent)
+            self.assertEqual(delegate_tool_path, delegate_tool)
+            self.assertEqual(_valid_hooks_from_source(plugins_source), {"pre_model_route", "pre_tool_call"})
+            self.assertNotIn(
+                "FAIL",
+                levels(
+                    analyze_runtime_sources(
+                        valid_hooks=_valid_hooks_from_source(plugins_source),
+                        plugins_source=plugins_source,
+                        run_agent_source=run_agent_source,
+                        delegate_tool_source=delegate_tool_source,
+                    )
+                ),
+            )
+
     def test_fails_when_hook_name_exists_but_run_agent_never_invokes_it(self):
         checks = analyze_runtime_sources(
             valid_hooks={"pre_model_route"},

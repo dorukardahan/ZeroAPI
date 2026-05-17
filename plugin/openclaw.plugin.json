@@ -2,7 +2,7 @@
   "id": "zeroapi-router",
   "name": "ZeroAPI Router",
   "description": "Source-linked, benchmark-aware model routing across subscription providers",
-  "version": "3.8.29",
+  "version": "3.8.30",
   "activation": {
     "onStartup": true
   },

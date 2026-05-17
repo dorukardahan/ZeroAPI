@@ -13,6 +13,8 @@ The doctor is read-only: it does not print secrets and does not mutate config.
 
 from __future__ import annotations
 
+import argparse
+import ast
 from dataclasses import dataclass
 import importlib
 import importlib.util
@@ -28,7 +30,21 @@ class Check:
     message: str
 
 
-def _source_for_module(module_name: str) -> tuple[Path | None, str | None]:
+def _module_path_from_root(module_name: str, root: Path) -> Path:
+    return root.joinpath(*module_name.split(".")).with_suffix(".py")
+
+
+def _read_source(path: Path) -> tuple[Path, str | None]:
+    try:
+        return path, path.read_text(encoding="utf-8")
+    except OSError:
+        return path, None
+
+
+def _source_for_module(module_name: str, *, search_root: Path | None = None) -> tuple[Path | None, str | None]:
+    if search_root is not None:
+        return _read_source(_module_path_from_root(module_name, search_root))
+
     try:
         spec = importlib.util.find_spec(module_name)
     except (ImportError, ValueError):
@@ -36,10 +52,33 @@ def _source_for_module(module_name: str) -> tuple[Path | None, str | None]:
     if spec is None or spec.origin is None:
         return None, None
     path = Path(spec.origin)
+    return _read_source(path)
+
+
+def _valid_hooks_from_source(source: str | None) -> set[str]:
+    if not source:
+        return set()
     try:
-        return path, path.read_text(encoding="utf-8")
-    except OSError:
-        return path, None
+        tree = ast.parse(source)
+    except SyntaxError:
+        return set()
+    for node in ast.walk(tree):
+        value = None
+        if isinstance(node, ast.Assign):
+            if any(isinstance(target, ast.Name) and target.id == "VALID_HOOKS" for target in node.targets):
+                value = node.value
+        elif isinstance(node, ast.AnnAssign):
+            if isinstance(node.target, ast.Name) and node.target.id == "VALID_HOOKS":
+                value = node.value
+        if value is None:
+            continue
+        try:
+            parsed = ast.literal_eval(value)
+        except (ValueError, TypeError):
+            return set()
+        if isinstance(parsed, (set, list, tuple)):
+            return {str(item) for item in parsed}
+    return set()
 
 
 def _function_body(source: str, name: str) -> str:
@@ -141,25 +180,48 @@ def analyze_runtime_sources(
     return checks
 
 
-def main() -> int:
-    try:
-        plugins = importlib.import_module("hermes_cli.plugins")
-    except Exception as exc:
-        print(f"FAIL hermes_cli.plugins import failed: {exc}")
-        return 1
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Check Hermes runtime compatibility for ZeroAPI routing.")
+    parser.add_argument(
+        "--hermes-root",
+        type=Path,
+        default=None,
+        help="Hermes source root to inspect. Defaults to the active Python import environment.",
+    )
+    parser.add_argument(
+        "--plugin-root",
+        type=Path,
+        default=None,
+        help="Accepted for installer scripts; not needed by the read-only compatibility checks.",
+    )
+    args = parser.parse_args(argv)
 
-    hooks = getattr(plugins, "VALID_HOOKS", set())
-    if not isinstance(hooks, set):
-        hooks = set(hooks or [])
+    hermes_root = args.hermes_root.expanduser().resolve() if args.hermes_root else None
 
-    plugins_path = Path(inspect.getsourcefile(plugins) or "")
-    try:
-        plugins_source = plugins_path.read_text(encoding="utf-8") if plugins_path else None
-    except OSError:
-        plugins_source = None
+    if hermes_root is not None:
+        plugins_path, plugins_source = _source_for_module("hermes_cli.plugins", search_root=hermes_root)
+        hooks = _valid_hooks_from_source(plugins_source)
+        run_agent_path, run_agent_source = _source_for_module("run_agent", search_root=hermes_root)
+        delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool", search_root=hermes_root)
+    else:
+        try:
+            plugins = importlib.import_module("hermes_cli.plugins")
+        except Exception as exc:
+            print(f"FAIL hermes_cli.plugins import failed: {exc}")
+            return 1
 
-    run_agent_path, run_agent_source = _source_for_module("run_agent")
-    delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool")
+        hooks = getattr(plugins, "VALID_HOOKS", set())
+        if not isinstance(hooks, set):
+            hooks = set(hooks or [])
+
+        plugins_path = Path(inspect.getsourcefile(plugins) or "")
+        try:
+            plugins_source = plugins_path.read_text(encoding="utf-8") if plugins_path else None
+        except OSError:
+            plugins_source = None
+
+        run_agent_path, run_agent_source = _source_for_module("run_agent")
+        delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool")
     checks = analyze_runtime_sources(
         valid_hooks=hooks,
         plugins_source=plugins_source,
