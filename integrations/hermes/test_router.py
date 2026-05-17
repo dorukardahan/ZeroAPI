@@ -282,6 +282,39 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(route["provider"], "kimi-for-coding")
         self.assertEqual(route["model"], "kimi-k2.5")
 
+    def test_maps_supergrok_subscription_to_hermes_xai_oauth_provider(self):
+        config = {
+            **CONFIG,
+            "models": {
+                **CONFIG["models"],
+                "xai-oauth/grok-4.3": {
+                    "context_window": 1000000,
+                    "supports_vision": True,
+                    "speed_tps": 114,
+                    "ttft_seconds": 6.6,
+                    "benchmarks": {"intelligence": 53.2, "coding": 41.0, "tau2": 0.976, "ifbench": 0.813},
+                },
+            },
+            "routing_rules": {
+                **CONFIG["routing_rules"],
+                "orchestration": {"primary": "xai-oauth/grok-4.3", "fallbacks": ["zai/glm-5.1"]},
+            },
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {
+                    "zai": {"enabled": False, "tierId": "max"},
+                    "xai-oauth": {"enabled": True, "tierId": "supergrok"},
+                },
+            },
+        }
+        route = ZeroAPIRouter(config).resolve(
+            "coordinate this workflow",
+            current_model="zai/glm-5.1",
+        )
+
+        self.assertEqual(route["provider"], "xai-oauth")
+        self.assertEqual(route["model"], "grok-4.3")
+
     def test_inventory_falls_back_to_all_accounts_when_no_intended_use_matches(self):
         config = {
             **CONFIG,

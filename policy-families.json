@@ -81,6 +81,22 @@
         "qwen3-6-plus"
       ],
       "notes": "OpenClaw currently exposes Qwen through qwen-portal/coder-model. Artificial Analysis tracks named Qwen releases, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for this portal route. Qwen VL or Omni routes are not auto-added to starter configs unless a user explicitly configures an image-capable runtime model."
+    },
+    {
+      "id": "xai-grok-core",
+      "provider": "xai-oauth",
+      "label": "xAI Grok OAuth routeable family",
+      "openclaw_model_ids": [
+        "grok-4.3",
+        "grok-4.20-0309-reasoning",
+        "grok-4.20-0309-non-reasoning"
+      ],
+      "benchmark_slugs": [
+        "grok-4-3",
+        "grok-4-20",
+        "grok-4-20-0309-non-reasoning"
+      ],
+      "notes": "Hermes exposes standalone SuperGrok subscriptions through xai-oauth. OpenClaw currently exposes xAI as the explicit API-key provider xai, so plain xai/* model refs are not treated as subscription-covered by this family."
     }
   ]
 }

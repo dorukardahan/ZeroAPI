@@ -27,6 +27,7 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
   "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
   "qwen-portal": "openclaw models auth login --provider qwen-portal --set-default",
+  "xai-oauth": "hermes auth add xai-oauth",
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
@@ -39,6 +40,7 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
   "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
   "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
+  "xai-oauth/grok-4.3": { context_window: 1000000, supports_vision: true },
 };
 
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
@@ -47,6 +49,7 @@ const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
   "moonshot": ["moonshot/kimi-k2.6"],
   "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
   "qwen-portal": ["qwen-portal/coder-model"],
+  "xai-oauth": ["xai-oauth/grok-4.3"],
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {

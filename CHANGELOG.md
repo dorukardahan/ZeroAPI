@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [3.8.32] - 2026-05-17
+
+### Added
+- Add Hermes SuperGrok subscription routing through the `xai-oauth` provider, including starter onboarding metadata, Hermes provider mapping, and policy-family coverage for Grok 4.3 and Grok 4.20 routes.
+- Refresh the Artificial Analysis benchmark snapshot to include xAI alongside the existing OpenAI, Kimi, Z AI, MiniMax, and Qwen provider ecosystems.
+
+### Changed
+- Keep plain `xai/*` API-key routes out of the subscription-covered pool; SuperGrok support is modeled as Hermes `xai-oauth` only unless a user explicitly configures API-key billing.
+
 ## [3.8.31] - 2026-05-17
 
 ### Added

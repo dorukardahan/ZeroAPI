@@ -20,6 +20,7 @@ PROVIDER_MAP = {
     "zai": "zai",
     "minimax": "minimax-portal",
     "alibaba": "qwen-portal",
+    "xai": "xai-oauth",
 }
 BENCHMARK_MAP = {
     "intelligence": "artificial_analysis_intelligence_index",

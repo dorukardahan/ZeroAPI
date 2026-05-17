@@ -55,7 +55,7 @@ The advisory file and logs can still be used for operators who do not want chann
 Install only from the source-linked package:
 
 ```bash
-openclaw plugins install clawhub:zeroapi@3.8.31
+openclaw plugins install clawhub:zeroapi@3.8.32
 ```
 
 Verify the package source points to:
@@ -67,4 +67,3 @@ Verify the package source points to:
 ## Configure
 
 Run `/zeroapi` in an OpenClaw channel, or use the repo-local setup flow if you are operating from a shell. The generated policy should describe only the subscriptions and accounts you want ZeroAPI to use.
-

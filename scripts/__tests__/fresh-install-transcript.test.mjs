@@ -25,7 +25,14 @@ test("fresh repo explanation forbids ownership and stale install assumptions", (
 
 test("fresh install flow covers provider choices without chat secrets", () => {
   const step = steps.get("install-intent");
-  assert.deepEqual(step.supported_provider_choices, ["OpenAI", "Kimi", "Z AI", "MiniMax", "Qwen Portal"]);
+  assert.deepEqual(step.supported_provider_choices, [
+    "OpenAI",
+    "Kimi",
+    "Z AI",
+    "MiniMax",
+    "Qwen Portal",
+    "xAI Grok OAuth",
+  ]);
   assert.ok(step.assistant_must.some((line) => line.includes("avoid asking for secrets")));
 });
 

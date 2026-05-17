@@ -15,6 +15,7 @@
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
 | MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-portal` | Refreshable OAuth token |
 | Qwen Portal | OAuth portal | `openclaw models auth login --provider qwen-portal --set-default` | Refreshable OAuth token |
+| xAI Grok OAuth | Hermes OAuth via SuperGrok | `hermes auth add xai-oauth` | Refreshable OAuth token |
 
 **Reliability ranking**: Kimi / GLM static keys > portal OAuth providers with auto-refresh > providers with unhealthy or stale local profiles.
 
@@ -74,6 +75,14 @@ OpenAI Codex also uses the model-auth flow:
 ```bash
 openclaw models auth login --provider openai-codex
 ```
+
+Hermes SuperGrok uses Hermes' own OAuth flow:
+
+```bash
+hermes auth add xai-oauth
+```
+
+OpenClaw's plain `xai` provider uses `XAI_API_KEY`; that route is explicit API billing and is not treated as subscription-covered SuperGrok OAuth by ZeroAPI.
 
 ---
 

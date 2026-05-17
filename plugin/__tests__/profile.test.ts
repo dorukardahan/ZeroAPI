@@ -71,4 +71,17 @@ describe("profile", () => {
     expect(resolved?.tierId).toBe("plus");
     expect(isModelAllowedBySubscriptionProfile(profile, undefined, "openai/gpt-5.5")).toBe(true);
   });
+
+  it("resolves SuperGrok OAuth without treating plain xAI API keys as subscription routes", () => {
+    const grokProfile: SubscriptionProfile = {
+      version: "1.0.0",
+      global: {
+        "xai-oauth": { enabled: true, tierId: "supergrok" },
+      },
+    };
+
+    expect(resolveProviderSubscription(grokProfile, undefined, "xai-oauth")?.tierId).toBe("supergrok");
+    expect(isModelAllowedBySubscriptionProfile(grokProfile, undefined, "xai-oauth/grok-4.3")).toBe(true);
+    expect(isModelAllowedBySubscriptionProfile(grokProfile, undefined, "xai/grok-4.3")).toBe(false);
+  });
 });

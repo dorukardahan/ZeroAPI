@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.8.31
+version: 3.8.32
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when the user mentions model routing, multi-model setup, "which model should I use",
@@ -13,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.8.31 - Plugin-Based Model Routing
+# ZeroAPI v3.8.32 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -44,6 +44,7 @@ ZeroAPI only routes across subscription-covered alternatives.
 
 - **Anthropic (Claude):** as of 2026-04-04, Claude subscriptions no longer cover OpenClaw usage in third-party tools. Anthropic models should not be included in ZeroAPI routing.
 - **Google (Gemini):** CLI OAuth usage with third-party tools is a ToS violation as of 2026-03-25. Google/Gemini should not be included in ZeroAPI routing.
+- **xAI API keys:** OpenClaw's plain `xai` provider is API-key based and is not the same thing as Hermes `xai-oauth` SuperGrok subscription routing. Do not auto-add plain `xai/*` models to a subscription policy.
 
 ## How it works
 
@@ -75,7 +76,7 @@ ZeroAPI also supports a **subscription-aware foundation**:
 
 ## Supported providers
 
-Five subscription or account-quota providers are currently supported by the routing policy.
+Six subscription or account-quota providers are currently supported by the routing policy.
 
 | Provider | OpenClaw ID | Auth | Tiers |
 |----------|-------------|------|-------|
@@ -84,6 +85,7 @@ Five subscription or account-quota providers are currently supported by the rout
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
 | MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
 | Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | OAuth portal | Free OAuth |
+| xAI Grok OAuth | `xai-oauth` | Hermes OAuth via SuperGrok | SuperGrok |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
 
@@ -200,6 +202,7 @@ Practical subscription mapping:
 - Z AI -> GLM-5.1 / GLM-5 / GLM-5-Turbo / GLM-4.7 family
 - MiniMax -> MiniMax-M2.7
 - Qwen Portal -> coder-model, using Qwen3.6 Plus benchmark data as the closest public proxy
+- xAI Grok OAuth -> grok-4.3, only when Hermes exposes SuperGrok as `xai-oauth`
 
 Persist the result into a subscription profile with:
 - `global` provider selections
@@ -232,7 +235,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.8.31",
+  "version": "3.8.32",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",

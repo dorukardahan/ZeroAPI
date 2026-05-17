@@ -20,11 +20,13 @@ ZeroAPI v1 subscription-aware routing supports exactly these subscription or acc
 3. Z AI (GLM)
 4. MiniMax
 5. Qwen Portal
+6. xAI Grok OAuth
 
 Excluded from catalog:
 
 - Anthropic, excluded for subscription coverage reasons
 - Google/Gemini, excluded for OAuth/ToS reasons in third-party tool flows
+- xAI API-key routes, excluded because plain `xai/*` models are separate API billing rather than SuperGrok subscription OAuth
 - Any provider without a meaningful subscription, plan, or account-quota abstraction
 
 ## Design Principles
@@ -90,6 +92,12 @@ Each tier should define:
 ### Qwen Portal
 
 - Free OAuth
+
+### xAI Grok OAuth
+
+- SuperGrok
+
+This entry applies to Hermes `xai-oauth`, which uses browser OAuth against a standalone SuperGrok subscription. It does not apply to OpenClaw's plain `xai` provider backed by `XAI_API_KEY`.
 
 ## User Profile Model
 

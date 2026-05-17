@@ -118,6 +118,39 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     benchmarkRoutingBias: 0.95,
     notes: "OpenClaw exposes Qwen through qwen-portal OAuth. ZeroAPI uses Qwen benchmark rows as a proxy for the portal coder model.",
   },
+  {
+    providerId: "xai-oauth",
+    label: "xAI Grok OAuth",
+    openclawProviderId: "xai-oauth",
+    openclawProviderAliases: ["grok-oauth", "x-ai-oauth", "xai-grok-oauth", "supergrok"],
+    status: "active",
+    authMode: "oauth",
+    selectionMode: "single_tier",
+    tiers: [
+      {
+        tierId: "supergrok",
+        label: "SuperGrok",
+        monthlyPriceUsd: null,
+        annualEffectiveMonthlyUsd: null,
+        availability: "available",
+        routingWeight: 2,
+        recommendedUsage: "Standalone SuperGrok subscription routed through Hermes xAI OAuth.",
+        notes: "This is the browser OAuth path. The plain xAI API-key provider is not treated as subscription-covered.",
+      },
+    ],
+    benchmarkRoutingBias: 0.85,
+    notes: "Hermes exposes SuperGrok as xai-oauth. OpenClaw currently exposes xAI through XAI_API_KEY, so plain xai/* models stay explicit API-key routes unless the user configures them separately.",
+  },
+  {
+    providerId: "xai-api",
+    label: "xAI API",
+    openclawProviderId: "xai",
+    status: "excluded",
+    authMode: "api_key",
+    selectionMode: "single_tier",
+    tiers: [],
+    notes: "Explicit API-key route. Not treated as subscription-covered SuperGrok OAuth.",
+  },
 ];
 
 export function getProviderCatalogEntry(openclawProviderId: string): ProviderCatalogEntry | null {

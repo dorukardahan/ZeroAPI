@@ -73,6 +73,19 @@ describe("buildStarterConfig", () => {
     expect(Object.keys(config.models).some((model) => model.includes("glm-5v"))).toBe(false);
   });
 
+  it("builds SuperGrok OAuth starter configs with the Hermes provider id", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "xai-oauth", tierId: "supergrok" }],
+    });
+
+    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.3"]);
+    expect(config.models["xai-oauth/grok-4.3"]?.supports_vision).toBe(true);
+    expect(config.models["xai-oauth/grok-4.3"]?.context_window).toBe(1000000);
+    expect(config.subscription_profile?.global).toEqual({
+      "xai-oauth": { enabled: true, tierId: "supergrok" },
+    });
+  });
+
   it("prefers inventory for multi-account providers and keeps modifier selection", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "zai", tierId: "pro" }],
@@ -140,9 +153,10 @@ describe("buildStarterConfig", () => {
 
 describe("starter onboarding helpers", () => {
   it("returns auth commands in provider order", () => {
-    expect(getStarterAuthCommands(["openai-codex", "zai"])).toEqual([
+    expect(getStarterAuthCommands(["openai-codex", "zai", "xai-oauth"])).toEqual([
       "openclaw models auth login --provider openai-codex",
       "openclaw onboard --auth-choice zai-coding-global",
+      "hermes auth add xai-oauth",
     ]);
   });
 
@@ -153,6 +167,7 @@ describe("starter onboarding helpers", () => {
       "plus",
       "max",
     ]);
+    expect(getStarterTierChoices("xai-oauth").map((item) => item.tierId)).toEqual(["supergrok"]);
   });
 
   it("summarizes existing config for reruns", () => {

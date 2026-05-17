@@ -2,7 +2,7 @@
   "id": "zeroapi-router",
   "name": "ZeroAPI Router",
   "description": "Transparent subscription-aware model and account routing for OpenClaw",
-  "version": "3.8.31",
+  "version": "3.8.32",
   "activation": {
     "onStartup": true
   },

@@ -163,6 +163,12 @@ PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
         "tier_weights": {"free": 1},
         "bias": 0.95,
     },
+    "xai-oauth": {
+        "canonical": "xai-oauth",
+        "aliases": ["grok-oauth", "x-ai-oauth", "xai-grok-oauth", "supergrok"],
+        "tier_weights": {"supergrok": 2},
+        "bias": 0.85,
+    },
 }
 
 HERMES_PROVIDER_MAP = {
@@ -177,6 +183,11 @@ HERMES_PROVIDER_MAP = {
     "qwen-portal": "qwen-oauth",
     "qwen": "qwen-oauth",
     "qwen-dashscope": "alibaba-coding-plan",
+    "xai-oauth": "xai-oauth",
+    "grok-oauth": "xai-oauth",
+    "x-ai-oauth": "xai-oauth",
+    "xai-grok-oauth": "xai-oauth",
+    "supergrok": "xai-oauth",
 }
 
 DEFAULT_RISK_LEVELS: dict[str, str] = {
