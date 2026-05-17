@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.29] - 2026-05-17
+
+### Fixed
+- Align the Hermes adapter `plugin.yaml` version with the ZeroAPI release version, and cover it in version-sync tests so Hermes installs do not look stale after updates.
+
 ## [3.8.28] - 2026-05-17
 
 ### Fixed

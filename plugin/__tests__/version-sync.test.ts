@@ -36,6 +36,7 @@ describe("version sync", () => {
     const rootSkillText = readFileSync(join(repoRoot, "SKILL.md"), "utf-8");
     const skillText = readFileSync(join(pluginRoot, "skills", "zeroapi", "SKILL.md"), "utf-8");
     const runtimeText = readFileSync(join(pluginRoot, "index.ts"), "utf-8");
+    const hermesPluginText = readFileSync(join(repoRoot, "integrations", "hermes", "plugin.yaml"), "utf-8");
 
     expect(pluginVersion).toBe(rootVersion);
     expect(manifestVersion).toBe(rootVersion);
@@ -43,6 +44,7 @@ describe("version sync", () => {
     expect(rootSkillText).toContain(`# ZeroAPI v${rootVersion}`);
     expect(skillText).toContain(`version: ${rootVersion}`);
     expect(runtimeText).toContain(`const PLUGIN_VERSION = "${rootVersion}"`);
+    expect(hermesPluginText).toContain(`version: ${rootVersion}`);
   });
 
   it("declares explicit startup activation for OpenClaw manifest-first planning", () => {
