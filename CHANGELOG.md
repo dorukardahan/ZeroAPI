@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [3.8.31] - 2026-05-17
+
+### Added
+- Ship a ClawHub artifact README so plugin users can see the security model, install guidance, and runtime behavior directly on the ClawHub page.
+
+### Changed
+- Document and expose `channel_advisories_enabled` / `ZEROAPI_CHANNEL_ADVISORIES=false` for operators who want provider/account drift advisories in files and logs without prepending channel-visible notices.
+
 ## [3.8.30] - 2026-05-17
 
 ### Fixed

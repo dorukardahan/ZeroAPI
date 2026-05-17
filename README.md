@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.26-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.26)
+[![Version](https://img.shields.io/badge/version-3.8.31-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.31)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -159,7 +159,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.26` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.31` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
@@ -189,7 +189,21 @@ The user declares what subscriptions they have. ZeroAPI decides the route.
 
 ### Runtime Advisory
 
-If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin now writes `~/.openclaw/zeroapi-advisories.json`, logs a short advisory, and prepends one compact notice to the next outgoing reply in each conversation. Re-run `/zeroapi` to review and accept those additions. The chat rerun flow should then start from a drift-aware first question instead of replaying full onboarding. This is watcher-based, happens outside the routing hot path, and does not spend extra model tokens.
+If OpenClaw gains a newly usable **supported provider** or a new same-provider **auth profile/account** outside the current ZeroAPI policy, the plugin writes `~/.openclaw/zeroapi-advisories.json`, logs a short advisory, and can prepend one compact notice to the next outgoing reply in each conversation. Re-run `/zeroapi` to review and accept those additions. The chat rerun flow should then start from a drift-aware first question instead of replaying full onboarding. This is watcher-based, happens outside the routing hot path, and does not spend extra model tokens.
+
+The channel notice is explicit product behavior, not hidden prompt text. It can be disabled with either:
+
+```json
+{
+  "channel_advisories_enabled": false
+}
+```
+
+or:
+
+```bash
+ZEROAPI_CHANNEL_ADVISORIES=false
+```
 
 ### Default Policy Mode
 

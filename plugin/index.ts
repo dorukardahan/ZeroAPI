@@ -9,7 +9,7 @@ import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 import type { TaskCategory } from "./types.js";
 
-const PLUGIN_VERSION = "3.8.30";
+const PLUGIN_VERSION = "3.8.31";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -203,13 +203,15 @@ export default definePluginEntry({
         };
       }
     });
-    api.on("message_sending", (event, ctx) => {
-      const content = maybePrefixChannelAdvisory(openclawDir, event, ctx);
-      if (!content) {
-        return;
-      }
-      return { content };
-    });
+    if (config.channel_advisories_enabled !== false) {
+      api.on("message_sending", (event, ctx) => {
+        const content = maybePrefixChannelAdvisory(openclawDir, event, ctx);
+        if (!content) {
+          return;
+        }
+        return { content };
+      });
+    }
     registerState.registered = true;
   },
 });

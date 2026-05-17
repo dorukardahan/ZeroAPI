@@ -65,6 +65,7 @@ export type ZeroAPIConfig = {
   subscription_inventory?: SubscriptionInventory;
   continuation_keywords?: string[];
   continuation_route_categories?: TaskCategory[];
+  channel_advisories_enabled?: boolean;
 };
 
 export type RoutingDecision = {

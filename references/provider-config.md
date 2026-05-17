@@ -259,7 +259,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.7.9",
+  "version": "3.8.31",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",
@@ -284,6 +284,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
   "default_model": "<provider>/<model-id>",
   "routing_modifier": "coding-aware",
   "external_model_policy": "stay",
+  "channel_advisories_enabled": true,
   "disabled_providers": [],
   "models": {
     "<provider>/<model-id>": {
@@ -337,6 +338,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 | `default_model` | ZeroAPI's preferred default policy target. If `openclaw.json` differs, OpenClaw runtime default still wins unless a per-turn override is returned. |
 | `routing_modifier` | Optional task-aware overlay on top of `routing_mode: "balanced"`. Valid values: `coding-aware`, `research-aware`, `speed-aware`. See [`routing-modifiers-spec.md`](routing-modifiers-spec.md). |
 | `external_model_policy` | How ZeroAPI behaves when the active current model is outside its own `models` pool. `stay` keeps that foreign or external model. `allow` lets ZeroAPI re-enter and route back into its subscription pool. |
+| `channel_advisories_enabled` | Controls whether ZeroAPI may prepend a compact provider/account drift notice to one outgoing reply per conversation. Defaults to `true`; set to `false` or `ZEROAPI_CHANNEL_ADVISORIES=false` to keep advisories file/log-only. |
 | `disabled_providers` | Emergency provider kill switch. Matching providers are never selected even if they have enabled subscription inventory. The Hermes adapter also supports `ZEROAPI_DISABLED_PROVIDERS=openai-codex,zai`. |
 | `models.<id>.context_window` | Maximum tokens the model can accept |
 | `models.<id>.supports_vision` | Whether image attachments can be sent |

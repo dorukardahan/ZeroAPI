@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -63,6 +63,9 @@ if (esbuild.status !== 0) {
 
 cpSync(join(sourceDir, "benchmarks.json"), join(outputDir, "benchmarks.json"));
 cpSync(join(sourceDir, "skills"), join(outputDir, "skills"), { recursive: true });
+if (existsSync(join(sourceDir, "README.md"))) {
+  cpSync(join(sourceDir, "README.md"), join(outputDir, "README.md"));
+}
 
 const pkg = readJson(join(sourceDir, "package.json"));
 pkg.openclaw = pkg.openclaw || {};

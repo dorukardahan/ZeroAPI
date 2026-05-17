@@ -93,6 +93,7 @@ describe("config", () => {
     expect(result).not.toBeNull();
     expect(result!.routing_mode).toBe("balanced");
     expect(result!.external_model_policy).toBe("stay");
+    expect(result!.channel_advisories_enabled).toBe(true);
     expect(result!.workspace_hints).toEqual({});
   });
 
@@ -177,6 +178,26 @@ describe("config", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null when channel_advisories_enabled is not a boolean", async () => {
+    const bad = {
+      version: "3.0.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "foo/bar",
+      channel_advisories_enabled: "false",
+      models: {},
+      routing_rules: {},
+      workspace_hints: {},
+      keywords: {},
+      high_risk_keywords: [],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(bad));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result).toBeNull();
+  });
+
   it("loads and caches valid config", async () => {
     const valid = {
       version: "3.3.0",
@@ -186,6 +207,7 @@ describe("config", () => {
       routing_mode: "balanced",
       routing_modifier: "coding-aware",
       external_model_policy: "allow",
+      channel_advisories_enabled: false,
       models: { "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
       routing_rules: { default: { primary: "openai-codex/gpt-5.4", fallbacks: [] } },
       workspace_hints: {},
@@ -220,6 +242,7 @@ describe("config", () => {
     expect(result!.routing_mode).toBe("balanced");
     expect(result!.routing_modifier).toBe("coding-aware");
     expect(result!.external_model_policy).toBe("allow");
+    expect(result!.channel_advisories_enabled).toBe(false);
     expect(result!.subscription_inventory?.accounts["openai-work-max"]?.provider).toBe("openai-codex");
     expect(getConfig()).toBe(result);
   });
@@ -243,6 +266,27 @@ describe("config", () => {
     const { loadConfig } = await import("../config.js");
     const result = loadConfig(testDir);
     expect(result?.disabled_providers).toEqual(["zai", "openai-codex", "moonshot"]);
+  });
+
+  it("overrides channel advisory visibility from environment", async () => {
+    const valid = {
+      version: "3.3.0",
+      generated: "2026-04-05",
+      benchmarks_date: "2026-04-04",
+      default_model: "openai-codex/gpt-5.4",
+      channel_advisories_enabled: true,
+      models: { "openai-codex/gpt-5.4": { context_window: 272000, supports_vision: false, speed_tps: 72, ttft_seconds: 163, benchmarks: {} } },
+      routing_rules: { default: { primary: "openai-codex/gpt-5.4", fallbacks: [] } },
+      workspace_hints: {},
+      keywords: { code: ["implement"] },
+      high_risk_keywords: ["deploy"],
+      fast_ttft_max_seconds: 5,
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(valid));
+    vi.stubEnv("ZEROAPI_CHANNEL_ADVISORIES", "false");
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir);
+    expect(result?.channel_advisories_enabled).toBe(false);
   });
 
   it("loads valid inventory-only config without requiring subscription_profile", async () => {

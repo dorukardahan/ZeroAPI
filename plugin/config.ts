@@ -12,6 +12,15 @@ function parseDisabledProvidersEnv(): string[] {
     .filter(Boolean);
 }
 
+function parseOptionalBooleanEnv(value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return undefined;
+}
+
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
   if (typeof obj !== "object" || obj === null) return false;
   const cfg = obj as Record<string, unknown>;
@@ -45,6 +54,9 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     cfg.vision_keywords === undefined || Array.isArray(cfg.vision_keywords);
   const disabledProvidersValid =
     cfg.disabled_providers === undefined || Array.isArray(cfg.disabled_providers);
+  const channelAdvisoriesValid =
+    cfg.channel_advisories_enabled === undefined ||
+    typeof cfg.channel_advisories_enabled === "boolean";
   const workspaceHintsValid =
     cfg.workspace_hints === undefined ||
     (typeof cfg.workspace_hints === "object" && cfg.workspace_hints !== null && !Array.isArray(cfg.workspace_hints));
@@ -66,6 +78,7 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     workspaceHintsValid &&
     visionKeywordsValid &&
     disabledProvidersValid &&
+    channelAdvisoriesValid &&
     riskLevelsValid &&
     subscriptionProfileValid &&
     subscriptionInventoryValid
@@ -90,6 +103,10 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
       ...parsed,
       routing_mode: parsed.routing_mode ?? "balanced",
       external_model_policy: parsed.external_model_policy ?? "stay",
+      channel_advisories_enabled:
+        parseOptionalBooleanEnv(process.env.ZEROAPI_CHANNEL_ADVISORIES) ??
+        parsed.channel_advisories_enabled ??
+        true,
       workspace_hints: parsed.workspace_hints ?? {},
       disabled_providers: [
         ...((parsed.disabled_providers ?? []).filter((provider: unknown): provider is string => typeof provider === "string")),

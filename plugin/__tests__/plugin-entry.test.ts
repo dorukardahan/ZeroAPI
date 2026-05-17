@@ -235,6 +235,59 @@ describe("plugin entry registration", () => {
     }
   });
 
+  it("does not register channel advisory prefix hook when channel advisories are disabled", async () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
+    const previousHome = process.env.HOME;
+    process.env.HOME = home;
+
+    vi.doMock("../config.js", () => ({
+      loadConfig: () => ({
+        version: "3.8.31",
+        generated: "2026-05-17",
+        benchmarks_date: "2026-05-17",
+        default_model: "zai/glm-5.1",
+        routing_mode: "balanced",
+        channel_advisories_enabled: false,
+        models: {},
+        routing_rules: {},
+        keywords: {},
+        high_risk_keywords: [],
+        fast_ttft_max_seconds: 5,
+        workspace_hints: {},
+      }),
+    }));
+    vi.doMock("../decision.js", () => ({
+      resolveRoutingDecision: () => ({ action: "skip", reason: "test" }),
+    }));
+    vi.doMock("../logger.js", () => ({
+      initLogger: vi.fn(),
+      logRouting: vi.fn(),
+      logRoutingEvent: vi.fn(),
+    }));
+
+    const on = vi.fn();
+    const api = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+      },
+      on,
+    };
+
+    try {
+      const mod = await import("../index.js");
+      mod.default.register(api);
+
+      expect(on).toHaveBeenCalledTimes(1);
+      expect(on.mock.calls[0]?.[0]).toBe("before_model_resolve");
+      expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledTimes(1);
+      expect(maybePrefixChannelAdvisory).not.toHaveBeenCalled();
+    } finally {
+      process.env.HOME = previousHome;
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   it("passes the last strong route category into the next turn for continuation prompts", async () => {
     const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
     const previousHome = process.env.HOME;
