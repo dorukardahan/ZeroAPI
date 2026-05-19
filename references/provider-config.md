@@ -251,11 +251,13 @@ openclaw models auth login --provider qwen-portal --set-default
 
 ---
 
-### 6. xAI Grok OAuth — `xai-oauth`
+### 6. xAI Grok OAuth — `xai`
 
-**Auth**: Hermes OAuth via a standalone SuperGrok subscription.
+**Auth**: OpenClaw browser OAuth via a standalone SuperGrok subscription on OpenClaw 2026.5.18+, or Hermes OAuth via the legacy `xai-oauth` adapter id.
 
 ```bash
+openclaw onboard --auth-choice xai-oauth
+openclaw models auth login --provider xai --method oauth
 hermes auth add xai-oauth
 ```
 
@@ -266,26 +268,28 @@ hermes auth add xai-oauth
 | `grok-4.3` | Default SuperGrok route, vision-capable |
 | `grok-4.20-0309-reasoning` | Fallback/explicit policy route when available |
 
-**Important**: OpenClaw's built-in `xai` provider uses `XAI_API_KEY`. That is explicit API billing, not SuperGrok subscription OAuth. ZeroAPI does not auto-treat plain `xai/*` routes as subscription-covered.
+**Important**: Only enable `xai` in ZeroAPI when the runtime account is backed by OpenClaw xAI OAuth / SuperGrok. `XAI_API_KEY` remains explicit API billing and should stay outside subscription routing unless the operator intentionally models it as account-quota capacity.
 
-**Hermes config shape**:
+**OpenClaw config shape**:
 
 ```json
 {
   "subscription_profile": {
     "version": "1.0.0",
     "global": {
-      "xai-oauth": { "enabled": true, "tierId": "supergrok" }
+      "xai": { "enabled": true, "tierId": "supergrok" }
     }
   },
   "models": {
-    "xai-oauth/grok-4.3": {
+    "xai/grok-4.3": {
       "context_window": 1000000,
       "supports_vision": true
     }
   }
 }
 ```
+
+Hermes configs can keep `xai-oauth/grok-4.3`; ZeroAPI treats `xai-oauth` as a legacy alias for the same SuperGrok subscription pool.
 
 ---
 
@@ -297,7 +301,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.8.32",
+  "version": "3.8.33",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",

@@ -119,12 +119,12 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     notes: "OpenClaw exposes Qwen through qwen-portal OAuth. ZeroAPI uses Qwen benchmark rows as a proxy for the portal coder model.",
   },
   {
-    providerId: "xai-oauth",
+    providerId: "xai",
     label: "xAI Grok OAuth",
-    openclawProviderId: "xai-oauth",
-    openclawProviderAliases: ["grok-oauth", "x-ai-oauth", "xai-grok-oauth", "supergrok"],
+    openclawProviderId: "xai",
+    openclawProviderAliases: ["xai-oauth", "grok-oauth", "x-ai-oauth", "xai-grok-oauth", "supergrok"],
     status: "active",
-    authMode: "oauth",
+    authMode: "mixed",
     selectionMode: "single_tier",
     tiers: [
       {
@@ -139,7 +139,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       },
     ],
     benchmarkRoutingBias: 0.85,
-    notes: "Hermes exposes SuperGrok as xai-oauth. OpenClaw currently exposes xAI through XAI_API_KEY, so plain xai/* models stay explicit API-key routes unless the user configures them separately.",
+    notes: "OpenClaw exposes SuperGrok OAuth through the native xai provider with auth method oauth. Hermes legacy configs may still use xai-oauth as an alias. Only enable this provider for subscription-backed OAuth accounts; plain xAI API-key usage should stay outside ZeroAPI subscription routing.",
   },
   {
     providerId: "xai-api",

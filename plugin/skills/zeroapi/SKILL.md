@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.8.32
+version: 3.8.33
 description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi, asks to set up model routing, pastes the ZeroAPI repo URL, or asks what the repo does or whether it would help.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
@@ -39,7 +39,7 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
    - Kimi paid tiers
    - MiniMax portal tiers
    - Qwen Portal OAuth
-   - xAI Grok OAuth / SuperGrok when the runtime exposes `xai-oauth`
+   - xAI Grok OAuth / SuperGrok when OpenClaw exposes native `xai` OAuth or Hermes exposes legacy `xai-oauth`
 
 5. Write `~/.openclaw/zeroapi-config.json` with:
    - `version`: current plugin version
@@ -68,4 +68,4 @@ Excluded by default:
 
 - Anthropic subscription routing, because current subscription access does not cover OpenClaw third-party usage.
 - Google/Gemini CLI OAuth routing, because third-party CLI OAuth is not supported for this use.
-- Plain xAI API-key routing, because `xai/*` API billing is not the same thing as SuperGrok subscription routing.
+- Plain xAI API-key billing, unless the operator explicitly models that account as quota capacity. SuperGrok subscription routing should use OpenClaw `xai` OAuth or Hermes `xai-oauth`.

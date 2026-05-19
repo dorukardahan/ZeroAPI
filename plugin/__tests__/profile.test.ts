@@ -72,7 +72,19 @@ describe("profile", () => {
     expect(isModelAllowedBySubscriptionProfile(profile, undefined, "openai/gpt-5.5")).toBe(true);
   });
 
-  it("resolves SuperGrok OAuth without treating plain xAI API keys as subscription routes", () => {
+  it("resolves OpenClaw xAI OAuth as subscription-backed Grok routing", () => {
+    const grokProfile: SubscriptionProfile = {
+      version: "1.0.0",
+      global: {
+        "xai": { enabled: true, tierId: "supergrok" },
+      },
+    };
+
+    expect(resolveProviderSubscription(grokProfile, undefined, "xai")?.tierId).toBe("supergrok");
+    expect(isModelAllowedBySubscriptionProfile(grokProfile, undefined, "xai/grok-4.3")).toBe(true);
+  });
+
+  it("keeps legacy Hermes xai-oauth profile keys compatible with OpenClaw xai models", () => {
     const grokProfile: SubscriptionProfile = {
       version: "1.0.0",
       global: {
@@ -80,8 +92,7 @@ describe("profile", () => {
       },
     };
 
-    expect(resolveProviderSubscription(grokProfile, undefined, "xai-oauth")?.tierId).toBe("supergrok");
-    expect(isModelAllowedBySubscriptionProfile(grokProfile, undefined, "xai-oauth/grok-4.3")).toBe(true);
-    expect(isModelAllowedBySubscriptionProfile(grokProfile, undefined, "xai/grok-4.3")).toBe(false);
+    expect(resolveProviderSubscription(grokProfile, undefined, "xai")?.tierId).toBe("supergrok");
+    expect(isModelAllowedBySubscriptionProfile(grokProfile, undefined, "xai/grok-4.3")).toBe(true);
   });
 });

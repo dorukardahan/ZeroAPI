@@ -96,7 +96,7 @@
         "grok-4-20",
         "grok-4-20-0309-non-reasoning"
       ],
-      "notes": "Hermes exposes standalone SuperGrok subscriptions through xai-oauth. OpenClaw currently exposes xAI as the explicit API-key provider xai, so plain xai/* model refs are not treated as subscription-covered by this family."
+      "notes": "OpenClaw 2026.5.18+ exposes SuperGrok OAuth through the native xai provider, while Hermes legacy configs use xai-oauth. Treat xai-oauth benchmark rows as SuperGrok OAuth proxies for native xai routes; plain XAI_API_KEY billing is not automatically subscription-covered."
     }
   ]
 }

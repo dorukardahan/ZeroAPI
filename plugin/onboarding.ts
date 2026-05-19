@@ -2,7 +2,12 @@ import { existsSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { getSubscriptionWeightedCandidates } from "./router.js";
-import { SUBSCRIPTION_CATALOG, SUBSCRIPTION_CATALOG_VERSION, type ProviderCatalogEntry } from "./subscriptions.js";
+import {
+  getProviderCatalogEntry,
+  SUBSCRIPTION_CATALOG,
+  SUBSCRIPTION_CATALOG_VERSION,
+  type ProviderCatalogEntry,
+} from "./subscriptions.js";
 import type {
   ModelCapabilities,
   RoutingModifier,
@@ -27,6 +32,7 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
   "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
   "qwen-portal": "openclaw models auth login --provider qwen-portal --set-default",
+  "xai": "openclaw onboard --auth-choice xai-oauth",
   "xai-oauth": "hermes auth add xai-oauth",
 };
 
@@ -40,6 +46,7 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
   "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
   "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
+  "xai/grok-4.3": { context_window: 1000000, supports_vision: true },
   "xai-oauth/grok-4.3": { context_window: 1000000, supports_vision: true },
 };
 
@@ -49,6 +56,7 @@ const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
   "moonshot": ["moonshot/kimi-k2.6"],
   "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
   "qwen-portal": ["qwen-portal/coder-model"],
+  "xai": ["xai/grok-4.3"],
   "xai-oauth": ["xai-oauth/grok-4.3"],
 };
 
@@ -58,6 +66,7 @@ const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
   "openai/gpt-5.4": "openai-codex/gpt-5.4",
   "openai/gpt-5.4-mini": "openai-codex/gpt-5.4-mini",
   "moonshot/kimi-k2.6": "moonshot/kimi-k2.5",
+  "xai/grok-4.3": "xai-oauth/grok-4.3",
 };
 
 const DEFAULT_KEYWORDS: Record<string, string[]> = {
@@ -141,17 +150,17 @@ function readBenchmarksSnapshot(): BenchmarkSnapshot {
 
 function getTierRank(providerId: string, tierId: string | null | undefined): number {
   if (!tierId) return -1;
-  const entry = SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId);
+  const entry = getProviderCatalogEntry(providerId);
   if (!entry) return -1;
   return entry.tiers.findIndex((tier) => tier.tierId === tierId);
 }
 
 function getProviderLabel(providerId: string): string {
-  return SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId)?.label ?? providerId;
+  return getProviderCatalogEntry(providerId)?.label ?? providerId;
 }
 
 function getDefaultTierId(providerId: string): string {
-  const entry = SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId);
+  const entry = getProviderCatalogEntry(providerId);
   return entry?.tiers.find((tier) => tier.availability === "available")?.tierId ?? entry?.tiers[0]?.tierId ?? "unknown";
 }
 
@@ -387,7 +396,7 @@ export function getStarterProviders(): ProviderCatalogEntry[] {
 }
 
 export function getStarterTierChoices(providerId: string) {
-  const entry = SUBSCRIPTION_CATALOG.find((item) => item.openclawProviderId === providerId);
+  const entry = getProviderCatalogEntry(providerId);
   if (!entry) return [];
   return entry.tiers.filter((tier) => tier.availability === "available");
 }

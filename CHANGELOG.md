@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.33] - 2026-05-19
+
+### Fixed
+- Add OpenClaw 2026.5.18 native xAI OAuth / SuperGrok routing support through the `xai` provider while keeping `xai-oauth` as the Hermes legacy alias.
+- Keep xAI API-key billing out of subscription routing unless the operator explicitly enables the `xai` subscription profile.
+
 ## [3.8.32] - 2026-05-17
 
 ### Added

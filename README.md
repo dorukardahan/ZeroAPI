@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.8.32-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.32)
+[![Version](https://img.shields.io/badge/version-3.8.33-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.8.33)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -36,7 +36,7 @@ For the written product contract behind the current router, see [`references/rou
 
 **Google (Gemini):** CLI OAuth with third-party tools declared ToS violation as of March 25, 2026. Accounts using Gemini CLI OAuth through OpenClaw risk suspension. API key usage (AI Studio/Vertex) is separate billing, not subscription-covered.
 
-ZeroAPI routes exclusively across subscription or account-quota providers: OpenAI, Kimi, Z AI (GLM), MiniMax, Qwen Portal, and Hermes SuperGrok OAuth.
+ZeroAPI routes exclusively across subscription or account-quota providers: OpenAI, Kimi, Z AI (GLM), MiniMax, Qwen Portal, and xAI Grok OAuth / SuperGrok.
 
 ## How It Works
 
@@ -77,7 +77,7 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.1, GLM-5, GLM-5-Turbo, GLM-4.7-Flash |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M2.7 |
 | Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | Free OAuth | $0 | $0 | coder-model |
-| xAI Grok OAuth | `xai-oauth` | SuperGrok | varies | varies | Grok 4.3 |
+| xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | SuperGrok | varies | varies | Grok 4.3 |
 
 OpenAI has one important split in recent OpenClaw releases: auth/subscription
 state still uses the `openai-codex` provider, while runtime model IDs are
@@ -87,7 +87,7 @@ same subscription pool, so an `openai-codex` account can route to
 
 Vision capability is tracked per model in `zeroapi-config.json`. Starter configs only mark models as vision-capable when the OpenClaw runtime route is known to accept images. Provider-specific VLM/API models such as `zai/glm-5v-turbo` or custom Qwen VL routes should be added only when the user has explicit access and runtime metadata confirms image input.
 
-Grok has two different surfaces. Hermes exposes standalone SuperGrok subscriptions as `xai-oauth`, and ZeroAPI can route that provider. OpenClaw's built-in `xai` provider is an explicit `XAI_API_KEY` route, so plain `xai/*` models are not treated as subscription-covered SuperGrok traffic.
+Grok has two different surfaces. OpenClaw 2026.5.18+ exposes SuperGrok browser OAuth through the native `xai` provider with auth method `oauth`, so ZeroAPI can route `xai/grok-4.3` when the user explicitly enables the `xai` subscription profile. Hermes configs may still use the legacy `xai-oauth` provider id. Plain xAI API-key usage remains explicit API billing; do not enable `xai` in the subscription profile unless that runtime account is OAuth/subscription-backed.
 
 ## Task Categories
 
@@ -162,7 +162,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.8.32` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.8.33` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 

@@ -86,6 +86,19 @@ describe("buildStarterConfig", () => {
     });
   });
 
+  it("builds OpenClaw xAI OAuth starter configs with the native provider id", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "xai", tierId: "supergrok" }],
+    });
+
+    expect(Object.keys(config.models)).toEqual(["xai/grok-4.3"]);
+    expect(config.models["xai/grok-4.3"]?.supports_vision).toBe(true);
+    expect(config.models["xai/grok-4.3"]?.context_window).toBe(1000000);
+    expect(config.subscription_profile?.global).toEqual({
+      "xai": { enabled: true, tierId: "supergrok" },
+    });
+  });
+
   it("prefers inventory for multi-account providers and keeps modifier selection", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "zai", tierId: "pro" }],
@@ -153,10 +166,10 @@ describe("buildStarterConfig", () => {
 
 describe("starter onboarding helpers", () => {
   it("returns auth commands in provider order", () => {
-    expect(getStarterAuthCommands(["openai-codex", "zai", "xai-oauth"])).toEqual([
+    expect(getStarterAuthCommands(["openai-codex", "zai", "xai"])).toEqual([
       "openclaw models auth login --provider openai-codex",
       "openclaw onboard --auth-choice zai-coding-global",
-      "hermes auth add xai-oauth",
+      "openclaw onboard --auth-choice xai-oauth",
     ]);
   });
 
@@ -167,6 +180,7 @@ describe("starter onboarding helpers", () => {
       "plus",
       "max",
     ]);
+    expect(getStarterTierChoices("xai").map((item) => item.tierId)).toEqual(["supergrok"]);
     expect(getStarterTierChoices("xai-oauth").map((item) => item.tierId)).toEqual(["supergrok"]);
   });
 

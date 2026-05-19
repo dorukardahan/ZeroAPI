@@ -72,7 +72,7 @@ What should ZeroAPI manage now?
 3. Z AI
 4. MiniMax
 5. Qwen Portal
-6. xAI Grok OAuth (Hermes SuperGrok only)
+6. xAI Grok OAuth (OpenClaw `xai` OAuth or Hermes `xai-oauth`)
 Reply with numbers.
 ```
 
@@ -98,6 +98,7 @@ Examples:
 - `openclaw models auth login --provider openai-codex`
 - `openclaw onboard --auth-choice moonshot-api-key`
 - `openclaw models auth login --provider qwen-portal --set-default`
+- `openclaw onboard --auth-choice xai-oauth` for OpenClaw SuperGrok routing
 - `hermes auth add xai-oauth` for Hermes SuperGrok routing
 
 ## Host-only follow-up steps

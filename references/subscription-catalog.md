@@ -26,7 +26,7 @@ Excluded from catalog:
 
 - Anthropic, excluded for subscription coverage reasons
 - Google/Gemini, excluded for OAuth/ToS reasons in third-party tool flows
-- xAI API-key routes, excluded because plain `xai/*` models are separate API billing rather than SuperGrok subscription OAuth
+- xAI API-key billing, excluded unless the operator explicitly models it as account-quota capacity instead of SuperGrok OAuth
 - Any provider without a meaningful subscription, plan, or account-quota abstraction
 
 ## Design Principles
@@ -97,7 +97,7 @@ Each tier should define:
 
 - SuperGrok
 
-This entry applies to Hermes `xai-oauth`, which uses browser OAuth against a standalone SuperGrok subscription. It does not apply to OpenClaw's plain `xai` provider backed by `XAI_API_KEY`.
+This entry applies to OpenClaw 2026.5.18+ `xai` browser OAuth against a standalone SuperGrok subscription. Hermes configs may still use `xai-oauth`, which ZeroAPI treats as a legacy alias for the same subscription pool. It does not automatically apply to `XAI_API_KEY` billing.
 
 ## User Profile Model
 

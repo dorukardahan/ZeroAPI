@@ -1,6 +1,6 @@
 # Benchmark Data (May 2026)
 
-Current leaders from `benchmarks.json` (fetched 2026-05-17). The snapshot covers 193 benchmark reference models from the six provider ecosystems ZeroAPI supports. It also marks 16 models as current `policy_family` members. Qwen rows come from Alibaba's named model benchmarks; OpenClaw exposes the routeable account model as `qwen-portal/coder-model`, so ZeroAPI treats Qwen3.6 Plus as a benchmark proxy for that portal route. Grok rows are mapped only to Hermes `xai-oauth` SuperGrok routes, not plain OpenClaw `xai` API-key routes.
+Current leaders from `benchmarks.json` (fetched 2026-05-17). The snapshot covers 193 benchmark reference models from the six provider ecosystems ZeroAPI supports. It also marks 16 models as current `policy_family` members. Qwen rows come from Alibaba's named model benchmarks; OpenClaw exposes the routeable account model as `qwen-portal/coder-model`, so ZeroAPI treats Qwen3.6 Plus as a benchmark proxy for that portal route. Grok rows are mapped to SuperGrok OAuth routes: native OpenClaw `xai` on 2026.5.18+ and legacy Hermes `xai-oauth`.
 
 | Category | Leader | Score | Provider | Notes |
 |----------|--------|-------|----------|-------|
@@ -17,7 +17,7 @@ Current leaders from `benchmarks.json` (fetched 2026-05-17). The snapshot covers
 **Orchestration composite ranking inside current policy families** (`0.6*tau2 + 0.4*ifbench`):
 Grok 4.3 (0.9114) > GLM-5.1 (0.8914) > Qwen3.6 Plus (0.8870) > GLM-5-Turbo (0.8838) > Grok 4.20 (0.8828) > Kimi K2.6 (0.8794) > GLM-5 (0.8784).
 
-Grok 4.3 is the strongest orchestration candidate when SuperGrok is explicitly configured through Hermes `xai-oauth`. Without that provider, GLM-5.1 remains the practical orchestration recommendation for the existing OpenAI + Z AI + Kimi + Qwen pool.
+Grok 4.3 is the strongest orchestration candidate when SuperGrok is explicitly configured through OpenClaw `xai` OAuth or Hermes `xai-oauth`. Without that provider, GLM-5.1 remains the practical orchestration recommendation for the existing OpenAI + Z AI + Kimi + Qwen pool.
 
 ## Key model profiles
 
