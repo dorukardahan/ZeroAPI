@@ -30,8 +30,10 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   if [ "$CI_MODE" -eq 1 ]; then
     if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ] && [ -n "${GITHUB_BASE_REF:-}" ] && git rev-parse "origin/${GITHUB_BASE_REF}" >/dev/null 2>&1; then
       run git diff --check "origin/${GITHUB_BASE_REF}...HEAD"
-    else
+    elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
       run git show --check --format=fuller --no-renames HEAD
+    else
+      run git diff --check
     fi
   else
     run git diff --check
