@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { delimiter, join } from "node:path";
 import { tmpdir } from "node:os";
 
 import {
@@ -24,6 +25,11 @@ function doesNotExist(fn) {
   } catch {
     return true;
   }
+}
+
+function writeExecutable(path, contents) {
+  writeFileSync(path, contents, "utf-8");
+  chmodSync(path, 0o755);
 }
 
 test("normalizeVersion strips v prefix", () => {
@@ -91,6 +97,84 @@ test("buildManagedInstallState captures managed metadata", () => {
 
 test("gateway restart delay leaves room for chat install replies", () => {
   assert.ok(GATEWAY_RESTART_DELAY_SECONDS >= 15);
+});
+
+test("root package declares esbuild for managed staging", () => {
+  const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf-8"));
+  assert.match(packageJson.devDependencies?.esbuild, /^\^?\d+\.\d+\.\d+/);
+});
+
+test("stage_clawhub_plugin uses local npm exec esbuild without npx fetch", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-stage-toolchain-"));
+  const scriptsDir = join(root, "scripts");
+  const pluginDir = join(root, "plugin");
+  const binDir = join(root, "bin");
+  const outputDir = join(root, "staged");
+  const argsFile = join(root, "npm-args.txt");
+  mkdirSync(scriptsDir, { recursive: true });
+  mkdirSync(join(pluginDir, "skills"), { recursive: true });
+  mkdirSync(binDir, { recursive: true });
+
+  writeFileSync(
+    join(scriptsDir, "stage_clawhub_plugin.mjs"),
+    readFileSync(new URL("../stage_clawhub_plugin.mjs", import.meta.url), "utf-8"),
+  );
+  writeFileSync(join(pluginDir, "package.json"), '{"name":"zeroapi","version":"0.0.0","scripts":{"test":"noop"},"devDependencies":{"typescript":"0.0.0"}}\n');
+  writeFileSync(join(pluginDir, "openclaw.plugin.json"), '{"id":"zeroapi-router","version":"0.0.0"}\n');
+  writeFileSync(join(pluginDir, "benchmarks.json"), '{"version":"0.0.0"}\n');
+  writeFileSync(join(pluginDir, "skills", "README.md"), "skills\n");
+
+  for (const file of [
+    "advisory-delivery.ts",
+    "classifier.ts",
+    "config.ts",
+    "cron-apply.ts",
+    "cron-audit.ts",
+    "decision.ts",
+    "explain.ts",
+    "filter.ts",
+    "index.ts",
+    "inventory.ts",
+    "logger.ts",
+    "onboarding.ts",
+    "profile.ts",
+    "router.ts",
+    "selector.ts",
+    "session-auth.ts",
+    "subscription-advisory.ts",
+    "subscriptions.ts",
+    "types.ts",
+  ]) {
+    writeFileSync(join(pluginDir, file), "export default {};\n");
+  }
+
+  writeExecutable(
+    join(binDir, "npm"),
+    '#!/bin/sh\nprintf "%s\\n" "$@" > "$ZEROAPI_NPM_ARGS_FILE"\nexit 0\n',
+  );
+  writeExecutable(
+    join(binDir, "npx"),
+    '#!/bin/sh\necho "npx must not be used for staging" >&2\nexit 42\n',
+  );
+
+  const result = spawnSync(
+    process.execPath,
+    [join(scriptsDir, "stage_clawhub_plugin.mjs"), outputDir],
+    {
+      cwd: root,
+      encoding: "utf-8",
+      env: {
+        ...process.env,
+        PATH: `${binDir}${delimiter}${process.env.PATH}`,
+        ZEROAPI_NPM_ARGS_FILE: argsFile,
+      },
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const npmArgs = readFileSync(argsFile, "utf-8").trim().split("\n");
+  assert.deepEqual(npmArgs.slice(0, 4), ["exec", "--no", "--", "esbuild"]);
+  assert.ok(npmArgs.some((arg) => arg.startsWith("--outdir=")));
 });
 
 test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths only", () => {

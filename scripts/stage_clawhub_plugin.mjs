@@ -42,9 +42,11 @@ const runtimeEntries = [
 ].map((file) => join(sourceDir, file));
 
 const esbuild = spawnSync(
-  process.platform === "win32" ? "npx.cmd" : "npx",
+  process.platform === "win32" ? "npm.cmd" : "npm",
   [
-    "--yes",
+    "exec",
+    "--no",
+    "--",
     "esbuild",
     ...runtimeEntries,
     `--outdir=${outputDir}`,

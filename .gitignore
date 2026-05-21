@@ -2,7 +2,6 @@ content/
 
 # Dependencies
 node_modules/
-package-lock.json
 .tmp-clawhub-plugin/
 __pycache__/
 *.pyc

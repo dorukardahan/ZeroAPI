@@ -51,19 +51,31 @@ def load_snapshot_version() -> str:
 
 
 def read_key(args: argparse.Namespace) -> str:
-    if args.api_key:
-        return args.api_key.strip()
     if args.api_key_file:
         return Path(args.api_key_file).read_text().strip()
-    env_key = os.environ.get("AA_API_KEY")
-    if env_key:
-        return env_key.strip()
     env_file = os.environ.get("AA_API_KEY_FILE")
     if env_file:
         return Path(env_file).read_text().strip()
-    raise SystemExit(
-        "AA API key missing. Use --api-key-file, --api-key, AA_API_KEY_FILE, or AA_API_KEY."
-    )
+    env_key = os.environ.get("AA_API_KEY")
+    if env_key:
+        return env_key.strip()
+    raise SystemExit("AA API key missing. Use --api-key-file, AA_API_KEY_FILE, or AA_API_KEY.")
+
+
+def write_json_atomic(path: Path, payload: Dict[str, Any], pretty: int) -> None:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    data = json.dumps(payload, indent=pretty, ensure_ascii=False) + "\n"
+    temp_path = output_path.with_name(f".{output_path.name}.{os.getpid()}.tmp")
+    try:
+        with temp_path.open("w", encoding="utf-8") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temp_path.replace(output_path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 def fetch_data(api_key: str) -> Dict[str, Any]:
@@ -173,13 +185,20 @@ def transform_models(
     return transformed
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Refresh ZeroAPI benchmarks.json from Artificial Analysis API.")
-    parser.add_argument("--api-key", help="Artificial Analysis API key. Prefer --api-key-file or AA_API_KEY.")
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Refresh ZeroAPI benchmarks.json from Artificial Analysis API.",
+        allow_abbrev=False,
+    )
     parser.add_argument("--api-key-file", help="Path to a file containing the Artificial Analysis API key.")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Output path for benchmarks.json")
     parser.add_argument("--pretty", type=int, default=2, help="JSON indentation (default: 2)")
     parser.add_argument("--dry-run", action="store_true", help="Print summary only, do not write file.")
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
 
     api_key = read_key(args)
@@ -221,7 +240,7 @@ def main() -> None:
         return
 
     output_path = Path(args.output)
-    output_path.write_text(json.dumps(payload, indent=args.pretty, ensure_ascii=False) + "\n")
+    write_json_atomic(output_path, payload, args.pretty)
 
 
 if __name__ == "__main__":

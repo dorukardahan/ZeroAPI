@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.8.34] - 2026-05-21
+
+### Fixed
+- Stage the ClawHub plugin with declared, lockfile-backed `esbuild` via local `npm exec --no` instead of fetching an unpinned `npx` tool.
+- Remove the raw `--api-key` benchmark refresh argument and keep key loading on file/env sources.
+- Write refreshed benchmark snapshots through same-directory temp files with atomic replace semantics.
+
 ## [3.8.33] - 2026-05-19
 
 ### Fixed
