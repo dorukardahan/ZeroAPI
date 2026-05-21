@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install release tooling
+        run: npm ci --ignore-scripts
+
       - name: Read package version
         id: version
         run: |
