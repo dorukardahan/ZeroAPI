@@ -1,5 +1,5 @@
 {
-  "version": "3.8.34",
+  "version": "3.8.35",
   "source": "Artificial Analysis Data API v2",
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
   "fetched": "2026-05-17",
@@ -185,7 +185,7 @@
           "grok-4-20",
           "grok-4-20-0309-non-reasoning"
         ],
-        "notes": "OpenClaw 2026.5.18+ exposes SuperGrok OAuth through the native xai provider, while Hermes legacy configs use xai-oauth. Treat xai-oauth benchmark rows as SuperGrok OAuth proxies for native xai routes; plain XAI_API_KEY billing is not automatically subscription-covered."
+        "notes": "OpenClaw 2026.5.20+ exposes remote-friendly SuperGrok device-code OAuth through the native xai provider, older 2026.5.18+ installs expose browser OAuth, and Hermes legacy configs use xai-oauth. Treat xai-oauth benchmark rows as SuperGrok OAuth proxies for native xai routes; plain XAI_API_KEY billing is not automatically subscription-covered."
       }
     ]
   },

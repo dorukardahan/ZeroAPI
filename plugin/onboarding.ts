@@ -32,7 +32,7 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
   "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
   "qwen-portal": "openclaw models auth login --provider qwen-portal --set-default",
-  "xai": "openclaw onboard --auth-choice xai-oauth",
+  "xai": "openclaw onboard --auth-choice xai-device-code",
   "xai-oauth": "hermes auth add xai-oauth",
 };
 

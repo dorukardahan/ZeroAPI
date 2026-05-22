@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.8.35] - 2026-05-22
+
+### Changed
+- Prefer OpenClaw 2026.5.20's remote-friendly `xai-device-code` auth choice for native SuperGrok onboarding while keeping Hermes on the legacy `xai-oauth` command.
+
 ## [3.8.34] - 2026-05-21
 
 ### Fixed

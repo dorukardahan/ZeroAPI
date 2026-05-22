@@ -15,7 +15,7 @@
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
 | MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-portal` | Refreshable OAuth token |
 | Qwen Portal | OAuth portal | `openclaw models auth login --provider qwen-portal --set-default` | Refreshable OAuth token |
-| xAI Grok OAuth | OpenClaw OAuth via SuperGrok, or Hermes legacy OAuth | `openclaw onboard --auth-choice xai-oauth` / `hermes auth add xai-oauth` | Refreshable OAuth token |
+| xAI Grok OAuth | OpenClaw OAuth via SuperGrok, or Hermes legacy OAuth | `openclaw onboard --auth-choice xai-device-code` / `hermes auth add xai-oauth` | Refreshable OAuth token |
 
 **Reliability ranking**: Kimi / GLM static keys > portal OAuth providers with auto-refresh > providers with unhealthy or stale local profiles.
 
@@ -76,12 +76,13 @@ OpenAI Codex also uses the model-auth flow:
 openclaw models auth login --provider openai-codex
 ```
 
-OpenClaw 2026.5.18+ SuperGrok uses the native xAI OAuth flow:
+OpenClaw 2026.5.20+ SuperGrok should use the remote-friendly native xAI device-code OAuth flow:
 
 ```bash
-openclaw onboard --auth-choice xai-oauth
-openclaw models auth login --provider xai --method oauth
+openclaw onboard --auth-choice xai-device-code
 ```
+
+Older OpenClaw 2026.5.18+ installs can still use the browser OAuth choice `xai-oauth`.
 
 Hermes SuperGrok can still use Hermes' own OAuth flow:
 

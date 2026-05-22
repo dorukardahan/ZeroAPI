@@ -97,7 +97,7 @@ Each tier should define:
 
 - SuperGrok
 
-This entry applies to OpenClaw 2026.5.18+ `xai` browser OAuth against a standalone SuperGrok subscription. Hermes configs may still use `xai-oauth`, which ZeroAPI treats as a legacy alias for the same subscription pool. It does not automatically apply to `XAI_API_KEY` billing.
+This entry applies to OpenClaw 2026.5.20+ `xai` device-code OAuth, or older 2026.5.18+ browser OAuth, against a standalone SuperGrok subscription. Hermes configs may still use `xai-oauth`, which ZeroAPI treats as a legacy alias for the same subscription pool. It does not automatically apply to `XAI_API_KEY` billing.
 
 ## User Profile Model
 

@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.8.34
+version: 3.8.35
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when the user mentions model routing, multi-model setup, "which model should I use",
@@ -13,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.8.34 - Plugin-Based Model Routing
+# ZeroAPI v3.8.35 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -44,7 +44,7 @@ ZeroAPI only routes across subscription-covered alternatives.
 
 - **Anthropic (Claude):** as of 2026-04-04, Claude subscriptions no longer cover OpenClaw usage in third-party tools. Anthropic models should not be included in ZeroAPI routing.
 - **Google (Gemini):** CLI OAuth usage with third-party tools is a ToS violation as of 2026-03-25. Google/Gemini should not be included in ZeroAPI routing.
-- **xAI OAuth vs API keys:** OpenClaw 2026.5.18+ can use SuperGrok OAuth through the native `xai` provider. Only enable `xai/*` models in a subscription policy when that runtime account is OAuth/subscription-backed. Do not auto-add plain `XAI_API_KEY` billing as subscription capacity.
+- **xAI OAuth vs API keys:** OpenClaw 2026.5.20+ can use SuperGrok device-code OAuth through the native `xai` provider; older 2026.5.18+ installs use browser OAuth. Only enable `xai/*` models in a subscription policy when that runtime account is OAuth/subscription-backed. Do not auto-add plain `XAI_API_KEY` billing as subscription capacity.
 
 ## How it works
 
@@ -235,7 +235,7 @@ Required config shape:
 
 ```json
 {
-  "version": "3.8.34",
+  "version": "3.8.35",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
   "subscription_catalog_version": "1.0.0",

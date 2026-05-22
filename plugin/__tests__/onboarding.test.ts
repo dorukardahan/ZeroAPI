@@ -169,7 +169,7 @@ describe("starter onboarding helpers", () => {
     expect(getStarterAuthCommands(["openai-codex", "zai", "xai"])).toEqual([
       "openclaw models auth login --provider openai-codex",
       "openclaw onboard --auth-choice zai-coding-global",
-      "openclaw onboard --auth-choice xai-oauth",
+      "openclaw onboard --auth-choice xai-device-code",
     ]);
   });
 

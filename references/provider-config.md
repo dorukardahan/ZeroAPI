@@ -253,11 +253,11 @@ openclaw models auth login --provider qwen-portal --set-default
 
 ### 6. xAI Grok OAuth — `xai`
 
-**Auth**: OpenClaw browser OAuth via a standalone SuperGrok subscription on OpenClaw 2026.5.18+, or Hermes OAuth via the legacy `xai-oauth` adapter id.
+**Auth**: OpenClaw device-code OAuth via a standalone SuperGrok subscription on OpenClaw 2026.5.20+, older OpenClaw browser OAuth via `xai-oauth`, or Hermes OAuth via the legacy `xai-oauth` adapter id.
 
 ```bash
+openclaw onboard --auth-choice xai-device-code
 openclaw onboard --auth-choice xai-oauth
-openclaw models auth login --provider xai --method oauth
 hermes auth add xai-oauth
 ```
 
@@ -301,7 +301,7 @@ This file is not the runtime source of truth for OpenClaw itself. Think of it as
 
 ```json
 {
-  "version": "3.8.34",
+  "version": "3.8.35",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<YYYY-MM-DD>",
   "subscription_catalog_version": "1.0.0",
