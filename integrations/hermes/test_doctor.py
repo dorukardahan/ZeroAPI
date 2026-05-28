@@ -33,6 +33,13 @@ class AIAgent:
     def _apply_pre_model_route_hook(self):
         from hermes_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook("pre_model_route")
+
+    def run(self):
+        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
 '''
 
 
@@ -45,6 +52,13 @@ class AIAgent:
         )
         _discover_plugins()
         _invoke_hook("pre_model_route")
+
+    def run(self):
+        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
 '''
 
 
@@ -61,6 +75,11 @@ class AIAgent:
         self._pre_model_route_switched_this_turn = True
 
     def run(self):
+        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
         if (
             conversation_history
             and self._session_db
@@ -86,6 +105,12 @@ class AIAgent:
 
 CONVERSATION_LOOP_PATCHED = '''
 def build_system_prompt(agent, conversation_history):
+    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+
     pre_model_route_switched = (
         getattr(agent, "_pre_model_route_switched_this_turn", False) is True
     )
@@ -162,6 +187,52 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
             valid_hooks={"pre_model_route"},
             plugins_source=PLUGINS_NO_DISCOVERY,
             run_agent_source=RUN_AGENT_NO_ROUTE,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+        self.assertTrue(any("does not invoke pre_model_route" in message for message in messages(checks)))
+
+    def test_fails_when_route_method_exists_but_agent_turn_never_calls_it(self):
+        run_agent = RUN_AGENT_PATCHED.replace(
+            '''    def run(self):
+        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+        if (
+            conversation_history
+            and self._session_db
+            and not getattr(self, "_pre_model_route_switched_this_turn", False)
+        ):
+            pass
+''',
+            '''    def run(self):
+        if (
+            conversation_history
+            and self._session_db
+            and not getattr(self, "_pre_model_route_switched_this_turn", False)
+        ):
+            pass
+''',
+        )
+        conversation_loop = CONVERSATION_LOOP_PATCHED.replace(
+            '''    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+
+''',
+            "",
+        )
+
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=run_agent,
+            conversation_loop_source=conversation_loop,
             delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
 

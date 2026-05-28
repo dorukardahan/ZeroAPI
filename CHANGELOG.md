@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.8.36] - 2026-05-28
+
+### Fixed
+- Extend the Hermes runtime compatibility patch for Hermes Agent v2026.5.28/v0.15.0's modular `agent/conversation_loop.py`, including the `pre_model_route` call site, route-switch system-prompt cache guard, and continuation-safe `on_session_start` behavior.
+- Tighten the Hermes compatibility doctor so a runtime must actually call `pre_model_route` during the agent turn; exposing the hook method alone is no longer enough.
+
 ## [3.8.35] - 2026-05-22
 
 ### Changed

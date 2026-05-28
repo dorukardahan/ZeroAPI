@@ -324,6 +324,7 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
     """Return patched ``run_agent.py`` source and a list of applied changes."""
     changes: list[str] = []
     text = source
+    modular_conversation_loop = "from agent.conversation_loop import run_conversation" in text
 
     if "def _apply_pre_model_route_hook" not in text:
         anchor = "\n    def _safe_print(self, *args, **kwargs):"
@@ -366,12 +367,13 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
 
     route_call_marker = "self._apply_pre_model_route_hook(\n            original_user_message,"
     if route_call_marker not in text:
-        old = '''        if not self.quiet_mode:\n            _print_preview = _summarize_user_message_for_log(user_message)\n            self._safe_print(f"💬 Starting conversation: '{_print_preview[:60]}{'...' if len(_print_preview) > 60 else ''}'")\n        \n        # ── System prompt (cached per session for prefix caching) ──\n'''
-        new = '''        if not self.quiet_mode:\n            _print_preview = _summarize_user_message_for_log(user_message)\n            self._safe_print(f"💬 Starting conversation: '{_print_preview[:60]}{'...' if len(_print_preview) > 60 else ''}'")\n\n        self._apply_pre_model_route_hook(\n            original_user_message,\n            messages,\n            is_first_turn=(not bool(conversation_history)),\n        )\n        \n        # ── System prompt (cached per session for prefix caching) ──\n'''
-        text, changed = _replace_once(text, old, new, "pre_model_route call")
-        if not changed:
-            raise ValueError("Could not find conversation-start anchor for pre_model_route call.")
-        changes.append("inserted pre_model_route call before system prompt")
+        if not modular_conversation_loop:
+            old = '''        if not self.quiet_mode:\n            _print_preview = _summarize_user_message_for_log(user_message)\n            self._safe_print(f"💬 Starting conversation: '{_print_preview[:60]}{'...' if len(_print_preview) > 60 else ''}'")\n        \n        # ── System prompt (cached per session for prefix caching) ──\n'''
+            new = '''        if not self.quiet_mode:\n            _print_preview = _summarize_user_message_for_log(user_message)\n            self._safe_print(f"💬 Starting conversation: '{_print_preview[:60]}{'...' if len(_print_preview) > 60 else ''}'")\n\n        self._apply_pre_model_route_hook(\n            original_user_message,\n            messages,\n            is_first_turn=(not bool(conversation_history)),\n        )\n        \n        # ── System prompt (cached per session for prefix caching) ──\n'''
+            text, changed = _replace_once(text, old, new, "pre_model_route call")
+            if not changed:
+                raise ValueError("Could not find conversation-start anchor for pre_model_route call.")
+            changes.append("inserted pre_model_route call before system prompt")
 
     if 'self._pre_model_route_switched_this_turn = True' not in text:
         old = '''            self.switch_model(\n                new_model=result.new_model,\n                new_provider=result.target_provider,\n                api_key=result.api_key,\n                base_url=result.base_url,\n                api_mode=result.api_mode,\n                prune_fallback_chain=False,\n            )\n            logging.info(\n'''
@@ -390,6 +392,47 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
     new_session_start = '''                if not conversation_history:\n                    # Plugin hook: on_session_start\n                    # Fired once when a brand-new session is created (not on\n                    # continuation). Plugins can use this to initialise\n                    # session-scoped state (e.g. warm a memory cache).\n                    try:\n                        from hermes_cli.plugins import invoke_hook as _invoke_hook\n                        _invoke_hook(\n                            "on_session_start",\n                            session_id=self.session_id,\n                            model=self.model,\n                            platform=getattr(self, "platform", None) or "",\n                        )\n                    except Exception as exc:\n                        logger.warning("on_session_start hook failed: %s", exc)\n\n                # Store the system prompt snapshot in SQLite\n'''
     text, changed = _replace_once(text, old_session_start, new_session_start, "on_session_start guard")
     if changed:
+        changes.append("guarded on_session_start on continuation prompt rebuild")
+
+    return text, changes
+
+
+def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
+    """Return patched ``agent/conversation_loop.py`` source and applied changes."""
+    changes: list[str] = []
+    text = source
+
+    route_call_marker = "agent._apply_pre_model_route_hook(\n        original_user_message,"
+    if route_call_marker not in text:
+        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+        if anchor not in text:
+            raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
+        text = text.replace(
+            anchor,
+            '''    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
+            1,
+        )
+        changes.append("inserted pre_model_route call before system prompt")
+
+    prompt_guard_marker = 'not getattr(agent, "_pre_model_route_switched_this_turn", False)'
+    if prompt_guard_marker not in text:
+        text, changed = _replace_once(
+            text,
+            "    if conversation_history and agent._session_db:\n",
+            '''    if (\n        conversation_history\n        and agent._session_db\n        and not getattr(agent, "_pre_model_route_switched_this_turn", False)\n    ):\n''',
+            "modular stored prompt guard",
+        )
+        if not changed:
+            raise ValueError("Could not find modular stored system_prompt guard anchor.")
+        changes.append("guarded stored system_prompt reuse after route switch")
+
+    session_start_marker = "    if not conversation_history:\n        # Plugin hook: on_session_start"
+    if session_start_marker not in text:
+        old_session_start = '''    # Plugin hook: on_session_start — fired once when a brand-new\n    # session is created (not on continuation).  Plugins can use this\n    # to initialise session-scoped state (e.g. warm a memory cache).\n    try:\n        from hermes_cli.plugins import invoke_hook as _invoke_hook\n        _invoke_hook(\n            "on_session_start",\n            session_id=agent.session_id,\n            model=agent.model,\n            platform=getattr(agent, "platform", None) or "",\n        )\n    except Exception as exc:\n        logger.warning("on_session_start hook failed: %s", exc)\n'''
+        new_session_start = '''    if not conversation_history:\n        # Plugin hook: on_session_start — fired once when a brand-new\n        # session is created (not on continuation). Plugins can use this\n        # to initialise session-scoped state (e.g. warm a memory cache).\n        try:\n            from hermes_cli.plugins import invoke_hook as _invoke_hook\n            _invoke_hook(\n                "on_session_start",\n                session_id=agent.session_id,\n                model=agent.model,\n                platform=getattr(agent, "platform", None) or "",\n            )\n        except Exception as exc:\n            logger.warning("on_session_start hook failed: %s", exc)\n'''
+        text, changed = _replace_once(text, old_session_start, new_session_start, "modular on_session_start guard")
+        if not changed:
+            raise ValueError("Could not find modular on_session_start anchor.")
         changes.append("guarded on_session_start on continuation prompt rebuild")
 
     return text, changes
@@ -497,6 +540,11 @@ def _auto_delegate_tool_path() -> Path:
     return Path(spec.origin)
 
 
+def _auto_conversation_loop_path(run_agent: Path) -> Path | None:
+    candidate = run_agent.parent / "agent" / "conversation_loop.py"
+    return candidate if candidate.exists() else None
+
+
 def _patch_file(path: Path, patcher, label: str, dry_run: bool) -> list[str]:
     source = path.read_text(encoding="utf-8")
     patched, changes = patcher(source)
@@ -521,16 +569,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Patch Hermes run_agent.py for ZeroAPI pre_model_route compatibility.")
     parser.add_argument("--plugins", type=Path, help="Path to Hermes hermes_cli/plugins.py. Defaults to importlib discovery.")
     parser.add_argument("--run-agent", type=Path, help="Path to Hermes run_agent.py. Defaults to importlib discovery.")
+    parser.add_argument("--conversation-loop", type=Path, help="Path to Hermes agent/conversation_loop.py. Defaults to sibling of run_agent.py when present.")
     parser.add_argument("--delegate-tool", type=Path, help="Path to Hermes tools/delegate_tool.py. Defaults to importlib discovery.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print planned changes without writing.")
     args = parser.parse_args()
 
     plugins = args.plugins or _auto_plugins_path()
     run_agent = args.run_agent or _auto_run_agent_path()
+    conversation_loop = args.conversation_loop or _auto_conversation_loop_path(run_agent)
     delegate_tool = args.delegate_tool or _auto_delegate_tool_path()
     changes = []
     changes.extend(_patch_file(plugins, patch_plugins_source, "plugins", args.dry_run))
     changes.extend(_patch_file(run_agent, patch_run_agent_source, "run_agent", args.dry_run))
+    if conversation_loop is not None:
+        changes.extend(_patch_file(conversation_loop, patch_conversation_loop_source, "conversation_loop", args.dry_run))
     changes.extend(_patch_file(delegate_tool, patch_delegate_tool_source, "delegate_tool", args.dry_run))
     if not changes:
         print("OK Hermes already has the ZeroAPI runtime compatibility patch.")

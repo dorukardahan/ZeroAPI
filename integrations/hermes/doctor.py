@@ -108,8 +108,19 @@ def _invoke_hook_discovers_plugins(plugins_source: str) -> bool:
     return "_ensure_plugins_discovered" in body or "discover_plugins" in body or "discover_and_load" in body
 
 
-def _run_agent_invokes_pre_model_route(run_agent_source: str) -> bool:
-    return '"pre_model_route"' in run_agent_source and "_apply_pre_model_route_hook" in run_agent_source
+def _run_agent_invokes_pre_model_route(
+    run_agent_source: str,
+    conversation_loop_source: str | None,
+) -> bool:
+    if '"pre_model_route"' not in run_agent_source or "def _apply_pre_model_route_hook" not in run_agent_source:
+        return False
+
+    monolithic_call = "self._apply_pre_model_route_hook(\n            original_user_message," in run_agent_source
+    modular_call = bool(
+        conversation_loop_source
+        and "agent._apply_pre_model_route_hook(\n        original_user_message," in conversation_loop_source
+    )
+    return monolithic_call or modular_call
 
 
 def _run_agent_discovers_before_pre_model_route(run_agent_source: str) -> bool:
@@ -183,7 +194,7 @@ def analyze_runtime_sources(
         checks.append(Check("FAIL", "Could not read run_agent.py source."))
         return checks
 
-    if not _run_agent_invokes_pre_model_route(run_agent_source):
+    if not _run_agent_invokes_pre_model_route(run_agent_source, conversation_loop_source):
         checks.append(Check("FAIL", "Hermes run_agent.py does not invoke pre_model_route during the agent turn."))
         return checks
     checks.append(Check("OK", "Hermes run_agent.py invokes pre_model_route."))

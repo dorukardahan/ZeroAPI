@@ -1,6 +1,11 @@
 import unittest
 
-from patch_runtime import patch_delegate_tool_source, patch_plugins_source, patch_run_agent_source
+from patch_runtime import (
+    patch_conversation_loop_source,
+    patch_delegate_tool_source,
+    patch_plugins_source,
+    patch_run_agent_source,
+)
 
 
 UPSTREAM_LIKE_RUN_AGENT = '''
@@ -57,6 +62,84 @@ class AIAgent:
 
                 # Store the system prompt snapshot in SQLite
                 self._session_db.update_session(self.session_id, system_prompt=system_prompt)
+'''
+
+
+UPSTREAM_MODULAR_RUN_AGENT = '''
+class AIAgent:
+    def switch_model(self, **kwargs):
+        self.model = kwargs.get("new_model")
+        self.provider = kwargs.get("new_provider")
+
+    def _safe_print(self, *args, **kwargs):
+        pass
+
+    def run_conversation(
+        self,
+        user_message: str,
+        system_message=None,
+        conversation_history=None,
+        task_id=None,
+        stream_callback=None,
+        persist_user_message=None,
+    ):
+        """Forwarder — see ``agent.conversation_loop.run_conversation``."""
+        from agent.conversation_loop import run_conversation
+        return run_conversation(self, user_message, system_message, conversation_history, task_id, stream_callback, persist_user_message)
+'''
+
+
+UPSTREAM_MODULAR_CONVERSATION_LOOP = '''
+def _restore_or_build_system_prompt(agent, system_message, conversation_history):
+    stored_prompt = None
+    stored_state = "missing"
+    if conversation_history and agent._session_db:
+        try:
+            session_row = agent._session_db.get_session(agent.session_id)
+            if session_row is not None:
+                raw_prompt = session_row.get("system_prompt")
+                if raw_prompt is None:
+                    stored_state = "null"
+                elif raw_prompt == "":
+                    stored_state = "empty"
+                else:
+                    stored_prompt = raw_prompt
+                    stored_state = "present"
+        except Exception:
+            pass
+
+    if stored_prompt:
+        agent._cached_system_prompt = stored_prompt
+        return
+
+    agent._cached_system_prompt = agent._build_system_prompt(system_message)
+
+    # Plugin hook: on_session_start — fired once when a brand-new
+    # session is created (not on continuation).  Plugins can use this
+    # to initialise session-scoped state (e.g. warm a memory cache).
+    try:
+        from hermes_cli.plugins import invoke_hook as _invoke_hook
+        _invoke_hook(
+            "on_session_start",
+            session_id=agent.session_id,
+            model=agent.model,
+            platform=getattr(agent, "platform", None) or "",
+        )
+    except Exception as exc:
+        logger.warning("on_session_start hook failed: %s", exc)
+
+
+def run_conversation(agent, user_message, system_message=None, conversation_history=None, task_id=None, stream_callback=None, persist_user_message=None):
+    original_user_message = persist_user_message if persist_user_message is not None else user_message
+    messages = list(conversation_history) if conversation_history else []
+    messages.append({"role": "user", "content": user_message})
+    if not agent.quiet_mode:
+        _print_preview = _summarize_user_message_for_log(user_message)
+        agent._safe_print(f"💬 Starting conversation: '{_print_preview[:60]}{'...' if len(_print_preview) > 60 else ''}'")
+
+    # ── System prompt (cached per session for prefix caching) ──
+    if agent._cached_system_prompt is None:
+        _restore_or_build_system_prompt(agent, system_message, conversation_history)
 '''
 
 
@@ -152,6 +235,32 @@ VALID_HOOKS = {
         self.assertIn("self._apply_pre_model_route_hook(\n            original_user_message,", patched)
         self.assertIn('not getattr(self, "_pre_model_route_switched_this_turn", False)', patched)
         self.assertIn("if not conversation_history:", patched)
+
+    def test_patches_modular_run_agent_without_requiring_loop_anchor(self):
+        patched, changes = patch_run_agent_source(UPSTREAM_MODULAR_RUN_AGENT)
+
+        self.assertIn("inserted _apply_pre_model_route_hook", changes)
+        self.assertIn("def _apply_pre_model_route_hook", patched)
+        self.assertIn("discover_plugins as _discover_plugins", patched)
+
+    def test_patches_modular_conversation_loop_runtime_contract(self):
+        patched, changes = patch_conversation_loop_source(UPSTREAM_MODULAR_CONVERSATION_LOOP)
+
+        self.assertIn("inserted pre_model_route call before system prompt", changes)
+        self.assertIn("guarded stored system_prompt reuse after route switch", changes)
+        self.assertIn("guarded on_session_start on continuation prompt rebuild", changes)
+        self.assertIn("agent._apply_pre_model_route_hook(\n        original_user_message,", patched)
+        self.assertIn('not getattr(agent, "_pre_model_route_switched_this_turn", False)', patched)
+        self.assertIn("if not conversation_history:", patched)
+
+    def test_modular_conversation_loop_patch_is_idempotent(self):
+        patched, changes = patch_conversation_loop_source(UPSTREAM_MODULAR_CONVERSATION_LOOP)
+        self.assertTrue(changes)
+
+        patched_again, second_changes = patch_conversation_loop_source(patched)
+
+        self.assertEqual(second_changes, [])
+        self.assertEqual(patched_again, patched)
 
     def test_patch_is_idempotent(self):
         patched, changes = patch_run_agent_source(UPSTREAM_LIKE_RUN_AGENT)
