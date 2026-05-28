@@ -70,6 +70,34 @@ class AIAgent:
 '''
 
 
+RUN_AGENT_MODULAR_PATCHED = '''
+class AIAgent:
+    def _apply_pre_model_route_hook(self):
+        self._pre_model_route_switched_this_turn = False
+        from hermes_cli.plugins import (
+            discover_plugins as _discover_plugins,
+            invoke_hook as _invoke_hook,
+        )
+        _discover_plugins()
+        _invoke_hook("pre_model_route")
+        self._pre_model_route_switched_this_turn = True
+'''
+
+
+CONVERSATION_LOOP_PATCHED = '''
+def build_system_prompt(agent, conversation_history):
+    pre_model_route_switched = (
+        getattr(agent, "_pre_model_route_switched_this_turn", False) is True
+    )
+    if (
+        conversation_history
+        and agent._session_db
+        and not pre_model_route_switched
+    ):
+        pass
+'''
+
+
 DELEGATE_TOOL_NO_NORMALIZATION = '''
 def _build_child_agent():
     pass
@@ -167,6 +195,17 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
             valid_hooks={"pre_model_route"},
             plugins_source=PLUGINS_WITH_DISCOVERY,
             run_agent_source=RUN_AGENT_PATCHED,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertNotIn("FAIL", levels(checks))
+
+    def test_passes_when_modular_conversation_loop_refreshes_prompt_cache(self):
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=RUN_AGENT_MODULAR_PATCHED,
+            conversation_loop_source=CONVERSATION_LOOP_PATCHED,
             delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
 

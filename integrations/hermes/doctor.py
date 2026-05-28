@@ -55,6 +55,22 @@ def _source_for_module(module_name: str, *, search_root: Path | None = None) -> 
     return _read_source(path)
 
 
+def _conversation_loop_source(
+    *,
+    search_root: Path | None = None,
+    run_agent_path: Path | None = None,
+) -> tuple[Path | None, str | None]:
+    path, source = _source_for_module("agent.conversation_loop", search_root=search_root)
+    if source is not None:
+        return path, source
+
+    if run_agent_path is not None:
+        fallback = run_agent_path.parent / "agent" / "conversation_loop.py"
+        return _read_source(fallback)
+
+    return None, None
+
+
 def _valid_hooks_from_source(source: str | None) -> set[str]:
     if not source:
         return set()
@@ -110,6 +126,34 @@ def _run_agent_refreshes_system_prompt_after_route(run_agent_source: str) -> boo
     )
 
 
+def _conversation_loop_refreshes_system_prompt_after_route(
+    run_agent_source: str,
+    conversation_loop_source: str | None,
+) -> bool:
+    if not conversation_loop_source:
+        return False
+
+    flag = "_pre_model_route_switched_this_turn"
+    if flag not in run_agent_source or flag not in conversation_loop_source:
+        return False
+
+    direct_guard = f'not getattr(agent, "{flag}", False)' in conversation_loop_source
+    alias_guard = (
+        "pre_model_route_switched" in conversation_loop_source
+        and "not pre_model_route_switched" in conversation_loop_source
+    )
+    return direct_guard or alias_guard
+
+
+def _runtime_refreshes_system_prompt_after_route(
+    run_agent_source: str,
+    conversation_loop_source: str | None,
+) -> bool:
+    return _run_agent_refreshes_system_prompt_after_route(
+        run_agent_source
+    ) or _conversation_loop_refreshes_system_prompt_after_route(run_agent_source, conversation_loop_source)
+
+
 def _delegate_tool_normalizes_runtime_tuple(delegate_tool_source: str) -> bool:
     return (
         "def _normalize_child_runtime_tuple(" in delegate_tool_source
@@ -123,6 +167,7 @@ def analyze_runtime_sources(
     valid_hooks: set[str],
     plugins_source: str | None,
     run_agent_source: str | None,
+    conversation_loop_source: str | None = None,
     delegate_tool_source: str | None = None,
 ) -> list[Check]:
     checks: list[Check] = []
@@ -155,7 +200,7 @@ def analyze_runtime_sources(
     else:
         checks.append(Check("OK", "pre_model_route discovery path is present."))
 
-    if not _run_agent_refreshes_system_prompt_after_route(run_agent_source):
+    if not _runtime_refreshes_system_prompt_after_route(run_agent_source, conversation_loop_source):
         checks.append(
             Check(
                 "FAIL",
@@ -202,6 +247,10 @@ def main(argv: list[str] | None = None) -> int:
         plugins_path, plugins_source = _source_for_module("hermes_cli.plugins", search_root=hermes_root)
         hooks = _valid_hooks_from_source(plugins_source)
         run_agent_path, run_agent_source = _source_for_module("run_agent", search_root=hermes_root)
+        conversation_loop_path, conversation_loop_source = _conversation_loop_source(
+            search_root=hermes_root,
+            run_agent_path=run_agent_path,
+        )
         delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool", search_root=hermes_root)
     else:
         try:
@@ -221,11 +270,13 @@ def main(argv: list[str] | None = None) -> int:
             plugins_source = None
 
         run_agent_path, run_agent_source = _source_for_module("run_agent")
+        conversation_loop_path, conversation_loop_source = _conversation_loop_source(run_agent_path=run_agent_path)
         delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool")
     checks = analyze_runtime_sources(
         valid_hooks=hooks,
         plugins_source=plugins_source,
         run_agent_source=run_agent_source,
+        conversation_loop_source=conversation_loop_source,
         delegate_tool_source=delegate_tool_source,
     )
 
@@ -233,6 +284,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INFO hermes_cli.plugins={plugins_path}")
     if run_agent_path:
         print(f"INFO run_agent={run_agent_path}")
+    if conversation_loop_path and conversation_loop_source:
+        print(f"INFO agent.conversation_loop={conversation_loop_path}")
     if delegate_tool_path:
         print(f"INFO tools.delegate_tool={delegate_tool_path}")
 
