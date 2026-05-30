@@ -343,7 +343,7 @@ def _message_content_to_text(content: Any) -> str:
 
 
 def _is_continuation_prompt(config: Config, prompt: str) -> bool:
-    compact = re.sub(r"[.!?…\\s]+$", "", prompt.lower().strip())
+    compact = re.sub(r"[.!?…\s]+$", "", prompt.lower().strip())
     if not compact:
         return False
     configured = config.get("continuation_keywords", CONTINUATION_KEYWORDS)
@@ -808,7 +808,12 @@ class ZeroAPIRouter:
         ):
             return None
 
-        rule = self.config.get("routing_rules", {}).get(category)
+        rules = self.config.get("routing_rules", {})
+        rule = rules.get(category) if isinstance(rules, dict) else None
+        if not isinstance(rule, dict) and isinstance(rules, dict):
+            # Parity with selector.ts:9 / router.ts:205 — fall back to the default rule
+            # when the classified category has no dedicated routing rule.
+            rule = rules.get("default")
         if not isinstance(rule, dict):
             return None
 
@@ -831,9 +836,14 @@ class ZeroAPIRouter:
                 continue
             if category == "fast":
                 max_ttft = self.config.get("fast_ttft_max_seconds")
-                ttft = caps.get("ttft_seconds")
-                if isinstance(max_ttft, (int, float)) and isinstance(ttft, (int, float)) and ttft > max_ttft:
-                    continue
+                if isinstance(max_ttft, (int, float)):
+                    ttft = caps.get("ttft_seconds")
+                    if not isinstance(ttft, (int, float)):
+                        # ttft_missing: drop latency-unknown models for fast tasks
+                        # (parity with filter.ts:24-26).
+                        continue
+                    if ttft > max_ttft:
+                        continue
 
             provider = _provider_id(candidate)
             enabled, tier_weight = _capacity(self.config, provider, category, agent_id)
