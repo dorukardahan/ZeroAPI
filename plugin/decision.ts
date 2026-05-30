@@ -134,8 +134,18 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Vision and continuation keyword scans run on the hot path; memoize the compiled
+// (non-global) patterns. Safe: callers use .test() on non-global regexes, which is stateless.
+const KEYWORD_REGEX_CACHE = new Map<string, RegExp>();
+
 function buildKeywordRegex(keyword: string): RegExp {
-  return new RegExp(`(?<!\\w)${escapeRegex(keyword.toLowerCase())}(?!\\w)`);
+  const normalized = keyword.toLowerCase();
+  let regex = KEYWORD_REGEX_CACHE.get(normalized);
+  if (!regex) {
+    regex = new RegExp(`(?<!\\w)${escapeRegex(normalized)}(?!\\w)`);
+    KEYWORD_REGEX_CACHE.set(normalized, regex);
+  }
+  return regex;
 }
 
 function messageContentToText(content: unknown): string {

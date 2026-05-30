@@ -7,6 +7,7 @@ LLMs, or external APIs on every message.
 
 from __future__ import annotations
 
+import functools
 import json
 import math
 import os
@@ -284,7 +285,10 @@ def _estimate_tokens(text: str) -> int:
     return max(1, math.ceil(len(text) / 4))
 
 
+@functools.lru_cache(maxsize=2048)
 def _keyword_regex(keyword: str) -> re.Pattern[str]:
+    # Memoize compiled patterns: keyword scans run on every eligible turn, and re.Pattern
+    # objects are stateless for search/findall/finditer, so caching is behavior-preserving.
     return re.compile(rf"(?<!\w){re.escape(keyword.lower())}(?!\w)")
 
 
