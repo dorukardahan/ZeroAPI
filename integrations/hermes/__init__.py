@@ -16,7 +16,21 @@ from .router import ZeroAPIRouter, load_config
 logger = logging.getLogger(__name__)
 
 _router: ZeroAPIRouter | None = None
+# Per-session continuation memory (state_key -> last strong category). Capped and
+# LRU-evicted so a long-running Hermes process serving many chats cannot grow it
+# without bound (parity with the OpenClaw plugin's bounded route state).
 _route_state: dict[str, str] = {}
+_MAX_ROUTE_STATE_ENTRIES = 2048
+
+
+def _record_route_state(state_key: str, category: str) -> None:
+    # Move-to-end on write so active sessions are not evicted before idle ones.
+    if state_key in _route_state:
+        del _route_state[state_key]
+    _route_state[state_key] = category
+    while len(_route_state) > _MAX_ROUTE_STATE_ENTRIES:
+        oldest = next(iter(_route_state))
+        del _route_state[oldest]
 
 
 def _payload_has_image_attachment(value: Any, *, _depth: int = 0) -> bool:
@@ -121,7 +135,7 @@ def _pre_model_route(**kwargs: Any) -> dict[str, str] | None:
 
     category = route.get("category")
     if category in {"code", "research", "math"}:
-        _route_state[state_key] = category
+        _record_route_state(state_key, category)
 
     return {
         "provider": route["provider"],

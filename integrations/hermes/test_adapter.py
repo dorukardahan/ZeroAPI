@@ -51,6 +51,30 @@ class HermesAdapterPayloadTest(unittest.TestCase):
 
         self.assertEqual(key, "gateway:agent:main:signal:dm:redacted:main")
 
+    def test_route_state_is_bounded_and_lru(self):
+        adapter._route_state.clear()
+        original_max = adapter._MAX_ROUTE_STATE_ENTRIES
+        adapter._MAX_ROUTE_STATE_ENTRIES = 3
+        try:
+            for i in range(6):
+                adapter._record_route_state(f"s{i}", "code")
+            # Capped: never grows past the limit no matter how many sessions appear.
+            self.assertEqual(len(adapter._route_state), 3)
+            # Oldest sessions evicted, newest retained.
+            self.assertNotIn("s0", adapter._route_state)
+            self.assertNotIn("s2", adapter._route_state)
+            self.assertIn("s3", adapter._route_state)
+            self.assertIn("s5", adapter._route_state)
+            # Re-writing an existing key refreshes it so it is not evicted next.
+            adapter._record_route_state("s3", "research")
+            adapter._record_route_state("s6", "math")
+            self.assertIn("s3", adapter._route_state)
+            self.assertEqual(adapter._route_state["s3"], "research")
+            self.assertLessEqual(len(adapter._route_state), 3)
+        finally:
+            adapter._MAX_ROUTE_STATE_ENTRIES = original_max
+            adapter._route_state.clear()
+
 
 if __name__ == "__main__":
     unittest.main()

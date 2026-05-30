@@ -7,6 +7,7 @@ import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import { syncSessionAuthProfileOverride } from "./session-auth.js";
 import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
+import { readPreviousCategory, recordRouteCategory } from "./route-state.js";
 import type { TaskCategory } from "./types.js";
 
 const PLUGIN_VERSION = "3.8.36";
@@ -132,13 +133,7 @@ export default definePluginEntry({
         : config.default_model;
       const stateKey = routeStateKey(ctx as Record<string, unknown>);
       const state = getContinuationState(registerState);
-      const previous = state.get(stateKey);
-      const previousCategory = previous && Date.now() - previous.updatedAt < 1000 * 60 * 90
-        ? previous.category
-        : null;
-      if (previous && previousCategory === null) {
-        state.delete(stateKey);
-      }
+      const previousCategory = readPreviousCategory(state, stateKey, Date.now());
       const resolution = resolveRoutingDecision(config, {
         prompt: event.prompt,
         agentId: ctx.agentId,
@@ -197,10 +192,7 @@ export default definePluginEntry({
       if (resolution.action === "route") {
         const categories = continuationCategories(config);
         if (resolution.finalDecision && categories.has(resolution.finalDecision.category)) {
-          state.set(stateKey, {
-            category: resolution.finalDecision.category,
-            updatedAt: Date.now(),
-          });
+          recordRouteCategory(state, stateKey, resolution.finalDecision.category, Date.now());
         }
         return {
           providerOverride: resolution.providerOverride!,
