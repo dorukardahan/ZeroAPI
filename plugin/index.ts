@@ -1,5 +1,5 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { loadConfig } from "./config.js";
+import { loadConfig, getConfigLoadStatus } from "./config.js";
 import { resolveRoutingDecision } from "./decision.js";
 import { existsSync, readFileSync } from "fs";
 import { dirname, join } from "path";
@@ -73,8 +73,16 @@ export default definePluginEntry({
     initLogger(openclawDir);
 
     if (!config) {
-      api.logger.warn("zeroapi-config.json not found. Run /zeroapi to configure.");
-      logRoutingEvent({ category: "system", reason: "config_missing" });
+      const status = getConfigLoadStatus();
+      if (status === "invalid" || status === "parse_error") {
+        api.logger.warn(
+          `zeroapi-config.json failed to load (${status}); routing is disabled until it is fixed. Run /zeroapi to regenerate.`
+        );
+        logRoutingEvent({ category: "system", reason: `config_${status}` });
+      } else {
+        api.logger.warn("zeroapi-config.json not found. Run /zeroapi to configure.");
+        logRoutingEvent({ category: "system", reason: "config_missing" });
+      }
       return;
     }
 

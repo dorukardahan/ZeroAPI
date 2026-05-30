@@ -434,4 +434,53 @@ describe("plugin entry registration", () => {
       rmSync(home, { recursive: true, force: true });
     }
   });
+
+  it("distinguishes an invalid config from a missing one and does not start routing", async () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
+    const profileDir = join(home, ".openclaw");
+    const previousHome = process.env.HOME;
+    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+    process.env.HOME = home;
+    process.env.OPENCLAW_STATE_DIR = profileDir;
+    delete process.env.OPENCLAW_CONFIG_PATH;
+    mkdirSync(profileDir, { recursive: true });
+    // Valid JSON, but missing required fields -> isValidConfig() fails -> "invalid".
+    writeFileSync(
+      join(profileDir, "zeroapi-config.json"),
+      JSON.stringify({ version: "3.8.36", default_model: "zai/glm-5.1" }),
+    );
+
+    // Prior tests in this file vi.doMock("../config.js"); doMock registrations survive
+    // vi.resetModules(), so use the REAL config/logger modules for this integration check.
+    vi.doUnmock("../config.js");
+    vi.doUnmock("../logger.js");
+    vi.doUnmock("../decision.js");
+    vi.doUnmock("../session-auth.js");
+    vi.resetModules();
+
+    const on = vi.fn();
+    const api = { logger: { info: vi.fn(), warn: vi.fn() }, on };
+
+    try {
+      const mod = await import("../index.js");
+      mod.default.register(api);
+
+      expect(api.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("failed to load (invalid)"),
+      );
+      expect(api.logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining("not found"),
+      );
+      expect(on).not.toHaveBeenCalled();
+      expect(startSubscriptionAdvisoryMonitor).not.toHaveBeenCalled();
+    } finally {
+      process.env.HOME = previousHome;
+      if (previousStateDir === undefined) {
+        delete process.env.OPENCLAW_STATE_DIR;
+      } else {
+        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      }
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
 });
