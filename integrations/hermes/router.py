@@ -166,7 +166,10 @@ PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
     },
     "xai-oauth": {
         "canonical": "xai-oauth",
-        "aliases": ["grok-oauth", "x-ai-oauth", "xai-grok-oauth", "supergrok"],
+        # "xai" must be an alias: TS subscriptions.ts keys this provider as openclawProviderId
+        # "xai", so bare "xai/<model>" keys must resolve into this catalog entry (and thus be
+        # subscription-gated), not fall through as an external-passthrough provider.
+        "aliases": ["xai", "grok-oauth", "x-ai-oauth", "xai-grok-oauth", "supergrok"],
         "tier_weights": {"supergrok": 2},
         "bias": 0.85,
     },
@@ -557,45 +560,50 @@ def _catalog_entry(provider: str) -> dict[str, Any] | None:
     return None
 
 
-def _profile_selection(config: Config, provider: str, agent_id: str | None) -> dict[str, Any] | None:
-    profile = config.get("subscription_profile", {})
-    if not isinstance(profile, dict):
+def _resolve_provider_subscription(config: Config, provider: str, agent_id: str | None) -> dict[str, Any] | None:
+    """Mirror profile.ts resolveProviderSubscription with FIELD-LEVEL (not merged)
+    resolution. Returns None when the provider is not in the subscription catalog
+    (external passthrough). ``enabled`` defaults to False unless explicitly enabled.
+
+    tierId resolution mirrors profile.ts:70-73 exactly: when an agent override selection
+    EXISTS for the provider, its tierId is authoritative (None if the override omits it,
+    matching normalizeSelection forcing tierId:null); only when there is no override
+    selection at all does tierId fall back to the global selection. A naive dict-merge
+    (override over global) would wrongly inherit the global tierId for an override like
+    {"enabled": true}, yielding a non-zero weight where TS yields 0."""
+    entry = _catalog_entry(provider)
+    if entry is None:
         return None
 
+    profile = config.get("subscription_profile", {})
+    profile = profile if isinstance(profile, dict) else {}
     canonical = _canonical_provider(provider)
+    keys = {provider, canonical, *entry.get("aliases", [])}
 
-    def find_selection(selections: Any) -> dict[str, Any] | None:
+    def find(selections: Any) -> dict[str, Any] | None:
         if not isinstance(selections, dict):
             return None
-        for key in {provider, canonical, *PROVIDER_CATALOG.get(canonical, {}).get("aliases", [])}:
+        for key in keys:
             value = selections.get(key)
             if isinstance(value, dict):
                 return value
         return None
 
+    global_sel = find(profile.get("global"))
+    override_sel = None
     agent_overrides = profile.get("agentOverrides")
-    override = None
     if agent_id and isinstance(agent_overrides, dict):
-        override = find_selection(agent_overrides.get(agent_id))
-    global_selection = find_selection(profile.get("global"))
-    if override is None:
-        return global_selection
-    merged = dict(global_selection or {})
-    merged.update(override)
-    return merged
+        override_sel = find(agent_overrides.get(agent_id))
 
+    ov_enabled = override_sel.get("enabled") if isinstance(override_sel, dict) else None
+    gl_enabled = global_sel.get("enabled") if isinstance(global_sel, dict) else None
+    enabled = (ov_enabled if ov_enabled is not None else gl_enabled) is True
 
-def _resolve_provider_subscription(config: Config, provider: str, agent_id: str | None) -> dict[str, Any] | None:
-    """Mirror profile.ts resolveProviderSubscription. Returns None when the provider is
-    not in the subscription catalog (external passthrough). For a catalog provider,
-    ``enabled`` defaults to False unless the profile explicitly enables it, and an
-    unknown/missing tierId yields routing weight 0 (matching profile.ts:75-83)."""
-    entry = _catalog_entry(provider)
-    if entry is None:
-        return None
-    selection = _profile_selection(config, provider, agent_id) or {}
-    enabled = selection.get("enabled") is True
-    tier_id = selection.get("tierId")
+    if override_sel is not None:
+        tier_id = override_sel.get("tierId")
+    else:
+        tier_id = global_sel.get("tierId") if isinstance(global_sel, dict) else None
+
     weight = 0.0
     if enabled and isinstance(tier_id, str):
         tier_weights = entry.get("tier_weights", {})
@@ -710,7 +718,11 @@ def _allowed_drop(tier_weight: float, provider_bias: float, category: TaskCatego
 def _sort_ranked(ranked: list[dict[str, Any]], modifier: str | None, category: TaskCategory) -> None:
     """Shared frontier sort used by both ranking call sites (parity with router.ts:271-323).
     In-frontier ordering uses effective pressure (raw pressure + modifier account bonus)."""
-    if modifier in {"coding-aware", "research-aware"} and category in {"code", "research"}:
+    # Exact (modifier, category) pairing — mirrors router.ts:277-308. A Cartesian guard
+    # (modifier in {...} and category in {...}) would wrongly apply the strength-first sort
+    # to cross-pairs like (coding-aware, research), where TS falls through to the default
+    # pressure-first sort.
+    if (modifier == "coding-aware" and category == "code") or (modifier == "research-aware" and category == "research"):
         ranked.sort(
             key=lambda item: (
                 0 if item["within_frontier"] else 1,
