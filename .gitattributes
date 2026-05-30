@@ -1,0 +1,15 @@
+# Force source files to be treated as text so files containing multi-byte content
+# (e.g. the localized CJK/Devanagari credential and vision keyword patterns in
+# plugin/classifier.ts and integrations/hermes/router.py) are not mis-detected as binary
+# by git's content heuristic. Binary mis-detection hides line-level diffs in PRs and makes
+# `git diff --check` skip the file (so whitespace/NUL issues go unnoticed).
+*.ts    text eol=lf
+*.mjs   text eol=lf
+*.cjs   text eol=lf
+*.js    text eol=lf
+*.py    text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
