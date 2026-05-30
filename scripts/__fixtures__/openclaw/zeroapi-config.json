@@ -1,0 +1,41 @@
+{
+  "version": "3.8.36",
+  "generated": "2026-05-30T00:00:00Z",
+  "benchmarks_date": "2026-05-30",
+  "subscription_catalog_version": "1.0.0",
+  "routing_mode": "balanced",
+  "routing_modifier": "coding-aware",
+  "default_model": "zai/glm-5.1",
+  "external_model_policy": "stay",
+  "models": {
+    "zai/glm-5.1": {
+      "context_window": 200000,
+      "supports_vision": false,
+      "speed_tps": 62,
+      "ttft_seconds": 0.9,
+      "benchmarks": { "intelligence": 51, "coding": 43, "terminalbench": 0.43 }
+    },
+    "openai-codex/gpt-5.4": {
+      "context_window": 272000,
+      "supports_vision": false,
+      "speed_tps": 72,
+      "ttft_seconds": 1.5,
+      "benchmarks": { "intelligence": 57, "coding": 57, "terminalbench": 0.58 }
+    }
+  },
+  "routing_rules": {
+    "code": { "primary": "openai-codex/gpt-5.4", "fallbacks": ["zai/glm-5.1"] },
+    "default": { "primary": "zai/glm-5.1", "fallbacks": [] }
+  },
+  "workspace_hints": {},
+  "keywords": { "code": ["refactor", "implement", "fix"] },
+  "high_risk_keywords": ["deploy", "production"],
+  "fast_ttft_max_seconds": 5,
+  "subscription_profile": {
+    "version": "1.0.0",
+    "global": {
+      "zai": { "enabled": true, "tierId": "max" },
+      "openai-codex": { "enabled": true, "tierId": "pro" }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "agents": {
+    "defaults": {
+      "model": { "primary": "zai/glm-5.1" }
+    },
+    "list": []
+  }
+}
