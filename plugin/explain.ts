@@ -29,6 +29,17 @@ export function buildExplanationSummary(result: RoutingResolution): ExplanationS
     `weighted=${formatList(result.weightedCandidates)}`,
   ];
 
+  if (result.frontier && result.frontier.length > 0) {
+    details.push(
+      `frontier=${result.frontier
+        .map(
+          (candidate) =>
+            `${candidate.candidate}[bench=${candidate.benchmarkStrength.toFixed(3)},pressure=${candidate.effectivePressureScore.toFixed(2)},${candidate.withinFrontier ? "in" : "out"}]`,
+        )
+        .join(", ")}`,
+    );
+  }
+
   if (result.routingModifier) {
     details.push(`modifier=${result.routingModifier}`);
     if (result.routingModifier === "coding-aware" && category === "code") {

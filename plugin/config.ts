@@ -2,8 +2,11 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { ZeroAPIConfig } from "./types.js";
 
+export type ConfigLoadStatus = "ok" | "missing" | "invalid" | "parse_error";
+
 let cachedConfig: ZeroAPIConfig | null = null;
 let configPath: string | null = null;
+let lastLoadStatus: ConfigLoadStatus | null = null;
 
 function parseDisabledProvidersEnv(): string[] {
   return (process.env.ZEROAPI_DISABLED_PROVIDERS ?? "")
@@ -90,6 +93,7 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
   configPath = path;
 
   if (!existsSync(path)) {
+    lastLoadStatus = "missing";
     return null;
   }
 
@@ -97,8 +101,10 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
     const raw = readFileSync(path, "utf-8");
     const parsed = JSON.parse(raw);
     if (!isValidConfig(parsed)) {
+      lastLoadStatus = "invalid";
       return null;
     }
+    lastLoadStatus = "ok";
     cachedConfig = {
       ...parsed,
       routing_mode: parsed.routing_mode ?? "balanced",
@@ -115,6 +121,7 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
     };
     return cachedConfig;
   } catch {
+    lastLoadStatus = "parse_error";
     return null;
   }
 }
@@ -125,4 +132,13 @@ export function getConfig(): ZeroAPIConfig | null {
 
 export function getConfigPath(): string | null {
   return configPath;
+}
+
+/**
+ * Why the most recent loadConfig() call returned null (or "ok" on success). Lets the
+ * plugin entry distinguish a missing config (expected pre-onboarding) from an invalid or
+ * unparseable one (a silent routing outage that the operator must fix).
+ */
+export function getConfigLoadStatus(): ConfigLoadStatus | null {
+  return lastLoadStatus;
 }

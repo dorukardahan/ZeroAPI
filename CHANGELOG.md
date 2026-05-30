@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+### Fixed
+- Restore OpenClaw(TS) <-> Hermes(Python) routing parity across five proven divergences
+  (verified by a head-to-head harness, now committed as `integrations/hermes/test_parity.py`):
+  the Hermes adapter no longer (1) routes to providers absent from `subscription_profile.global`,
+  (2) keeps latency-unknown models for `fast` tasks, (3) drops routes when a category has no
+  rule instead of falling back to the default rule, (4) mis-strips trailing `s` in continuation
+  detection via a `\\s` regex bug, or (5) ignores the `+0.15` modifier account bonus. Python
+  capacity resolution now mirrors `inventory.ts resolveProviderCapacity` and the frontier sort
+  is deduplicated into a single shared path.
+- Distinguish an invalid/unparseable `zeroapi-config.json` from a missing one: the plugin now
+  logs `config_invalid` / `config_parse_error` (instead of "not found") so a malformed config no
+  longer looks like a fresh, un-onboarded install.
+- Fix a latent type-predicate bug in the capability-rejection diagnostics.
+
+### Changed
+- Cache compiled keyword regexes on the routing hot path (classifier, vision/continuation scans,
+  and the Hermes router). Behavior is identical; `classifyTask` drops ~15 -> ~5 us/call and
+  `resolveRoutingDecision` ~36.5 -> ~12.6 us/call (measured, Node 25), well under the <1ms
+  zero-LLM guarantee.
+- Bound the per-session continuation route state in both runtimes (TTL + max-entries eviction in
+  the plugin, LRU cap of 2048 in the Hermes adapter) so long-running gateways cannot leak memory.
+- Harden the doctor: bound `openclaw models status` with `timeout` (cannot hang under
+  `set -o pipefail`) and add `ZEROAPI_DOCTOR_SKIP_RUNTIME` for deterministic runs.
+- CI: use `npm ci` for reproducible installs, pin Python via `actions/setup-python`, and pin
+  `gitleaks/gitleaks-action` to an immutable commit SHA (v2.3.9).
+- Correct stale product-contract docs: high-risk keywords are diagnostic-only and never block or
+  downgrade routing (`routing-policy-spec.md`, `routing-modifiers-spec.md`), and reconcile the
+  benchmark-staleness thresholds in `risk-policy.md` with `benchmark-governance.md`.
+
+### Added
+- Expose per-candidate frontier membership and benchmark/pressure scores in the explanation and
+  simulator output (`includeDiagnostics` only; never computed on the runtime path), fulfilling the
+  explainability-contract "next extension". A fixture-backed doctor smoke test and route-state unit
+  tests were added.
+
 ## [3.8.36] - 2026-05-28
 
 ### Fixed

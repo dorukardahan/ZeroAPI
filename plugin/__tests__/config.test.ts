@@ -344,4 +344,50 @@ describe("config", () => {
     const result = loadConfig(testDir);
     expect(result).toBeNull();
   });
+
+  describe("getConfigLoadStatus", () => {
+    it("reports 'missing' when the config file does not exist", async () => {
+      const { loadConfig, getConfigLoadStatus } = await import("../config.js");
+      expect(loadConfig(testDir)).toBeNull();
+      expect(getConfigLoadStatus()).toBe("missing");
+    });
+
+    it("reports 'parse_error' for unparseable JSON", async () => {
+      writeFileSync(join(testDir, "zeroapi-config.json"), "not valid json{{{");
+      const { loadConfig, getConfigLoadStatus } = await import("../config.js");
+      expect(loadConfig(testDir)).toBeNull();
+      expect(getConfigLoadStatus()).toBe("parse_error");
+    });
+
+    it("reports 'invalid' for valid JSON that fails schema validation", async () => {
+      writeFileSync(
+        join(testDir, "zeroapi-config.json"),
+        JSON.stringify({ version: "3.0.0", default_model: "foo/bar" }),
+      );
+      const { loadConfig, getConfigLoadStatus } = await import("../config.js");
+      expect(loadConfig(testDir)).toBeNull();
+      expect(getConfigLoadStatus()).toBe("invalid");
+    });
+
+    it("reports 'ok' for a valid config", async () => {
+      writeFileSync(
+        join(testDir, "zeroapi-config.json"),
+        JSON.stringify({
+          version: "3.3.0",
+          generated: "2026-04-05",
+          benchmarks_date: "2026-04-04",
+          default_model: "zai/glm-5.1",
+          models: {},
+          routing_rules: {},
+          workspace_hints: {},
+          keywords: {},
+          high_risk_keywords: [],
+          fast_ttft_max_seconds: 5,
+        }),
+      );
+      const { loadConfig, getConfigLoadStatus } = await import("../config.js");
+      expect(loadConfig(testDir)).not.toBeNull();
+      expect(getConfigLoadStatus()).toBe("ok");
+    });
+  });
 });

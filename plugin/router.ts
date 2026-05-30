@@ -190,7 +190,22 @@ function getModifierAccountBonus(params: {
   return 0;
 }
 
-export function getSubscriptionWeightedCandidates(
+/**
+ * Per-candidate ranking detail for explainability. Exposes the frontier math that the
+ * routing-policy and explainability contracts describe (benchmark strength, subscription
+ * pressure, and whether the candidate cleared the benchmark frontier) without changing
+ * any routing decision. See references/explainability-contract.md.
+ */
+export type RankedCandidate = {
+  candidate: string;
+  benchmarkStrength: number;
+  pressureScore: number;
+  effectivePressureScore: number;
+  withinFrontier: boolean;
+  originalIndex: number;
+};
+
+export function rankSubscriptionWeightedCandidates(
   category: TaskCategory,
   availableModels: Record<string, ModelCapabilities>,
   rules: Record<string, RoutingRule>,
@@ -199,7 +214,7 @@ export function getSubscriptionWeightedCandidates(
   agentId: string | undefined,
   routingMode: RoutingMode = "balanced",
   routingModifier?: RoutingModifier,
-): string[] {
+): RankedCandidate[] {
   if (routingMode !== "balanced") return [];
 
   const rule = rules[category] ?? rules["default"];
@@ -322,7 +337,36 @@ export function getSubscriptionWeightedCandidates(
     return a.originalIndex - b.originalIndex;
   });
 
-  return ranked.map((item) => item.candidate);
+  return ranked.map((item) => ({
+    candidate: item.candidate,
+    benchmarkStrength: item.benchmarkStrength,
+    pressureScore: item.pressureScore,
+    effectivePressureScore: item.effectivePressureScore,
+    withinFrontier: item.withinFrontier,
+    originalIndex: item.originalIndex,
+  }));
+}
+
+export function getSubscriptionWeightedCandidates(
+  category: TaskCategory,
+  availableModels: Record<string, ModelCapabilities>,
+  rules: Record<string, RoutingRule>,
+  profile: SubscriptionProfile | undefined,
+  inventory: SubscriptionInventory | undefined,
+  agentId: string | undefined,
+  routingMode: RoutingMode = "balanced",
+  routingModifier?: RoutingModifier,
+): string[] {
+  return rankSubscriptionWeightedCandidates(
+    category,
+    availableModels,
+    rules,
+    profile,
+    inventory,
+    agentId,
+    routingMode,
+    routingModifier,
+  ).map((item) => item.candidate);
 }
 
 export function getSubscriptionWeightedCandidatesFromPool(

@@ -50,7 +50,7 @@ ZeroAPI classifies the prompt by keyword counts.
 
 Important rules:
 
-- high-risk keywords force risk to `high`
+- high-risk keywords set the recorded risk label to `high` as a **diagnostic signal only**
 - if no keyword matched and there is exactly one workspace hint, that hint becomes the category
 - if nothing matched, category becomes `default`
 
@@ -60,7 +60,10 @@ Current default risk levels:
 - `orchestration` -> `medium`
 - everything else -> `low`
 
-If risk becomes `high`, ZeroAPI stays on the current/default model and does not route.
+Risk is diagnostic, not a gate. A `high` risk label is recorded for observability and
+tuning (see `risk-policy.md`) but does **not** block, downgrade, or otherwise alter routing.
+As of v3.8.21 ZeroAPI routes high-risk prompts (e.g. "deploy to production") through the
+same balanced pipeline as any other prompt.
 
 ### 3. Capability filtering
 
@@ -200,7 +203,7 @@ Guardrail:
 These should stay true unless the product changes deliberately:
 
 1. Manual user model selection beats automatic routing.
-2. High-risk prompts do not auto-switch models.
+2. High-risk keyword matches are a diagnostic risk label only; they never block or downgrade routing.
 3. A weaker benchmark candidate cannot jump ahead unless it is still inside the allowed frontier.
 4. Subscription pressure should influence near-ties, not replace benchmark ranking wholesale.
 5. Same-provider account preference may cause a reroute even when provider/model stay the same.

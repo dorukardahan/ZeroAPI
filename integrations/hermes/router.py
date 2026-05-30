@@ -7,6 +7,7 @@ LLMs, or external APIs on every message.
 
 from __future__ import annotations
 
+import functools
 import json
 import math
 import os
@@ -284,7 +285,10 @@ def _estimate_tokens(text: str) -> int:
     return max(1, math.ceil(len(text) / 4))
 
 
+@functools.lru_cache(maxsize=2048)
 def _keyword_regex(keyword: str) -> re.Pattern[str]:
+    # Memoize compiled patterns: keyword scans run on every eligible turn, and re.Pattern
+    # objects are stateless for search/findall/finditer, so caching is behavior-preserving.
     return re.compile(rf"(?<!\w){re.escape(keyword.lower())}(?!\w)")
 
 
@@ -343,7 +347,7 @@ def _message_content_to_text(content: Any) -> str:
 
 
 def _is_continuation_prompt(config: Config, prompt: str) -> bool:
-    compact = re.sub(r"[.!?…\\s]+$", "", prompt.lower().strip())
+    compact = re.sub(r"[.!?…\s]+$", "", prompt.lower().strip())
     if not compact:
         return False
     configured = config.get("continuation_keywords", CONTINUATION_KEYWORDS)
@@ -531,46 +535,26 @@ def _usage_priority_factor(priority: Any) -> float:
     return 0.8 + (0.2 * bounded)
 
 
-def _capacity(config: Config, provider: str, category: TaskCategory, agent_id: str | None = None) -> tuple[bool, float]:
-    canonical = _canonical_provider(provider)
-    if _provider_disabled(config, provider):
-        return False, 0.0
+MODIFIER_TARGET_CATEGORIES: dict[str, list[str]] = {
+    "coding-aware": ["code"],
+    "research-aware": ["research"],
+    "speed-aware": ["fast", "default"],
+}
 
-    inventory = config.get("subscription_inventory", {})
-    accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
-    all_accounts: list[tuple[float, list[Any]]] = []
 
-    if isinstance(accounts, dict):
-        for account in accounts.values():
-            if not isinstance(account, dict) or account.get("enabled") is False:
-                continue
-            if _canonical_provider(str(account.get("provider", ""))) != canonical:
-                continue
-            intended = account.get("intendedUse")
-            all_accounts.append(
-                (
-                    _tier_weight(provider, account.get("tierId")) * _usage_priority_factor(account.get("usagePriority")),
-                    intended if isinstance(intended, list) else [],
-                )
-            )
+def _is_modifier_relevant(modifier: str | None, category: TaskCategory) -> bool:
+    return bool(modifier) and category in MODIFIER_TARGET_CATEGORIES.get(modifier or "", [])
 
-    if all_accounts:
-        matched_accounts = [
-            weight
-            for weight, intended in all_accounts
-            if not intended or category in intended
-        ]
-        scoring_accounts = matched_accounts or [weight for weight, _ in all_accounts]
-        redundancy_bonus = min(1.0, 0.25 * max(0, len(scoring_accounts) - 1))
-        return True, max(scoring_accounts) + redundancy_bonus
 
-    entry = _profile_selection(config, provider, agent_id)
-    if isinstance(entry, dict):
-        if entry.get("enabled") is False:
-            return False, 0.0
-        return True, _tier_weight(provider, entry.get("tierId"))
-
-    return True, 1.0
+def _catalog_entry(provider: str) -> dict[str, Any] | None:
+    """Mirror subscriptions.ts getProviderCatalogEntry: resolve by canonical id or alias."""
+    if not isinstance(provider, str):
+        return None
+    needle = provider.strip().lower()
+    for canonical, entry in PROVIDER_CATALOG.items():
+        if needle == canonical or needle in entry.get("aliases", []):
+            return entry
+    return None
 
 
 def _profile_selection(config: Config, provider: str, agent_id: str | None) -> dict[str, Any] | None:
@@ -601,29 +585,111 @@ def _profile_selection(config: Config, provider: str, agent_id: str | None) -> d
     return merged
 
 
-def _allowed_by_subscriptions(config: Config, model_key: str, agent_id: str | None) -> bool:
-    provider = _provider_id(model_key)
-    canonical = _canonical_provider(provider)
-    if _provider_disabled(config, provider):
-        return False
+def _resolve_provider_subscription(config: Config, provider: str, agent_id: str | None) -> dict[str, Any] | None:
+    """Mirror profile.ts resolveProviderSubscription. Returns None when the provider is
+    not in the subscription catalog (external passthrough). For a catalog provider,
+    ``enabled`` defaults to False unless the profile explicitly enables it, and an
+    unknown/missing tierId yields routing weight 0 (matching profile.ts:75-83)."""
+    entry = _catalog_entry(provider)
+    if entry is None:
+        return None
+    selection = _profile_selection(config, provider, agent_id) or {}
+    enabled = selection.get("enabled") is True
+    tier_id = selection.get("tierId")
+    weight = 0.0
+    if enabled and isinstance(tier_id, str):
+        tier_weights = entry.get("tier_weights", {})
+        weight = float(tier_weights[tier_id]) if tier_id in tier_weights else 0.0
+    return {"enabled": enabled, "routing_weight": weight, "preferred_account_id": None, "preferred_auth_profile": None}
 
+
+def _resolve_inventory_capacity(provider: str, canonical: str, accounts: dict[str, Any], category: TaskCategory | None) -> dict[str, Any]:
+    enabled_accounts: list[tuple[str, float, str | None, list[Any]]] = []
+    for account_id, account in accounts.items():
+        if not isinstance(account, dict) or account.get("enabled") is False:
+            continue
+        if _canonical_provider(str(account.get("provider", ""))) != canonical:
+            continue
+        intended = account.get("intendedUse")
+        intended = intended if isinstance(intended, list) else []
+        weight = _tier_weight(provider, account.get("tierId")) * _usage_priority_factor(account.get("usagePriority"))
+        auth = account.get("authProfile")
+        auth = auth.strip() if isinstance(auth, str) and auth.strip() else None
+        enabled_accounts.append((str(account_id), weight, auth, intended))
+
+    if not enabled_accounts:
+        return {"enabled": False, "routing_weight": 0.0, "preferred_account_id": None, "preferred_auth_profile": None}
+
+    if category:
+        matched = [a for a in enabled_accounts if not a[3] or category in a[3]]
+        scoring = matched or enabled_accounts
+    else:
+        scoring = enabled_accounts
+
+    strongest = max(a[1] for a in scoring)
+    redundancy = min(1.0, 0.25 * max(0, len(scoring) - 1))
+    # Preferred account: highest weight, then lexicographically smallest accountId
+    # (deterministic, matching inventory.ts:116-121).
+    preferred = sorted(scoring, key=lambda a: (-a[1], a[0]))[0]
+    return {
+        "enabled": True,
+        "routing_weight": strongest + redundancy,
+        "preferred_account_id": preferred[0],
+        "preferred_auth_profile": preferred[2],
+    }
+
+
+def _resolve_capacity(config: Config, provider: str, category: TaskCategory | None, agent_id: str | None) -> dict[str, Any] | None:
+    """Unified capacity resolver mirroring inventory.ts resolveProviderCapacity. Returns
+    None only when the provider is outside the subscription catalog and has no inventory
+    (external passthrough); otherwise returns enabled/routing_weight/preferred account."""
+    if _provider_disabled(config, provider):
+        return {"enabled": False, "routing_weight": 0.0, "preferred_account_id": None, "preferred_auth_profile": None}
+
+    canonical = _canonical_provider(provider)
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
-    inventory_configured = False
+    inventory_configured = isinstance(accounts, dict) and any(
+        isinstance(a, dict) and _canonical_provider(str(a.get("provider", ""))) == canonical
+        for a in accounts.values()
+    )
+    if inventory_configured:
+        return _resolve_inventory_capacity(provider, canonical, accounts, category)
 
-    if isinstance(accounts, dict):
-        for account in accounts.values():
-            if isinstance(account, dict) and _canonical_provider(str(account.get("provider", ""))) == canonical:
-                inventory_configured = True
-                if account.get("enabled") is not False:
-                    return True
-        if inventory_configured:
-            return False
+    return _resolve_provider_subscription(config, provider, agent_id)
 
-    selection = _profile_selection(config, provider, agent_id)
-    if selection is None:
+
+def _modifier_account_bonus(config: Config, modifier: str | None, category: TaskCategory, preferred_account_id: str | None) -> float:
+    """Mirror router.ts getModifierAccountBonus: +0.15 when the preferred account's
+    intendedUse matches the active modifier domain."""
+    if not modifier or not preferred_account_id or not _is_modifier_relevant(modifier, category):
+        return 0.0
+    inventory = config.get("subscription_inventory", {})
+    accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
+    account = accounts.get(preferred_account_id) if isinstance(accounts, dict) else None
+    if not isinstance(account, dict):
+        return 0.0
+    intended = account.get("intendedUse") or []
+    if modifier == "coding-aware" and "code" in intended:
+        return 0.15
+    if modifier == "research-aware" and "research" in intended:
+        return 0.15
+    if modifier == "speed-aware" and ("fast" in intended or "default" in intended):
+        return 0.15
+    return 0.0
+
+
+def _allowed_by_subscriptions(config: Config, model_key: str, agent_id: str | None) -> bool:
+    provider = _provider_id(model_key)
+    if _provider_disabled(config, provider):
+        return False
+    resolved = _resolve_capacity(config, provider, None, agent_id)
+    if resolved is None:
+        # Provider is not in the subscription catalog -> external passthrough, matching
+        # inventory.ts isModelAllowedBySubscriptions (null capacity -> allowed). A catalog
+        # provider absent from subscription_profile.global resolves to enabled=False here.
         return True
-    return selection.get("enabled") is not False
+    return bool(resolved["enabled"])
 
 
 def _allowed_drop(tier_weight: float, provider_bias: float, category: TaskCategory, modifier: str | None) -> float:
@@ -641,6 +707,73 @@ def _allowed_drop(tier_weight: float, provider_bias: float, category: TaskCatego
     return base
 
 
+def _sort_ranked(ranked: list[dict[str, Any]], modifier: str | None, category: TaskCategory) -> None:
+    """Shared frontier sort used by both ranking call sites (parity with router.ts:271-323).
+    In-frontier ordering uses effective pressure (raw pressure + modifier account bonus)."""
+    if modifier in {"coding-aware", "research-aware"} and category in {"code", "research"}:
+        ranked.sort(
+            key=lambda item: (
+                0 if item["within_frontier"] else 1,
+                -item["strength"],
+                -item["effective_pressure"] if item["within_frontier"] else item["index"],
+                item["index"],
+            )
+        )
+    elif modifier == "speed-aware" and category in {"fast", "default"}:
+        ranked.sort(
+            key=lambda item: (
+                0 if item["within_frontier"] else 1,
+                -item["speed_priority"] if item["within_frontier"] else -item["strength"],
+                -item["effective_pressure"] if item["within_frontier"] else item["index"],
+                -item["strength"] if item["within_frontier"] else 0,
+                item["index"],
+            )
+        )
+    else:
+        ranked.sort(
+            key=lambda item: (
+                0 if item["within_frontier"] else 1,
+                -item["effective_pressure"] if item["within_frontier"] else -item["strength"],
+                -item["strength"] if item["within_frontier"] else item["index"],
+                item["index"],
+            )
+        )
+
+
+def _build_ranked_item(
+    config: Config,
+    candidate: str,
+    index: int,
+    caps: Config,
+    category: TaskCategory,
+    modifier: str | None,
+    agent_id: str | None,
+) -> dict[str, Any] | None:
+    """Resolve capacity + benchmark strength for one candidate; None when ineligible
+    (no positive routing weight). Shared by both ranking call sites so eligibility and
+    scoring stay identical, mirroring router.ts:208-246."""
+    provider = _provider_id(candidate)
+    cap = _resolve_capacity(config, provider, category, agent_id)
+    if cap is None or not cap.get("enabled") or float(cap.get("routing_weight", 0.0)) <= 0:
+        return None
+    tier_weight = float(cap["routing_weight"])
+    bias = _provider_bias(provider)
+    pressure = tier_weight * bias
+    bonus = _modifier_account_bonus(config, modifier, category, cap.get("preferred_account_id"))
+    ttft = caps.get("ttft_seconds")
+    return {
+        "model_key": candidate,
+        "index": index,
+        "provider": provider,
+        "tier_weight": tier_weight,
+        "provider_bias": bias,
+        "pressure": pressure,
+        "effective_pressure": pressure + bonus,
+        "speed_priority": 0.0 if not isinstance(ttft, (int, float)) else 1 / max(float(ttft), 0.25),
+        "strength": _benchmark_strength(category, caps, modifier),
+    }
+
+
 def _rank_candidate_pool(
     config: Config,
     candidates: list[str],
@@ -654,24 +787,9 @@ def _rank_candidate_pool(
         caps = models.get(candidate)
         if not isinstance(caps, dict):
             continue
-        provider = _provider_id(candidate)
-        enabled, tier_weight = _capacity(config, provider, category, agent_id)
-        if not enabled or tier_weight <= 0:
-            continue
-
-        bias = _provider_bias(provider)
-        ranked.append(
-            {
-                "model_key": candidate,
-                "index": index,
-                "provider": provider,
-                "tier_weight": tier_weight,
-                "provider_bias": bias,
-                "pressure": tier_weight * bias,
-                "speed_priority": 0.0 if not isinstance(caps.get("ttft_seconds"), (int, float)) else 1 / max(float(caps["ttft_seconds"]), 0.25),
-                "strength": _benchmark_strength(category, caps, modifier),
-            }
-        )
+        item = _build_ranked_item(config, candidate, index, caps, category, modifier, agent_id)
+        if item is not None:
+            ranked.append(item)
 
     if not ranked:
         return []
@@ -681,35 +799,7 @@ def _rank_candidate_pool(
         allowed = _allowed_drop(item["tier_weight"], item["provider_bias"], category, modifier)
         item["within_frontier"] = item["index"] == 0 if strongest <= 0 else item["strength"] >= strongest * (1 - allowed)
 
-    if modifier in {"coding-aware", "research-aware"} and category in {"code", "research"}:
-        ranked.sort(
-            key=lambda item: (
-                0 if item["within_frontier"] else 1,
-                -item["strength"],
-                -item["pressure"] if item["within_frontier"] else item["index"],
-                item["index"],
-            )
-        )
-    elif modifier == "speed-aware" and category in {"fast", "default"}:
-        ranked.sort(
-            key=lambda item: (
-                0 if item["within_frontier"] else 1,
-                -item["speed_priority"] if item["within_frontier"] else -item["strength"],
-                -item["pressure"] if item["within_frontier"] else item["index"],
-                -item["strength"] if item["within_frontier"] else 0,
-                item["index"],
-            )
-        )
-    else:
-        ranked.sort(
-            key=lambda item: (
-                0 if item["within_frontier"] else 1,
-                -item["pressure"] if item["within_frontier"] else -item["strength"],
-                -item["strength"] if item["within_frontier"] else item["index"],
-                item["index"],
-            )
-        )
-
+    _sort_ranked(ranked, modifier, category)
     return [item["model_key"] for item in ranked]
 
 
@@ -808,7 +898,12 @@ class ZeroAPIRouter:
         ):
             return None
 
-        rule = self.config.get("routing_rules", {}).get(category)
+        rules = self.config.get("routing_rules", {})
+        rule = rules.get(category) if isinstance(rules, dict) else None
+        if not isinstance(rule, dict) and isinstance(rules, dict):
+            # Parity with selector.ts:9 / router.ts:205 — fall back to the default rule
+            # when the classified category has no dedicated routing rule.
+            rule = rules.get("default")
         if not isinstance(rule, dict):
             return None
 
@@ -831,28 +926,18 @@ class ZeroAPIRouter:
                 continue
             if category == "fast":
                 max_ttft = self.config.get("fast_ttft_max_seconds")
-                ttft = caps.get("ttft_seconds")
-                if isinstance(max_ttft, (int, float)) and isinstance(ttft, (int, float)) and ttft > max_ttft:
-                    continue
+                if isinstance(max_ttft, (int, float)):
+                    ttft = caps.get("ttft_seconds")
+                    if not isinstance(ttft, (int, float)):
+                        # ttft_missing: drop latency-unknown models for fast tasks
+                        # (parity with filter.ts:24-26).
+                        continue
+                    if ttft > max_ttft:
+                        continue
 
-            provider = _provider_id(candidate)
-            enabled, tier_weight = _capacity(self.config, provider, category, agent_id)
-            if not enabled or tier_weight <= 0:
-                continue
-
-            bias = _provider_bias(provider)
-            ranked.append(
-                {
-                    "model_key": candidate,
-                    "index": index,
-                    "provider": provider,
-                    "tier_weight": tier_weight,
-                    "provider_bias": bias,
-                    "pressure": tier_weight * bias,
-                    "speed_priority": 0.0 if not isinstance(caps.get("ttft_seconds"), (int, float)) else 1 / max(float(caps["ttft_seconds"]), 0.25),
-                    "strength": _benchmark_strength(category, caps, modifier),
-                }
-            )
+            item = _build_ranked_item(self.config, candidate, index, caps, category, modifier, agent_id)
+            if item is not None:
+                ranked.append(item)
 
         if not ranked:
             return None
@@ -862,34 +947,7 @@ class ZeroAPIRouter:
             allowed = _allowed_drop(item["tier_weight"], item["provider_bias"], category, modifier)
             item["within_frontier"] = item["index"] == 0 if strongest <= 0 else item["strength"] >= strongest * (1 - allowed)
 
-        if modifier in {"coding-aware", "research-aware"} and category in {"code", "research"}:
-            ranked.sort(
-                key=lambda item: (
-                    0 if item["within_frontier"] else 1,
-                    -item["strength"],
-                    -item["pressure"] if item["within_frontier"] else item["index"],
-                    item["index"],
-                )
-            )
-        elif modifier == "speed-aware" and category in {"fast", "default"}:
-            ranked.sort(
-                key=lambda item: (
-                    0 if item["within_frontier"] else 1,
-                    -item["speed_priority"] if item["within_frontier"] else -item["strength"],
-                    -item["pressure"] if item["within_frontier"] else item["index"],
-                    -item["strength"] if item["within_frontier"] else 0,
-                    item["index"],
-                )
-            )
-        else:
-            ranked.sort(
-                key=lambda item: (
-                    0 if item["within_frontier"] else 1,
-                    -item["pressure"] if item["within_frontier"] else -item["strength"],
-                    -item["strength"] if item["within_frontier"] else item["index"],
-                    item["index"],
-                )
-            )
+        _sort_ranked(ranked, modifier, category)
 
         selected = ranked[0]["model_key"]
         if selected == current:

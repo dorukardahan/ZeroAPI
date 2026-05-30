@@ -147,7 +147,9 @@ if [ -d "$OPENCLAW_DIR/extensions/zeroapi-router" ]; then
   warn "manual extension directory detected at $OPENCLAW_DIR/extensions/zeroapi-router - this can shadow or duplicate plugin registry installs"
 fi
 
-if command -v openclaw >/dev/null 2>&1; then
+if [ "${ZEROAPI_DOCTOR_SKIP_RUNTIME:-0}" = "1" ]; then
+  say "--- openclaw runtime checks skipped (ZEROAPI_DOCTOR_SKIP_RUNTIME=1) ---"
+elif command -v openclaw >/dev/null 2>&1; then
   say "--- openclaw plugins list ---"
   if timeout 10s openclaw plugins list | grep zeroapi-router; then
     :
@@ -155,7 +157,9 @@ if command -v openclaw >/dev/null 2>&1; then
     warn "zeroapi-router not visible in plugin list or plugins list timed out - check openclaw.json installs + gateway logs"
   fi
   say "--- openclaw models status (summary) ---"
-  openclaw models status | sed -n '1,80p'
+  # Bound the call so a hung/slow gateway cannot make the doctor block indefinitely.
+  # The trailing `|| warn` keeps `set -o pipefail` from aborting the whole doctor run.
+  timeout 10s openclaw models status 2>/dev/null | sed -n '1,80p' || warn "openclaw models status timed out or failed"
 else
   warn "openclaw CLI not available in PATH"
 fi

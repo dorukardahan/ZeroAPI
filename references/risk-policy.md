@@ -28,13 +28,14 @@ Example log lines:
 
 ## Staleness policy
 
-`benchmarks.json` includes a `fetched` date.
+`benchmarks.json` includes a `fetched` date. `benchmark-governance.md` is the authoritative
+source for freshness thresholds; this table mirrors it:
 
-| Age | Action |
-|-----|--------|
-| < 30 days | proceed normally |
-| 30-60 days | warn user and suggest updating ZeroAPI |
-| > 60 days | require explicit override |
+| Age | State | Action |
+|-----|-------|--------|
+| <= 14 days | healthy | proceed normally |
+| 15-30 days | needs attention | proceed, but suggest a refresh |
+| > 30 days | stale | treat benchmark claims cautiously and refresh ZeroAPI |
 
 Update process:
 
