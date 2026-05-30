@@ -15,6 +15,16 @@
   logs `config_invalid` / `config_parse_error` (instead of "not found") so a malformed config no
   longer looks like a fresh, un-onboarded install.
 - Fix a latent type-predicate bug in the capability-rejection diagnostics.
+- Close three further TS<->Python parity gaps found by an adversarial parity-breaker (now in
+  `test_parity.py` as R1/R2/R3): (R1) an agent `subscription_profile` override of `{enabled: true}`
+  no longer inherits the global `tierId` (field-level resolution mirrors `profile.ts:70-73`, so it
+  yields weight 0 like TS); (R2) the modifier frontier sort uses exact `(modifier, category)`
+  pairing so a cross-pair like coding-aware+research falls through to the default pressure-first
+  sort; (R3) bare `xai/<model>` keys are subscription-gated (catalog providerId `xai`) instead of
+  treated as an external-passthrough provider in the vision-escape path.
+- Remove a stray NUL byte accidentally introduced into `plugin/classifier.ts` (a regex cache-key
+  separator) that made git treat the file as binary — hiding its line-level diffs and excluding it
+  from `git diff --check`.
 
 ### Changed
 - Cache compiled keyword regexes on the routing hot path (classifier, vision/continuation scans,
@@ -23,6 +33,11 @@
   zero-LLM guarantee.
 - Bound the per-session continuation route state in both runtimes (TTL + max-entries eviction in
   the plugin, LRU cap of 2048 in the Hermes adapter) so long-running gateways cannot leak memory.
+  Plugin pruning now evicts down to a low-water mark so a gateway sitting at capacity no longer
+  re-sorts every entry on every route (~74us -> ~0.6us/record measured).
+- Add a `.gitattributes` forcing source files to be treated as text, preventing the CJK/Devanagari
+  keyword patterns from making files (e.g. `classifier.ts`) be mis-detected as binary by git.
+- Standardize `actions/setup-python` on v6 across CI workflows.
 - Harden the doctor: bound `openclaw models status` with `timeout` (cannot hang under
   `set -o pipefail`) and add `ZEROAPI_DOCTOR_SKIP_RUNTIME` for deterministic runs.
 - CI: use `npm ci` for reproducible installs, pin Python via `actions/setup-python`, and pin
