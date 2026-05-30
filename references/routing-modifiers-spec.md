@@ -23,7 +23,7 @@ Every modifier starts from the balanced pipeline defined in [`routing-policy-spe
 That means a modifier inherits:
 
 - early skip/stay gates
-- high-risk protection
+- the diagnostic risk label (high-risk keywords are recorded, not a routing gate)
 - capability filtering
 - subscription eligibility
 - benchmark frontier logic
@@ -40,7 +40,7 @@ If a modifier conflicts with the balanced baseline, balanced wins unless the mod
 
 ## Non-goals
 
-- no modifier may bypass high-risk stays
+- no modifier may turn the diagnostic high-risk label into a routing gate
 - no modifier may resurrect a model that failed capability filtering
 - no modifier may resurrect a model blocked by subscription rules
 - no modifier may override explicit user model choice
@@ -105,7 +105,7 @@ These levers are enough to make modifiers meaningful without making them opaque.
 
 Modifiers must not:
 
-1. disable high-risk blocking
+1. turn the diagnostic high-risk label into a routing block (risk is observability-only)
 2. ignore `external_model_policy`
 3. override capability failures
 4. override subscription ineligibility
