@@ -34,19 +34,19 @@ describe("route-state", () => {
     expect(state.has("new")).toBe(true);
   });
 
-  it("caps the map by evicting the oldest entries when over the limit", () => {
+  it("caps the map by evicting oldest entries, staying within the limit", () => {
     const state: RouteState = new Map();
-    const max = 3;
-    // All fresh (same logical window) but distinct timestamps so eviction order is defined.
-    for (let i = 0; i < 6; i++) {
+    const max = 10;
+    // Distinct fresh keys with increasing timestamps so eviction order is defined.
+    for (let i = 0; i < 25; i++) {
       recordRouteCategory(state, `k${i}`, "code", 1000 + i, max);
     }
-    expect(state.size).toBe(max);
-    // The three oldest (k0,k1,k2) are evicted; the three newest remain.
+    // Batch eviction keeps the map within the cap (never above it).
+    expect(state.size).toBeLessThanOrEqual(max);
+    // Oldest evicted, newest retained.
     expect(state.has("k0")).toBe(false);
-    expect(state.has("k2")).toBe(false);
-    expect(state.has("k3")).toBe(true);
-    expect(state.has("k5")).toBe(true);
+    expect(state.has("k24")).toBe(true);
+    expect(state.has("k23")).toBe(true);
   });
 
   it("does not grow unbounded under many distinct sessions", () => {
