@@ -33,6 +33,15 @@ TIE = dict(intelligence=51, coding=43, terminalbench=0.43, scicode=0.40)
 ZAI_TIE = _m(200000, False, 62, 0.9, **TIE)
 MINIMAX_TIE = _m(200000, False, 60, 0.9, **TIE)
 
+# Regression fixtures (R1/R2/R3) — found by the adversarial parity-breaker, not the
+# original 6 scenarios. Tuned so zai stays inside the research frontier for R2.
+R_ZAI = _m(200000, False, 62, 0.9, intelligence=51, coding=43, terminalbench=0.43, scicode=0.40,
+           tau2=0.977, ifbench=0.76, gpqa=0.87, hle=0.28, lcr=0.40, math=0.60, aime_25=0.50)
+R_OPENAI = _m(272000, False, 72, 1.5, intelligence=57, coding=57, terminalbench=0.58, scicode=0.50,
+              tau2=0.871, ifbench=0.73, gpqa=0.92, hle=0.42, lcr=0.50, math=0.70, aime_25=0.60)
+R_KIMI = _m(262144, True, 32, 2.4, intelligence=47, coding=40, terminalbench=0.35, tau2=0.95, ifbench=0.70, gpqa=0.45)
+R_XAI = _m(256000, True, 50, 1.0, intelligence=52, coding=45, terminalbench=0.45, gpqa=0.6)
+
 KW = {
     "code": ["implement", "function", "refactor", "fix", "debug"],
     "research": ["research", "analyze", "investigate"],
@@ -122,6 +131,45 @@ class HermesParityTest(unittest.TestCase):
         route = ZeroAPIRouter(cfg).resolve("refactor this function", current_model="minimax-portal/m2.7")
         self.assertIsNotNone(route, "coding-aware +0.15 bonus must lift the intendedUse=code account")
         self.assertEqual(route["model"], "glm-5.1")
+
+    def test_R1_agent_override_tier_not_inherited_from_global(self):
+        # Agent override {enabled: True} with NO tierId must NOT inherit the global tierId
+        # (TS profile.ts forces tierId->null when an override exists -> weight 0 -> filtered).
+        cfg = _base(
+            {"zai/glm-5.1": R_ZAI, "openai-codex/gpt-5.4": R_OPENAI},
+            {"orchestration": {"primary": "zai/glm-5.1", "fallbacks": ["openai-codex/gpt-5.4"]},
+             "default": {"primary": "zai/glm-5.1", "fallbacks": ["openai-codex/gpt-5.4"]}},
+            default_model="openai-codex/gpt-5.4",
+            subscription_profile={"version": "1.0.0",
+                "global": {"zai": {"enabled": True, "tierId": "max"}, "openai-codex": {"enabled": True, "tierId": "pro"}},
+                "agentOverrides": {"codex": {"zai": {"enabled": True}}}})
+        route = ZeroAPIRouter(cfg).resolve("coordinate this workflow", agent_id="codex", current_model="openai-codex/gpt-5.4")
+        self.assertIsNone(route, "zai override has no tierId -> weight 0 -> filtered -> stay on openai")
+
+    def test_R2_cross_pair_modifier_uses_default_sort(self):
+        # coding-aware modifier on a RESEARCH prompt is a cross-pair: it must use the default
+        # pressure-first sort (TS), not the strength-first coding/research sort.
+        cfg = _base(
+            {"zai/glm-5.1": R_ZAI, "openai-codex/gpt-5.4": R_OPENAI, "moonshot/kimi-k2.5": R_KIMI},
+            {"research": {"primary": "zai/glm-5.1", "fallbacks": ["openai-codex/gpt-5.4"]},
+             "default": {"primary": "zai/glm-5.1", "fallbacks": []}},
+            routing_modifier="coding-aware",
+            subscription_profile={"version": "1.0.0", "global": {
+                "zai": {"enabled": True, "tierId": "max"}, "openai-codex": {"enabled": True, "tierId": "pro"}}})
+        route = ZeroAPIRouter(cfg).resolve("research and analyze this", current_model="moonshot/kimi-k2.5")
+        self.assertIsNotNone(route)
+        self.assertEqual(route["model"], "glm-5.1", "pressure-first sort must win zai for a research+coding-aware cross-pair")
+
+    def test_R3_xai_provider_is_subscription_gated(self):
+        # A bare xai/ model must be subscription-gated like TS (catalog providerId 'xai'),
+        # not treated as an external-passthrough provider in the vision-escape path.
+        cfg = _base(
+            {"zai/glm-5.1": R_ZAI, "xai/grok-4.3": R_XAI},
+            {"code": {"primary": "zai/glm-5.1", "fallbacks": []},
+             "default": {"primary": "zai/glm-5.1", "fallbacks": []}},
+            subscription_profile={"version": "1.0.0", "global": {"zai": {"enabled": True, "tierId": "max"}}})
+        route = ZeroAPIRouter(cfg).resolve("bu resme bak", current_model="zai/glm-5.1", has_image_attachment=True)
+        self.assertIsNone(route, "xai is not enabled in the profile -> must be filtered, not passed through")
 
 
 if __name__ == "__main__":
