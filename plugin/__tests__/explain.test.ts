@@ -213,4 +213,29 @@ describe("buildExplanationSummary", () => {
     expect(summary.headline).toBe("Skipped routing because this agent is already running its own OpenClaw-selected model.");
     expect(summary.details).toContain("reason=skip:agent_current_model");
   });
+
+  it("exposes per-candidate frontier detail only under includeDiagnostics", () => {
+    const withDiagnostics = resolveRoutingDecision(config, {
+      prompt: "coordinate a workflow across 3 services",
+      currentModel: "openai-codex/gpt-5.4",
+      includeDiagnostics: true,
+    });
+    const withoutDiagnostics = resolveRoutingDecision(config, {
+      prompt: "coordinate a workflow across 3 services",
+      currentModel: "openai-codex/gpt-5.4",
+    });
+
+    const diagSummary = buildExplanationSummary(withDiagnostics);
+    const frontierLine = diagSummary.details.find((line) => line.startsWith("frontier="));
+    expect(frontierLine).toBeDefined();
+    // Frontier detail names a candidate with bench/pressure/in-or-out membership.
+    expect(frontierLine).toMatch(/bench=/);
+    expect(frontierLine).toMatch(/pressure=/);
+    expect(frontierLine).toMatch(/\b(in|out)\b/);
+
+    // The runtime path (no diagnostics) must not compute or expose frontier detail.
+    expect(withoutDiagnostics.frontier).toBeUndefined();
+    const plainSummary = buildExplanationSummary(withoutDiagnostics);
+    expect(plainSummary.details.some((line) => line.startsWith("frontier="))).toBe(false);
+  });
 });

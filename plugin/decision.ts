@@ -1,7 +1,9 @@
 import { classifyTask } from "./classifier.js";
 import { filterCapableModels, estimateTokens, getCapabilityFilterFailure } from "./filter.js";
+import type { CapabilityFilterFailure } from "./filter.js";
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
-import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool } from "./router.js";
+import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool, rankSubscriptionWeightedCandidates } from "./router.js";
+import type { RankedCandidate } from "./router.js";
 import { selectModel } from "./selector.js";
 import { getCanonicalOpenClawProviderId } from "./subscriptions.js";
 import type { ConversationMessage, RoutingDecision, RoutingModifier, TaskCategory, ZeroAPIConfig } from "./types.js";
@@ -121,6 +123,9 @@ export type RoutingResolution = {
   capabilityRejected: Array<{ model: string; reason: string }>;
   subscriptionRejected: string[];
   weightedCandidates: string[];
+  /** Per-candidate frontier detail, populated only when includeDiagnostics is set
+   *  (simulator/eval). Never computed on the runtime before_model_resolve path. */
+  frontier?: RankedCandidate[];
   rawDecision: RoutingDecision | null;
   finalDecision: RoutingDecision | null;
   selectedModel: string | null;
@@ -528,7 +533,7 @@ export function resolveRoutingDecision(
         const failure = getCapabilityFilterFailure(modelKey, caps, filterOptions);
         return failure ? { model: modelKey, reason: failure } : null;
       })
-      .filter((entry): entry is { model: string; reason: string } => entry !== null)
+      .filter((entry): entry is { model: string; reason: CapabilityFilterFailure } => entry !== null)
     : [];
 
   const capabilityPassed = filterCapableModels(config.models, filterOptions);
@@ -551,6 +556,21 @@ export function resolveRoutingDecision(
     config.routing_modifier,
   );
 
+  // Frontier/score detail is for explainability only; compute it solely under
+  // includeDiagnostics so the runtime before_model_resolve path pays nothing for it.
+  const frontier: RankedCandidate[] | undefined = includeDiagnostics
+    ? rankSubscriptionWeightedCandidates(
+        effectiveDecision.category,
+        capable,
+        config.routing_rules,
+        config.subscription_profile,
+        config.subscription_inventory,
+        agentId,
+        config.routing_mode ?? "balanced",
+        config.routing_modifier,
+      )
+    : undefined;
+
   if (Object.keys(capable).length === 0 || weightedCandidates.length === 0) {
     const finalDecision = {
       ...effectiveDecision,
@@ -568,6 +588,7 @@ export function resolveRoutingDecision(
       capabilityRejected,
       subscriptionRejected,
       weightedCandidates,
+      frontier,
       rawDecision,
       finalDecision,
       selectedModel: null,
@@ -623,6 +644,7 @@ export function resolveRoutingDecision(
       capabilityRejected,
       subscriptionRejected,
       weightedCandidates,
+      frontier,
       rawDecision,
       finalDecision,
       selectedModel: null,
@@ -654,6 +676,7 @@ export function resolveRoutingDecision(
       capabilityRejected,
       subscriptionRejected,
       weightedCandidates,
+      frontier,
       rawDecision,
       finalDecision,
       selectedModel: null,
@@ -681,6 +704,7 @@ export function resolveRoutingDecision(
     capabilityRejected,
     subscriptionRejected,
     weightedCandidates,
+    frontier,
     rawDecision,
     finalDecision,
     selectedModel: targetModel,

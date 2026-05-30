@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getSubscriptionWeightedCandidates } from "../router.js";
+import { getSubscriptionWeightedCandidates, rankSubscriptionWeightedCandidates } from "../router.js";
 import type { ModelCapabilities, RoutingRule, SubscriptionInventory, SubscriptionProfile } from "../types.js";
 
 const models: Record<string, ModelCapabilities> = {
@@ -157,6 +157,23 @@ describe("router weighting", () => {
     };
     const candidates = getSubscriptionWeightedCandidates("default", models, aliasRules, profile, undefined, undefined);
     expect(candidates).toContain("kimi-coding/k2p5");
+  });
+
+  it("exposes detailed frontier scoring that is consistent with the string ordering", () => {
+    const detailed = rankSubscriptionWeightedCandidates("code", models, rules, profile, undefined, undefined);
+    const strings = getSubscriptionWeightedCandidates("code", models, rules, profile, undefined, undefined);
+    // Detailed and string APIs must agree on ordering.
+    expect(detailed.map((entry) => entry.candidate)).toEqual(strings);
+    // Each entry carries the frontier math the explainability contract describes.
+    for (const entry of detailed) {
+      expect(typeof entry.benchmarkStrength).toBe("number");
+      expect(typeof entry.pressureScore).toBe("number");
+      expect(typeof entry.effectivePressureScore).toBe("number");
+      expect(typeof entry.withinFrontier).toBe("boolean");
+    }
+    // The code benchmark leader (gpt-5.4) is in front and inside the frontier.
+    expect(detailed[0].candidate).toBe("openai-codex/gpt-5.4");
+    expect(detailed[0].withinFrontier).toBe(true);
   });
 
   it("lets inventory override a legacy-disabled provider and feed the router", () => {
