@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -131,6 +133,27 @@ class HermesVisionAuxiliaryConfigTest(unittest.TestCase):
             self.assertTrue(result["changed"])
             self.assertTrue(text.endswith("    timeout: 120\n"))
             self.assertIn("auxiliary:\n  vision:\n    provider: openai-codex\n    model: gpt-5.5", text)
+
+    def test_importable_as_package_submodule(self):
+        # vision_aux must resolve its sibling `router` whether it is loaded as a
+        # top-level script module (this test, README invocation) OR as a package
+        # submodule (`hermes.vision_aux`). The latter used to crash with
+        # ModuleNotFoundError: No module named 'router'.
+        integrations_dir = Path(__file__).resolve().parents[1]  # .../integrations
+        code = (
+            "import hermes.vision_aux as m;"
+            "assert hasattr(m, 'configure_auxiliary_vision');"
+            "assert hasattr(m, 'resolve_auxiliary_vision_route');"
+            "print('ok')"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=str(integrations_dir),
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ok", result.stdout)
 
     def test_no_change_when_no_vision_route_is_needed(self):
         with tempfile.TemporaryDirectory() as tmp:

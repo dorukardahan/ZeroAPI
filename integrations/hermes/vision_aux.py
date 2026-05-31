@@ -19,7 +19,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from router import ZeroAPIRouter, load_config
+try:
+    from .router import ZeroAPIRouter, load_config
+except ImportError:  # pragma: no cover - standalone/script invocation
+    from router import ZeroAPIRouter, load_config
 
 VISION_PROBE_PROMPT = "Please inspect the attached screenshot."
 
