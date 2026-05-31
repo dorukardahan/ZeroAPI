@@ -478,6 +478,30 @@ describe("resolveRoutingDecision", () => {
       expect(result.selectedModel).toBe("openai-codex/gpt-5.5");
     });
 
+    it("exposes the frontier on a vision-escape route only under includeDiagnostics", () => {
+      const runtime = resolveRoutingDecision(visionConfig, {
+        prompt: "what does this screenshot show",
+        currentModel: "zai/glm-5",
+      });
+      // The runtime image path must not compute the explainability frontier.
+      expect(runtime.frontier).toBeUndefined();
+
+      const diagnostic = resolveRoutingDecision(visionConfig, {
+        prompt: "what does this screenshot show",
+        currentModel: "zai/glm-5",
+        includeDiagnostics: true,
+      });
+      expect(diagnostic.action).toBe("route");
+      expect(diagnostic.reason).toBe("vision_capability_escape");
+      expect(Array.isArray(diagnostic.frontier)).toBe(true);
+      expect(diagnostic.frontier!.length).toBeGreaterThan(0);
+      // The chosen model must be the top of the exposed frontier, and the entries
+      // must carry the RankedCandidate detail the explainability contract describes.
+      expect(diagnostic.frontier![0].candidate).toBe(diagnostic.selectedModel);
+      expect(typeof diagnostic.frontier![0].benchmarkStrength).toBe("number");
+      expect(typeof diagnostic.frontier![0].withinFrontier).toBe("boolean");
+    });
+
     it("does not escape when current model already supports vision", () => {
       const result = resolveRoutingDecision(visionConfig, {
         prompt: "what does this screenshot show",

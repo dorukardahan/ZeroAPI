@@ -114,6 +114,26 @@ describe("agent model audit", () => {
     });
   });
 
+  it("prefers the agent id signal over incidental name/description words", () => {
+    expect(inferWorkspaceHintsFromOpenClawConfig({
+      agents: {
+        list: [
+          // id encodes an ops/monitor role, but the description carries "content"
+          // (P1 social) and "deploy" (P2 code) which would win under first-match.
+          { id: "ops-monitor", name: "Ops Monitor", description: "Tracks deploy status and content health" },
+          // id is literally "monitor" (P4 ops), description has "build" (P2 code).
+          { id: "monitor", name: "Build Monitor", description: "Watches CI build status" },
+          // id has no recognized token, so the name+description fallback applies.
+          { id: "helper", description: "engage with content" },
+        ],
+      },
+    })).toEqual({
+      "ops-monitor": ["orchestration", "fast"],
+      monitor: ["orchestration", "fast"],
+      helper: ["research", "code"],
+    });
+  });
+
   it("adds missing catalog entries and baselines routed agents only", () => {
     const openclawConfig = {
       agents: {

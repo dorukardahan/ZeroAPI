@@ -197,6 +197,24 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def read_existing_benchmark_categories(
+    output_path: Path,
+    default_path: Path = DEFAULT_OUTPUT,
+) -> Any:
+    """Source the round-tripped ``benchmark_categories`` block.
+
+    Prefer the file actually being refreshed (``--output``) so a custom target is
+    both the source and the destination; fall back to the canonical repo snapshot,
+    and degrade to ``None`` when neither file exists (e.g. a first run writing to a
+    brand-new ``--output`` path) instead of raising ``FileNotFoundError``.
+    """
+    source = output_path if output_path.exists() else default_path
+    try:
+        return json.loads(source.read_text()).get("benchmark_categories")
+    except FileNotFoundError:
+        return None
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -208,7 +226,8 @@ def main() -> None:
     policy_families, policy_slug_map = load_policy_families()
     models = transform_models(response.get("data") or [], policy_slug_map)
 
-    benchmark_categories = json.loads(DEFAULT_OUTPUT.read_text()).get("benchmark_categories")
+    output_path = Path(args.output)
+    benchmark_categories = read_existing_benchmark_categories(output_path)
     policy_family_included_count = sum(
         1 for model in models if model.get("policy_family", {}).get("included")
     )

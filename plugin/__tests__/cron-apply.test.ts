@@ -107,4 +107,40 @@ describe("applyCronAuditPatches", () => {
     expect(result.applied.map((item) => item.id)).toEqual(["low-confidence"]);
     expect(result.skipped).toContainEqual(expect.objectContaining({ id: "safe-change", reason: "skip:not_selected" }));
   });
+
+  it("pairs each job with its own report item by id, not array position", () => {
+    // Report items in REVERSE order relative to jobs: positional pairing would
+    // apply low-confidence's decision to the safe-change job and vice versa.
+    const reversedReport: CronAuditReport = { ...report, items: [report.items[1], report.items[0]] };
+    const result = applyCronAuditPatches(jobs, reversedReport);
+
+    // safe-change (jobs[0]) must still be the one that gets applied (its own item is
+    // high-confidence), and its patched payload must come from its own item.
+    expect(result.applied.map((item) => item.id)).toEqual(["safe-change"]);
+    expect(result.jobs[0].payload).toMatchObject({
+      kind: "agentTurn",
+      model: "openai-codex/gpt-5.4",
+      fallbacks: ["zai/glm-5.1"],
+    });
+    // low-confidence (jobs[1]) is still skipped as low-confidence, not mis-applied.
+    expect(result.skipped).toContainEqual(
+      expect.objectContaining({ id: "low-confidence", reason: "skip:low_confidence" }),
+    );
+    expect(result.jobs[1].payload).toMatchObject({ model: "zai/glm-5.1" });
+  });
+
+  it("matches the surviving job by id when the jobs array is filtered", () => {
+    // Only the second job survives, but the report still describes both jobs.
+    const filteredJobs = [jobs[1]];
+    const result = applyCronAuditPatches(filteredJobs, report, { includeLowConfidence: true });
+
+    // The surviving job must be paired with ITS OWN item (low-confidence), not jobs[0]'s.
+    expect(result.applied.map((item) => item.id)).toEqual(["low-confidence"]);
+    expect(result.jobs).toHaveLength(1);
+    expect(result.jobs[0].payload).toMatchObject({
+      kind: "agentTurn",
+      model: "openai-codex/gpt-5.4",
+      fallbacks: ["zai/glm-5.1"],
+    });
+  });
 });

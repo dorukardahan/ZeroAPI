@@ -17,6 +17,7 @@
 
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { parseLine, counter, pct, pad, padNum, sortedEntries } from "./eval-lib.mjs";
 
 const HOME = process.env.HOME ?? "/root";
 const LOG_PATH = join(HOME, ".openclaw", "logs", "zeroapi-routing.log");
@@ -30,57 +31,6 @@ type LogEntry = {
   risk: string;
   reason: string;
 };
-
-function parseLine(line: string): LogEntry | null {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
-
-  const tsMatch = trimmed.match(/^(\S+)/);
-  const agentMatch = trimmed.match(/agent=(\S+)/);
-  const catMatch = trimmed.match(/category=(\S+)/);
-  const modelMatch = trimmed.match(/model=(\S+)/);
-  const modifierMatch = trimmed.match(/modifier=(\S+)/);
-  const riskMatch = trimmed.match(/risk=(\S+)/);
-  const reasonMatch = trimmed.match(/reason=(.+)$/);
-
-  if (!tsMatch || !catMatch) return null;
-
-  return {
-    ts: tsMatch[1],
-    agent: agentMatch?.[1] ?? "unknown",
-    category: catMatch[1],
-    model: modelMatch?.[1] ?? "default",
-    modifier: modifierMatch?.[1] ?? "none",
-    risk: riskMatch?.[1] ?? "low",
-    reason: reasonMatch?.[1] ?? "unknown",
-  };
-}
-
-function counter(arr: string[]): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const item of arr) {
-    counts[item] = (counts[item] ?? 0) + 1;
-  }
-  return counts;
-}
-
-function pct(n: number, total: number): string {
-  if (total === 0) return "0%";
-  return `${((n / total) * 100).toFixed(1)}%`;
-}
-
-function pad(s: string, width: number): string {
-  return s.length >= width ? s : s + " ".repeat(width - s.length);
-}
-
-function padNum(n: number, width: number): string {
-  const s = String(n);
-  return s.length >= width ? s : " ".repeat(width - s.length) + s;
-}
-
-function sortedEntries(obj: Record<string, number>): [string, number][] {
-  return Object.entries(obj).sort((a, b) => b[1] - a[1]);
-}
 
 // --- main ---
 
@@ -106,7 +56,7 @@ if (lastN) {
   lines = lines.slice(-lastN);
 }
 
-let entries = lines.map(parseLine).filter((e): e is LogEntry => e !== null);
+let entries: LogEntry[] = lines.map(parseLine).filter((e: unknown): e is LogEntry => e !== null);
 
 if (sinceDate) {
   entries = entries.filter((e) => e.ts >= sinceDate!);

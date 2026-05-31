@@ -2,7 +2,7 @@ import { classifyTask } from "./classifier.js";
 import { filterCapableModels, estimateTokens, getCapabilityFilterFailure } from "./filter.js";
 import type { CapabilityFilterFailure } from "./filter.js";
 import { isModelAllowedBySubscriptions, resolveProviderCapacity } from "./inventory.js";
-import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool, rankSubscriptionWeightedCandidates } from "./router.js";
+import { getSubscriptionWeightedCandidates, getSubscriptionWeightedCandidatesFromPool, rankSubscriptionWeightedCandidates, rankSubscriptionWeightedCandidatesFromPool } from "./router.js";
 import type { RankedCandidate } from "./router.js";
 import { selectModel } from "./selector.js";
 import { getCanonicalOpenClawProviderId } from "./subscriptions.js";
@@ -445,15 +445,31 @@ export function resolveRoutingDecision(
         .filter(([modelKey]) => isModelEligibleBySubscriptions(config, modelKey, agentId)));
 
       if (Object.keys(visionCapable).length > 0) {
-        const rankedVision = getSubscriptionWeightedCandidatesFromPool(
-          "default",
-          visionCapable,
-          config.subscription_profile,
-          config.subscription_inventory,
-          agentId,
-          config.routing_mode ?? "balanced",
-          config.routing_modifier,
-        );
+        // Frontier detail is explainability-only: compute the rich ranking solely
+        // under includeDiagnostics so the runtime image path still pays only for the
+        // string ordering it needs to pick a target (preserves the <1ms guarantee).
+        const visionFrontier: RankedCandidate[] | undefined = includeDiagnostics
+          ? rankSubscriptionWeightedCandidatesFromPool(
+              "default",
+              visionCapable,
+              config.subscription_profile,
+              config.subscription_inventory,
+              agentId,
+              config.routing_mode ?? "balanced",
+              config.routing_modifier,
+            )
+          : undefined;
+        const rankedVision = visionFrontier
+          ? visionFrontier.map((item) => item.candidate)
+          : getSubscriptionWeightedCandidatesFromPool(
+              "default",
+              visionCapable,
+              config.subscription_profile,
+              config.subscription_inventory,
+              agentId,
+              config.routing_mode ?? "balanced",
+              config.routing_modifier,
+            );
         const ordered = rankedVision.length > 0 ? rankedVision : Object.keys(visionCapable);
 
         const targetModel = ordered[0];
@@ -484,6 +500,7 @@ export function resolveRoutingDecision(
             capabilityRejected: [],
             subscriptionRejected: [],
             weightedCandidates: ordered,
+            frontier: visionFrontier,
             rawDecision,
             finalDecision,
             selectedModel: targetModel,

@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions (test, secret-scan, publish, refresh)
+  # current: Dependabot opens PRs that bump each pin forward and rewrites the
+  # trailing `# vX.Y.Z` comment, so pinning to an immutable commit no longer
+  # means missing security patches.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"

@@ -1,4 +1,4 @@
-import type { CronAuditJob, CronAuditReport } from "./cron-audit.js";
+import type { CronAuditItem, CronAuditJob, CronAuditReport } from "./cron-audit.js";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -32,6 +32,13 @@ function normalizeJobIds(jobIds: string[] | undefined): Set<string> | null {
   return new Set(jobIds.map((id) => id.trim()).filter(Boolean));
 }
 
+// Mirror cron-audit's buildItemBase id derivation (cron-audit.ts:360) so a job is
+// paired with the report item that actually describes it.
+function jobKey(job: CronAuditJob): string {
+  const id = typeof job.id === "string" ? job.id.trim() : "";
+  return id || "(unknown)";
+}
+
 export function applyCronAuditPatches(
   jobs: CronAuditJob[],
   report: CronAuditReport,
@@ -41,8 +48,18 @@ export function applyCronAuditPatches(
   const applied: CronApplyDecision[] = [];
   const skipped: CronApplyDecision[] = [];
 
-  const nextJobs = jobs.map((job, index) => {
-    const item = report.items[index];
+  // Pair report items to jobs by stable id rather than array position so a caller
+  // that filters/reorders jobs between audit and apply cannot patch the wrong job.
+  // Same-id duplicates dequeue in order, preserving the well-formed common path.
+  const itemsById = new Map<string, CronAuditItem[]>();
+  for (const item of report.items) {
+    const queue = itemsById.get(item.id) ?? [];
+    queue.push(item);
+    itemsById.set(item.id, queue);
+  }
+
+  const nextJobs = jobs.map((job) => {
+    const item = itemsById.get(jobKey(job))?.shift();
     if (!item) return job;
 
     const decisionBase = {

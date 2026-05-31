@@ -15,14 +15,22 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Generous bound: the downstream install smoke test retries up to 10x at 300s
+    # each (~52min worst case), so a lower cap would false-fail a slow-but-valid
+    # publish. It still stops a genuinely wedged job well under the 6h default.
+    timeout-minutes: 60
     env:
       CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
       CLAWHUB_CLI_VERSION: "0.12.2"
+      # Intentionally "latest": this is a post-publish smoke test whose job is to
+      # confirm the freshly published plugin installs under the OpenClaw users
+      # actually have now. Pinning would let it pass against a stale binary while
+      # real installs break.
       OPENCLAW_VERIFY_VERSION: "latest"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "22"
 
