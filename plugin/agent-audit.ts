@@ -125,7 +125,14 @@ export function inferWorkspaceHintsFromOpenClawConfig(openclawConfig: OpenClawCo
       normalizeString(agent.name),
       normalizeString(agent.description),
     ].filter(Boolean).join(" ");
-    const match = TOOL_HEAVY_HINTS.find((hint) => hint.pattern.test(haystack));
+    // Prefer the pattern matched by the agent ID itself (the strongest, most
+    // deliberate signal); only fall back to scanning name+description when the ID
+    // carries no recognized token. This stops incidental description words (e.g.
+    // "content", "build") from overriding an agent whose ID encodes its role
+    // (e.g. "monitor", "ops-*", "status-*").
+    const match =
+      TOOL_HEAVY_HINTS.find((hint) => hint.pattern.test(id)) ??
+      TOOL_HEAVY_HINTS.find((hint) => hint.pattern.test(haystack));
     if (match) {
       hints[id] = match.categories;
     }
