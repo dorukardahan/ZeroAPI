@@ -77,6 +77,34 @@ assert module.read_key(argparse.Namespace(api_key_file=None)) == "env-key"
 `, [root]);
 });
 
+test("refresh_benchmarks sources benchmark_categories from --output, falling back safely", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-cats-"));
+  runPython(`
+import importlib.util
+import json
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+# When the --output target exists, its benchmark_categories must be the source
+# (not the hardcoded repo snapshot).
+output_path = work_dir / "custom.json"
+output_path.write_text(json.dumps({"benchmark_categories": {"marker": "from-output"}}), encoding="utf-8")
+assert module.read_existing_benchmark_categories(output_path) == {"marker": "from-output"}
+
+# When neither the --output target nor the default exists, degrade to None
+# instead of raising FileNotFoundError (first run to a brand-new path).
+missing_output = work_dir / "does-not-exist.json"
+missing_default = work_dir / "no-default.json"
+assert module.read_existing_benchmark_categories(missing_output, missing_default) is None
+`, [root]);
+});
+
 test("refresh_benchmarks writes benchmarks with atomic replace semantics", () => {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-write-"));
   runPython(`
