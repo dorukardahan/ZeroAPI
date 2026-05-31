@@ -25,6 +25,20 @@
 - Remove a stray NUL byte accidentally introduced into `plugin/classifier.ts` (a regex cache-key
   separator) that made git treat the file as binary — hiding its line-level diffs and excluding it
   from `git diff --check`.
+- `applyCronAuditPatches` now pairs each report item to its job by stable id instead of array
+  position, so a caller that filters or reorders the jobs array between audit and apply can no
+  longer patch the wrong cron job's payload (same-id duplicates still dequeue in order).
+- Agent workspace-hint inference now prefers the pattern matched by the agent id over incidental
+  words in its name/description, so an agent whose id encodes its role (e.g. `monitor`, `ops-*`,
+  `status-*`) is no longer mis-hinted by an earlier-declared pattern that only matched a stray
+  description word (e.g. "content", "deploy").
+- Make `integrations/hermes/vision_aux.py` import its sibling `router` package-relative with an
+  absolute fallback, so it loads both as a top-level script (the test/README path) and as a
+  package submodule (`hermes.vision_aux`), which previously crashed with `ModuleNotFoundError`.
+- `scripts/refresh_benchmarks.py` now sources the round-tripped `benchmark_categories` block from
+  the `--output` target being refreshed (with a safe fallback) instead of always reading the
+  hardcoded repo `benchmarks.json`, which also avoids a `FileNotFoundError` on first run to a new
+  path. Default runs (no `--output`) are byte-identical.
 
 ### Changed
 - Cache compiled keyword regexes on the routing hot path (classifier, vision/continuation scans,
@@ -42,6 +56,12 @@
   `set -o pipefail`) and add `ZEROAPI_DOCTOR_SKIP_RUNTIME` for deterministic runs.
 - CI: use `npm ci` for reproducible installs, pin Python via `actions/setup-python`, and pin
   `gitleaks/gitleaks-action` to an immutable commit SHA (v2.3.9).
+- CI hardening: pin every first-party GitHub Action (`actions/checkout`, `actions/setup-node`,
+  `actions/setup-python`) to an immutable commit SHA across all four workflows, add a
+  `github-actions` Dependabot config so those pins are bumped forward automatically, and give every
+  job an explicit `timeout-minutes` so a hung step cannot run to the 6-hour default. The publish
+  smoke test deliberately keeps `OPENCLAW_VERIFY_VERSION: latest` (it validates installs against
+  the OpenClaw users have now, not a frozen binary).
 - Correct stale product-contract docs: high-risk keywords are diagnostic-only and never block or
   downgrade routing (`routing-policy-spec.md`, `routing-modifiers-spec.md`), and reconcile the
   benchmark-staleness thresholds in `risk-policy.md` with `benchmark-governance.md`.
@@ -51,6 +71,14 @@
   simulator output (`includeDiagnostics` only; never computed on the runtime path), fulfilling the
   explainability-contract "next extension". A fixture-backed doctor smoke test and route-state unit
   tests were added.
+- Extend the frontier diagnostic to the vision-capability-escape route so a screenshot/image turn
+  exposes the same per-candidate detail as a normal route (still `includeDiagnostics`-only via a new
+  `rankSubscriptionWeightedCandidatesFromPool`; the runtime image path is unchanged).
+- Test coverage for previously-untested developer tooling: `scripts/eval.ts` (pure helpers
+  extracted to a side-effect-free `scripts/eval-lib.mjs` and unit-tested), and subprocess
+  regression tests for `scripts/simulate.ts` and `scripts/compare_modifiers.ts` driven against the
+  committed fixture. Added regression tests for cron id-pairing, agent-audit id-priority hinting,
+  the `vision_aux` package import, and `refresh_benchmarks --output` category sourcing.
 
 ## [3.8.36] - 2026-05-28
 
