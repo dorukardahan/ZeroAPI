@@ -369,7 +369,7 @@ export function getSubscriptionWeightedCandidates(
   ).map((item) => item.candidate);
 }
 
-export function getSubscriptionWeightedCandidatesFromPool(
+export function rankSubscriptionWeightedCandidatesFromPool(
   category: TaskCategory,
   availableModels: Record<string, ModelCapabilities>,
   profile: SubscriptionProfile | undefined,
@@ -377,7 +377,7 @@ export function getSubscriptionWeightedCandidatesFromPool(
   agentId: string | undefined,
   routingMode: RoutingMode = "balanced",
   routingModifier?: RoutingModifier,
-): string[] {
+): RankedCandidate[] {
   const candidates = Object.keys(availableModels);
   if (candidates.length === 0) return [];
 
@@ -386,7 +386,7 @@ export function getSubscriptionWeightedCandidatesFromPool(
     fallbacks: candidates.slice(1),
   };
 
-  return getSubscriptionWeightedCandidates(
+  return rankSubscriptionWeightedCandidates(
     category,
     availableModels,
     {
@@ -399,4 +399,24 @@ export function getSubscriptionWeightedCandidatesFromPool(
     routingMode,
     routingModifier,
   );
+}
+
+export function getSubscriptionWeightedCandidatesFromPool(
+  category: TaskCategory,
+  availableModels: Record<string, ModelCapabilities>,
+  profile: SubscriptionProfile | undefined,
+  inventory: SubscriptionInventory | undefined,
+  agentId: string | undefined,
+  routingMode: RoutingMode = "balanced",
+  routingModifier?: RoutingModifier,
+): string[] {
+  return rankSubscriptionWeightedCandidatesFromPool(
+    category,
+    availableModels,
+    profile,
+    inventory,
+    agentId,
+    routingMode,
+    routingModifier,
+  ).map((item) => item.candidate);
 }
