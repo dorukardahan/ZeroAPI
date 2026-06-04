@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.8.37] - 2026-06-05
+
 ### Fixed
 - Restore OpenClaw(TS) <-> Hermes(Python) routing parity across five proven divergences
   (verified by a head-to-head harness, now committed as `integrations/hermes/test_parity.py`):
