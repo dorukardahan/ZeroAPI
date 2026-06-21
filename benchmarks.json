@@ -2,7 +2,7 @@
   "version": "3.8.37",
   "source": "Artificial Analysis Data API v2",
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
-  "fetched": "2026-06-14",
+  "fetched": "2026-06-21",
   "methodology": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
   "note": "Anthropic excluded: Claude subscriptions no longer cover third-party tools as of April 4, 2026. Google excluded: CLI OAuth with third-party tools declared ToS violation as of March 25, 2026. This file is a creator-scoped benchmark reference snapshot, not the exact routeable allowlist. Sources: https://x.com/bcherny/status/2040206440556826908",
   "prompt_options": {
@@ -206,9 +206,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.5",
       "release_date": "2026-04-23",
-      "speed_tps": 74.771,
-      "ttft_seconds": 85.97,
-      "ttfa_seconds": 85.97,
+      "speed_tps": 63.232,
+      "ttft_seconds": 20.861,
+      "ttfa_seconds": 20.861,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -219,8 +219,8 @@
         "family_id": "openai-gpt55-core"
       },
       "benchmarks": {
-        "intelligence": 60.2,
-        "coding": 59.1,
+        "intelligence": 54.8,
+        "coding": 74.9,
         "math": null,
         "tau2": 0.939,
         "terminalbench": 0.606,
@@ -244,9 +244,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 61.503,
-      "ttft_seconds": 15.622,
-      "ttfa_seconds": 15.622,
+      "speed_tps": 59.964,
+      "ttft_seconds": 21.317,
+      "ttfa_seconds": 21.317,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -257,8 +257,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 58.9,
-        "coding": 58.5,
+        "intelligence": 53.1,
+        "coding": 71.6,
         "math": null,
         "tau2": 0.93,
         "terminalbench": 0.598,
@@ -282,9 +282,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.4",
       "release_date": "2026-03-05",
-      "speed_tps": 192.746,
-      "ttft_seconds": 127.13,
-      "ttfa_seconds": 127.13,
+      "speed_tps": 142.049,
+      "ttft_seconds": 113.007,
+      "ttfa_seconds": 113.007,
       "pricing": {
         "price_1m_blended_3_to_1": 5.625,
         "price_1m_input_tokens": 2.5,
@@ -295,8 +295,8 @@
         "family_id": "openai-gpt55-core"
       },
       "benchmarks": {
-        "intelligence": 56.8,
-        "coding": 57.2,
+        "intelligence": 51.4,
+        "coding": 71.1,
         "math": null,
         "tau2": 0.871,
         "terminalbench": 0.576,
@@ -320,9 +320,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 61.508,
-      "ttft_seconds": 9.081,
-      "ttfa_seconds": 9.081,
+      "speed_tps": 53.225,
+      "ttft_seconds": 5.845,
+      "ttfa_seconds": 5.845,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -333,8 +333,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 56.7,
-        "coding": 56.2,
+        "intelligence": 50.4,
+        "coding": 71.5,
         "math": null,
         "tau2": 0.918,
         "terminalbench": 0.576,
@@ -358,9 +358,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.3-codex",
       "release_date": "2026-02-05",
-      "speed_tps": 114.483,
-      "ttft_seconds": 95.099,
-      "ttfa_seconds": 95.099,
+      "speed_tps": 94.868,
+      "ttft_seconds": 67.516,
+      "ttfa_seconds": 67.516,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -371,8 +371,8 @@
         "family_id": "openai-gpt55-core"
       },
       "benchmarks": {
-        "intelligence": 53.6,
-        "coding": 53.1,
+        "intelligence": 44.3,
+        "coding": null,
         "math": null,
         "tau2": 0.86,
         "terminalbench": 0.53,
@@ -389,44 +389,6 @@
       }
     },
     {
-      "name": "GPT-5.2 (xhigh)",
-      "slug": "gpt-5-2",
-      "id": "498862c3-f9ac-49d2-852f-16a02bb0c38f",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-12-11",
-      "speed_tps": 84.7,
-      "ttft_seconds": 122.931,
-      "ttfa_seconds": 122.931,
-      "pricing": {
-        "price_1m_blended_3_to_1": 4.813,
-        "price_1m_input_tokens": 1.75,
-        "price_1m_output_tokens": 14.0
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 51.3,
-        "coding": 48.7,
-        "math": 99.0,
-        "tau2": 0.848,
-        "terminalbench": 0.47,
-        "ifbench": 0.754,
-        "gpqa": 0.903,
-        "lcr": 0.727,
-        "hle": 0.354,
-        "scicode": 0.521,
-        "livecodebench": 0.889,
-        "mmlu_pro": 0.874,
-        "aime_25": 0.99,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "GPT-5.5 (low)",
       "slug": "gpt-5-5-low",
       "id": "c77cfe51-f4a0-4692-9dee-5061ef667f23",
@@ -434,9 +396,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-04-23",
-      "speed_tps": 62.439,
-      "ttft_seconds": 1.973,
-      "ttfa_seconds": 1.973,
+      "speed_tps": 56.835,
+      "ttft_seconds": 1.78,
+      "ttfa_seconds": 1.78,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -447,8 +409,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 50.8,
-        "coding": 52.1,
+        "intelligence": 43.5,
+        "coding": 60.9,
         "math": null,
         "tau2": 0.839,
         "terminalbench": 0.523,
@@ -465,16 +427,16 @@
       }
     },
     {
-      "name": "GPT-5.2 Codex (xhigh)",
-      "slug": "gpt-5-2-codex",
-      "id": "019e86f6-e66b-42d8-8a50-235a06b53003",
+      "name": "GPT-5.2 (xhigh)",
+      "slug": "gpt-5-2",
+      "id": "498862c3-f9ac-49d2-852f-16a02bb0c38f",
       "creator": "OpenAI",
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-12-11",
-      "speed_tps": 141.124,
-      "ttft_seconds": 1.238,
-      "ttfa_seconds": 1.238,
+      "speed_tps": 83.625,
+      "ttft_seconds": 126.264,
+      "ttfa_seconds": 126.264,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -485,8 +447,46 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 49.0,
-        "coding": 43.0,
+        "intelligence": 42.2,
+        "coding": null,
+        "math": 99.0,
+        "tau2": 0.848,
+        "terminalbench": 0.47,
+        "ifbench": 0.754,
+        "gpqa": 0.903,
+        "lcr": 0.727,
+        "hle": 0.354,
+        "scicode": 0.521,
+        "livecodebench": 0.889,
+        "mmlu_pro": 0.874,
+        "aime_25": 0.99,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "GPT-5.2 Codex (xhigh)",
+      "slug": "gpt-5-2-codex",
+      "id": "019e86f6-e66b-42d8-8a50-235a06b53003",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2025-12-11",
+      "speed_tps": 138.778,
+      "ttft_seconds": 1.208,
+      "ttfa_seconds": 1.208,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.813,
+        "price_1m_input_tokens": 1.75,
+        "price_1m_output_tokens": 14.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 40.1,
+        "coding": null,
         "math": null,
         "tau2": 0.921,
         "terminalbench": 0.371,
@@ -510,9 +510,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.4-mini",
       "release_date": "2026-03-17",
-      "speed_tps": 188.743,
-      "ttft_seconds": 11.624,
-      "ttfa_seconds": 11.624,
+      "speed_tps": 179.823,
+      "ttft_seconds": 6.377,
+      "ttfa_seconds": 6.377,
       "pricing": {
         "price_1m_blended_3_to_1": 1.688,
         "price_1m_input_tokens": 0.75,
@@ -523,8 +523,8 @@
         "family_id": "openai-gpt55-core"
       },
       "benchmarks": {
-        "intelligence": 48.9,
-        "coding": 51.5,
+        "intelligence": 40.0,
+        "coding": 56.1,
         "math": null,
         "tau2": 0.833,
         "terminalbench": 0.523,
@@ -548,9 +548,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-05",
-      "speed_tps": 118.218,
-      "ttft_seconds": 1.43,
-      "ttfa_seconds": 1.43,
+      "speed_tps": 114.543,
+      "ttft_seconds": 1.139,
+      "ttfa_seconds": 1.139,
       "pricing": {
         "price_1m_blended_3_to_1": 5.906,
         "price_1m_input_tokens": 2.625,
@@ -561,8 +561,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 47.9,
-        "coding": 45.6,
+        "intelligence": 39.1,
+        "coding": null,
         "math": null,
         "tau2": 0.746,
         "terminalbench": 0.432,
@@ -586,9 +586,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 127.631,
-      "ttft_seconds": 34.528,
-      "ttfa_seconds": 34.528,
+      "speed_tps": 110.471,
+      "ttft_seconds": 47.028,
+      "ttfa_seconds": 47.028,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -599,8 +599,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 47.7,
-        "coding": 44.7,
+        "intelligence": 38.9,
+        "coding": null,
         "math": 94.0,
         "tau2": 0.819,
         "terminalbench": 0.455,
@@ -612,6 +612,44 @@
         "livecodebench": 0.868,
         "mmlu_pro": 0.87,
         "aime_25": 0.94,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "GPT-5.4 nano (xhigh)",
+      "slug": "gpt-5-4-nano",
+      "id": "d4fc3f33-f2b0-4da1-88ee-f1f82bd4de31",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-03-17",
+      "speed_tps": 170.531,
+      "ttft_seconds": 3.381,
+      "ttfa_seconds": 3.381,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.463,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.25
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 38.2,
+        "coding": 56.1,
+        "math": null,
+        "tau2": 0.76,
+        "terminalbench": 0.424,
+        "ifbench": 0.759,
+        "gpqa": 0.817,
+        "lcr": 0.66,
+        "hle": 0.265,
+        "scicode": 0.469,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
         "math_500": null,
         "aime": null
       }
@@ -637,8 +675,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 46.6,
-        "coding": 44.2,
+        "intelligence": 38.0,
+        "coding": null,
         "math": 96.7,
         "tau2": 0.743,
         "terminalbench": 0.432,
@@ -655,44 +693,6 @@
       }
     },
     {
-      "name": "GPT-5 Codex (high)",
-      "slug": "gpt-5-codex",
-      "id": "5d11e7a1-4f70-4e5a-9364-e193761d6757",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-09-23",
-      "speed_tps": 187.643,
-      "ttft_seconds": 15.396,
-      "ttfa_seconds": 15.396,
-      "pricing": {
-        "price_1m_blended_3_to_1": 3.438,
-        "price_1m_input_tokens": 1.25,
-        "price_1m_output_tokens": 10.0
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 44.6,
-        "coding": 38.9,
-        "math": 98.7,
-        "tau2": 0.868,
-        "terminalbench": 0.379,
-        "ifbench": 0.741,
-        "gpqa": 0.837,
-        "lcr": 0.69,
-        "hle": 0.256,
-        "scicode": 0.409,
-        "livecodebench": 0.84,
-        "mmlu_pro": 0.865,
-        "aime_25": 0.987,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "GPT-5 (high)",
       "slug": "gpt-5",
       "id": "48e50f00-1fd1-4acc-b337-61078aa341e6",
@@ -700,9 +700,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 121.983,
-      "ttft_seconds": 83.789,
-      "ttfa_seconds": 83.789,
+      "speed_tps": 102.415,
+      "ttft_seconds": 93.333,
+      "ttfa_seconds": 93.333,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -713,8 +713,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 44.6,
-        "coding": 36.0,
+        "intelligence": 36.1,
+        "coding": null,
         "math": 94.3,
         "tau2": 0.848,
         "terminalbench": 0.326,
@@ -731,36 +731,74 @@
       }
     },
     {
-      "name": "GPT-5.4 nano (xhigh)",
-      "slug": "gpt-5-4-nano",
-      "id": "d4fc3f33-f2b0-4da1-88ee-f1f82bd4de31",
+      "name": "GPT-5 Codex (high)",
+      "slug": "gpt-5-codex",
+      "id": "5d11e7a1-4f70-4e5a-9364-e193761d6757",
       "creator": "OpenAI",
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
-      "release_date": "2026-03-17",
-      "speed_tps": 156.441,
-      "ttft_seconds": 3.246,
-      "ttfa_seconds": 3.246,
+      "release_date": "2025-09-23",
+      "speed_tps": 178.663,
+      "ttft_seconds": 8.015,
+      "ttfa_seconds": 8.015,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.463,
-        "price_1m_input_tokens": 0.2,
-        "price_1m_output_tokens": 1.25
+        "price_1m_blended_3_to_1": 3.438,
+        "price_1m_input_tokens": 1.25,
+        "price_1m_output_tokens": 10.0
       },
       "policy_family": {
         "included": false,
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 44.0,
-        "coding": 43.9,
+        "intelligence": 36.1,
+        "coding": null,
+        "math": 98.7,
+        "tau2": 0.868,
+        "terminalbench": 0.379,
+        "ifbench": 0.741,
+        "gpqa": 0.837,
+        "lcr": 0.69,
+        "hle": 0.256,
+        "scicode": 0.409,
+        "livecodebench": 0.84,
+        "mmlu_pro": 0.865,
+        "aime_25": 0.987,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "GPT-5.5 (Non-reasoning)",
+      "slug": "gpt-5-5-non-reasoning",
+      "id": "6f1a7562-6e96-46ac-af4f-6ba5a7a3da96",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-04-23",
+      "speed_tps": 55.324,
+      "ttft_seconds": 0.836,
+      "ttfa_seconds": 0.836,
+      "pricing": {
+        "price_1m_blended_3_to_1": 11.25,
+        "price_1m_input_tokens": 5.0,
+        "price_1m_output_tokens": 30.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 35.4,
+        "coding": 56.5,
         "math": null,
-        "tau2": 0.76,
-        "terminalbench": 0.424,
-        "ifbench": 0.759,
-        "gpqa": 0.817,
-        "lcr": 0.66,
-        "hle": 0.265,
-        "scicode": 0.469,
+        "tau2": 0.693,
+        "terminalbench": 0.492,
+        "ifbench": 0.461,
+        "gpqa": 0.768,
+        "lcr": 0.563,
+        "hle": 0.126,
+        "scicode": 0.473,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,
@@ -776,9 +814,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 207.413,
-      "ttft_seconds": 4.297,
-      "ttfa_seconds": 4.297,
+      "speed_tps": 187.926,
+      "ttft_seconds": 4.384,
+      "ttfa_seconds": 4.384,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -789,8 +827,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 43.1,
-        "coding": 36.6,
+        "intelligence": 34.7,
+        "coding": null,
         "math": 95.7,
         "tau2": 0.83,
         "terminalbench": 0.348,
@@ -814,9 +852,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 104.845,
-      "ttft_seconds": 41.258,
-      "ttfa_seconds": 41.258,
+      "speed_tps": 87.321,
+      "ttft_seconds": 41.265,
+      "ttfa_seconds": 41.265,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -827,8 +865,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 42.0,
-        "coding": 38.9,
+        "intelligence": 33.7,
+        "coding": null,
         "math": 91.7,
         "tau2": 0.865,
         "terminalbench": 0.379,
@@ -865,8 +903,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 41.8,
-        "coding": 45.1,
+        "intelligence": 33.5,
+        "coding": null,
         "math": null,
         "tau2": 0.494,
         "terminalbench": 0.424,
@@ -890,9 +928,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 91.69,
-      "ttft_seconds": 123.932,
-      "ttfa_seconds": 123.932,
+      "speed_tps": 92.866,
+      "ttft_seconds": 77.061,
+      "ttfa_seconds": 77.061,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -903,8 +941,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 41.2,
-        "coding": 35.3,
+        "intelligence": 33.0,
+        "coding": null,
         "math": 90.7,
         "tau2": 0.684,
         "terminalbench": 0.333,
@@ -921,44 +959,6 @@
       }
     },
     {
-      "name": "GPT-5.5 (Non-reasoning)",
-      "slug": "gpt-5-5-non-reasoning",
-      "id": "6f1a7562-6e96-46ac-af4f-6ba5a7a3da96",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2026-04-23",
-      "speed_tps": 61.539,
-      "ttft_seconds": 0.901,
-      "ttfa_seconds": 0.901,
-      "pricing": {
-        "price_1m_blended_3_to_1": 11.25,
-        "price_1m_input_tokens": 5.0,
-        "price_1m_output_tokens": 30.0
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 40.9,
-        "coding": 48.6,
-        "math": null,
-        "tau2": 0.693,
-        "terminalbench": 0.492,
-        "ifbench": 0.461,
-        "gpqa": 0.768,
-        "lcr": 0.563,
-        "hle": 0.126,
-        "scicode": 0.473,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "o3-pro",
       "slug": "o3-pro",
       "id": "ca04852c-eaae-4881-a208-f9b2ca3b7cd6",
@@ -966,9 +966,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-06-10",
-      "speed_tps": 30.922,
-      "ttft_seconds": 72.56,
-      "ttfa_seconds": 72.56,
+      "speed_tps": 36.023,
+      "ttft_seconds": 59.839,
+      "ttfa_seconds": 59.839,
       "pricing": {
         "price_1m_blended_3_to_1": 35.0,
         "price_1m_input_tokens": 20.0,
@@ -979,7 +979,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 40.7,
+        "intelligence": 32.5,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -1004,9 +1004,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 92.074,
-      "ttft_seconds": 10.696,
-      "ttfa_seconds": 10.696,
+      "speed_tps": 92.581,
+      "ttft_seconds": 10.69,
+      "ttfa_seconds": 10.69,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1017,8 +1017,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 39.2,
-        "coding": 30.7,
+        "intelligence": 31.2,
+        "coding": null,
         "math": 83.0,
         "tau2": 0.842,
         "terminalbench": 0.265,
@@ -1042,9 +1042,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 98.539,
-      "ttft_seconds": 19.637,
-      "ttfa_seconds": 19.637,
+      "speed_tps": 101.524,
+      "ttft_seconds": 15.084,
+      "ttfa_seconds": 15.084,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -1055,8 +1055,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 38.9,
-        "coding": 32.8,
+        "intelligence": 30.9,
+        "coding": null,
         "math": 85.0,
         "tau2": 0.711,
         "terminalbench": 0.288,
@@ -1080,9 +1080,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 218.927,
-      "ttft_seconds": 4.124,
-      "ttfa_seconds": 4.124,
+      "speed_tps": 215.991,
+      "ttft_seconds": 3.949,
+      "ttfa_seconds": 3.949,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -1093,8 +1093,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 38.6,
-        "coding": 36.4,
+        "intelligence": 30.6,
+        "coding": null,
         "math": 91.7,
         "tau2": 0.629,
         "terminalbench": 0.333,
@@ -1118,9 +1118,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-16",
-      "speed_tps": 158.288,
-      "ttft_seconds": 5.443,
-      "ttfa_seconds": 5.443,
+      "speed_tps": 164.683,
+      "ttft_seconds": 5.314,
+      "ttfa_seconds": 5.314,
       "pricing": {
         "price_1m_blended_3_to_1": 3.5,
         "price_1m_input_tokens": 2.0,
@@ -1131,8 +1131,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 38.4,
-        "coding": 38.4,
+        "intelligence": 30.4,
+        "coding": null,
         "math": 88.3,
         "tau2": 0.807,
         "terminalbench": 0.371,
@@ -1156,9 +1156,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 153.596,
-      "ttft_seconds": 3.078,
-      "ttfa_seconds": 3.078,
+      "speed_tps": 165.902,
+      "ttft_seconds": 2.677,
+      "ttfa_seconds": 2.677,
       "pricing": {
         "price_1m_blended_3_to_1": 0.463,
         "price_1m_input_tokens": 0.2,
@@ -1169,8 +1169,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 38.1,
-        "coding": 35.0,
+        "intelligence": 30.2,
+        "coding": null,
         "math": null,
         "tau2": 0.526,
         "terminalbench": 0.333,
@@ -1194,9 +1194,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 183.727,
-      "ttft_seconds": 10.998,
-      "ttfa_seconds": 10.998,
+      "speed_tps": 190.23,
+      "ttft_seconds": 6.073,
+      "ttfa_seconds": 6.073,
       "pricing": {
         "price_1m_blended_3_to_1": 1.688,
         "price_1m_input_tokens": 0.75,
@@ -1207,8 +1207,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 37.7,
-        "coding": 37.5,
+        "intelligence": 29.8,
+        "coding": null,
         "math": null,
         "tau2": 0.365,
         "terminalbench": 0.341,
@@ -1232,9 +1232,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-05",
-      "speed_tps": 119.472,
-      "ttft_seconds": 0.697,
-      "ttfa_seconds": 0.697,
+      "speed_tps": 105.152,
+      "ttft_seconds": 0.694,
+      "ttfa_seconds": 0.694,
       "pricing": {
         "price_1m_blended_3_to_1": 5.906,
         "price_1m_input_tokens": 2.625,
@@ -1245,8 +1245,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 35.4,
-        "coding": 41.0,
+        "intelligence": 27.7,
+        "coding": null,
         "math": null,
         "tau2": 0.351,
         "terminalbench": 0.379,
@@ -1270,9 +1270,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-12-11",
-      "speed_tps": 74.269,
-      "ttft_seconds": 0.753,
-      "ttfa_seconds": 0.753,
+      "speed_tps": 70.407,
+      "ttft_seconds": 0.682,
+      "ttfa_seconds": 0.682,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -1283,8 +1283,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 33.6,
-        "coding": 34.7,
+        "intelligence": 26.0,
+        "coding": null,
         "math": 51.0,
         "tau2": 0.465,
         "terminalbench": 0.318,
@@ -1301,44 +1301,6 @@
       }
     },
     {
-      "name": "gpt-oss-120b (high)",
-      "slug": "gpt-oss-120b",
-      "id": "f0083258-8646-45b8-8082-7aaf6c2ea82a",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-08-05",
-      "speed_tps": 352.612,
-      "ttft_seconds": 0.509,
-      "ttfa_seconds": 6.181,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.262,
-        "price_1m_input_tokens": 0.15,
-        "price_1m_output_tokens": 0.6
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 33.3,
-        "coding": 28.6,
-        "math": 93.4,
-        "tau2": 0.658,
-        "terminalbench": 0.235,
-        "ifbench": 0.69,
-        "gpqa": 0.782,
-        "lcr": 0.507,
-        "hle": 0.185,
-        "scicode": 0.389,
-        "livecodebench": 0.878,
-        "mmlu_pro": 0.808,
-        "aime_25": 0.934,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "o4-mini (high)",
       "slug": "o4-mini",
       "id": "84b49308-6b93-47aa-a4f6-776ee1a1e8cd",
@@ -1346,9 +1308,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-16",
-      "speed_tps": 172.452,
-      "ttft_seconds": 29.178,
-      "ttfa_seconds": 29.178,
+      "speed_tps": 192.154,
+      "ttft_seconds": 19.299,
+      "ttfa_seconds": 19.299,
       "pricing": {
         "price_1m_blended_3_to_1": 1.925,
         "price_1m_input_tokens": 1.1,
@@ -1359,8 +1321,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 33.1,
-        "coding": 25.6,
+        "intelligence": 25.6,
+        "coding": null,
         "math": 90.7,
         "tau2": 0.556,
         "terminalbench": 0.152,
@@ -1377,6 +1339,44 @@
       }
     },
     {
+      "name": "gpt-oss-120b (high)",
+      "slug": "gpt-oss-120b",
+      "id": "f0083258-8646-45b8-8082-7aaf6c2ea82a",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2025-08-05",
+      "speed_tps": 349.887,
+      "ttft_seconds": 0.525,
+      "ttfa_seconds": 6.242,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.262,
+        "price_1m_input_tokens": 0.15,
+        "price_1m_output_tokens": 0.6
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 23.8,
+        "coding": 30.4,
+        "math": 93.4,
+        "tau2": 0.658,
+        "terminalbench": 0.235,
+        "ifbench": 0.69,
+        "gpqa": 0.782,
+        "lcr": 0.507,
+        "hle": 0.185,
+        "scicode": 0.389,
+        "livecodebench": 0.878,
+        "mmlu_pro": 0.808,
+        "aime_25": 0.934,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "o1",
       "slug": "o1",
       "id": "5ad2f60f-ee05-49fd-85a0-cef69aa7cb7b",
@@ -1384,9 +1384,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-12-05",
-      "speed_tps": 130.839,
-      "ttft_seconds": 19.491,
-      "ttfa_seconds": 19.491,
+      "speed_tps": 141.065,
+      "ttft_seconds": 14.575,
+      "ttfa_seconds": 14.575,
       "pricing": {
         "price_1m_blended_3_to_1": 26.25,
         "price_1m_input_tokens": 15.0,
@@ -1397,8 +1397,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 30.7,
-        "coding": 20.5,
+        "intelligence": 23.4,
+        "coding": 39.7,
         "math": null,
         "tau2": 0.626,
         "terminalbench": 0.129,
@@ -1422,9 +1422,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-11-13",
-      "speed_tps": 128.954,
-      "ttft_seconds": 0.67,
-      "ttfa_seconds": 0.67,
+      "speed_tps": 98.346,
+      "ttft_seconds": 0.62,
+      "ttfa_seconds": 0.62,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1435,8 +1435,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 27.4,
-        "coding": 27.3,
+        "intelligence": 20.4,
+        "coding": null,
         "math": 38.0,
         "tau2": 0.465,
         "terminalbench": 0.227,
@@ -1460,9 +1460,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 152.582,
-      "ttft_seconds": 107.328,
-      "ttfa_seconds": 107.328,
+      "speed_tps": 171.974,
+      "ttft_seconds": 73.746,
+      "ttfa_seconds": 73.746,
       "pricing": {
         "price_1m_blended_3_to_1": 0.138,
         "price_1m_input_tokens": 0.05,
@@ -1473,8 +1473,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 26.8,
-        "coding": 20.3,
+        "intelligence": 19.9,
+        "coding": null,
         "math": 83.7,
         "tau2": 0.365,
         "terminalbench": 0.121,
@@ -1498,9 +1498,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-14",
-      "speed_tps": 142.024,
-      "ttft_seconds": 0.536,
-      "ttfa_seconds": 0.536,
+      "speed_tps": 121.759,
+      "ttft_seconds": 0.572,
+      "ttfa_seconds": 0.572,
       "pricing": {
         "price_1m_blended_3_to_1": 3.5,
         "price_1m_input_tokens": 2.0,
@@ -1511,8 +1511,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 26.3,
-        "coding": 21.8,
+        "intelligence": 19.4,
+        "coding": null,
         "math": 34.7,
         "tau2": 0.471,
         "terminalbench": 0.136,
@@ -1536,9 +1536,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 168.392,
-      "ttft_seconds": 44.376,
-      "ttfa_seconds": 44.376,
+      "speed_tps": 168.466,
+      "ttft_seconds": 36.587,
+      "ttfa_seconds": 36.587,
       "pricing": {
         "price_1m_blended_3_to_1": 0.138,
         "price_1m_input_tokens": 0.05,
@@ -1549,8 +1549,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.9,
-        "coding": 22.9,
+        "intelligence": 19.0,
+        "coding": null,
         "math": 78.3,
         "tau2": 0.304,
         "terminalbench": 0.174,
@@ -1574,9 +1574,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-01-31",
-      "speed_tps": 196.799,
-      "ttft_seconds": 7.103,
-      "ttfa_seconds": 7.103,
+      "speed_tps": 216.735,
+      "ttft_seconds": 5.908,
+      "ttfa_seconds": 5.908,
       "pricing": {
         "price_1m_blended_3_to_1": 1.925,
         "price_1m_input_tokens": 1.1,
@@ -1587,8 +1587,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.9,
-        "coding": 17.9,
+        "intelligence": 19.0,
+        "coding": null,
         "math": null,
         "tau2": 0.287,
         "terminalbench": 0.068,
@@ -1625,7 +1625,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.8,
+        "intelligence": 18.9,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -1650,9 +1650,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-01-31",
-      "speed_tps": 223.698,
-      "ttft_seconds": 20.891,
-      "ttfa_seconds": 20.891,
+      "speed_tps": 203.621,
+      "ttft_seconds": 18.223,
+      "ttfa_seconds": 18.223,
       "pricing": {
         "price_1m_blended_3_to_1": 1.925,
         "price_1m_input_tokens": 1.1,
@@ -1663,8 +1663,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.2,
-        "coding": 17.3,
+        "intelligence": 18.4,
+        "coding": 42.1,
         "math": null,
         "tau2": 0.313,
         "terminalbench": 0.061,
@@ -1681,44 +1681,6 @@
       }
     },
     {
-      "name": "gpt-oss-20B (high)",
-      "slug": "gpt-oss-20b",
-      "id": "36f73aaf-d38a-4b56-a2b3-d04d17186910",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2025-08-05",
-      "speed_tps": 252.628,
-      "ttft_seconds": 0.489,
-      "ttfa_seconds": 8.406,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.088,
-        "price_1m_input_tokens": 0.05,
-        "price_1m_output_tokens": 0.2
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 24.5,
-        "coding": 18.5,
-        "math": 89.3,
-        "tau2": 0.602,
-        "terminalbench": 0.106,
-        "ifbench": 0.651,
-        "gpqa": 0.688,
-        "lcr": 0.307,
-        "hle": 0.098,
-        "scicode": 0.344,
-        "livecodebench": 0.777,
-        "mmlu_pro": 0.748,
-        "aime_25": 0.893,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "gpt-oss-120b (low)",
       "slug": "gpt-oss-120b-low",
       "id": "c99f3bde-7c08-4de8-bd5c-8ee9123ebffa",
@@ -1726,9 +1688,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 362.181,
-      "ttft_seconds": 0.483,
-      "ttfa_seconds": 6.005,
+      "speed_tps": 359.073,
+      "ttft_seconds": 0.468,
+      "ttfa_seconds": 6.037,
       "pricing": {
         "price_1m_blended_3_to_1": 0.262,
         "price_1m_input_tokens": 0.15,
@@ -1739,8 +1701,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 24.5,
-        "coding": 15.5,
+        "intelligence": 17.7,
+        "coding": null,
         "math": 66.7,
         "tau2": 0.45,
         "terminalbench": 0.053,
@@ -1764,9 +1726,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 152.937,
-      "ttft_seconds": 0.488,
-      "ttfa_seconds": 0.488,
+      "speed_tps": 160.146,
+      "ttft_seconds": 0.497,
+      "ttfa_seconds": 0.497,
       "pricing": {
         "price_1m_blended_3_to_1": 0.463,
         "price_1m_input_tokens": 0.2,
@@ -1777,8 +1739,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 24.4,
-        "coding": 27.9,
+        "intelligence": 17.6,
+        "coding": null,
         "math": null,
         "tau2": 0.348,
         "terminalbench": 0.242,
@@ -1802,9 +1764,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 90.316,
-      "ttft_seconds": 0.955,
-      "ttfa_seconds": 0.955,
+      "speed_tps": 69.87,
+      "ttft_seconds": 0.813,
+      "ttfa_seconds": 0.813,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1815,8 +1777,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.9,
-        "coding": 25.0,
+        "intelligence": 17.2,
+        "coding": null,
         "math": 31.7,
         "tau2": 0.67,
         "terminalbench": 0.182,
@@ -1853,7 +1815,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.7,
+        "intelligence": 17.0,
         "coding": 34.0,
         "math": null,
         "tau2": null,
@@ -1878,9 +1840,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-03-17",
-      "speed_tps": 183.871,
-      "ttft_seconds": 0.559,
-      "ttfa_seconds": 0.559,
+      "speed_tps": 169.192,
+      "ttft_seconds": 0.53,
+      "ttfa_seconds": 0.53,
       "pricing": {
         "price_1m_blended_3_to_1": 1.688,
         "price_1m_input_tokens": 0.75,
@@ -1891,8 +1853,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.3,
-        "coding": 25.3,
+        "intelligence": 16.6,
+        "coding": null,
         "math": null,
         "tau2": 0.234,
         "terminalbench": 0.182,
@@ -1916,9 +1878,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-14",
-      "speed_tps": 98.63,
-      "ttft_seconds": 0.523,
-      "ttfa_seconds": 0.523,
+      "speed_tps": 86.31,
+      "ttft_seconds": 0.55,
+      "ttfa_seconds": 0.55,
       "pricing": {
         "price_1m_blended_3_to_1": 0.7,
         "price_1m_input_tokens": 0.4,
@@ -1929,8 +1891,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 22.9,
-        "coding": 18.5,
+        "intelligence": 16.3,
+        "coding": null,
         "math": 46.3,
         "tau2": 0.529,
         "terminalbench": 0.076,
@@ -1954,9 +1916,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 189.828,
-      "ttft_seconds": 0.495,
-      "ttfa_seconds": 0.495,
+      "speed_tps": 181.762,
+      "ttft_seconds": 0.486,
+      "ttfa_seconds": 0.486,
       "pricing": {
         "price_1m_blended_3_to_1": 3.438,
         "price_1m_input_tokens": 1.25,
@@ -1967,8 +1929,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 21.8,
-        "coding": 21.2,
+        "intelligence": 15.3,
+        "coding": null,
         "math": 48.3,
         "tau2": null,
         "terminalbench": 0.129,
@@ -1985,19 +1947,19 @@
       }
     },
     {
-      "name": "gpt-oss-20B (low)",
-      "slug": "gpt-oss-20b-low",
-      "id": "16149b9c-a1e9-4669-a5cb-ff3c00d78f89",
+      "name": "gpt-oss-20B (high)",
+      "slug": "gpt-oss-20b",
+      "id": "36f73aaf-d38a-4b56-a2b3-d04d17186910",
       "creator": "OpenAI",
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 258.63,
-      "ttft_seconds": 0.442,
-      "ttfa_seconds": 8.175,
+      "speed_tps": 237.458,
+      "ttft_seconds": 0.553,
+      "ttfa_seconds": 8.976,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.095,
-        "price_1m_input_tokens": 0.06,
+        "price_1m_blended_3_to_1": 0.088,
+        "price_1m_input_tokens": 0.05,
         "price_1m_output_tokens": 0.2
       },
       "policy_family": {
@@ -2005,19 +1967,19 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.8,
-        "coding": 14.4,
-        "math": 62.3,
-        "tau2": 0.503,
-        "terminalbench": 0.045,
-        "ifbench": 0.578,
-        "gpqa": 0.611,
-        "lcr": 0.31,
-        "hle": 0.051,
-        "scicode": 0.34,
-        "livecodebench": 0.652,
-        "mmlu_pro": 0.718,
-        "aime_25": 0.623,
+        "intelligence": 14.9,
+        "coding": 20.7,
+        "math": 89.3,
+        "tau2": 0.602,
+        "terminalbench": 0.106,
+        "ifbench": 0.651,
+        "gpqa": 0.688,
+        "lcr": 0.307,
+        "hle": 0.098,
+        "scicode": 0.344,
+        "livecodebench": 0.777,
+        "mmlu_pro": 0.748,
+        "aime_25": 0.893,
         "math_500": null,
         "aime": null
       }
@@ -2030,9 +1992,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 99.692,
-      "ttft_seconds": 0.745,
-      "ttfa_seconds": 0.745,
+      "speed_tps": 98.145,
+      "ttft_seconds": 0.683,
+      "ttfa_seconds": 0.683,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -2043,8 +2005,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.7,
-        "coding": 21.9,
+        "intelligence": 14.3,
+        "coding": null,
         "math": 46.7,
         "tau2": 0.319,
         "terminalbench": 0.144,
@@ -2056,6 +2018,44 @@
         "livecodebench": 0.545,
         "mmlu_pro": 0.775,
         "aime_25": 0.467,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "gpt-oss-20B (low)",
+      "slug": "gpt-oss-20b-low",
+      "id": "16149b9c-a1e9-4669-a5cb-ff3c00d78f89",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2025-08-05",
+      "speed_tps": 254.387,
+      "ttft_seconds": 0.505,
+      "ttfa_seconds": 8.367,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.095,
+        "price_1m_input_tokens": 0.06,
+        "price_1m_output_tokens": 0.2
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 14.3,
+        "coding": null,
+        "math": 62.3,
+        "tau2": 0.503,
+        "terminalbench": 0.045,
+        "ifbench": 0.578,
+        "gpqa": 0.611,
+        "lcr": 0.31,
+        "hle": 0.051,
+        "scicode": 0.34,
+        "livecodebench": 0.652,
+        "mmlu_pro": 0.718,
+        "aime_25": 0.623,
         "math_500": null,
         "aime": null
       }
@@ -2081,7 +2081,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.4,
+        "intelligence": 14.0,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -2119,7 +2119,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.0,
+        "intelligence": 13.6,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -2134,44 +2134,6 @@
         "aime_25": null,
         "math_500": null,
         "aime": null
-      }
-    },
-    {
-      "name": "GPT-4o (Aug '24)",
-      "slug": "gpt-4o-2024-08-06",
-      "id": "8c1be908-67b6-4cf4-ba08-83ddbe44fde3",
-      "creator": "OpenAI",
-      "openclaw_provider": "openai-codex",
-      "openclaw_model": null,
-      "release_date": "2024-08-06",
-      "speed_tps": 109.858,
-      "ttft_seconds": 0.526,
-      "ttfa_seconds": 0.526,
-      "pricing": {
-        "price_1m_blended_3_to_1": 4.375,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 10.0
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 18.6,
-        "coding": 16.6,
-        "math": null,
-        "tau2": 0.289,
-        "terminalbench": 0.083,
-        "ifbench": 0.36,
-        "gpqa": 0.521,
-        "lcr": 0.35,
-        "hle": 0.029,
-        "scicode": 0.331,
-        "livecodebench": 0.317,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": 0.795,
-        "aime": 0.117
       }
     },
     {
@@ -2195,7 +2157,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 18.6,
+        "intelligence": 12.3,
         "coding": null,
         "math": 25.7,
         "tau2": null,
@@ -2220,9 +2182,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-11-20",
-      "speed_tps": 183.574,
-      "ttft_seconds": 0.481,
-      "ttfa_seconds": 0.481,
+      "speed_tps": 210.091,
+      "ttft_seconds": 0.479,
+      "ttfa_seconds": 0.479,
       "pricing": {
         "price_1m_blended_3_to_1": 4.375,
         "price_1m_input_tokens": 2.5,
@@ -2233,8 +2195,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 17.3,
-        "coding": 16.7,
+        "intelligence": 11.2,
+        "coding": null,
         "math": 6.0,
         "tau2": 0.251,
         "terminalbench": 0.083,
@@ -2251,6 +2213,44 @@
       }
     },
     {
+      "name": "GPT-4o (Aug '24)",
+      "slug": "gpt-4o-2024-08-06",
+      "id": "8c1be908-67b6-4cf4-ba08-83ddbe44fde3",
+      "creator": "OpenAI",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2024-08-06",
+      "speed_tps": 108.307,
+      "ttft_seconds": 0.582,
+      "ttfa_seconds": 0.582,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.375,
+        "price_1m_input_tokens": 2.5,
+        "price_1m_output_tokens": 10.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 9.6,
+        "coding": null,
+        "math": null,
+        "tau2": 0.289,
+        "terminalbench": 0.083,
+        "ifbench": 0.36,
+        "gpqa": 0.521,
+        "lcr": 0.35,
+        "hle": 0.029,
+        "scicode": 0.331,
+        "livecodebench": 0.317,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": 0.795,
+        "aime": 0.117
+      }
+    },
+    {
       "name": "GPT-4o (May '24)",
       "slug": "gpt-4o-2024-05-13",
       "id": "e98e911e-9fb2-4a9a-826e-3d681d0cdca8",
@@ -2258,9 +2258,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-05-13",
-      "speed_tps": 111.347,
-      "ttft_seconds": 0.545,
-      "ttfa_seconds": 0.545,
+      "speed_tps": 104.36,
+      "ttft_seconds": 0.525,
+      "ttfa_seconds": 0.525,
       "pricing": {
         "price_1m_blended_3_to_1": 7.5,
         "price_1m_input_tokens": 5.0,
@@ -2271,7 +2271,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 14.5,
+        "intelligence": 8.6,
         "coding": 24.2,
         "math": null,
         "tau2": null,
@@ -2309,7 +2309,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 14.1,
+        "intelligence": 8.2,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -2334,9 +2334,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-07",
-      "speed_tps": 162.2,
-      "ttft_seconds": 0.687,
-      "ttfa_seconds": 0.687,
+      "speed_tps": 169.187,
+      "ttft_seconds": 0.624,
+      "ttfa_seconds": 0.624,
       "pricing": {
         "price_1m_blended_3_to_1": 0.138,
         "price_1m_input_tokens": 0.05,
@@ -2347,8 +2347,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.8,
-        "coding": 14.2,
+        "intelligence": 8.0,
+        "coding": null,
         "math": 27.3,
         "tau2": 0.257,
         "terminalbench": 0.068,
@@ -2372,9 +2372,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2023-11-06",
-      "speed_tps": 31.847,
-      "ttft_seconds": 1.455,
-      "ttfa_seconds": 1.455,
+      "speed_tps": 37.833,
+      "ttft_seconds": 1.46,
+      "ttfa_seconds": 1.46,
       "pricing": {
         "price_1m_blended_3_to_1": 15.0,
         "price_1m_input_tokens": 10.0,
@@ -2385,7 +2385,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.7,
+        "intelligence": 7.9,
         "coding": 21.5,
         "math": null,
         "tau2": null,
@@ -2410,9 +2410,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-14",
-      "speed_tps": 149.504,
-      "ttft_seconds": 0.412,
-      "ttfa_seconds": 0.412,
+      "speed_tps": 193.745,
+      "ttft_seconds": 0.505,
+      "ttfa_seconds": 0.505,
       "pricing": {
         "price_1m_blended_3_to_1": 0.175,
         "price_1m_input_tokens": 0.1,
@@ -2423,8 +2423,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.0,
-        "coding": 11.2,
+        "intelligence": 7.3,
+        "coding": null,
         "math": 24.0,
         "tau2": 0.173,
         "terminalbench": 0.038,
@@ -2448,9 +2448,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2023-03-14",
-      "speed_tps": 36.775,
-      "ttft_seconds": 0.992,
-      "ttfa_seconds": 0.992,
+      "speed_tps": 38.355,
+      "ttft_seconds": 1.22,
+      "ttfa_seconds": 1.22,
       "pricing": {
         "price_1m_blended_3_to_1": 37.5,
         "price_1m_input_tokens": 30.0,
@@ -2461,7 +2461,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.8,
+        "intelligence": 7.0,
         "coding": 13.1,
         "math": null,
         "tau2": null,
@@ -2486,9 +2486,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2024-07-18",
-      "speed_tps": 63.459,
-      "ttft_seconds": 0.508,
-      "ttfa_seconds": 0.508,
+      "speed_tps": 83.067,
+      "ttft_seconds": 0.502,
+      "ttfa_seconds": 0.502,
       "pricing": {
         "price_1m_blended_3_to_1": 0.262,
         "price_1m_input_tokens": 0.15,
@@ -2499,7 +2499,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.6,
+        "intelligence": 6.9,
         "coding": null,
         "math": 14.7,
         "tau2": null,
@@ -2524,9 +2524,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2022-11-30",
-      "speed_tps": 140.677,
-      "ttft_seconds": 0.869,
-      "ttfa_seconds": 0.869,
+      "speed_tps": 157.075,
+      "ttft_seconds": 0.684,
+      "ttfa_seconds": 0.684,
       "pricing": {
         "price_1m_blended_3_to_1": 0.75,
         "price_1m_input_tokens": 0.5,
@@ -2537,7 +2537,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 9.0,
+        "intelligence": 3.6,
         "coding": 10.7,
         "math": null,
         "tau2": null,
@@ -2676,9 +2676,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2.6",
       "release_date": "2026-04-20",
-      "speed_tps": 40.768,
-      "ttft_seconds": 1.272,
-      "ttfa_seconds": 110.45,
+      "speed_tps": 48.122,
+      "ttft_seconds": 1.127,
+      "ttfa_seconds": 93.621,
       "pricing": {
         "price_1m_blended_3_to_1": 1.712,
         "price_1m_input_tokens": 0.95,
@@ -2689,8 +2689,8 @@
         "family_id": "kimi-k2-core"
       },
       "benchmarks": {
-        "intelligence": 53.9,
-        "coding": 47.1,
+        "intelligence": 42.8,
+        "coding": 56.0,
         "math": null,
         "tau2": 0.959,
         "terminalbench": 0.439,
@@ -2707,6 +2707,44 @@
       }
     },
     {
+      "name": "Kimi K2.7 Code",
+      "slug": "kimi-k2-7-code",
+      "id": "8d0cb231-7303-452c-9923-a9620b948475",
+      "creator": "Kimi",
+      "openclaw_provider": "moonshot",
+      "openclaw_model": null,
+      "release_date": "2026-06-12",
+      "speed_tps": 52.982,
+      "ttft_seconds": 1.203,
+      "ttfa_seconds": 43.273,
+      "pricing": {
+        "price_1m_blended_3_to_1": 1.712,
+        "price_1m_input_tokens": 0.95,
+        "price_1m_output_tokens": 4.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 41.9,
+        "coding": 60.8,
+        "math": null,
+        "tau2": 0.901,
+        "terminalbench": 0.447,
+        "ifbench": 0.631,
+        "gpqa": 0.896,
+        "lcr": 0.663,
+        "hle": 0.328,
+        "scicode": 0.475,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Kimi K2.5 (Reasoning)",
       "slug": "kimi-k2-5",
       "id": "a550ffca-f89e-4381-ade6-a85dc6a1fb4c",
@@ -2714,9 +2752,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2.5",
       "release_date": "2026-01-27",
-      "speed_tps": 42.354,
-      "ttft_seconds": 1.245,
-      "ttfa_seconds": 71.322,
+      "speed_tps": 53.294,
+      "ttft_seconds": 1.222,
+      "ttfa_seconds": 56.913,
       "pricing": {
         "price_1m_blended_3_to_1": 1.185,
         "price_1m_input_tokens": 0.58,
@@ -2727,8 +2765,8 @@
         "family_id": "kimi-k2-core"
       },
       "benchmarks": {
-        "intelligence": 46.8,
-        "coding": 39.6,
+        "intelligence": 38.1,
+        "coding": null,
         "math": null,
         "tau2": 0.959,
         "terminalbench": 0.348,
@@ -2752,9 +2790,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2026-04-20",
-      "speed_tps": 36.737,
-      "ttft_seconds": 1.42,
-      "ttfa_seconds": 1.42,
+      "speed_tps": 50.734,
+      "ttft_seconds": 1.201,
+      "ttfa_seconds": 1.201,
       "pricing": {
         "price_1m_blended_3_to_1": 1.712,
         "price_1m_input_tokens": 0.95,
@@ -2765,8 +2803,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 42.9,
-        "coding": 38.4,
+        "intelligence": 34.6,
+        "coding": null,
         "math": null,
         "tau2": 0.939,
         "terminalbench": 0.379,
@@ -2790,9 +2828,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2-thinking",
       "release_date": "2025-11-06",
-      "speed_tps": 125.392,
-      "ttft_seconds": 0.909,
-      "ttfa_seconds": 16.859,
+      "speed_tps": 145.78,
+      "ttft_seconds": 0.844,
+      "ttfa_seconds": 14.563,
       "pricing": {
         "price_1m_blended_3_to_1": 1.075,
         "price_1m_input_tokens": 0.6,
@@ -2803,8 +2841,8 @@
         "family_id": "kimi-k2-core"
       },
       "benchmarks": {
-        "intelligence": 40.9,
-        "coding": 34.8,
+        "intelligence": 32.7,
+        "coding": null,
         "math": 94.7,
         "tau2": 0.93,
         "terminalbench": 0.311,
@@ -2828,9 +2866,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2026-01-27",
-      "speed_tps": 39.305,
-      "ttft_seconds": 1.278,
-      "ttfa_seconds": 1.278,
+      "speed_tps": 46.897,
+      "ttft_seconds": 1.185,
+      "ttfa_seconds": 1.185,
       "pricing": {
         "price_1m_blended_3_to_1": 1.2,
         "price_1m_input_tokens": 0.6,
@@ -2841,8 +2879,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 37.3,
-        "coding": 25.8,
+        "intelligence": 29.4,
+        "coding": null,
         "math": null,
         "tau2": 0.813,
         "terminalbench": 0.189,
@@ -2866,7 +2904,7 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2025-09-05",
-      "speed_tps": 24.172,
+      "speed_tps": 26.182,
       "ttft_seconds": 1.509,
       "ttfa_seconds": 1.509,
       "pricing": {
@@ -2879,8 +2917,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 30.9,
-        "coding": 25.9,
+        "intelligence": 23.5,
+        "coding": null,
         "math": 57.3,
         "tau2": 0.734,
         "terminalbench": 0.235,
@@ -2904,9 +2942,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2025-07-11",
-      "speed_tps": 24.86,
-      "ttft_seconds": 1.548,
-      "ttfa_seconds": 1.548,
+      "speed_tps": 25.611,
+      "ttft_seconds": 1.525,
+      "ttfa_seconds": 1.525,
       "pricing": {
         "price_1m_blended_3_to_1": 1.039,
         "price_1m_input_tokens": 0.585,
@@ -2917,8 +2955,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 26.3,
-        "coding": 22.1,
+        "intelligence": 19.4,
+        "coding": null,
         "math": 57.0,
         "tau2": 0.611,
         "terminalbench": 0.159,
@@ -2955,8 +2993,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 14.4,
-        "coding": 14.2,
+        "intelligence": 8.5,
+        "coding": null,
         "math": 36.3,
         "tau2": null,
         "terminalbench": 0.114,
@@ -2973,6 +3011,44 @@
       }
     },
     {
+      "name": "GLM-5.2 (max)",
+      "slug": "glm-5-2",
+      "id": "f7a4ea75-e548-4069-80d4-9be8bc7c009b",
+      "creator": "Z AI",
+      "openclaw_provider": "zai",
+      "openclaw_model": null,
+      "release_date": "2026-06-16",
+      "speed_tps": 84.512,
+      "ttft_seconds": 1.079,
+      "ttfa_seconds": 24.744,
+      "pricing": {
+        "price_1m_blended_3_to_1": 2.15,
+        "price_1m_input_tokens": 1.4,
+        "price_1m_output_tokens": 4.4
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 51.1,
+        "coding": 68.8,
+        "math": null,
+        "tau2": 0.991,
+        "terminalbench": 0.508,
+        "ifbench": 0.733,
+        "gpqa": 0.895,
+        "lcr": 0.713,
+        "hle": 0.401,
+        "scicode": 0.505,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "GLM-5.1 (Reasoning)",
       "slug": "glm-5-1",
       "id": "5aa1c578-af76-4b91-8699-cdd43582b3af",
@@ -2980,9 +3056,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-5.1",
       "release_date": "2026-04-07",
-      "speed_tps": 73.969,
-      "ttft_seconds": 0.819,
-      "ttfa_seconds": 52.071,
+      "speed_tps": 102.544,
+      "ttft_seconds": 0.787,
+      "ttfa_seconds": 37.757,
       "pricing": {
         "price_1m_blended_3_to_1": 2.15,
         "price_1m_input_tokens": 1.4,
@@ -2993,8 +3069,8 @@
         "family_id": "zai-glm-core"
       },
       "benchmarks": {
-        "intelligence": 51.4,
-        "coding": 43.4,
+        "intelligence": 40.2,
+        "coding": 55.8,
         "math": null,
         "tau2": 0.977,
         "terminalbench": 0.432,
@@ -3018,9 +3094,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-5",
       "release_date": "2026-02-11",
-      "speed_tps": 80.202,
-      "ttft_seconds": 0.722,
-      "ttfa_seconds": 39.437,
+      "speed_tps": 79.797,
+      "ttft_seconds": 0.846,
+      "ttfa_seconds": 39.758,
       "pricing": {
         "price_1m_blended_3_to_1": 1.55,
         "price_1m_input_tokens": 1.0,
@@ -3031,8 +3107,8 @@
         "family_id": "zai-glm-core"
       },
       "benchmarks": {
-        "intelligence": 49.8,
-        "coding": 44.2,
+        "intelligence": 39.5,
+        "coding": null,
         "math": null,
         "tau2": 0.982,
         "terminalbench": 0.432,
@@ -3069,8 +3145,8 @@
         "family_id": "zai-glm-core"
       },
       "benchmarks": {
-        "intelligence": 46.8,
-        "coding": 36.8,
+        "intelligence": 38.1,
+        "coding": null,
         "math": null,
         "tau2": 0.985,
         "terminalbench": 0.333,
@@ -3094,9 +3170,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-04-07",
-      "speed_tps": 69.607,
-      "ttft_seconds": 0.754,
-      "ttfa_seconds": 0.754,
+      "speed_tps": 57.614,
+      "ttft_seconds": 0.995,
+      "ttfa_seconds": 0.995,
       "pricing": {
         "price_1m_blended_3_to_1": 2.15,
         "price_1m_input_tokens": 1.4,
@@ -3107,8 +3183,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 43.8,
-        "coding": 35.8,
+        "intelligence": 35.4,
+        "coding": null,
         "math": null,
         "tau2": 0.971,
         "terminalbench": 0.356,
@@ -3145,8 +3221,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 42.9,
-        "coding": 36.2,
+        "intelligence": 34.5,
+        "coding": null,
         "math": null,
         "tau2": 0.985,
         "terminalbench": 0.326,
@@ -3170,9 +3246,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-22",
-      "speed_tps": 111.438,
-      "ttft_seconds": 0.684,
-      "ttfa_seconds": 18.631,
+      "speed_tps": 117.394,
+      "ttft_seconds": 0.585,
+      "ttfa_seconds": 17.622,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3183,8 +3259,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 42.1,
-        "coding": 36.3,
+        "intelligence": 33.8,
+        "coding": null,
         "math": 95.0,
         "tau2": 0.959,
         "terminalbench": 0.318,
@@ -3208,9 +3284,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-02-11",
-      "speed_tps": 69.571,
-      "ttft_seconds": 1.205,
-      "ttfa_seconds": 1.205,
+      "speed_tps": 66.774,
+      "ttft_seconds": 1.139,
+      "ttfa_seconds": 1.139,
       "pricing": {
         "price_1m_blended_3_to_1": 1.55,
         "price_1m_input_tokens": 1.0,
@@ -3221,8 +3297,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 40.6,
-        "coding": 39.0,
+        "intelligence": 32.4,
+        "coding": null,
         "math": null,
         "tau2": 0.974,
         "terminalbench": 0.394,
@@ -3246,9 +3322,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-22",
-      "speed_tps": 108.817,
-      "ttft_seconds": 0.726,
-      "ttfa_seconds": 0.726,
+      "speed_tps": 117.676,
+      "ttft_seconds": 0.578,
+      "ttfa_seconds": 0.578,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3259,8 +3335,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 34.2,
-        "coding": 32.0,
+        "intelligence": 26.6,
+        "coding": null,
         "math": 48.0,
         "tau2": 0.942,
         "terminalbench": 0.303,
@@ -3284,9 +3360,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-09-30",
-      "speed_tps": 47.741,
-      "ttft_seconds": 1.497,
-      "ttfa_seconds": 43.39,
+      "speed_tps": 57.227,
+      "ttft_seconds": 1.09,
+      "ttfa_seconds": 36.039,
       "pricing": {
         "price_1m_blended_3_to_1": 0.963,
         "price_1m_input_tokens": 0.55,
@@ -3297,8 +3373,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 32.5,
-        "coding": 29.5,
+        "intelligence": 25.1,
+        "coding": null,
         "math": 86.0,
         "tau2": 0.705,
         "terminalbench": 0.25,
@@ -3322,9 +3398,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-09-30",
-      "speed_tps": 61.677,
-      "ttft_seconds": 1.798,
-      "ttfa_seconds": 1.798,
+      "speed_tps": 59.039,
+      "ttft_seconds": 1.684,
+      "ttfa_seconds": 1.684,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3335,8 +3411,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 30.2,
-        "coding": 30.2,
+        "intelligence": 23.0,
+        "coding": null,
         "math": 44.3,
         "tau2": 0.769,
         "terminalbench": 0.288,
@@ -3360,9 +3436,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-4.7-flash",
       "release_date": "2026-01-19",
-      "speed_tps": 83.864,
-      "ttft_seconds": 0.895,
-      "ttfa_seconds": 24.743,
+      "speed_tps": 84.719,
+      "ttft_seconds": 0.919,
+      "ttfa_seconds": 24.526,
       "pricing": {
         "price_1m_blended_3_to_1": 0.153,
         "price_1m_input_tokens": 0.07,
@@ -3373,8 +3449,8 @@
         "family_id": "zai-glm-core"
       },
       "benchmarks": {
-        "intelligence": 30.1,
-        "coding": 25.9,
+        "intelligence": 22.9,
+        "coding": null,
         "math": null,
         "tau2": 0.988,
         "terminalbench": 0.22,
@@ -3398,9 +3474,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-07-28",
-      "speed_tps": 53.077,
-      "ttft_seconds": 0.934,
-      "ttfa_seconds": 38.615,
+      "speed_tps": 51.585,
+      "ttft_seconds": 1.428,
+      "ttfa_seconds": 40.199,
       "pricing": {
         "price_1m_blended_3_to_1": 1.0,
         "price_1m_input_tokens": 0.6,
@@ -3411,8 +3487,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 26.4,
-        "coding": 26.3,
+        "intelligence": 19.5,
+        "coding": null,
         "math": 73.7,
         "tau2": 0.43,
         "terminalbench": 0.22,
@@ -3436,9 +3512,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-08",
-      "speed_tps": 81.552,
-      "ttft_seconds": 1.318,
-      "ttfa_seconds": 25.843,
+      "speed_tps": 68.622,
+      "ttft_seconds": 1.036,
+      "ttfa_seconds": 30.181,
       "pricing": {
         "price_1m_blended_3_to_1": 0.45,
         "price_1m_input_tokens": 0.3,
@@ -3449,8 +3525,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.4,
-        "coding": 19.7,
+        "intelligence": 16.8,
+        "coding": null,
         "math": 85.3,
         "tau2": 0.316,
         "terminalbench": 0.144,
@@ -3474,9 +3550,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-07-28",
-      "speed_tps": 83.795,
-      "ttft_seconds": 1.573,
-      "ttfa_seconds": 25.441,
+      "speed_tps": 84.112,
+      "ttft_seconds": 1.538,
+      "ttfa_seconds": 25.316,
       "pricing": {
         "price_1m_blended_3_to_1": 0.372,
         "price_1m_input_tokens": 0.17,
@@ -3487,8 +3563,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.2,
-        "coding": 23.8,
+        "intelligence": 16.5,
+        "coding": null,
         "math": 80.7,
         "tau2": 0.465,
         "terminalbench": 0.205,
@@ -3512,9 +3588,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-01-19",
-      "speed_tps": 92.026,
-      "ttft_seconds": 1.277,
-      "ttfa_seconds": 1.277,
+      "speed_tps": 158.508,
+      "ttft_seconds": 1.133,
+      "ttfa_seconds": 1.133,
       "pricing": {
         "price_1m_blended_3_to_1": 0.153,
         "price_1m_input_tokens": 0.07,
@@ -3525,8 +3601,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 22.1,
-        "coding": 11.0,
+        "intelligence": 15.5,
+        "coding": null,
         "math": null,
         "tau2": 0.918,
         "terminalbench": 0.038,
@@ -3550,9 +3626,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-12-08",
-      "speed_tps": 82.157,
-      "ttft_seconds": 1.113,
-      "ttfa_seconds": 1.113,
+      "speed_tps": 68.41,
+      "ttft_seconds": 1.19,
+      "ttfa_seconds": 1.19,
       "pricing": {
         "price_1m_blended_3_to_1": 0.45,
         "price_1m_input_tokens": 0.3,
@@ -3563,8 +3639,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 17.1,
-        "coding": 11.1,
+        "intelligence": 11.0,
+        "coding": null,
         "math": 26.3,
         "tau2": 0.307,
         "terminalbench": 0.03,
@@ -3588,9 +3664,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-08-11",
-      "speed_tps": 18.901,
-      "ttft_seconds": 3.357,
-      "ttfa_seconds": 109.17,
+      "speed_tps": 25.63,
+      "ttft_seconds": 1.111,
+      "ttfa_seconds": 79.145,
       "pricing": {
         "price_1m_blended_3_to_1": 0.9,
         "price_1m_input_tokens": 0.6,
@@ -3601,8 +3677,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 15.1,
-        "coding": 10.9,
+        "intelligence": 9.1,
+        "coding": null,
         "math": 73.0,
         "tau2": 0.225,
         "terminalbench": 0.053,
@@ -3626,9 +3702,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2025-08-11",
-      "speed_tps": 31.722,
-      "ttft_seconds": 33.307,
-      "ttfa_seconds": 33.307,
+      "speed_tps": 36.018,
+      "ttft_seconds": 48.926,
+      "ttfa_seconds": 48.926,
       "pricing": {
         "price_1m_blended_3_to_1": 0.9,
         "price_1m_input_tokens": 0.6,
@@ -3639,8 +3715,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.7,
-        "coding": 10.8,
+        "intelligence": 7.0,
+        "coding": null,
         "math": 15.3,
         "tau2": 0.196,
         "terminalbench": 0.068,
@@ -3664,9 +3740,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2026-06-01",
-      "speed_tps": 56.697,
-      "ttft_seconds": 2.283,
-      "ttfa_seconds": 37.558,
+      "speed_tps": 52.987,
+      "ttft_seconds": 1.98,
+      "ttfa_seconds": 39.724,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3677,8 +3753,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 54.7,
-        "coding": 43.4,
+        "intelligence": 44.4,
+        "coding": 58.6,
         "math": null,
         "tau2": 0.889,
         "terminalbench": 0.424,
@@ -3702,9 +3778,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": "MiniMax-M2.7",
       "release_date": "2026-03-18",
-      "speed_tps": 45.66,
-      "ttft_seconds": 1.632,
-      "ttfa_seconds": 55.552,
+      "speed_tps": 44.78,
+      "ttft_seconds": 1.921,
+      "ttfa_seconds": 56.9,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3715,8 +3791,8 @@
         "family_id": "minimax-m27-core"
       },
       "benchmarks": {
-        "intelligence": 49.6,
-        "coding": 41.9,
+        "intelligence": 38.1,
+        "coding": 52.6,
         "math": null,
         "tau2": 0.848,
         "terminalbench": 0.394,
@@ -3740,9 +3816,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2026-02-12",
-      "speed_tps": 207.199,
-      "ttft_seconds": 4.738,
-      "ttfa_seconds": 14.391,
+      "speed_tps": 237.368,
+      "ttft_seconds": 5.625,
+      "ttfa_seconds": 14.051,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3753,8 +3829,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 41.9,
-        "coding": 37.4,
+        "intelligence": 33.7,
+        "coding": null,
         "math": null,
         "tau2": 0.953,
         "terminalbench": 0.348,
@@ -3778,9 +3854,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2025-12-23",
-      "speed_tps": 243.364,
-      "ttft_seconds": 5.104,
-      "ttfa_seconds": 13.322,
+      "speed_tps": 211.602,
+      "ttft_seconds": 7.481,
+      "ttfa_seconds": 16.932,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3791,8 +3867,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 39.4,
-        "coding": 32.8,
+        "intelligence": 31.4,
+        "coding": null,
         "math": 82.7,
         "tau2": 0.854,
         "terminalbench": 0.288,
@@ -3816,9 +3892,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": null,
       "release_date": "2025-10-26",
-      "speed_tps": 126.416,
-      "ttft_seconds": 1.393,
-      "ttfa_seconds": 17.214,
+      "speed_tps": 117.243,
+      "ttft_seconds": 1.277,
+      "ttfa_seconds": 18.335,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -3829,8 +3905,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 36.1,
-        "coding": 29.2,
+        "intelligence": 28.3,
+        "coding": null,
         "math": 78.3,
         "tau2": 0.868,
         "terminalbench": 0.258,
@@ -3867,8 +3943,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 24.4,
-        "coding": 14.5,
+        "intelligence": 17.7,
+        "coding": null,
         "math": 61.0,
         "tau2": 0.342,
         "terminalbench": 0.03,
@@ -3905,8 +3981,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.9,
-        "coding": 14.1,
+        "intelligence": 14.4,
+        "coding": null,
         "math": 13.7,
         "tau2": 0.316,
         "terminalbench": 0.023,
@@ -3930,9 +4006,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-05-19",
-      "speed_tps": 197.324,
-      "ttft_seconds": 1.728,
-      "ttfa_seconds": 13.936,
+      "speed_tps": 196.697,
+      "ttft_seconds": 1.604,
+      "ttfa_seconds": 13.851,
       "pricing": {
         "price_1m_blended_3_to_1": 3.75,
         "price_1m_input_tokens": 2.5,
@@ -3943,8 +4019,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 56.6,
-        "coding": 50.1,
+        "intelligence": 46.0,
+        "coding": 66.0,
         "math": null,
         "tau2": 0.947,
         "terminalbench": 0.508,
@@ -3961,44 +4037,6 @@
       }
     },
     {
-      "name": "Qwen3.7 Plus",
-      "slug": "qwen3-7-plus",
-      "id": "a87fce42-eea3-4e45-a96d-fe057814f371",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2026-06-01",
-      "speed_tps": 52.99,
-      "ttft_seconds": 1.27,
-      "ttfa_seconds": 39.012,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.59,
-        "price_1m_input_tokens": 0.4,
-        "price_1m_output_tokens": 1.16
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 53.3,
-        "coding": 46.5,
-        "math": null,
-        "tau2": 0.93,
-        "terminalbench": 0.47,
-        "ifbench": 0.78,
-        "gpqa": 0.9,
-        "lcr": 0.65,
-        "hle": 0.334,
-        "scicode": 0.455,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3.6 Max Preview",
       "slug": "qwen3-6-max",
       "id": "6000692c-f9a6-47f8-a5c0-e0874ac488bb",
@@ -4006,9 +4044,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-20",
-      "speed_tps": 44.098,
-      "ttft_seconds": 1.82,
-      "ttfa_seconds": 47.173,
+      "speed_tps": 44.003,
+      "ttft_seconds": 1.883,
+      "ttfa_seconds": 47.335,
       "pricing": {
         "price_1m_blended_3_to_1": 2.925,
         "price_1m_input_tokens": 1.3,
@@ -4019,8 +4057,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 51.8,
-        "coding": 44.9,
+        "intelligence": 40.0,
+        "coding": null,
         "math": null,
         "tau2": 0.959,
         "terminalbench": 0.439,
@@ -4044,9 +4082,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": "coder-model",
       "release_date": "2026-04-02",
-      "speed_tps": 53.344,
-      "ttft_seconds": 1.813,
-      "ttfa_seconds": 105.856,
+      "speed_tps": 52.884,
+      "ttft_seconds": 1.627,
+      "ttfa_seconds": 106.574,
       "pricing": {
         "price_1m_blended_3_to_1": 1.125,
         "price_1m_input_tokens": 0.5,
@@ -4057,8 +4095,8 @@
         "family_id": "qwen-portal-coder-core"
       },
       "benchmarks": {
-        "intelligence": 50.0,
-        "coding": 42.9,
+        "intelligence": 39.6,
+        "coding": 54.5,
         "math": null,
         "tau2": 0.977,
         "terminalbench": 0.439,
@@ -4075,6 +4113,44 @@
       }
     },
     {
+      "name": "Qwen3.7 Plus",
+      "slug": "qwen3-7-plus",
+      "id": "a87fce42-eea3-4e45-a96d-fe057814f371",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2026-06-01",
+      "speed_tps": 50.953,
+      "ttft_seconds": 1.648,
+      "ttfa_seconds": 40.9,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.59,
+        "price_1m_input_tokens": 0.4,
+        "price_1m_output_tokens": 1.16
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 39.0,
+        "coding": 55.9,
+        "math": null,
+        "tau2": 0.93,
+        "terminalbench": 0.47,
+        "ifbench": 0.78,
+        "gpqa": 0.9,
+        "lcr": 0.65,
+        "hle": 0.334,
+        "scicode": 0.455,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3.6 27B (Reasoning)",
       "slug": "qwen3-6-27b",
       "id": "8c29d66d-bf98-4ea3-8572-5409353ecc66",
@@ -4082,9 +4158,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-22",
-      "speed_tps": 61.895,
-      "ttft_seconds": 1.515,
-      "ttfa_seconds": 93.219,
+      "speed_tps": 61.471,
+      "ttft_seconds": 1.435,
+      "ttfa_seconds": 93.771,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -4095,8 +4171,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 45.8,
-        "coding": 36.5,
+        "intelligence": 37.1,
+        "coding": 53.7,
         "math": null,
         "tau2": 0.942,
         "terminalbench": 0.348,
@@ -4113,82 +4189,6 @@
       }
     },
     {
-      "name": "Qwen3.5 397B A17B (Reasoning)",
-      "slug": "qwen3-5-397b-a17b",
-      "id": "0e66bae9-41f1-42fc-9276-ce8cb6f72919",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2026-02-16",
-      "speed_tps": 49.65,
-      "ttft_seconds": 1.781,
-      "ttfa_seconds": 65.951,
-      "pricing": {
-        "price_1m_blended_3_to_1": 1.35,
-        "price_1m_input_tokens": 0.6,
-        "price_1m_output_tokens": 3.6
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 45.0,
-        "coding": 41.3,
-        "math": null,
-        "tau2": 0.956,
-        "terminalbench": 0.409,
-        "ifbench": 0.788,
-        "gpqa": 0.893,
-        "lcr": 0.657,
-        "hle": 0.273,
-        "scicode": 0.42,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
-      "name": "Qwen3.6 35B A3B (Reasoning)",
-      "slug": "qwen3-6-35b-a3b",
-      "id": "8665ca00-c687-44c7-875c-22618cb31c4f",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2026-04-16",
-      "speed_tps": 154.031,
-      "ttft_seconds": 1.277,
-      "ttfa_seconds": 36.302,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.557,
-        "price_1m_input_tokens": 0.248,
-        "price_1m_output_tokens": 1.485
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 43.5,
-        "coding": 35.2,
-        "math": null,
-        "tau2": 0.953,
-        "terminalbench": 0.348,
-        "ifbench": 0.644,
-        "gpqa": 0.841,
-        "lcr": 0.637,
-        "hle": 0.202,
-        "scicode": 0.358,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3.5 27B (Reasoning)",
       "slug": "qwen3-5-27b",
       "id": "169e47f5-3d4d-4ad4-8f8b-ab46f0c73f67",
@@ -4196,9 +4196,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 83.701,
-      "ttft_seconds": 1.373,
-      "ttfa_seconds": 25.267,
+      "speed_tps": 84.911,
+      "ttft_seconds": 1.372,
+      "ttfa_seconds": 24.926,
       "pricing": {
         "price_1m_blended_3_to_1": 0.825,
         "price_1m_input_tokens": 0.3,
@@ -4209,8 +4209,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 42.1,
-        "coding": 34.9,
+        "intelligence": 33.8,
+        "coding": null,
         "math": null,
         "tau2": 0.939,
         "terminalbench": 0.326,
@@ -4227,6 +4227,44 @@
       }
     },
     {
+      "name": "Qwen3.5 397B A17B (Reasoning)",
+      "slug": "qwen3-5-397b-a17b",
+      "id": "0e66bae9-41f1-42fc-9276-ce8cb6f72919",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2026-02-16",
+      "speed_tps": 51.416,
+      "ttft_seconds": 1.832,
+      "ttfa_seconds": 63.797,
+      "pricing": {
+        "price_1m_blended_3_to_1": 1.35,
+        "price_1m_input_tokens": 0.6,
+        "price_1m_output_tokens": 3.6
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 33.7,
+        "coding": 48.2,
+        "math": null,
+        "tau2": 0.956,
+        "terminalbench": 0.409,
+        "ifbench": 0.788,
+        "gpqa": 0.893,
+        "lcr": 0.657,
+        "hle": 0.273,
+        "scicode": 0.42,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3.5 122B A10B (Reasoning)",
       "slug": "qwen3-5-122b-a10b",
       "id": "2236df45-0699-40d1-b5cc-69ee345d2257",
@@ -4234,9 +4272,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 147.187,
-      "ttft_seconds": 1.151,
-      "ttfa_seconds": 14.739,
+      "speed_tps": 141.897,
+      "ttft_seconds": 1.097,
+      "ttfa_seconds": 15.192,
       "pricing": {
         "price_1m_blended_3_to_1": 1.1,
         "price_1m_input_tokens": 0.4,
@@ -4247,8 +4285,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 41.6,
-        "coding": 34.7,
+        "intelligence": 32.3,
+        "coding": 45.7,
         "math": null,
         "tau2": 0.936,
         "terminalbench": 0.311,
@@ -4272,9 +4310,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-16",
-      "speed_tps": 51.028,
-      "ttft_seconds": 1.911,
-      "ttfa_seconds": 1.911,
+      "speed_tps": 52.751,
+      "ttft_seconds": 1.777,
+      "ttfa_seconds": 1.777,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -4285,8 +4323,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 40.1,
-        "coding": 37.4,
+        "intelligence": 32.0,
+        "coding": null,
         "math": null,
         "tau2": 0.839,
         "terminalbench": 0.356,
@@ -4323,8 +4361,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 39.8,
-        "coding": 30.5,
+        "intelligence": 31.7,
+        "coding": null,
         "math": null,
         "tau2": 0.836,
         "terminalbench": 0.242,
@@ -4341,6 +4379,44 @@
       }
     },
     {
+      "name": "Qwen3.6 35B A3B (Reasoning)",
+      "slug": "qwen3-6-35b-a3b",
+      "id": "8665ca00-c687-44c7-875c-22618cb31c4f",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2026-04-16",
+      "speed_tps": 167.687,
+      "ttft_seconds": 1.354,
+      "ttfa_seconds": 33.527,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.557,
+        "price_1m_input_tokens": 0.248,
+        "price_1m_output_tokens": 1.485
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 31.6,
+        "coding": 41.9,
+        "math": null,
+        "tau2": 0.953,
+        "terminalbench": 0.348,
+        "ifbench": 0.644,
+        "gpqa": 0.841,
+        "lcr": 0.637,
+        "hle": 0.202,
+        "scicode": 0.358,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3.5 Omni Plus",
       "slug": "qwen3-5-omni-plus",
       "id": "0179b427-93dc-415c-bb4c-f980ddf8d088",
@@ -4348,9 +4424,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-30",
-      "speed_tps": 55.106,
-      "ttft_seconds": 1.353,
-      "ttfa_seconds": 1.353,
+      "speed_tps": 50.711,
+      "ttft_seconds": 1.276,
+      "ttfa_seconds": 1.276,
       "pricing": {
         "price_1m_blended_3_to_1": 1.5,
         "price_1m_input_tokens": 0.4,
@@ -4361,8 +4437,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 38.6,
-        "coding": 27.6,
+        "intelligence": 30.6,
+        "coding": null,
         "math": null,
         "tau2": 0.883,
         "terminalbench": 0.212,
@@ -4386,9 +4462,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 92.682,
-      "ttft_seconds": 1.42,
-      "ttfa_seconds": 1.42,
+      "speed_tps": 93.012,
+      "ttft_seconds": 1.37,
+      "ttfa_seconds": 1.37,
       "pricing": {
         "price_1m_blended_3_to_1": 0.875,
         "price_1m_input_tokens": 0.3,
@@ -4399,8 +4475,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 37.2,
-        "coding": 33.4,
+        "intelligence": 29.3,
+        "coding": null,
         "math": null,
         "tau2": 0.871,
         "terminalbench": 0.318,
@@ -4424,9 +4500,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 154.136,
-      "ttft_seconds": 1.202,
-      "ttfa_seconds": 14.178,
+      "speed_tps": 168.183,
+      "ttft_seconds": 1.251,
+      "ttfa_seconds": 13.143,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -4437,8 +4513,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 37.1,
-        "coding": 30.3,
+        "intelligence": 29.3,
+        "coding": null,
         "math": null,
         "tau2": 0.892,
         "terminalbench": 0.265,
@@ -4462,9 +4538,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-22",
-      "speed_tps": 64.246,
-      "ttft_seconds": 1.507,
-      "ttfa_seconds": 1.507,
+      "speed_tps": 62.848,
+      "ttft_seconds": 1.343,
+      "ttfa_seconds": 1.343,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -4475,8 +4551,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 37.1,
-        "coding": 26.6,
+        "intelligence": 29.3,
+        "coding": null,
         "math": null,
         "tau2": 0.936,
         "terminalbench": 0.212,
@@ -4500,9 +4576,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 163.378,
-      "ttft_seconds": 1.073,
-      "ttfa_seconds": 1.073,
+      "speed_tps": 163.505,
+      "ttft_seconds": 1.087,
+      "ttfa_seconds": 1.087,
       "pricing": {
         "price_1m_blended_3_to_1": 1.1,
         "price_1m_input_tokens": 0.4,
@@ -4513,8 +4589,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 35.9,
-        "coding": 31.6,
+        "intelligence": 28.1,
+        "coding": null,
         "math": null,
         "tau2": 0.845,
         "terminalbench": 0.295,
@@ -4531,44 +4607,6 @@
       }
     },
     {
-      "name": "Qwen3 Max Thinking (Preview)",
-      "slug": "qwen3-max-thinking-preview",
-      "id": "cbac8c35-e069-4c73-823e-0953e6ed0e85",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-11-03",
-      "speed_tps": 55.479,
-      "ttft_seconds": 1.727,
-      "ttfa_seconds": 37.777,
-      "pricing": {
-        "price_1m_blended_3_to_1": 2.4,
-        "price_1m_input_tokens": 1.2,
-        "price_1m_output_tokens": 6.0
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 32.5,
-        "coding": 24.5,
-        "math": 82.3,
-        "tau2": 0.836,
-        "terminalbench": 0.174,
-        "ifbench": 0.538,
-        "gpqa": 0.776,
-        "lcr": 0.577,
-        "hle": 0.12,
-        "scicode": 0.387,
-        "livecodebench": 0.535,
-        "mmlu_pro": 0.824,
-        "aime_25": 0.823,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3.5 9B (Reasoning)",
       "slug": "qwen3-5-9b",
       "id": "2d28a13a-096e-475a-beb8-26bbd1c7d51c",
@@ -4576,9 +4614,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 66.485,
-      "ttft_seconds": 0.756,
-      "ttfa_seconds": 30.839,
+      "speed_tps": 67.835,
+      "ttft_seconds": 0.769,
+      "ttfa_seconds": 30.252,
       "pricing": {
         "price_1m_blended_3_to_1": 0.113,
         "price_1m_input_tokens": 0.1,
@@ -4589,8 +4627,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 32.4,
-        "coding": 25.3,
+        "intelligence": 25.0,
+        "coding": 28.7,
         "math": null,
         "tau2": 0.868,
         "terminalbench": 0.242,
@@ -4607,6 +4645,44 @@
       }
     },
     {
+      "name": "Qwen3 Max Thinking (Preview)",
+      "slug": "qwen3-max-thinking-preview",
+      "id": "cbac8c35-e069-4c73-823e-0953e6ed0e85",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2025-11-03",
+      "speed_tps": 48.006,
+      "ttft_seconds": 1.902,
+      "ttfa_seconds": 43.564,
+      "pricing": {
+        "price_1m_blended_3_to_1": 2.4,
+        "price_1m_input_tokens": 1.2,
+        "price_1m_output_tokens": 6.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 25.0,
+        "coding": null,
+        "math": 82.3,
+        "tau2": 0.836,
+        "terminalbench": 0.174,
+        "ifbench": 0.538,
+        "gpqa": 0.776,
+        "lcr": 0.577,
+        "hle": 0.12,
+        "scicode": 0.387,
+        "livecodebench": 0.535,
+        "mmlu_pro": 0.824,
+        "aime_25": 0.823,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3.6 35B A3B (Non-reasoning)",
       "slug": "qwen3-6-35b-a3b-non-reasoning",
       "id": "66938aab-78fa-49d7-8461-b48b6833e837",
@@ -4614,9 +4690,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-04-16",
-      "speed_tps": 184.039,
-      "ttft_seconds": 1.414,
-      "ttfa_seconds": 1.414,
+      "speed_tps": 178.154,
+      "ttft_seconds": 1.383,
+      "ttfa_seconds": 1.383,
       "pricing": {
         "price_1m_blended_3_to_1": 0.844,
         "price_1m_input_tokens": 0.375,
@@ -4627,8 +4703,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 31.5,
-        "coding": 17.6,
+        "intelligence": 24.2,
+        "coding": null,
         "math": null,
         "tau2": 0.851,
         "terminalbench": 0.258,
@@ -4652,9 +4728,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 56.456,
-      "ttft_seconds": 1.994,
-      "ttfa_seconds": 1.994,
+      "speed_tps": 51.823,
+      "ttft_seconds": 2.005,
+      "ttfa_seconds": 2.005,
       "pricing": {
         "price_1m_blended_3_to_1": 3.047,
         "price_1m_input_tokens": 1.655,
@@ -4665,8 +4741,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 31.4,
-        "coding": 26.4,
+        "intelligence": 24.0,
+        "coding": null,
         "math": 80.7,
         "tau2": 0.743,
         "terminalbench": 0.205,
@@ -4690,9 +4766,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 175.832,
-      "ttft_seconds": 1.22,
-      "ttfa_seconds": 1.22,
+      "speed_tps": 188.533,
+      "ttft_seconds": 1.274,
+      "ttfa_seconds": 1.274,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -4703,8 +4779,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 30.7,
-        "coding": 16.8,
+        "intelligence": 23.4,
+        "coding": null,
         "math": null,
         "tau2": 0.863,
         "terminalbench": 0.106,
@@ -4728,9 +4804,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-25",
-      "speed_tps": 72.98,
-      "ttft_seconds": 1.232,
-      "ttfa_seconds": 28.637,
+      "speed_tps": 80.979,
+      "ttft_seconds": 1.242,
+      "ttfa_seconds": 25.94,
       "pricing": {
         "price_1m_blended_3_to_1": 0.838,
         "price_1m_input_tokens": 0.4,
@@ -4741,8 +4817,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 29.5,
-        "coding": 23.2,
+        "intelligence": 22.3,
+        "coding": null,
         "math": 91.0,
         "tau2": 0.532,
         "terminalbench": 0.136,
@@ -4766,9 +4842,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-02-03",
-      "speed_tps": 80.671,
-      "ttft_seconds": 1.166,
-      "ttfa_seconds": 1.166,
+      "speed_tps": 92.275,
+      "ttft_seconds": 1.124,
+      "ttfa_seconds": 1.124,
       "pricing": {
         "price_1m_blended_3_to_1": 0.563,
         "price_1m_input_tokens": 0.35,
@@ -4779,8 +4855,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 28.3,
-        "coding": 22.9,
+        "intelligence": 21.2,
+        "coding": null,
         "math": null,
         "tau2": 0.795,
         "terminalbench": 0.182,
@@ -4804,9 +4880,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 49.753,
-      "ttft_seconds": 2.287,
-      "ttfa_seconds": 42.486,
+      "speed_tps": 56.984,
+      "ttft_seconds": 1.202,
+      "ttfa_seconds": 36.299,
       "pricing": {
         "price_1m_blended_3_to_1": 2.174,
         "price_1m_input_tokens": 0.84,
@@ -4817,8 +4893,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 27.6,
-        "coding": 20.9,
+        "intelligence": 20.6,
+        "coding": null,
         "math": 88.3,
         "tau2": 0.541,
         "terminalbench": 0.114,
@@ -4855,8 +4931,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 27.3,
-        "coding": 21.3,
+        "intelligence": 20.3,
+        "coding": 23.5,
         "math": null,
         "tau2": 0.851,
         "terminalbench": 0.182,
@@ -4880,9 +4956,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 22.547,
-      "ttft_seconds": 0.465,
-      "ttfa_seconds": 89.168,
+      "speed_tps": 35.017,
+      "ttft_seconds": 0.48,
+      "ttfa_seconds": 57.595,
       "pricing": {
         "price_1m_blended_3_to_1": 0.06,
         "price_1m_input_tokens": 0.03,
@@ -4893,8 +4969,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 27.1,
-        "coding": 17.5,
+        "intelligence": 20.1,
+        "coding": 22.6,
         "math": null,
         "tau2": 0.921,
         "terminalbench": 0.182,
@@ -4918,9 +4994,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-11",
-      "speed_tps": 178.261,
-      "ttft_seconds": 1.207,
-      "ttfa_seconds": 12.426,
+      "speed_tps": 183.966,
+      "ttft_seconds": 1.137,
+      "ttfa_seconds": 12.008,
       "pricing": {
         "price_1m_blended_3_to_1": 1.875,
         "price_1m_input_tokens": 0.5,
@@ -4931,8 +5007,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 26.7,
-        "coding": 19.5,
+        "intelligence": 19.8,
+        "coding": null,
         "math": 84.3,
         "tau2": 0.415,
         "terminalbench": 0.098,
@@ -4956,9 +5032,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-05",
-      "speed_tps": 56.694,
-      "ttft_seconds": 1.739,
-      "ttfa_seconds": 1.739,
+      "speed_tps": 61.495,
+      "ttft_seconds": 1.86,
+      "ttfa_seconds": 1.86,
       "pricing": {
         "price_1m_blended_3_to_1": 2.4,
         "price_1m_input_tokens": 1.2,
@@ -4969,8 +5045,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 26.1,
-        "coding": 25.5,
+        "intelligence": 19.2,
+        "coding": null,
         "math": 75.0,
         "tau2": 0.327,
         "terminalbench": 0.197,
@@ -4994,9 +5070,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-30",
-      "speed_tps": 279.642,
-      "ttft_seconds": 0.962,
-      "ttfa_seconds": 0.962,
+      "speed_tps": 239.496,
+      "ttft_seconds": 1.043,
+      "ttfa_seconds": 1.043,
       "pricing": {
         "price_1m_blended_3_to_1": 0.275,
         "price_1m_input_tokens": 0.1,
@@ -5007,8 +5083,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.9,
-        "coding": 14.0,
+        "intelligence": 19.0,
+        "coding": null,
         "math": null,
         "tau2": 0.845,
         "terminalbench": 0.083,
@@ -5032,9 +5108,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-21",
-      "speed_tps": 66.807,
-      "ttft_seconds": 1.248,
-      "ttfa_seconds": 1.248,
+      "speed_tps": 67.561,
+      "ttft_seconds": 1.111,
+      "ttfa_seconds": 1.111,
       "pricing": {
         "price_1m_blended_3_to_1": 0.356,
         "price_1m_input_tokens": 0.2,
@@ -5045,8 +5121,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.0,
-        "coding": 22.1,
+        "intelligence": 18.2,
+        "coding": null,
         "math": 71.7,
         "tau2": 0.333,
         "terminalbench": 0.152,
@@ -5070,9 +5146,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-22",
-      "speed_tps": 65.98,
-      "ttft_seconds": 1.646,
-      "ttfa_seconds": 1.646,
+      "speed_tps": 63.38,
+      "ttft_seconds": 1.627,
+      "ttfa_seconds": 1.627,
       "pricing": {
         "price_1m_blended_3_to_1": 0.675,
         "price_1m_input_tokens": 0.3,
@@ -5083,8 +5159,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 24.8,
-        "coding": 24.6,
+        "intelligence": 18.0,
+        "coding": null,
         "math": 39.3,
         "tau2": 0.436,
         "terminalbench": 0.189,
@@ -5108,9 +5184,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-21",
-      "speed_tps": 95.752,
-      "ttft_seconds": 1.211,
-      "ttfa_seconds": 22.098,
+      "speed_tps": 95.581,
+      "ttft_seconds": 1.407,
+      "ttfa_seconds": 22.332,
       "pricing": {
         "price_1m_blended_3_to_1": 2.625,
         "price_1m_input_tokens": 0.7,
@@ -5121,8 +5197,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 24.7,
-        "coding": 14.5,
+        "intelligence": 17.9,
+        "coding": null,
         "math": 84.7,
         "tau2": 0.456,
         "terminalbench": 0.076,
@@ -5146,9 +5222,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 24.105,
-      "ttft_seconds": 0.49,
-      "ttfa_seconds": 0.49,
+      "speed_tps": 49.102,
+      "ttft_seconds": 0.439,
+      "ttfa_seconds": 0.439,
       "pricing": {
         "price_1m_blended_3_to_1": 0.06,
         "price_1m_input_tokens": 0.03,
@@ -5159,8 +5235,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 22.6,
-        "coding": 13.7,
+        "intelligence": 16.0,
+        "coding": 20.3,
         "math": null,
         "tau2": 0.877,
         "terminalbench": 0.114,
@@ -5184,9 +5260,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-30",
-      "speed_tps": 144.425,
-      "ttft_seconds": 1.185,
-      "ttfa_seconds": 15.033,
+      "speed_tps": 144.884,
+      "ttft_seconds": 1.05,
+      "ttfa_seconds": 14.854,
       "pricing": {
         "price_1m_blended_3_to_1": 0.673,
         "price_1m_input_tokens": 0.28,
@@ -5197,8 +5273,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 22.4,
-        "coding": 14.6,
+        "intelligence": 15.8,
+        "coding": null,
         "math": 56.3,
         "tau2": 0.281,
         "terminalbench": 0.053,
@@ -5222,9 +5298,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-23",
-      "speed_tps": 53.104,
-      "ttft_seconds": 1.102,
-      "ttfa_seconds": 1.102,
+      "speed_tps": 54.725,
+      "ttft_seconds": 1.122,
+      "ttfa_seconds": 1.122,
       "pricing": {
         "price_1m_blended_3_to_1": 0.7,
         "price_1m_input_tokens": 0.3,
@@ -5235,8 +5311,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.8,
-        "coding": 16.5,
+        "intelligence": 14.3,
+        "coding": null,
         "math": 70.7,
         "tau2": 0.351,
         "terminalbench": 0.068,
@@ -5260,9 +5336,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-09-11",
-      "speed_tps": 168.143,
-      "ttft_seconds": 1.217,
-      "ttfa_seconds": 1.217,
+      "speed_tps": 185.265,
+      "ttft_seconds": 1.064,
+      "ttfa_seconds": 1.064,
       "pricing": {
         "price_1m_blended_3_to_1": 0.875,
         "price_1m_input_tokens": 0.5,
@@ -5273,8 +5349,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.1,
-        "coding": 15.3,
+        "intelligence": 13.7,
+        "coding": null,
         "math": 66.3,
         "tau2": 0.216,
         "terminalbench": 0.076,
@@ -5298,9 +5374,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-31",
-      "speed_tps": 111.334,
-      "ttft_seconds": 1.535,
-      "ttfa_seconds": 1.535,
+      "speed_tps": 108.54,
+      "ttft_seconds": 1.435,
+      "ttfa_seconds": 1.435,
       "pricing": {
         "price_1m_blended_3_to_1": 0.352,
         "price_1m_input_tokens": 0.19,
@@ -5311,8 +5387,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 20.0,
-        "coding": 19.4,
+        "intelligence": 13.6,
+        "coding": null,
         "math": 29.0,
         "tau2": 0.345,
         "terminalbench": 0.152,
@@ -5329,6 +5405,44 @@
       }
     },
     {
+      "name": "QwQ 32B",
+      "slug": "qwq-32b",
+      "id": "ceb4d610-d0a4-48c1-bea0-80ed76f1e5ca",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2025-03-05",
+      "speed_tps": 32.58,
+      "ttft_seconds": 0.463,
+      "ttfa_seconds": 76.922,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.745,
+        "price_1m_input_tokens": 0.66,
+        "price_1m_output_tokens": 1.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 13.4,
+        "coding": null,
+        "math": 29.0,
+        "tau2": null,
+        "terminalbench": null,
+        "ifbench": 0.388,
+        "gpqa": 0.593,
+        "lcr": 0.25,
+        "hle": 0.082,
+        "scicode": 0.358,
+        "livecodebench": 0.631,
+        "mmlu_pro": 0.764,
+        "aime_25": 0.29,
+        "math_500": 0.957,
+        "aime": 0.78
+      }
+    },
+    {
       "name": "Qwen3 235B A22B (Reasoning)",
       "slug": "qwen3-235b-a22b-instruct-reasoning",
       "id": "bbe6d782-e630-48d5-b11c-3ce37f373f1e",
@@ -5336,9 +5450,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 67.566,
-      "ttft_seconds": 1.202,
-      "ttfa_seconds": 30.803,
+      "speed_tps": 61.426,
+      "ttft_seconds": 1.295,
+      "ttfa_seconds": 33.854,
       "pricing": {
         "price_1m_blended_3_to_1": 2.625,
         "price_1m_input_tokens": 0.7,
@@ -5349,8 +5463,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 19.8,
-        "coding": 17.4,
+        "intelligence": 13.4,
+        "coding": null,
         "math": 82.0,
         "tau2": 0.24,
         "terminalbench": 0.061,
@@ -5374,9 +5488,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-03",
-      "speed_tps": 124.667,
-      "ttft_seconds": 1.121,
-      "ttfa_seconds": 17.164,
+      "speed_tps": 123.755,
+      "ttft_seconds": 1.08,
+      "ttfa_seconds": 17.241,
       "pricing": {
         "price_1m_blended_3_to_1": 0.338,
         "price_1m_input_tokens": 0.2,
@@ -5387,8 +5501,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 19.7,
-        "coding": 13.1,
+        "intelligence": 13.3,
+        "coding": null,
         "math": 82.3,
         "tau2": 0.199,
         "terminalbench": 0.053,
@@ -5402,44 +5516,6 @@
         "aime_25": 0.823,
         "math_500": null,
         "aime": null
-      }
-    },
-    {
-      "name": "QwQ 32B",
-      "slug": "qwq-32b",
-      "id": "ceb4d610-d0a4-48c1-bea0-80ed76f1e5ca",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-03-05",
-      "speed_tps": 31.724,
-      "ttft_seconds": 0.448,
-      "ttfa_seconds": 78.97,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.745,
-        "price_1m_input_tokens": 0.66,
-        "price_1m_output_tokens": 1.0
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 19.7,
-        "coding": null,
-        "math": 29.0,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": 0.388,
-        "gpqa": 0.593,
-        "lcr": 0.25,
-        "hle": 0.082,
-        "scicode": 0.358,
-        "livecodebench": 0.631,
-        "mmlu_pro": 0.764,
-        "aime_25": 0.29,
-        "math_500": 0.957,
-        "aime": 0.78
       }
     },
     {
@@ -5463,8 +5539,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 18.2,
-        "coding": 9.5,
+        "intelligence": 12.0,
+        "coding": null,
         "math": 82.7,
         "tau2": 0.254,
         "terminalbench": 0.015,
@@ -5488,9 +5564,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-21",
-      "speed_tps": 77.067,
-      "ttft_seconds": 1.229,
-      "ttfa_seconds": 1.229,
+      "speed_tps": 74.08,
+      "ttft_seconds": 1.106,
+      "ttfa_seconds": 1.106,
       "pricing": {
         "price_1m_blended_3_to_1": 1.225,
         "price_1m_input_tokens": 0.7,
@@ -5501,8 +5577,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 17.2,
-        "coding": 15.6,
+        "intelligence": 11.1,
+        "coding": null,
         "math": 68.3,
         "tau2": 0.292,
         "terminalbench": 0.083,
@@ -5526,9 +5602,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 61.261,
-      "ttft_seconds": 1.198,
-      "ttfa_seconds": 1.198,
+      "speed_tps": 65.618,
+      "ttft_seconds": 1.177,
+      "ttfa_seconds": 1.177,
       "pricing": {
         "price_1m_blended_3_to_1": 0.787,
         "price_1m_input_tokens": 0.45,
@@ -5539,8 +5615,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 17.0,
-        "coding": 14.0,
+        "intelligence": 10.9,
+        "coding": null,
         "math": 23.7,
         "tau2": 0.272,
         "terminalbench": 0.061,
@@ -5564,9 +5640,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-14",
-      "speed_tps": 130.037,
-      "ttft_seconds": 1.111,
-      "ttfa_seconds": 16.491,
+      "speed_tps": 131.985,
+      "ttft_seconds": 1.097,
+      "ttfa_seconds": 16.251,
       "pricing": {
         "price_1m_blended_3_to_1": 0.66,
         "price_1m_input_tokens": 0.18,
@@ -5577,8 +5653,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 16.7,
-        "coding": 9.8,
+        "intelligence": 10.6,
+        "coding": null,
         "math": 30.7,
         "tau2": 0.225,
         "terminalbench": 0.038,
@@ -5602,9 +5678,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 95.578,
-      "ttft_seconds": 1.05,
-      "ttfa_seconds": 21.976,
+      "speed_tps": 86.129,
+      "ttft_seconds": 1.095,
+      "ttfa_seconds": 24.316,
       "pricing": {
         "price_1m_blended_3_to_1": 0.276,
         "price_1m_input_tokens": 0.195,
@@ -5615,8 +5691,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 16.5,
-        "coding": 13.8,
+        "intelligence": 10.5,
+        "coding": null,
         "math": 73.0,
         "tau2": 0.298,
         "terminalbench": 0.03,
@@ -5640,9 +5716,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 19.525,
-      "ttft_seconds": 0.665,
-      "ttfa_seconds": 103.1,
+      "speed_tps": 52.251,
+      "ttft_seconds": 0.41,
+      "ttfa_seconds": 38.687,
       "pricing": {
         "price_1m_blended_3_to_1": 0.04,
         "price_1m_input_tokens": 0.02,
@@ -5653,8 +5729,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 16.3,
-        "coding": 3.5,
+        "intelligence": 10.2,
+        "coding": 19.7,
         "math": null,
         "tau2": 0.69,
         "terminalbench": 0.038,
@@ -5691,7 +5767,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 16.3,
+        "intelligence": 10.2,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -5716,9 +5792,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 63.184,
-      "ttft_seconds": 1.111,
-      "ttfa_seconds": 32.764,
+      "speed_tps": 63.766,
+      "ttft_seconds": 1.099,
+      "ttfa_seconds": 32.464,
       "pricing": {
         "price_1m_blended_3_to_1": 0.731,
         "price_1m_input_tokens": 0.235,
@@ -5729,8 +5805,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 16.2,
-        "coding": 13.1,
+        "intelligence": 10.1,
+        "coding": null,
         "math": 55.7,
         "tau2": 0.345,
         "terminalbench": 0.038,
@@ -5754,9 +5830,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-10-03",
-      "speed_tps": 120.424,
-      "ttft_seconds": 1.118,
-      "ttfa_seconds": 1.118,
+      "speed_tps": 123.573,
+      "ttft_seconds": 0.974,
+      "ttfa_seconds": 0.974,
       "pricing": {
         "price_1m_blended_3_to_1": 0.3,
         "price_1m_input_tokens": 0.2,
@@ -5767,8 +5843,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 16.0,
-        "coding": 14.3,
+        "intelligence": 10.0,
+        "coding": null,
         "math": 72.3,
         "tau2": 0.19,
         "terminalbench": 0.061,
@@ -5780,44 +5856,6 @@
         "livecodebench": 0.476,
         "mmlu_pro": 0.764,
         "aime_25": 0.723,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
-      "name": "Qwen3 Omni 30B A3B (Reasoning)",
-      "slug": "qwen3-omni-30b-a3b-reasoning",
-      "id": "b97ef678-2d31-4375-9416-67ea97f87204",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-09-22",
-      "speed_tps": 100.044,
-      "ttft_seconds": 1.104,
-      "ttfa_seconds": 21.096,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.43,
-        "price_1m_input_tokens": 0.25,
-        "price_1m_output_tokens": 0.97
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 15.6,
-        "coding": 12.7,
-        "math": 74.0,
-        "tau2": 0.213,
-        "terminalbench": 0.038,
-        "ifbench": 0.434,
-        "gpqa": 0.726,
-        "lcr": null,
-        "hle": 0.073,
-        "scicode": 0.306,
-        "livecodebench": 0.679,
-        "mmlu_pro": 0.792,
-        "aime_25": 0.74,
         "math_500": null,
         "aime": null
       }
@@ -5843,8 +5881,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 15.6,
-        "coding": 11.9,
+        "intelligence": 9.6,
+        "coding": null,
         "math": 14.0,
         "tau2": 0.345,
         "terminalbench": 0.045,
@@ -5861,6 +5899,44 @@
       }
     },
     {
+      "name": "Qwen3 Omni 30B A3B (Reasoning)",
+      "slug": "qwen3-omni-30b-a3b-reasoning",
+      "id": "b97ef678-2d31-4375-9416-67ea97f87204",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2025-09-22",
+      "speed_tps": 100.278,
+      "ttft_seconds": 0.967,
+      "ttfa_seconds": 20.911,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.43,
+        "price_1m_input_tokens": 0.25,
+        "price_1m_output_tokens": 0.97
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 9.6,
+        "coding": null,
+        "math": 74.0,
+        "tau2": 0.213,
+        "terminalbench": 0.038,
+        "ifbench": 0.434,
+        "gpqa": 0.726,
+        "lcr": null,
+        "hle": 0.073,
+        "scicode": 0.306,
+        "livecodebench": 0.679,
+        "mmlu_pro": 0.792,
+        "aime_25": 0.74,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3 30B A3B (Reasoning)",
       "slug": "qwen3-30b-a3b-instruct-reasoning",
       "id": "3e6cf518-a1f4-42d3-8fcf-827c9bd8e6d5",
@@ -5868,9 +5944,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 102.585,
-      "ttft_seconds": 1.164,
-      "ttfa_seconds": 20.66,
+      "speed_tps": 112.635,
+      "ttft_seconds": 1.066,
+      "ttfa_seconds": 18.823,
       "pricing": {
         "price_1m_blended_3_to_1": 0.18,
         "price_1m_input_tokens": 0.09,
@@ -5881,8 +5957,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 15.3,
-        "coding": 11.0,
+        "intelligence": 9.3,
+        "coding": null,
         "math": 72.3,
         "tau2": 0.26,
         "terminalbench": 0.023,
@@ -5919,7 +5995,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 15.2,
+        "intelligence": 9.2,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -5944,9 +6020,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-07-29",
-      "speed_tps": 162.586,
-      "ttft_seconds": 1.148,
-      "ttfa_seconds": 1.148,
+      "speed_tps": 170.169,
+      "ttft_seconds": 1.12,
+      "ttfa_seconds": 1.12,
       "pricing": {
         "price_1m_blended_3_to_1": 0.213,
         "price_1m_input_tokens": 0.15,
@@ -5957,8 +6033,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 15.0,
-        "coding": 14.2,
+        "intelligence": 9.1,
+        "coding": null,
         "math": 66.3,
         "tau2": 0.102,
         "terminalbench": 0.061,
@@ -5982,9 +6058,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 21.549,
-      "ttft_seconds": 0.502,
-      "ttfa_seconds": 0.502,
+      "speed_tps": 47.229,
+      "ttft_seconds": 0.721,
+      "ttfa_seconds": 0.721,
       "pricing": {
         "price_1m_blended_3_to_1": 0.04,
         "price_1m_input_tokens": 0.02,
@@ -5995,8 +6071,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 14.7,
-        "coding": 4.9,
+        "intelligence": 8.8,
+        "coding": 17.4,
         "math": null,
         "tau2": 0.816,
         "terminalbench": 0.038,
@@ -6020,9 +6096,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 99.818,
-      "ttft_seconds": 1.062,
-      "ttfa_seconds": 1.062,
+      "speed_tps": 92.821,
+      "ttft_seconds": 1.029,
+      "ttfa_seconds": 1.029,
       "pricing": {
         "price_1m_blended_3_to_1": 0.26,
         "price_1m_input_tokens": 0.15,
@@ -6033,7 +6109,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 14.5,
+        "intelligence": 8.6,
         "coding": null,
         "math": 19.7,
         "tau2": null,
@@ -6048,44 +6124,6 @@
         "aime_25": 0.197,
         "math_500": 0.869,
         "aime": 0.303
-      }
-    },
-    {
-      "name": "Qwen3 VL 8B Instruct",
-      "slug": "qwen3-vl-8b-instruct",
-      "id": "3cf875b8-b6b5-42c0-ad70-617d5be59d00",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-10-14",
-      "speed_tps": 143.454,
-      "ttft_seconds": 0.982,
-      "ttfa_seconds": 0.982,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.31,
-        "price_1m_input_tokens": 0.18,
-        "price_1m_output_tokens": 0.7
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 14.3,
-        "coding": 7.3,
-        "math": 27.3,
-        "tau2": 0.292,
-        "terminalbench": 0.023,
-        "ifbench": 0.323,
-        "gpqa": 0.427,
-        "lcr": 0.153,
-        "hle": 0.029,
-        "scicode": 0.174,
-        "livecodebench": 0.332,
-        "mmlu_pro": 0.686,
-        "aime_25": 0.273,
-        "math_500": null,
-        "aime": null
       }
     },
     {
@@ -6109,7 +6147,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 14.2,
+        "intelligence": 8.4,
         "coding": null,
         "math": 22.3,
         "tau2": 0.19,
@@ -6124,6 +6162,44 @@
         "aime_25": 0.223,
         "math_500": 0.933,
         "aime": 0.657
+      }
+    },
+    {
+      "name": "Qwen3 VL 8B Instruct",
+      "slug": "qwen3-vl-8b-instruct",
+      "id": "3cf875b8-b6b5-42c0-ad70-617d5be59d00",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2025-10-14",
+      "speed_tps": 144.709,
+      "ttft_seconds": 0.919,
+      "ttfa_seconds": 0.919,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.31,
+        "price_1m_input_tokens": 0.18,
+        "price_1m_output_tokens": 0.7
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 8.4,
+        "coding": null,
+        "math": 27.3,
+        "tau2": 0.292,
+        "terminalbench": 0.023,
+        "ifbench": 0.323,
+        "gpqa": 0.427,
+        "lcr": 0.153,
+        "hle": 0.029,
+        "scicode": 0.174,
+        "livecodebench": 0.332,
+        "mmlu_pro": 0.686,
+        "aime_25": 0.273,
+        "math_500": null,
+        "aime": null
       }
     },
     {
@@ -6147,8 +6223,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.7,
-        "coding": 6.7,
+        "intelligence": 7.9,
+        "coding": null,
         "math": 25.7,
         "tau2": 0.155,
         "terminalbench": 0.015,
@@ -6162,44 +6238,6 @@
         "aime_25": 0.257,
         "math_500": null,
         "aime": null
-      }
-    },
-    {
-      "name": "Qwen3 8B (Reasoning)",
-      "slug": "qwen3-8b-instruct-reasoning",
-      "id": "9dba61f5-78ee-4190-8d1d-8e7063ffd386",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-04-28",
-      "speed_tps": 60.78,
-      "ttft_seconds": 1.43,
-      "ttfa_seconds": 34.335,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.37,
-        "price_1m_input_tokens": 0.11,
-        "price_1m_output_tokens": 1.15
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 13.2,
-        "coding": 9.0,
-        "math": 19.0,
-        "tau2": 0.278,
-        "terminalbench": 0.023,
-        "ifbench": 0.335,
-        "gpqa": 0.589,
-        "lcr": null,
-        "hle": 0.042,
-        "scicode": 0.226,
-        "livecodebench": 0.406,
-        "mmlu_pro": 0.743,
-        "aime_25": 0.19,
-        "math_500": 0.904,
-        "aime": 0.747
       }
     },
     {
@@ -6223,7 +6261,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.2,
+        "intelligence": 7.5,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6241,41 +6279,41 @@
       }
     },
     {
-      "name": "Qwen3 4B 2507 Instruct",
-      "slug": "qwen3-4b-2507-instruct",
-      "id": "b0249961-b8b2-479d-8325-a29ea17c7b89",
+      "name": "Qwen3 8B (Reasoning)",
+      "slug": "qwen3-8b-instruct-reasoning",
+      "id": "9dba61f5-78ee-4190-8d1d-8e7063ffd386",
       "creator": "Alibaba",
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
-      "release_date": "2025-08-06",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
+      "release_date": "2025-04-28",
+      "speed_tps": 62.244,
+      "ttft_seconds": 1.347,
+      "ttfa_seconds": 33.478,
       "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
+        "price_1m_blended_3_to_1": 0.37,
+        "price_1m_input_tokens": 0.11,
+        "price_1m_output_tokens": 1.15
       },
       "policy_family": {
         "included": false,
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.9,
-        "coding": 9.0,
-        "math": 52.3,
-        "tau2": 0.266,
-        "terminalbench": 0.045,
+        "intelligence": 7.4,
+        "coding": null,
+        "math": 19.0,
+        "tau2": 0.278,
+        "terminalbench": 0.023,
         "ifbench": 0.335,
-        "gpqa": 0.517,
-        "lcr": 0.073,
-        "hle": 0.047,
-        "scicode": 0.181,
-        "livecodebench": 0.377,
-        "mmlu_pro": 0.672,
-        "aime_25": 0.523,
-        "math_500": null,
-        "aime": null
+        "gpqa": 0.589,
+        "lcr": null,
+        "hle": 0.042,
+        "scicode": 0.226,
+        "livecodebench": 0.406,
+        "mmlu_pro": 0.743,
+        "aime_25": 0.19,
+        "math_500": 0.904,
+        "aime": 0.747
       }
     },
     {
@@ -6299,7 +6337,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.9,
+        "intelligence": 7.1,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6317,6 +6355,44 @@
       }
     },
     {
+      "name": "Qwen3 4B 2507 Instruct",
+      "slug": "qwen3-4b-2507-instruct",
+      "id": "b0249961-b8b2-479d-8325-a29ea17c7b89",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2025-08-06",
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "ttfa_seconds": null,
+      "pricing": {
+        "price_1m_blended_3_to_1": null,
+        "price_1m_input_tokens": null,
+        "price_1m_output_tokens": null
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 7.1,
+        "coding": null,
+        "math": 52.3,
+        "tau2": 0.266,
+        "terminalbench": 0.045,
+        "ifbench": 0.335,
+        "gpqa": 0.517,
+        "lcr": 0.073,
+        "hle": 0.047,
+        "scicode": 0.181,
+        "livecodebench": 0.377,
+        "mmlu_pro": 0.672,
+        "aime_25": 0.523,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3 14B (Non-reasoning)",
       "slug": "qwen3-14b-instruct",
       "id": "ecc6524a-d521-458a-8327-5009e8ce6549",
@@ -6324,9 +6400,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 62.809,
-      "ttft_seconds": 1.022,
-      "ttfa_seconds": 1.022,
+      "speed_tps": 63.495,
+      "ttft_seconds": 1.136,
+      "ttfa_seconds": 1.136,
       "pricing": {
         "price_1m_blended_3_to_1": 0.381,
         "price_1m_input_tokens": 0.235,
@@ -6337,8 +6413,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.8,
-        "coding": 12.4,
+        "intelligence": 7.0,
+        "coding": null,
         "math": 58.0,
         "tau2": 0.322,
         "terminalbench": 0.053,
@@ -6362,9 +6438,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 99.111,
-      "ttft_seconds": 1.106,
-      "ttfa_seconds": 1.106,
+      "speed_tps": 110.763,
+      "ttft_seconds": 1.094,
+      "ttfa_seconds": 1.094,
       "pricing": {
         "price_1m_blended_3_to_1": 0.133,
         "price_1m_input_tokens": 0.08,
@@ -6375,8 +6451,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.5,
-        "coding": 13.3,
+        "intelligence": 6.8,
+        "coding": null,
         "math": 21.7,
         "tau2": 0.222,
         "terminalbench": 0.068,
@@ -6413,7 +6489,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.5,
+        "intelligence": 6.8,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6438,9 +6514,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2024-11-18",
-      "speed_tps": 101.691,
-      "ttft_seconds": 1.183,
-      "ttfa_seconds": 1.183,
+      "speed_tps": 113.186,
+      "ttft_seconds": 1.064,
+      "ttfa_seconds": 1.064,
       "pricing": {
         "price_1m_blended_3_to_1": 0.088,
         "price_1m_input_tokens": 0.05,
@@ -6451,7 +6527,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 12.0,
+        "intelligence": 6.3,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6489,7 +6565,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 11.7,
+        "intelligence": 6.0,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6507,44 +6583,6 @@
       }
     },
     {
-      "name": "Qwen3 Omni 30B A3B Instruct",
-      "slug": "qwen3-omni-30b-a3b-instruct",
-      "id": "0b226b82-1462-4860-bf1a-f8aed7024791",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2025-09-22",
-      "speed_tps": 106.845,
-      "ttft_seconds": 0.989,
-      "ttfa_seconds": 0.989,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.43,
-        "price_1m_input_tokens": 0.25,
-        "price_1m_output_tokens": 0.97
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 10.7,
-        "coding": 7.2,
-        "math": 52.3,
-        "tau2": 0.164,
-        "terminalbench": 0.015,
-        "ifbench": 0.312,
-        "gpqa": 0.62,
-        "lcr": null,
-        "hle": 0.051,
-        "scicode": 0.186,
-        "livecodebench": 0.422,
-        "mmlu_pro": 0.725,
-        "aime_25": 0.523,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Qwen3 8B (Non-reasoning)",
       "slug": "qwen3-8b-instruct",
       "id": "b2dd592a-fbc5-458a-b26d-f3964cbab82f",
@@ -6552,9 +6590,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2025-04-28",
-      "speed_tps": 64.257,
-      "ttft_seconds": 1.299,
-      "ttfa_seconds": 1.299,
+      "speed_tps": 65.112,
+      "ttft_seconds": 1.42,
+      "ttfa_seconds": 1.42,
       "pricing": {
         "price_1m_blended_3_to_1": 0.185,
         "price_1m_input_tokens": 0.18,
@@ -6565,8 +6603,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 10.6,
-        "coding": 7.1,
+        "intelligence": 5.1,
+        "coding": null,
         "math": 24.3,
         "tau2": 0.249,
         "terminalbench": 0.023,
@@ -6583,6 +6621,44 @@
       }
     },
     {
+      "name": "Qwen3 Omni 30B A3B Instruct",
+      "slug": "qwen3-omni-30b-a3b-instruct",
+      "id": "0b226b82-1462-4860-bf1a-f8aed7024791",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2025-09-22",
+      "speed_tps": 106.083,
+      "ttft_seconds": 0.936,
+      "ttfa_seconds": 0.936,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.43,
+        "price_1m_input_tokens": 0.25,
+        "price_1m_output_tokens": 0.97
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 5.1,
+        "coding": null,
+        "math": 52.3,
+        "tau2": 0.164,
+        "terminalbench": 0.015,
+        "ifbench": 0.312,
+        "gpqa": 0.62,
+        "lcr": null,
+        "hle": 0.051,
+        "scicode": 0.186,
+        "livecodebench": 0.422,
+        "mmlu_pro": 0.725,
+        "aime_25": 0.523,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "Qwen3.5 0.8B (Reasoning)",
       "slug": "qwen3-5-0-8b",
       "id": "a6ea7ec0-0aca-4442-98fb-4296c6d18b31",
@@ -6590,9 +6666,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 18.846,
-      "ttft_seconds": 0.493,
-      "ttfa_seconds": 106.619,
+      "speed_tps": 41.191,
+      "ttft_seconds": 0.542,
+      "ttfa_seconds": 49.096,
       "pricing": {
         "price_1m_blended_3_to_1": 0.02,
         "price_1m_input_tokens": 0.01,
@@ -6603,8 +6679,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 10.5,
-        "coding": null,
+        "intelligence": 5.0,
+        "coding": 15.0,
         "math": null,
         "tau2": 0.477,
         "terminalbench": null,
@@ -6641,7 +6717,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 10.0,
+        "intelligence": 4.5,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6666,9 +6742,9 @@
       "openclaw_provider": "qwen-portal",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 22.797,
-      "ttft_seconds": 0.572,
-      "ttfa_seconds": 0.572,
+      "speed_tps": 38.471,
+      "ttft_seconds": 0.411,
+      "ttfa_seconds": 0.411,
       "pricing": {
         "price_1m_blended_3_to_1": 0.02,
         "price_1m_input_tokens": 0.01,
@@ -6679,8 +6755,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 9.9,
-        "coding": 1.0,
+        "intelligence": 4.4,
+        "coding": 21.9,
         "math": null,
         "tau2": 0.652,
         "terminalbench": null,
@@ -6689,6 +6765,44 @@
         "lcr": 0.067,
         "hle": 0.049,
         "scicode": 0.029,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "Qwen1.5 Chat 110B",
+      "slug": "qwen1.5-110b-chat",
+      "id": "d1768b3a-0a21-4e08-b3f6-56a9ab6cfbf3",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen-portal",
+      "openclaw_model": null,
+      "release_date": "2024-04-25",
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "ttfa_seconds": null,
+      "pricing": {
+        "price_1m_blended_3_to_1": null,
+        "price_1m_input_tokens": null,
+        "price_1m_output_tokens": null
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 4.1,
+        "coding": null,
+        "math": null,
+        "tau2": null,
+        "terminalbench": null,
+        "ifbench": null,
+        "gpqa": 0.289,
+        "lcr": null,
+        "hle": null,
+        "scicode": null,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,
@@ -6717,8 +6831,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 9.6,
-        "coding": 4.6,
+        "intelligence": 4.1,
+        "coding": null,
         "math": 37.0,
         "tau2": 0.234,
         "terminalbench": null,
@@ -6730,44 +6844,6 @@
         "livecodebench": 0.29,
         "mmlu_pro": 0.634,
         "aime_25": 0.37,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
-      "name": "Qwen1.5 Chat 110B",
-      "slug": "qwen1.5-110b-chat",
-      "id": "d1768b3a-0a21-4e08-b3f6-56a9ab6cfbf3",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen-portal",
-      "openclaw_model": null,
-      "release_date": "2024-04-25",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 9.5,
-        "coding": null,
-        "math": null,
-        "tau2": null,
-        "terminalbench": null,
-        "ifbench": null,
-        "gpqa": 0.289,
-        "lcr": null,
-        "hle": null,
-        "scicode": null,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
         "math_500": null,
         "aime": null
       }
@@ -6793,7 +6869,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 8.8,
+        "intelligence": 3.4,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6831,8 +6907,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 8.0,
-        "coding": 1.4,
+        "intelligence": 2.6,
+        "coding": null,
         "math": 38.7,
         "tau2": 0.26,
         "terminalbench": null,
@@ -6869,7 +6945,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 7.4,
+        "intelligence": 2.1,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -6907,8 +6983,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 6.8,
-        "coding": 2.3,
+        "intelligence": 1.5,
+        "coding": null,
         "math": 7.3,
         "tau2": 0.216,
         "terminalbench": null,
@@ -6945,8 +7021,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 6.5,
-        "coding": 0.9,
+        "intelligence": 1.3,
+        "coding": null,
         "math": 18.0,
         "tau2": 0.211,
         "terminalbench": null,
@@ -6983,8 +7059,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 5.7,
-        "coding": 1.4,
+        "intelligence": 1.0,
+        "coding": null,
         "math": 10.3,
         "tau2": 0.146,
         "terminalbench": null,
@@ -7008,9 +7084,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": "grok-4.3",
       "release_date": "2026-04-30",
-      "speed_tps": 179.128,
-      "ttft_seconds": 24.494,
-      "ttfa_seconds": 24.494,
+      "speed_tps": 163.383,
+      "ttft_seconds": 21.198,
+      "ttfa_seconds": 21.198,
       "pricing": {
         "price_1m_blended_3_to_1": 1.563,
         "price_1m_input_tokens": 1.25,
@@ -7021,8 +7097,8 @@
         "family_id": "xai-grok-core"
       },
       "benchmarks": {
-        "intelligence": 53.2,
-        "coding": 41.0,
+        "intelligence": 37.6,
+        "coding": 42.2,
         "math": null,
         "tau2": 0.977,
         "terminalbench": 0.379,
@@ -7046,9 +7122,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": "grok-4.20-0309-reasoning",
       "release_date": "2026-04-07",
-      "speed_tps": 224.07,
-      "ttft_seconds": 17.636,
-      "ttfa_seconds": 17.636,
+      "speed_tps": 256.879,
+      "ttft_seconds": 12.017,
+      "ttfa_seconds": 12.017,
       "pricing": {
         "price_1m_blended_3_to_1": 3.0,
         "price_1m_input_tokens": 2.0,
@@ -7059,8 +7135,8 @@
         "family_id": "xai-grok-core"
       },
       "benchmarks": {
-        "intelligence": 49.3,
-        "coding": 40.5,
+        "intelligence": 37.0,
+        "coding": null,
         "math": null,
         "tau2": 0.93,
         "terminalbench": 0.379,
@@ -7077,44 +7153,6 @@
       }
     },
     {
-      "name": "Grok 4.3 (medium)",
-      "slug": "grok-4-3-medium",
-      "id": "5e8b0d98-a3b4-42b5-93d8-ecb748788754",
-      "creator": "xAI",
-      "openclaw_provider": "xai-oauth",
-      "openclaw_model": null,
-      "release_date": "2026-04-30",
-      "speed_tps": 157.282,
-      "ttft_seconds": 12.941,
-      "ttfa_seconds": 12.941,
-      "pricing": {
-        "price_1m_blended_3_to_1": 1.563,
-        "price_1m_input_tokens": 1.25,
-        "price_1m_output_tokens": 2.5
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 48.8,
-        "coding": 35.1,
-        "math": null,
-        "tau2": 0.912,
-        "terminalbench": 0.303,
-        "ifbench": 0.833,
-        "gpqa": 0.89,
-        "lcr": 0.65,
-        "hle": 0.281,
-        "scicode": 0.446,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": null,
-        "aime": null
-      }
-    },
-    {
       "name": "Grok 4.20 0309 (Reasoning)",
       "slug": "grok-4-20-0309",
       "id": "04787c2b-0751-4269-8029-075b727d7aed",
@@ -7122,9 +7160,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-03-10",
-      "speed_tps": 213.109,
-      "ttft_seconds": 16.241,
-      "ttfa_seconds": 16.241,
+      "speed_tps": 255.641,
+      "ttft_seconds": 13.43,
+      "ttfa_seconds": 13.43,
       "pricing": {
         "price_1m_blended_3_to_1": 3.0,
         "price_1m_input_tokens": 2.0,
@@ -7135,8 +7173,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 48.5,
-        "coding": 42.2,
+        "intelligence": 36.5,
+        "coding": null,
         "math": null,
         "tau2": 0.965,
         "terminalbench": 0.409,
@@ -7153,16 +7191,16 @@
       }
     },
     {
-      "name": "Grok 4.3 (low)",
-      "slug": "grok-4-3-low",
-      "id": "fe2c2289-d261-4433-8681-46448372c1f6",
+      "name": "Grok 4.3 (medium)",
+      "slug": "grok-4-3-medium",
+      "id": "5e8b0d98-a3b4-42b5-93d8-ecb748788754",
       "creator": "xAI",
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-04-30",
-      "speed_tps": 153.593,
-      "ttft_seconds": 5.423,
-      "ttfa_seconds": 5.423,
+      "speed_tps": 156.223,
+      "ttft_seconds": 17.644,
+      "ttfa_seconds": 17.644,
       "pricing": {
         "price_1m_blended_3_to_1": 1.563,
         "price_1m_input_tokens": 1.25,
@@ -7173,8 +7211,46 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 43.9,
-        "coding": 31.6,
+        "intelligence": 36.0,
+        "coding": null,
+        "math": null,
+        "tau2": 0.912,
+        "terminalbench": 0.303,
+        "ifbench": 0.833,
+        "gpqa": 0.89,
+        "lcr": 0.65,
+        "hle": 0.281,
+        "scicode": 0.446,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "Grok 4.3 (low)",
+      "slug": "grok-4-3-low",
+      "id": "fe2c2289-d261-4433-8681-46448372c1f6",
+      "creator": "xAI",
+      "openclaw_provider": "xai-oauth",
+      "openclaw_model": null,
+      "release_date": "2026-04-30",
+      "speed_tps": 145.602,
+      "ttft_seconds": 4.877,
+      "ttfa_seconds": 4.877,
+      "pricing": {
+        "price_1m_blended_3_to_1": 1.563,
+        "price_1m_input_tokens": 1.25,
+        "price_1m_output_tokens": 2.5
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 35.4,
+        "coding": null,
         "math": null,
         "tau2": 0.889,
         "terminalbench": 0.265,
@@ -7211,8 +7287,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 41.5,
-        "coding": 40.5,
+        "intelligence": 33.3,
+        "coding": null,
         "math": 92.7,
         "tau2": 0.749,
         "terminalbench": 0.379,
@@ -7249,8 +7325,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 38.6,
-        "coding": 30.9,
+        "intelligence": 30.6,
+        "coding": null,
         "math": 89.3,
         "tau2": 0.933,
         "terminalbench": 0.242,
@@ -7287,8 +7363,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 35.1,
-        "coding": 27.4,
+        "intelligence": 27.4,
+        "coding": null,
         "math": 89.7,
         "tau2": 0.658,
         "terminalbench": 0.189,
@@ -7305,44 +7381,6 @@
       }
     },
     {
-      "name": "Grok 3 mini Reasoning (high)",
-      "slug": "grok-3-mini-reasoning",
-      "id": "ff9bc5e5-a02f-4270-983e-4b3f834f3363",
-      "creator": "xAI",
-      "openclaw_provider": "xai-oauth",
-      "openclaw_model": null,
-      "release_date": "2025-02-19",
-      "speed_tps": 54.225,
-      "ttft_seconds": 0.559,
-      "ttfa_seconds": 37.442,
-      "pricing": {
-        "price_1m_blended_3_to_1": 0.35,
-        "price_1m_input_tokens": 0.3,
-        "price_1m_output_tokens": 0.5
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 32.1,
-        "coding": 25.2,
-        "math": 84.7,
-        "tau2": 0.904,
-        "terminalbench": 0.174,
-        "ifbench": 0.459,
-        "gpqa": 0.791,
-        "lcr": 0.503,
-        "hle": 0.111,
-        "scicode": 0.406,
-        "livecodebench": 0.696,
-        "mmlu_pro": 0.828,
-        "aime_25": 0.847,
-        "math_500": 0.992,
-        "aime": 0.933
-      }
-    },
-    {
       "name": "Grok 4.3 (Non-reasoning)",
       "slug": "grok-4-3-non-reasoning",
       "id": "90c2a9cf-ad7e-4332-9be2-2fd1309833e2",
@@ -7350,9 +7388,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-04-30",
-      "speed_tps": 142.356,
-      "ttft_seconds": 0.551,
-      "ttfa_seconds": 0.551,
+      "speed_tps": 130.61,
+      "ttft_seconds": 0.631,
+      "ttfa_seconds": 0.631,
       "pricing": {
         "price_1m_blended_3_to_1": 1.563,
         "price_1m_input_tokens": 1.25,
@@ -7363,8 +7401,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 31.0,
-        "coding": 25.1,
+        "intelligence": 24.8,
+        "coding": 35.2,
         "math": null,
         "tau2": 0.658,
         "terminalbench": 0.189,
@@ -7381,6 +7419,44 @@
       }
     },
     {
+      "name": "Grok 3 mini Reasoning (high)",
+      "slug": "grok-3-mini-reasoning",
+      "id": "ff9bc5e5-a02f-4270-983e-4b3f834f3363",
+      "creator": "xAI",
+      "openclaw_provider": "xai-oauth",
+      "openclaw_model": null,
+      "release_date": "2025-02-19",
+      "speed_tps": 66.304,
+      "ttft_seconds": 0.659,
+      "ttfa_seconds": 30.823,
+      "pricing": {
+        "price_1m_blended_3_to_1": 0.35,
+        "price_1m_input_tokens": 0.3,
+        "price_1m_output_tokens": 0.5
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 22.5,
+        "coding": null,
+        "math": 84.7,
+        "tau2": 0.904,
+        "terminalbench": 0.174,
+        "ifbench": 0.459,
+        "gpqa": 0.791,
+        "lcr": 0.503,
+        "hle": 0.111,
+        "scicode": 0.406,
+        "livecodebench": 0.696,
+        "mmlu_pro": 0.828,
+        "aime_25": 0.847,
+        "math_500": 0.992,
+        "aime": 0.933
+      }
+    },
+    {
       "name": "Grok 4.20 0309 (Non-reasoning)",
       "slug": "grok-4-20-0309-non-reasoning",
       "id": "523125f4-a1da-4990-9abd-dd08a069100e",
@@ -7388,9 +7464,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": "grok-4.20-0309-non-reasoning",
       "release_date": "2026-03-10",
-      "speed_tps": 181.466,
-      "ttft_seconds": 0.414,
-      "ttfa_seconds": 0.414,
+      "speed_tps": 203.503,
+      "ttft_seconds": 0.394,
+      "ttfa_seconds": 0.394,
       "pricing": {
         "price_1m_blended_3_to_1": 3.0,
         "price_1m_input_tokens": 2.0,
@@ -7401,8 +7477,8 @@
         "family_id": "xai-grok-core"
       },
       "benchmarks": {
-        "intelligence": 29.7,
-        "coding": 25.4,
+        "intelligence": 22.5,
+        "coding": null,
         "math": null,
         "tau2": 0.696,
         "terminalbench": 0.22,
@@ -7426,9 +7502,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-04-07",
-      "speed_tps": 179.468,
-      "ttft_seconds": 0.389,
-      "ttfa_seconds": 0.389,
+      "speed_tps": 217.221,
+      "ttft_seconds": 0.4,
+      "ttfa_seconds": 0.4,
       "pricing": {
         "price_1m_blended_3_to_1": 3.0,
         "price_1m_input_tokens": 2.0,
@@ -7439,8 +7515,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 29.0,
-        "coding": 22.0,
+        "intelligence": 21.8,
+        "coding": null,
         "math": null,
         "tau2": 0.599,
         "terminalbench": 0.167,
@@ -7477,8 +7553,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 28.7,
-        "coding": 23.7,
+        "intelligence": 21.6,
+        "coding": null,
         "math": 43.3,
         "tau2": 0.757,
         "terminalbench": 0.174,
@@ -7515,8 +7591,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 25.2,
-        "coding": 19.8,
+        "intelligence": 18.4,
+        "coding": null,
         "math": 58.0,
         "tau2": 0.488,
         "terminalbench": 0.114,
@@ -7553,8 +7629,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.6,
-        "coding": 19.5,
+        "intelligence": 16.9,
+        "coding": null,
         "math": 34.3,
         "tau2": 0.637,
         "terminalbench": 0.144,
@@ -7591,8 +7667,8 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 23.1,
-        "coding": 19.0,
+        "intelligence": 16.5,
+        "coding": null,
         "math": 41.3,
         "tau2": 0.637,
         "terminalbench": 0.121,
@@ -7629,7 +7705,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 21.6,
+        "intelligence": 15.1,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -7667,7 +7743,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.9,
+        "intelligence": 8.0,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -7705,7 +7781,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 13.3,
+        "intelligence": 7.5,
         "coding": null,
         "math": null,
         "tau2": null,
@@ -7743,7 +7819,7 @@
         "family_id": null
       },
       "benchmarks": {
-        "intelligence": 11.7,
+        "intelligence": 6.0,
         "coding": null,
         "math": null,
         "tau2": null,
