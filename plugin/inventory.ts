@@ -25,6 +25,28 @@ function normalizeOpenClawProviderId(providerId: string): string {
   return getCanonicalOpenClawProviderId(providerId);
 }
 
+function isActiveProviderRoute(
+  catalog: ProviderCatalogEntry | null,
+): catalog is ProviderCatalogEntry {
+  return catalog?.status === "active";
+}
+
+function disabledProviderCapacity(
+  providerId: string,
+  source: ResolvedProviderCapacity["source"],
+): ResolvedProviderCapacity {
+  return {
+    providerId,
+    enabled: false,
+    routingWeight: 0,
+    source,
+    accountCount: 0,
+    matchedAccountIds: [],
+    preferredAccountId: null,
+    preferredAuthProfile: null,
+  };
+}
+
 function getAccountBaseWeight(catalog: ProviderCatalogEntry, tierId: string | null | undefined): number {
   if (!tierId) return 1;
   return catalog.tiers.find((tier) => tier.tierId === tierId)?.routingWeight ?? 1;
@@ -58,8 +80,7 @@ function resolveInventoryAccounts(params: {
   const enabledAccounts = Object.entries(inventory.accounts).flatMap(([accountId, account]) => {
     const accountCatalog = getProviderCatalogEntry(account.provider);
     if (
-      !accountCatalog ||
-      accountCatalog.status !== "active" ||
+      !isActiveProviderRoute(accountCatalog) ||
       accountCatalog.openclawProviderId !== canonicalProviderId ||
       account.enabled === false
     ) {
@@ -146,26 +167,22 @@ export function resolveProviderCapacity(params: {
   category?: TaskCategory;
 }): ResolvedProviderCapacity | null {
   const { profile, inventory, agentId, providerId, category } = params;
-  const canonicalProviderId = normalizeOpenClawProviderId(providerId);
+  const requestedCatalog = getProviderCatalogEntry(providerId);
+  if (requestedCatalog && !isActiveProviderRoute(requestedCatalog)) {
+    return disabledProviderCapacity(providerId, inventory ? "inventory" : "profile");
+  }
+
+  const canonicalProviderId = requestedCatalog?.openclawProviderId ?? normalizeOpenClawProviderId(providerId);
   const inventoryConfiguredForProvider = Object.values(inventory?.accounts ?? {}).some((account) => {
     const accountCatalog = getProviderCatalogEntry(account.provider);
-    return accountCatalog?.status === "active" &&
+    return isActiveProviderRoute(accountCatalog) &&
       accountCatalog.openclawProviderId === canonicalProviderId;
   });
 
   if (inventoryConfiguredForProvider) {
     const accounts = resolveInventoryAccounts({ inventory, providerId, category });
     if (accounts.allAccounts.length === 0) {
-      return {
-        providerId,
-        enabled: false,
-        routingWeight: 0,
-        source: "inventory",
-        accountCount: 0,
-        matchedAccountIds: [],
-        preferredAccountId: null,
-        preferredAuthProfile: null,
-      };
+      return disabledProviderCapacity(providerId, "inventory");
     }
 
     const strongestAccount = Math.max(...accounts.scoringAccounts.map((account) => account.weight));

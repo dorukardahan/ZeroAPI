@@ -245,6 +245,41 @@ describe("subscription inventory", () => {
     })).toBe(true);
   });
 
+  it("does not let active xai inventory enable or weight the excluded xai-api model route", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-supergrok": {
+          provider: "xai",
+          tierId: "supergrok",
+          authProfile: "xai:supergrok",
+          usagePriority: 3,
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai-api",
+      category: "default",
+    });
+
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      modelKey: "xai-api/grok-4.5",
+    })).toBe(false);
+    expect(resolved?.enabled).toBe(false);
+    expect(resolved?.routingWeight).toBe(0);
+    expect(resolved?.accountCount).toBe(0);
+    expect(resolved?.matchedAccountIds).toEqual([]);
+    expect(resolved?.preferredAccountId).toBeNull();
+    expect(resolved?.preferredAuthProfile).toBeNull();
+  });
+
   it("does not let excluded xai-api inventory enable or weight the xai subscription route", () => {
     const inventory: SubscriptionInventory = {
       version: "1.0.0",
@@ -278,6 +313,37 @@ describe("subscription inventory", () => {
       agentId: undefined,
       modelKey: "xai/grok-4.5",
     })).toBe(false);
+  });
+
+  it("keeps unknown models outside candidate routing when inventory filtering is configured", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-supergrok": {
+          provider: "xai",
+          tierId: "supergrok",
+        },
+      },
+    };
+
+    expect(resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "external-provider",
+    })).toBeNull();
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      modelKey: "external-provider/model",
+    })).toBe(false);
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory: undefined,
+      agentId: undefined,
+      modelKey: "external-provider/model",
+    })).toBe(true);
   });
 
   it("does not let an unknown inventory provider enable a known subscription route", () => {
