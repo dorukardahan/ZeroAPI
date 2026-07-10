@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-07-11
+
 ### Added
 - Refresh the July 2026 starter model pool for GPT-5.6 Sol/Terra/Luna, GLM-5.2, Kimi K2.7 Code/K2.6, MiniMax M3, Qwen Portal 3.5 Plus, Grok 4.5, and Grok Build 0.1 with explicit benchmark-proxy metadata where direct rows are unavailable.
 - Add issue #29 subscription catalog contract coverage for filtering, active-versus-excluded xAI surfaces, excluded providers, Anthropic/Google exclusion, legacy Qwen migration, and unknown-provider fail-closed behavior.

@@ -28,6 +28,7 @@ const version = rootPackage.version;
 assert(version, "root package.json has no version");
 assert(pluginPackage.version === version, `plugin/package.json version ${pluginPackage.version} does not match ${version}`);
 assert(manifest.version === version, `plugin manifest version ${manifest.version} does not match ${version}`);
+assert(lockfile.version === version, "package-lock top-level version is not aligned");
 assert(lockfile.packages?.[""]?.version === version, "package-lock root version is not aligned");
 assert(lockfile.packages?.plugin?.version === version, "package-lock plugin workspace version is not aligned");
 assert(manifest.activation?.onStartup === true, "plugin manifest must keep activation.onStartup=true");
@@ -47,6 +48,20 @@ const versionNeedles = [
 ];
 for (const [path, needle] of versionNeedles) {
   assert(readText(join(repoRoot, path)).includes(needle), `${path} is missing ${needle}`);
+}
+
+const versionedJsonSurfaces = [
+  "benchmarks.json",
+  "plugin/benchmarks.json",
+  "examples/openai-only.json",
+  "examples/subscription-profile.json",
+  "examples/openai-multi-account.json",
+  "examples/openai-glm.json",
+  "examples/openai-glm-kimi.json",
+  "examples/full-stack.json",
+];
+for (const path of versionedJsonSurfaces) {
+  assert(readJson(join(repoRoot, path)).version === version, `${path} version is not aligned with ${version}`);
 }
 
 const stageScript = readText(join(repoRoot, "scripts", "stage_clawhub_plugin.mjs"));

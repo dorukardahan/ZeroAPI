@@ -27,6 +27,12 @@ const PREFLIGHT_INPUTS = [
   "scripts/refresh_benchmarks.py",
   "benchmarks.json",
   "plugin/benchmarks.json",
+  "examples/openai-only.json",
+  "examples/subscription-profile.json",
+  "examples/openai-multi-account.json",
+  "examples/openai-glm.json",
+  "examples/openai-glm-kimi.json",
+  "examples/full-stack.json",
 ];
 
 function runPreflight(cwd) {
@@ -78,7 +84,9 @@ test("release_preflight passes on a minimal aligned fixture (no full-repo copy)"
 test("release_preflight catches benchmark snapshot drift", () => {
   const tmp = buildAlignedFixture();
   try {
-    writeFileSync(join(tmp, "plugin", "benchmarks.json"), "{}\n");
+    const pluginSnapshot = JSON.parse(readFileSync(join(tmp, "plugin", "benchmarks.json"), "utf8"));
+    pluginSnapshot.source = "intentional parity drift";
+    writeFileSync(join(tmp, "plugin", "benchmarks.json"), `${JSON.stringify(pluginSnapshot, null, 2)}\n`);
     assert.throws(
       () => runPreflight(tmp),
       (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes("benchmark snapshots must be byte-identical"),
