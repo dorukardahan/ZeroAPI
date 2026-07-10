@@ -358,15 +358,22 @@ process.stdout.write(JSON.stringify({
             ("fallbacks non-array", ("routing_rules", "code", "fallbacks"), {}),
             ("fallback member non-string", ("routing_rules", "code", "fallbacks"), [None]),
             ("profile non-object", ("subscription_profile",), []),
+            ("profile missing global", ("subscription_profile", "global"), "__DELETE__"),
             ("global non-object", ("subscription_profile", "global"), []),
             ("agentOverrides non-object", ("subscription_profile", "agentOverrides"), []),
             ("per-agent selections non-object", ("subscription_profile", "agentOverrides", "worker"), None),
             ("inventory non-object", ("subscription_inventory",), []),
+            ("inventory missing accounts", ("subscription_inventory", "accounts"), "__DELETE__"),
             ("accounts non-object", ("subscription_inventory", "accounts"), None),
             ("account non-object", ("subscription_inventory", "accounts", "portal"), []),
             ("provider non-string", ("subscription_inventory", "accounts", "portal", "provider"), {"id": "qwen"}),
             ("disabled non-array", ("disabled_providers",), "qwen"),
             ("disabled member non-string", ("disabled_providers",), ["qwen", None]),
+            *((f"global selection {value!r}", ("subscription_profile", "global", "qwen"), value)
+              for value in (None, [], "selection", 17, True)),
+            *((f"override selection {value!r}",
+               ("subscription_profile", "agentOverrides", "worker", "qwen"), value)
+              for value in (None, [], "selection", 17, True)),
         )
         repo_root = Path(__file__).resolve().parents[2]
         script = """
@@ -384,7 +391,10 @@ process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unc
                 target = malformed
                 for key in keys[:-1]:
                     target = target[key]
-                target[keys[-1]] = value
+                if value == "__DELETE__":
+                    del target[keys[-1]]
+                else:
+                    target[keys[-1]] = value
                 config_path = Path(temp_dir) / "zeroapi-config.json"
                 original = json.dumps(malformed, separators=(",", ":"))
                 config_path.write_text(original, encoding="utf-8")

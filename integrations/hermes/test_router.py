@@ -523,15 +523,24 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             ("fallbacks non-array", {"routing_rules": {"default": {"primary": "qwen/model", "fallbacks": {}}}}),
             ("fallback member non-string", {"routing_rules": {"default": {"primary": "qwen/model", "fallbacks": [None]}}}),
             ("profile non-object", {"subscription_profile": []}),
+            ("profile missing global", {"subscription_profile": {"version": "1.0.0"}}),
             ("profile global non-object", {"subscription_profile": {"version": "1.0.0", "global": []}}),
             ("agentOverrides non-object", {"subscription_profile": {"version": "1.0.0", "global": {}, "agentOverrides": []}}),
             ("per-agent selections non-object", {"subscription_profile": {"version": "1.0.0", "global": {}, "agentOverrides": {"worker": None}}}),
             ("inventory non-object", {"subscription_inventory": []}),
+            ("inventory missing accounts", {"subscription_inventory": {"version": "1.0.0"}}),
             ("accounts non-object", {"subscription_inventory": {"version": "1.0.0", "accounts": None}}),
             ("account non-object", {"subscription_inventory": {"version": "1.0.0", "accounts": {"portal": []}}}),
             ("account provider non-string", {"subscription_inventory": {"version": "1.0.0", "accounts": {"portal": {"provider": {"id": "qwen"}}}}}),
             ("disabled providers non-array", {"disabled_providers": "qwen"}),
             ("disabled provider non-string", {"disabled_providers": ["qwen", None]}),
+            *((f"global selection {value!r}", {"subscription_profile": {
+                "version": "1.0.0", "global": {"qwen": value},
+            }}) for value in (None, [], "selection", 17, True)),
+            *((f"override selection {value!r}", {"subscription_profile": {
+                "version": "1.0.0", "global": {},
+                "agentOverrides": {"worker": {"qwen": value}},
+            }}) for value in (None, [], "selection", 17, True)),
         )
         for label, replacement in malformed_cases:
             with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="zeroapi-malformed-") as temp_dir:
@@ -562,7 +571,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             malformed = {
                 **CONFIG,
                 "subscription_catalog_version": "1.0.0",
-                "subscription_inventory": {"version": "1.0.0", "accounts": None},
+                "subscription_inventory": {"version": "1.0.0"},
             }
             malformed_bytes = json.dumps(malformed).encode()
             hermes_path.write_bytes(malformed_bytes)

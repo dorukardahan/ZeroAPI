@@ -135,17 +135,18 @@ function isModels(value: unknown): boolean {
 
 function isSubscriptionProfile(value: unknown): boolean {
   if (value === undefined) return true;
-  if (!isRecord(value)) return false;
-  if (value.global !== undefined && !isRecord(value.global)) return false;
+  if (!isRecord(value) || !Object.prototype.hasOwnProperty.call(value, "global") || !isRecord(value.global)) return false;
+  if (!Object.values(value.global).every(isRecord)) return false;
   if (value.agentOverrides === undefined) return true;
-  return isRecord(value.agentOverrides) && Object.values(value.agentOverrides).every(isRecord);
+  return isRecord(value.agentOverrides) && Object.values(value.agentOverrides).every(
+    (selections) => isRecord(selections) && Object.values(selections).every(isRecord),
+  );
 }
 
 function isSubscriptionInventory(value: unknown): boolean {
   if (value === undefined) return true;
-  if (!isRecord(value)) return false;
-  if (value.accounts === undefined) return true;
-  return isRecord(value.accounts) && Object.values(value.accounts).every(
+  if (!isRecord(value) || !Object.prototype.hasOwnProperty.call(value, "accounts") || !isRecord(value.accounts)) return false;
+  return Object.values(value.accounts).every(
     (account) => isRecord(account) && typeof account.provider === "string",
   );
 }

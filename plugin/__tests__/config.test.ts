@@ -368,16 +368,24 @@ describe("config", () => {
       ["fallbacks non-array", (config) => { config.routing_rules.default.fallbacks = {}; }],
       ["fallback member non-string", (config) => { config.routing_rules.default.fallbacks = [null]; }],
       ["profile non-object", (config) => { config.subscription_profile = []; }],
+      ["profile missing global", (config) => { delete config.subscription_profile.global; }],
       ["global non-object", (config) => { config.subscription_profile.global = []; }],
       ["agentOverrides non-object", (config) => { config.subscription_profile.agentOverrides = []; }],
       ["per-agent selections non-object", (config) => { config.subscription_profile.agentOverrides.worker = null; }],
       ["inventory non-object", (config) => { config.subscription_inventory = []; }],
+      ["inventory missing accounts", (config) => { delete config.subscription_inventory.accounts; }],
       ["accounts non-object", (config) => { config.subscription_inventory.accounts = null; }],
       ["account non-object", (config) => { config.subscription_inventory.accounts.portal = []; }],
       ["provider non-string", (config) => { config.subscription_inventory.accounts.portal.provider = {}; }],
       ["disabled non-array", (config) => { config.disabled_providers = "qwen"; }],
       ["disabled member non-string", (config) => { config.disabled_providers = ["qwen", null]; }],
     ];
+    for (const value of [null, [], "selection", 17, true]) {
+      cases.push(
+        [`global selection ${JSON.stringify(value)}`, (config) => { config.subscription_profile.global.qwen = value; }],
+        [`override selection ${JSON.stringify(value)}`, (config) => { config.subscription_profile.agentOverrides.worker.qwen = value; }],
+      );
+    }
     const { getConfigLoadStatus, loadConfig } = await import("../config.js");
     for (const [label, mutate] of cases) {
       const malformed = structuredClone(base) as Record<string, any>;

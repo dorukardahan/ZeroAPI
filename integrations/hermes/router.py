@@ -340,24 +340,28 @@ def _valid_models(value: Any) -> bool:
 
 
 def _valid_subscription_profile(value: Any) -> bool:
-    if not isinstance(value, dict):
+    if not isinstance(value, dict) or "global" not in value:
         return False
-    if "global" in value and not isinstance(value["global"], dict):
+    selections = value["global"]
+    if not isinstance(selections, dict) or not all(
+        isinstance(selection, dict) for selection in selections.values()
+    ):
         return False
     if "agentOverrides" not in value:
         return True
     overrides = value["agentOverrides"]
     return isinstance(overrides, dict) and all(
-        isinstance(selections, dict) for selections in overrides.values()
+        isinstance(agent_selections, dict) and all(
+            isinstance(selection, dict) for selection in agent_selections.values()
+        )
+        for agent_selections in overrides.values()
     )
 
 
 def _valid_subscription_inventory(value: Any) -> bool:
-    if not isinstance(value, dict):
+    if not isinstance(value, dict) or "accounts" not in value:
         return False
-    accounts = value.get("accounts")
-    if accounts is None:
-        return "accounts" not in value
+    accounts = value["accounts"]
     if not isinstance(accounts, dict):
         return False
     return all(

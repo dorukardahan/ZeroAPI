@@ -31,7 +31,7 @@ class HermesAdapterPayloadTest(unittest.TestCase):
             "routing_rules": {"default": {"primary": "qwen/model", "fallbacks": []}},
             "keywords": {}, "high_risk_keywords": [],
             "subscription_catalog_version": "1.0.0",
-            "subscription_inventory": {"version": "1.0.0", "accounts": None},
+            "subscription_inventory": {"version": "1.0.0"},
         }
         with tempfile.TemporaryDirectory(prefix="zeroapi-adapter-malformed-") as temp_dir:
             path = Path(temp_dir) / "zeroapi-config.json"
