@@ -98,27 +98,48 @@ class HermesParityTest(unittest.TestCase):
         }
         inventory = copy.deepcopy(version_fields.get("subscription_inventory", {}))
         inventory["accounts"] = {
-            "openai-main": {"provider": "openai", "tierId": "pro"},
-            "xai-main": {"provider": "xai", "tierId": "supergrok"},
-            "moonshot-main": {"provider": "moonshot", "tierId": "moderato"},
-            "minimax-main": {"provider": "minimax-portal", "tierId": "starter"},
-            "zai-main": {"provider": "zai", "tierId": "lite"},
-            "portal": {"provider": "qwen-portal" if legacy_structural else "qwen-oauth", "tierId": "free"},
+            "openai-main": {"provider": "openai", "tierId": "pro", "enabled": True,
+                             "authProfile": None, "usagePriority": 1.0,
+                             "intendedUse": []},
+            "xai-main": {"provider": "xai", "tierId": "supergrok", "enabled": True,
+                          "authProfile": "xai-secondary", "usagePriority": 1.0,
+                          "intendedUse": []},
+            "moonshot-main": {"provider": "moonshot", "tierId": "moderato", "enabled": True,
+                               "authProfile": "moonshot-main", "usagePriority": 1.0,
+                               "intendedUse": []},
+            "minimax-main": {"provider": "minimax-portal", "tierId": "starter", "enabled": True,
+                              "authProfile": None, "usagePriority": 1.0,
+                              "intendedUse": []},
+            "zai-main": {"provider": "zai", "tierId": "lite", "enabled": True,
+                         "authProfile": "zai-default", "usagePriority": 1.0,
+                         "intendedUse": []},
+            "portal": {"provider": "qwen-portal" if legacy_structural else "qwen-oauth",
+                       "tierId": "free", "enabled": True, "authProfile": "qwen-legacy",
+                       "usagePriority": 1.0, "intendedUse": []},
         }
         top = {
             key: copy.deepcopy(value)
             for key, value in version_fields.items()
             if key not in {"subscription_profile", "subscription_inventory"}
         }
+        common_models = [
+            ("openai/current-model", _m(1000000, False, 9, 1, intelligence=40, coding=40)),
+            ("xai/grok-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("moonshot/kimi-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("minimax-portal/minimax-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("zai/glm-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+        ]
+        canonical_model = _m(1000000, False, 10, 1, intelligence=50, coding=50)
+        alias_model = _m(800002, True, 10, 1, intelligence=50, coding=50)
+        model_entries = (
+            [("qwen-oauth/coder-model", canonical_model), ("qwen/coder-model", alias_model)]
+            if legacy_structural and collision_order == "canonical-first"
+            else [("qwen/coder-model", alias_model), ("qwen-oauth/coder-model", canonical_model)]
+            if legacy_structural
+            else [(qwen_model, canonical_model)]
+        )
         return _base(
-            {
-                "openai/current-model": _m(1000000, False, 9, 1, intelligence=40, coding=40),
-                "xai/grok-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
-                "moonshot/kimi-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
-                "minimax-portal/minimax-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
-                "zai/glm-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
-                qwen_model: _m(1000000, False, 10, 1, intelligence=50, coding=50),
-            },
+            dict([*common_models, *model_entries]),
             {"code": {"primary": qwen_model, "fallbacks": ["openai/current-model"]},
              "default": {"primary": qwen_model, "fallbacks": ["xai/grok-model", "moonshot/kimi-model",
                                                                   "minimax-portal/minimax-model", "zai/glm-model"]}},
@@ -148,14 +169,16 @@ const decision = resolveRoutingDecision(config, {
 });
 process.stdout.write(JSON.stringify({
   defaultModel: config.default_model,
-  modelKeys: Object.keys(config.models),
+  models: config.models,
+  modelEntries: Object.entries(config.models),
   routingRules: config.routing_rules,
   profileSelections: config.subscription_profile?.global ?? {},
   agentOverrideSelections: config.subscription_profile?.agentOverrides ?? {},
-  inventoryProviders: Object.fromEntries(Object.entries(config.subscription_inventory?.accounts ?? {})
-    .map(([account, value]) => [account, value.provider])),
+  inventoryAccounts: config.subscription_inventory?.accounts ?? {},
+  inventoryAccountEntries: Object.entries(config.subscription_inventory?.accounts ?? {}),
   disabled: config.disabled_providers,
   allowed: decision.selectedModel !== null,
+  selectedModel: decision.selectedModel,
   rejected: decision.subscriptionRejected.includes('qwen-oauth/coder-model'),
   subscriptionRejected: decision.subscriptionRejected,
   weightedCandidates: decision.weightedCandidates,
@@ -173,8 +196,10 @@ process.stdout.write(JSON.stringify({
         return json.loads(completed.stdout)
 
     def _assert_load_parity(self, label, version_fields, file_disabled, env_value, expected, portal_disabled,
-                            collision_order="alias-first"):
-        cfg = self._qwen_fixture(version_fields, file_disabled, portal_disabled, collision_order)
+                            collision_order="alias-first", legacy_structural=None):
+        if legacy_structural is None:
+            legacy_structural = portal_disabled
+        cfg = self._qwen_fixture(version_fields, file_disabled, legacy_structural, collision_order)
         untouched = copy.deepcopy(cfg)
         repo_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory(prefix="zeroapi-load-parity-") as temp_dir:
@@ -195,14 +220,16 @@ process.stdout.write(JSON.stringify({
 
                 python_structural = {
                     "defaultModel": python_config["default_model"],
-                    "modelKeys": list(python_config["models"]),
+                    "models": python_config["models"],
+                    "modelEntries": [list(item) for item in python_config["models"].items()],
                     "routingRules": python_config["routing_rules"],
                     "profileSelections": python_config.get("subscription_profile", {}).get("global", {}),
                     "agentOverrideSelections": python_config.get("subscription_profile", {}).get("agentOverrides", {}),
-                    "inventoryProviders": {
-                        account: value["provider"]
-                        for account, value in python_config.get("subscription_inventory", {}).get("accounts", {}).items()
-                    },
+                    "inventoryAccounts": python_config.get("subscription_inventory", {}).get("accounts", {}),
+                    "inventoryAccountEntries": [
+                        list(item)
+                        for item in python_config.get("subscription_inventory", {}).get("accounts", {}).items()
+                    ],
                 }
 
             self.assertEqual(config_path.read_text(encoding="utf-8"), original_text, label)
@@ -213,10 +240,44 @@ process.stdout.write(JSON.stringify({
         self.assertEqual(python_disabled, expected, label)
         self.assertEqual(typescript["disabled"], python_disabled, label)
         self.assertEqual({key: typescript[key] for key in python_structural}, python_structural, label)
+        self.assertEqual(typescript["models"], dict(typescript["modelEntries"]), label)
+        self.assertEqual(typescript["inventoryAccounts"], dict(typescript["inventoryAccountEntries"]), label)
+
+        expected_models = {}
+        for model_ref, payload in cfg["models"].items():
+            if legacy_structural and model_ref.startswith("qwen/"):
+                model_ref = f"qwen-oauth/{model_ref.split('/', 1)[1]}"
+            expected_models[model_ref] = payload
+        self.assertEqual(typescript["models"], expected_models, label)
+        self.assertEqual(python_structural["models"], expected_models, label)
+        self.assertEqual(typescript["modelEntries"], [list(item) for item in expected_models.items()], label)
+
+        expected_accounts = copy.deepcopy(cfg["subscription_inventory"]["accounts"])
+        if legacy_structural:
+            expected_accounts["portal"]["provider"] = "qwen-oauth"
+        self.assertEqual(typescript["inventoryAccounts"], expected_accounts, label)
+        self.assertEqual(python_structural["inventoryAccounts"], expected_accounts, label)
+        self.assertEqual(
+            typescript["inventoryAccountEntries"], [list(item) for item in expected_accounts.items()], label,
+        )
+        for account_id in ("openai-main", "xai-main", "moonshot-main", "minimax-main", "zai-main"):
+            self.assertEqual(expected_accounts[account_id], cfg["subscription_inventory"]["accounts"][account_id], label)
+
+        if legacy_structural:
+            expected_winner_source = (
+                "qwen/coder-model" if collision_order == "canonical-first" else "qwen-oauth/coder-model"
+            )
+            expected_winner = cfg["models"][expected_winner_source]
+            self.assertEqual(list(expected_models).count("qwen-oauth/coder-model"), 1, label)
+            self.assertEqual(typescript["models"]["qwen-oauth/coder-model"], expected_winner, label)
+            self.assertEqual(python_structural["models"]["qwen-oauth/coder-model"], expected_winner, label)
         self.assertEqual(typescript["rejected"], portal_disabled, label)
         self.assertEqual(python_rejected, portal_disabled, label)
         self.assertEqual(typescript["rejected"], python_rejected, label)
-        self.assertEqual(typescript["allowed"], python_route is not None, label)
+        self.assertEqual(
+            typescript["allowed"], python_route is not None,
+            f"{label}: TS selected={typescript['selectedModel']!r}; Python route={python_route!r}",
+        )
         if portal_disabled:
             self.assertIn("qwen-oauth/coder-model", typescript["subscriptionRejected"], label)
             self.assertNotIn("qwen-oauth/coder-model", typescript["weightedCandidates"], label)
@@ -275,7 +336,7 @@ process.stdout.write(JSON.stringify({
                     label, versions, file_disabled, env_value, expected, portal_disabled,
                 )
 
-    def test_P3_selection_collision_payloads_match_typescript_in_both_orders(self):
+    def test_P3_full_structural_collision_payloads_match_typescript_in_both_orders(self):
         for order in ("canonical-first", "alias-first"):
             with self.subTest(order=order):
                 self._assert_load_parity(
@@ -286,6 +347,7 @@ process.stdout.write(JSON.stringify({
                     [],
                     False,
                     collision_order=order,
+                    legacy_structural=True,
                 )
 
     def test_S1_high_risk_still_routes(self):
