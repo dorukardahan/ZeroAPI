@@ -117,8 +117,47 @@ export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRoutingRules(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return Object.values(value).every((rule) => {
+    if (!isRecord(rule) || typeof rule.primary !== "string" || !Array.isArray(rule.fallbacks)) return false;
+    return rule.fallbacks.every((modelRef) => typeof modelRef === "string");
+  });
+}
+
+function isModels(value: unknown): boolean {
+  return isRecord(value) && Object.values(value).every(isRecord);
+}
+
+function isSubscriptionProfile(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  if (value.global !== undefined && !isRecord(value.global)) return false;
+  if (value.agentOverrides === undefined) return true;
+  return isRecord(value.agentOverrides) && Object.values(value.agentOverrides).every(isRecord);
+}
+
+function isSubscriptionInventory(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  if (value.accounts === undefined) return true;
+  return isRecord(value.accounts) && Object.values(value.accounts).every(
+    (account) => isRecord(account) && typeof account.provider === "string",
+  );
+}
+
+function isOptionalStringArray(value: unknown): boolean {
+  return value === undefined || (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
-  if (typeof obj !== "object" || obj === null) return false;
+  if (!isRecord(obj)) return false;
   const cfg = obj as Record<string, unknown>;
   const routingModeValid =
     cfg.routing_mode === undefined ||
@@ -132,24 +171,9 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     cfg.external_model_policy === undefined ||
     cfg.external_model_policy === "stay" ||
     cfg.external_model_policy === "allow";
-  const subscriptionProfileValid =
-    cfg.subscription_profile === undefined ||
-    (
-      typeof cfg.subscription_profile === "object" &&
-      cfg.subscription_profile !== null &&
-      !Array.isArray(cfg.subscription_profile)
-    );
-  const subscriptionInventoryValid =
-    cfg.subscription_inventory === undefined ||
-    (
-      typeof cfg.subscription_inventory === "object" &&
-      cfg.subscription_inventory !== null &&
-      !Array.isArray(cfg.subscription_inventory)
-    );
   const visionKeywordsValid =
     cfg.vision_keywords === undefined || Array.isArray(cfg.vision_keywords);
-  const disabledProvidersValid =
-    cfg.disabled_providers === undefined || Array.isArray(cfg.disabled_providers);
+  const disabledProvidersValid = isOptionalStringArray(cfg.disabled_providers);
   const channelAdvisoriesValid =
     cfg.channel_advisories_enabled === undefined ||
     typeof cfg.channel_advisories_enabled === "boolean";
@@ -166,8 +190,8 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     routingModeValid &&
     routingModifierValid &&
     externalModelPolicyValid &&
-    typeof cfg.models === "object" && cfg.models !== null &&
-    typeof cfg.routing_rules === "object" && cfg.routing_rules !== null &&
+    isModels(cfg.models) &&
+    isRoutingRules(cfg.routing_rules) &&
     typeof cfg.keywords === "object" && cfg.keywords !== null &&
     Array.isArray(cfg.high_risk_keywords) &&
     typeof cfg.fast_ttft_max_seconds === "number" &&
@@ -176,8 +200,8 @@ function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
     disabledProvidersValid &&
     channelAdvisoriesValid &&
     riskLevelsValid &&
-    subscriptionProfileValid &&
-    subscriptionInventoryValid
+    isSubscriptionProfile(cfg.subscription_profile) &&
+    isSubscriptionInventory(cfg.subscription_inventory)
   );
 }
 
@@ -190,34 +214,41 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
     return null;
   }
 
+  let raw: string;
   try {
-    const raw = readFileSync(path, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (!isValidConfig(parsed)) {
-      lastLoadStatus = "invalid";
-      return null;
-    }
-    lastLoadStatus = "ok";
-    const migrated = migrateLegacyCatalogConfig(parsed);
-    cachedConfig = {
-      ...migrated,
-      routing_mode: migrated.routing_mode ?? "balanced",
-      external_model_policy: migrated.external_model_policy ?? "stay",
-      channel_advisories_enabled:
-        parseOptionalBooleanEnv(process.env.ZEROAPI_CHANNEL_ADVISORIES) ??
-        migrated.channel_advisories_enabled ??
-        true,
-      workspace_hints: migrated.workspace_hints ?? {},
-      disabled_providers: remapProviderIds(
-        [...(parsed.disabled_providers ?? []), ...parseDisabledProvidersEnv()],
-        getConfigCatalogVersion(parsed),
-      ) ?? [],
-    };
-    return cachedConfig;
+    raw = readFileSync(path, "utf-8");
   } catch {
     lastLoadStatus = "parse_error";
     return null;
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    lastLoadStatus = "parse_error";
+    return null;
+  }
+  if (!isValidConfig(parsed)) {
+    lastLoadStatus = "invalid";
+    return null;
+  }
+  lastLoadStatus = "ok";
+  const migrated = migrateLegacyCatalogConfig(parsed);
+  cachedConfig = {
+    ...migrated,
+    routing_mode: migrated.routing_mode ?? "balanced",
+    external_model_policy: migrated.external_model_policy ?? "stay",
+    channel_advisories_enabled:
+      parseOptionalBooleanEnv(process.env.ZEROAPI_CHANNEL_ADVISORIES) ??
+      migrated.channel_advisories_enabled ??
+      true,
+    workspace_hints: migrated.workspace_hints ?? {},
+    disabled_providers: remapProviderIds(
+      [...(parsed.disabled_providers ?? []), ...parseDisabledProvidersEnv()],
+      getConfigCatalogVersion(parsed),
+    ) ?? [],
+  };
+  return cachedConfig;
 }
 
 export function getConfig(): ZeroAPIConfig | null {

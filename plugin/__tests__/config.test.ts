@@ -345,6 +345,52 @@ describe("config", () => {
     expect(result).toBeNull();
   });
 
+  it("fails closed with invalid status for malformed migration/router nested shapes", async () => {
+    const base = {
+      version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",
+      subscription_catalog_version: "1.0.0", default_model: "qwen/model",
+      models: { "qwen/model": { extensionCapability: { preserved: true } } },
+      routing_rules: { default: { primary: "qwen/model", fallbacks: [] as unknown[] } },
+      workspace_hints: {}, keywords: {}, high_risk_keywords: [], fast_ttft_max_seconds: 5,
+      subscription_profile: {
+        version: "1.0.0", global: { qwen: { enabled: true, extension: { preserved: true } } },
+        agentOverrides: { worker: { qwen: { tierId: "free" } } } as Record<string, unknown>,
+      } as Record<string, unknown>,
+      subscription_inventory: {
+        version: "1.0.0", accounts: { portal: { provider: "qwen", extension: { preserved: true } } },
+      } as Record<string, unknown>,
+      disabled_providers: ["qwen"] as unknown,
+    };
+    const cases: Array<[string, (config: Record<string, any>) => void]> = [
+      ["model capability non-object", (config) => { config.models["qwen/model"] = null; }],
+      ["routing rule non-object", (config) => { config.routing_rules.default = null; }],
+      ["primary non-string", (config) => { config.routing_rules.default.primary = 17; }],
+      ["fallbacks non-array", (config) => { config.routing_rules.default.fallbacks = {}; }],
+      ["fallback member non-string", (config) => { config.routing_rules.default.fallbacks = [null]; }],
+      ["profile non-object", (config) => { config.subscription_profile = []; }],
+      ["global non-object", (config) => { config.subscription_profile.global = []; }],
+      ["agentOverrides non-object", (config) => { config.subscription_profile.agentOverrides = []; }],
+      ["per-agent selections non-object", (config) => { config.subscription_profile.agentOverrides.worker = null; }],
+      ["inventory non-object", (config) => { config.subscription_inventory = []; }],
+      ["accounts non-object", (config) => { config.subscription_inventory.accounts = null; }],
+      ["account non-object", (config) => { config.subscription_inventory.accounts.portal = []; }],
+      ["provider non-string", (config) => { config.subscription_inventory.accounts.portal.provider = {}; }],
+      ["disabled non-array", (config) => { config.disabled_providers = "qwen"; }],
+      ["disabled member non-string", (config) => { config.disabled_providers = ["qwen", null]; }],
+    ];
+    const { getConfigLoadStatus, loadConfig } = await import("../config.js");
+    for (const [label, mutate] of cases) {
+      const malformed = structuredClone(base) as Record<string, any>;
+      mutate(malformed);
+      const path = join(testDir, "zeroapi-config.json");
+      const original = JSON.stringify(malformed);
+      writeFileSync(path, original);
+      expect(loadConfig(testDir), label).toBeNull();
+      expect(getConfigLoadStatus(), label).toBe("invalid");
+      expect(readFileSync(path, "utf8"), label).toBe(original);
+    }
+  });
+
   it("migrates 1.0 Qwen Portal aliases in memory without rewriting the user file", async () => {
     const legacy = {
       version: "3.8.37",
@@ -353,9 +399,9 @@ describe("config", () => {
       subscription_catalog_version: "1.0.0",
       default_model: "qwen/coder-model",
       disabled_providers: [
-        " ZAI ", null, " qWeN ", "qwen-portal", "moonshot", "QWEN-DASHSCOPE",
-        " qwen-cli ", "qwen-oauth", 17, { provider: "qwen" }, "zai",
-      ] as unknown as string[],
+        " ZAI ", " qWeN ", "qwen-portal", "moonshot", "QWEN-DASHSCOPE",
+        " qwen-cli ", "qwen-oauth", "zai",
+      ],
       models: {
         "qwen/coder-model": { context_window: 1000000, supports_vision: false, speed_tps: null, ttft_seconds: null, benchmarks: {} },
       },
@@ -564,7 +610,7 @@ describe("config", () => {
     const unversioned = {
       version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",
       default_model: "qwen/coder-model",
-      disabled_providers: ["qwen", null, 17] as unknown as string[],
+      disabled_providers: ["qwen"],
       models: { "qwen/coder-model": { context_window: 1000000, supports_vision: false, speed_tps: null, ttft_seconds: null, benchmarks: {} } },
       routing_rules: { default: { primary: "qwen/coder-model", fallbacks: [] } },
       workspace_hints: {}, keywords: {}, high_risk_keywords: [], fast_ttft_max_seconds: 5,

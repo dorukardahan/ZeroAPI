@@ -309,31 +309,89 @@ def load_config(path: str | None = None) -> Config | None:
 
     for candidate in candidates:
         try:
-            if candidate.exists():
-                parsed = json.loads(candidate.read_text(encoding="utf-8"))
-                if _valid_config(parsed):
-                    return _migrate_legacy_config(parsed)
-        except (
-            OSError,
-            json.JSONDecodeError,
-            TypeError,
-            ValueError,
-            KeyError,
-            AttributeError,
-        ):
+            if not candidate.exists():
+                continue
+            parsed = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
             continue
+        if _valid_config(parsed):
+            return _migrate_legacy_config(parsed)
     return None
 
 
+def _valid_routing_rules(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    for rule in value.values():
+        if not isinstance(rule, dict):
+            return False
+        fallbacks = rule.get("fallbacks")
+        if not isinstance(rule.get("primary"), str) or not isinstance(fallbacks, list):
+            return False
+        if not all(isinstance(model_ref, str) for model_ref in fallbacks):
+            return False
+    return True
+
+
+def _valid_models(value: Any) -> bool:
+    return isinstance(value, dict) and all(
+        isinstance(capabilities, dict) for capabilities in value.values()
+    )
+
+
+def _valid_subscription_profile(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    if "global" in value and not isinstance(value["global"], dict):
+        return False
+    if "agentOverrides" not in value:
+        return True
+    overrides = value["agentOverrides"]
+    return isinstance(overrides, dict) and all(
+        isinstance(selections, dict) for selections in overrides.values()
+    )
+
+
+def _valid_subscription_inventory(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    accounts = value.get("accounts")
+    if accounts is None:
+        return "accounts" not in value
+    if not isinstance(accounts, dict):
+        return False
+    return all(
+        isinstance(account, dict) and isinstance(account.get("provider"), str)
+        for account in accounts.values()
+    )
+
+
+def _valid_optional_string_list(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
 def _valid_config(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
     return (
-        isinstance(value, dict)
-        and isinstance(value.get("version"), str)
+        isinstance(value.get("version"), str)
         and isinstance(value.get("default_model"), str)
-        and isinstance(value.get("models"), dict)
-        and isinstance(value.get("routing_rules"), dict)
+        and _valid_models(value.get("models"))
+        and _valid_routing_rules(value.get("routing_rules"))
         and isinstance(value.get("keywords"), dict)
         and isinstance(value.get("high_risk_keywords"), list)
+        and (
+            "subscription_profile" not in value
+            or _valid_subscription_profile(value["subscription_profile"])
+        )
+        and (
+            "subscription_inventory" not in value
+            or _valid_subscription_inventory(value["subscription_inventory"])
+        )
+        and (
+            "disabled_providers" not in value
+            or _valid_optional_string_list(value["disabled_providers"])
+        )
     )
 
 

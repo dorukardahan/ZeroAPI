@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from router import HERMES_PROVIDER_MAP, ZeroAPIRouter, load_config
+from router import HERMES_PROVIDER_MAP, ZeroAPIRouter, _valid_config, load_config
 
 
 CONFIG = {
@@ -515,26 +515,42 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         finally:
             os.unlink(path)
 
-    def test_malformed_explicit_legacy_configs_fail_closed_without_rewriting(self):
+    def test_malformed_nested_configs_fail_closed_without_rewriting(self):
         malformed_cases = (
-            ("scalar fallbacks", {"primary": "qwen/model", "fallbacks": 17}),
-            ("null fallbacks", {"primary": "qwen/model", "fallbacks": None}),
-            ("object fallbacks", {"primary": "qwen/model", "fallbacks": {"model": "qwen/other"}}),
-            ("malformed rule object", {"primary": {"provider": "qwen"}, "fallbacks": []}),
+            ("model capability non-object", {"models": {"qwen/model": None}}),
+            ("routing rule non-object", {"routing_rules": {"default": None}}),
+            ("primary non-string", {"routing_rules": {"default": {"primary": 17, "fallbacks": []}}}),
+            ("fallbacks non-array", {"routing_rules": {"default": {"primary": "qwen/model", "fallbacks": {}}}}),
+            ("fallback member non-string", {"routing_rules": {"default": {"primary": "qwen/model", "fallbacks": [None]}}}),
+            ("profile non-object", {"subscription_profile": []}),
+            ("profile global non-object", {"subscription_profile": {"version": "1.0.0", "global": []}}),
+            ("agentOverrides non-object", {"subscription_profile": {"version": "1.0.0", "global": {}, "agentOverrides": []}}),
+            ("per-agent selections non-object", {"subscription_profile": {"version": "1.0.0", "global": {}, "agentOverrides": {"worker": None}}}),
+            ("inventory non-object", {"subscription_inventory": []}),
+            ("accounts non-object", {"subscription_inventory": {"version": "1.0.0", "accounts": None}}),
+            ("account non-object", {"subscription_inventory": {"version": "1.0.0", "accounts": {"portal": []}}}),
+            ("account provider non-string", {"subscription_inventory": {"version": "1.0.0", "accounts": {"portal": {"provider": {"id": "qwen"}}}}}),
+            ("disabled providers non-array", {"disabled_providers": "qwen"}),
+            ("disabled provider non-string", {"disabled_providers": ["qwen", None]}),
         )
-        for label, malformed_rule in malformed_cases:
+        for label, replacement in malformed_cases:
             with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="zeroapi-malformed-") as temp_dir:
                 path = Path(temp_dir) / "zeroapi-config.json"
                 malformed = {
                     **CONFIG,
                     "subscription_catalog_version": "1.0.0",
-                    "routing_rules": {"default": malformed_rule},
+                    **replacement,
                 }
                 original = json.dumps(malformed, separators=(",", ":")).encode()
                 path.write_bytes(original)
 
                 self.assertIsNone(load_config(str(path)))
                 self.assertEqual(path.read_bytes(), original)
+
+    def test_validator_is_total_for_arbitrary_json_values(self):
+        for value in (None, True, 17, "config", [], [None], {"version": "test"}):
+            with self.subTest(value=value):
+                self.assertFalse(_valid_config(value))
 
     def test_default_candidates_continue_after_malformed_legacy_config(self):
         with tempfile.TemporaryDirectory(prefix="zeroapi-home-") as temp_dir:
@@ -546,7 +562,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             malformed = {
                 **CONFIG,
                 "subscription_catalog_version": "1.0.0",
-                "routing_rules": {"default": {"primary": "qwen/model", "fallbacks": None}},
+                "subscription_inventory": {"version": "1.0.0", "accounts": None},
             }
             malformed_bytes = json.dumps(malformed).encode()
             hermes_path.write_bytes(malformed_bytes)
@@ -561,16 +577,20 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             self.assertEqual(loaded["version"], "later-valid")
             self.assertEqual(hermes_path.read_bytes(), malformed_bytes)
 
-    def test_migration_does_not_swallow_process_control_or_memory_failures(self):
+    def test_validator_and_migration_programmer_errors_propagate(self):
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
             json.dump(CONFIG, handle)
             path = handle.name
         try:
-            for error_type in (KeyboardInterrupt, SystemExit, MemoryError):
-                with self.subTest(error=error_type.__name__):
-                    with patch("router._migrate_legacy_config", side_effect=error_type("sentinel")):
-                        with self.assertRaises(error_type):
-                            load_config(path)
+            for target in ("router._valid_config", "router._migrate_legacy_config"):
+                for error_type in (
+                    TypeError, ValueError, KeyError, AttributeError, RuntimeError,
+                    KeyboardInterrupt, SystemExit, MemoryError,
+                ):
+                    with self.subTest(target=target, error=error_type.__name__):
+                        with patch(target, side_effect=error_type("sentinel")):
+                            with self.assertRaises(error_type):
+                                load_config(path)
         finally:
             os.unlink(path)
 

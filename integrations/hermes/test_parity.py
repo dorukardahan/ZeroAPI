@@ -318,8 +318,8 @@ process.stdout.write(JSON.stringify({
         cases = (
             ("env-only legacy alias", {"subscription_catalog_version": "1.0.0"}, [],
              " qWeN ", ["qwen-oauth"], True),
-            ("file-env collisions malformed and unrelated order", {"subscription_catalog_version": "1.0.0"},
-             [" ZAI ", None, "qwen-portal", 17, {"provider": "qwen"}, "moonshot", "qwen-oauth", "zai"],
+            ("file-env collisions and unrelated order", {"subscription_catalog_version": "1.0.0"},
+             [" ZAI ", "qwen-portal", "moonshot", "qwen-oauth", "zai"],
              " QWEN-DASHSCOPE , minimax, moonshot, qwen-oauth ",
              ["zai", "qwen-oauth", "moonshot", "minimax-portal"], True),
             ("fresh Cloud stays separate from Portal", {"subscription_catalog_version": "1.1.0"},
@@ -350,38 +350,57 @@ process.stdout.write(JSON.stringify({
                     legacy_structural=True,
                 )
 
-    def test_P2_malformed_legacy_migration_fails_closed_without_rewriting_in_both_loaders(self):
-        malformed = self._qwen_fixture(
-            {"subscription_catalog_version": "1.0.0"}, [], True,
+    def test_P2_malformed_nested_matrix_fails_closed_without_rewriting_in_both_loaders(self):
+        replacements = (
+            ("model capability non-object", ("models", "qwen/coder-model"), None),
+            ("routing rule non-object", ("routing_rules", "code"), None),
+            ("primary non-string", ("routing_rules", "code", "primary"), 17),
+            ("fallbacks non-array", ("routing_rules", "code", "fallbacks"), {}),
+            ("fallback member non-string", ("routing_rules", "code", "fallbacks"), [None]),
+            ("profile non-object", ("subscription_profile",), []),
+            ("global non-object", ("subscription_profile", "global"), []),
+            ("agentOverrides non-object", ("subscription_profile", "agentOverrides"), []),
+            ("per-agent selections non-object", ("subscription_profile", "agentOverrides", "worker"), None),
+            ("inventory non-object", ("subscription_inventory",), []),
+            ("accounts non-object", ("subscription_inventory", "accounts"), None),
+            ("account non-object", ("subscription_inventory", "accounts", "portal"), []),
+            ("provider non-string", ("subscription_inventory", "accounts", "portal", "provider"), {"id": "qwen"}),
+            ("disabled non-array", ("disabled_providers",), "qwen"),
+            ("disabled member non-string", ("disabled_providers",), ["qwen", None]),
         )
-        malformed["routing_rules"]["code"]["fallbacks"] = None
         repo_root = Path(__file__).resolve().parents[2]
-        with tempfile.TemporaryDirectory(prefix="zeroapi-malformed-parity-") as temp_dir:
-            config_path = Path(temp_dir) / "zeroapi-config.json"
-            original = json.dumps(malformed, separators=(",", ":"))
-            config_path.write_text(original, encoding="utf-8")
-            script = """
-import { loadConfig } from './plugin/config.ts';
+        script = """
+import { getConfigLoadStatus, loadConfig } from './plugin/config.ts';
 import { readFileSync } from 'node:fs';
 const dir = process.env.ZEROAPI_PARITY_FIXTURE_DIR;
 const path = `${dir}/zeroapi-config.json`;
 const before = readFileSync(path, 'utf8');
 const config = loadConfig(dir);
-process.stdout.write(JSON.stringify({ config, unchanged: readFileSync(path, 'utf8') === before }));
+process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unchanged: readFileSync(path, 'utf8') === before }));
 """
-            env = os.environ.copy()
-            env["ZEROAPI_PARITY_FIXTURE_DIR"] = temp_dir
-            completed = subprocess.run(
-                [str(repo_root / "node_modules" / ".bin" / "tsx"), "--eval", script],
-                cwd=repo_root, text=True, env=env, capture_output=True, check=False,
-            )
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            typescript = json.loads(completed.stdout)
-            self.assertIsNone(typescript["config"])
-            self.assertTrue(typescript["unchanged"])
-
-            self.assertIsNone(load_config(str(config_path)))
-            self.assertEqual(config_path.read_text(encoding="utf-8"), original)
+        for label, keys, value in replacements:
+            with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="zeroapi-malformed-parity-") as temp_dir:
+                malformed = self._qwen_fixture({"subscription_catalog_version": "1.0.0"}, [], True)
+                target = malformed
+                for key in keys[:-1]:
+                    target = target[key]
+                target[keys[-1]] = value
+                config_path = Path(temp_dir) / "zeroapi-config.json"
+                original = json.dumps(malformed, separators=(",", ":"))
+                config_path.write_text(original, encoding="utf-8")
+                env = os.environ.copy()
+                env["ZEROAPI_PARITY_FIXTURE_DIR"] = temp_dir
+                completed = subprocess.run(
+                    [str(repo_root / "node_modules" / ".bin" / "tsx"), "--eval", script],
+                    cwd=repo_root, text=True, env=env, capture_output=True, check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                typescript = json.loads(completed.stdout)
+                self.assertIsNone(typescript["config"])
+                self.assertEqual(typescript["status"], "invalid")
+                self.assertTrue(typescript["unchanged"])
+                self.assertIsNone(load_config(str(config_path)))
+                self.assertEqual(config_path.read_text(encoding="utf-8"), original)
 
     def test_S1_high_risk_still_routes(self):
         cfg = _base(
