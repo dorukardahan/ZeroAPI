@@ -42,6 +42,20 @@ function remapSelections<T>(selections: Record<string, T> | undefined, catalogVe
   return result;
 }
 
+function remapProviderIds(providers: string[] | undefined, catalogVersion: string | undefined): string[] | undefined {
+  if (!providers) return undefined;
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const provider of providers) {
+    if (typeof provider !== "string") continue;
+    const canonical = getVersionAwareCanonicalProviderId(provider, catalogVersion);
+    if (seen.has(canonical)) continue;
+    seen.add(canonical);
+    result.push(canonical);
+  }
+  return result;
+}
+
 /** Return a migrated in-memory copy; never writes or mutates the user's file. */
 export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig {
   const catalogVersion = config.subscription_catalog_version
@@ -80,6 +94,7 @@ export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig
         ])),
       }
     : undefined;
+  const disabledProviders = remapProviderIds(config.disabled_providers, catalogVersion);
 
   return {
     ...config,
@@ -88,6 +103,7 @@ export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig
     routing_rules: routingRules,
     ...(profile ? { subscription_profile: profile } : {}),
     ...(inventory ? { subscription_inventory: inventory } : {}),
+    ...(disabledProviders ? { disabled_providers: disabledProviders } : {}),
   };
 }
 
