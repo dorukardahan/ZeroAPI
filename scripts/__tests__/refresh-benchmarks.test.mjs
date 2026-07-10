@@ -163,6 +163,73 @@ assert not list(work_dir.rglob("*.tmp"))
 `, [root]);
 });
 
+test("refresh_benchmarks restores both snapshots when the second replace fails", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-rollback-"));
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "benchmarks.json"
+plugin = work_dir / "plugin" / "benchmarks.json"
+plugin.parent.mkdir()
+root.write_bytes(b"root-original\\x00\\xff")
+plugin.write_bytes(b"plugin-original\\x00\\xfe")
+original_root = root.read_bytes()
+original_plugin = plugin.read_bytes()
+original_replace = pathlib.Path.replace
+calls = 0
+def fail_second_replace(self, target):
+    global calls
+    if self.name.endswith(".tmp"):
+        calls += 1
+        if calls == 2:
+            raise OSError("injected second replace failure")
+    return original_replace(self, target)
+pathlib.Path.replace = fail_second_replace
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "injected" in str(exc)
+    else:
+        raise AssertionError("second replacement should fail")
+finally:
+    pathlib.Path.replace = original_replace
+assert root.read_bytes() == original_root
+assert plugin.read_bytes() == original_plugin
+assert not list(work_dir.rglob("*.tmp"))
+assert not list(work_dir.rglob("*.bak"))
+`, [root]);
+});
+
+test("offline reannotation upgrades version and applies mapped provider metadata", () => {
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+script_path = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+snapshot = {"version": "0.1.0", "models": [
+    {"slug": "mapped", "openclaw_provider": "old-provider"},
+    {"slug": "unmapped", "openclaw_provider": "qwen-portal"},
+]}
+policies = {"version": "test", "families": []}
+mapping = {"mapped": {"provider": "new-provider", "openclaw_model_id": "new-model", "family_id": "family"}}
+result = module.reannotate_snapshot(snapshot, policies, mapping, "3.8.37")
+assert result["version"] == "3.8.37"
+assert result["models"][0]["openclaw_provider"] == "new-provider"
+assert result["models"][0]["openclaw_model"] == "new-model"
+assert result["models"][1]["openclaw_provider"] == "qwen"
+`, []);
+});
+
 test("offline reannotation remaps the committed snapshot without an API key", () => {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-reannotate-"));
   const output = join(root, "benchmarks.json");
@@ -174,6 +241,8 @@ test("offline reannotation remaps the committed snapshot without an API key", ()
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.deepEqual(readFileSync(output), readFileSync(plugin));
   const snapshot = JSON.parse(readFileSync(output, "utf8"));
+  const packageVersion = JSON.parse(readFileSync(new URL("../../plugin/package.json", import.meta.url), "utf8")).version;
+  assert.equal(snapshot.version, packageVersion);
   const mapped = Object.fromEntries(snapshot.models.map((model) => [model.slug, model.openclaw_model]));
   const providers = Object.fromEntries(snapshot.models.map((model) => [model.slug, model.openclaw_provider]));
   assert.equal(mapped["glm-5-2"], "glm-5.2");

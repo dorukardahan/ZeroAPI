@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- Refresh the July 2026 starter model pool for GPT-5.6 Sol/Terra/Luna, GLM-5.2, Kimi K2.7 Code/K2.6, MiniMax M3, Qwen Portal 3.5 Plus, Grok 4.5, and Grok Build 0.1 with explicit benchmark-proxy metadata where direct rows are unavailable.
+- Add issue #29 subscription catalog contract coverage for filtering, active-versus-excluded xAI surfaces, excluded providers, Anthropic/Google exclusion, legacy Qwen migration, and unknown-provider fail-closed behavior.
+
+### Changed
+- Synchronize root and plugin benchmark snapshots byte-for-byte, apply policy provider metadata during offline reannotation, and make paired snapshot replacement rollback-safe.
+- Migrate catalog/profile/inventory version 1.0 Qwen Portal aliases to `qwen-oauth` in memory while keeping fresh 1.1 `qwen` / `qwen-dashscope` Cloud and Coding Plan surfaces separate.
+- Align current OpenClaw auth guidance with `openai`, `minimax-global-oauth`, `qwen-oauth`, and xAI provider-method OAuth; retain Hermes `xai-oauth` guidance only in Hermes-labeled paths.
+
+### Fixed
+- Keep Qwen Portal rerun defaults and model references intact across legacy onboarding regeneration without rewriting user config files.
+- Align Hermes doctor/runtime provider mapping with the current OpenClaw model pool, including version-aware legacy Qwen Portal migration and fresh Qwen Cloud mapping to `alibaba-coding-plan`.
+
 ## [3.8.37] - 2026-06-05
 
 ### Fixed

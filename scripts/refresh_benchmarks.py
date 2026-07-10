@@ -80,10 +80,12 @@ def write_json_atomic(path: Path, payload: Dict[str, Any], pretty: int) -> None:
 
 
 def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, Any], pretty: int) -> None:
-    """Serialize once, then atomically replace both shipped snapshot copies."""
+    """Serialize once and replace both snapshots as a rollback-safe pair."""
     data = json.dumps(payload, indent=pretty, ensure_ascii=False) + "\n"
     paths = [Path(root_path), Path(plugin_path)]
     temp_paths: List[Path] = []
+    backup_paths: List[Optional[Path]] = []
+    replaced: List[Path] = []
     try:
         for path in paths:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -93,12 +95,26 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
                 handle.flush()
                 os.fsync(handle.fileno())
             temp_paths.append(temp_path)
+            if path.exists():
+                backup_path = path.with_name(f".{path.name}.{os.getpid()}.bak")
+                backup_path.write_bytes(path.read_bytes())
+                backup_paths.append(backup_path)
+            else:
+                backup_paths.append(None)
         for temp_path, path in zip(temp_paths, paths):
             temp_path.replace(path)
+            replaced.append(path)
+    except Exception:
+        for path, backup_path in zip(paths, backup_paths):
+            if backup_path is not None and backup_path.exists():
+                backup_path.replace(path)
+            elif path in replaced and path.exists():
+                path.unlink()
+        raise
     finally:
-        for temp_path in temp_paths:
-            if temp_path.exists():
-                temp_path.unlink()
+        for cleanup_path in [*temp_paths, *(path for path in backup_paths if path is not None)]:
+            if cleanup_path.exists():
+                cleanup_path.unlink()
 
 
 def fetch_data(api_key: str) -> Dict[str, Any]:
@@ -223,17 +239,26 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def reannotate_snapshot(snapshot: Dict[str, Any], policy_families: Dict[str, Any], slug_map: Dict[str, Dict[str, str]]) -> Dict[str, Any]:
+def reannotate_snapshot(
+    snapshot: Dict[str, Any],
+    policy_families: Dict[str, Any],
+    slug_map: Dict[str, Dict[str, str]],
+    snapshot_version: Optional[str] = None,
+) -> Dict[str, Any]:
     models = snapshot.get("models") or []
     for model in models:
         mapping = slug_map.get(model.get("slug"), {})
-        if model.get("openclaw_provider") == "qwen-portal":
+        if mapping:
+            model["openclaw_provider"] = mapping["provider"]
+        elif model.get("openclaw_provider") == "qwen-portal":
+            # Explicit creator-wide compatibility for old, unmapped Qwen rows.
             model["openclaw_provider"] = "qwen"
         model["openclaw_model"] = mapping.get("openclaw_model_id")
         model["policy_family"] = {
             "included": bool(mapping),
             "family_id": mapping.get("family_id"),
         }
+    snapshot["version"] = snapshot_version or load_snapshot_version()
     snapshot["note"] = "Routeability and benchmark evidence are separate. Anthropic, Google, and API-only horizon providers are not auto-routed; see references/provider-model-status.md."
     snapshot["policy_families"] = {
         "version": policy_families.get("version"),
@@ -272,7 +297,12 @@ def main() -> None:
 
     if args.reannotate:
         input_path = Path(args.input) if args.input else Path(args.output)
-        payload = reannotate_snapshot(json.loads(input_path.read_text()), policy_families, policy_slug_map)
+        payload = reannotate_snapshot(
+            json.loads(input_path.read_text()),
+            policy_families,
+            policy_slug_map,
+            snapshot_version,
+        )
         print(f"Reannotated {len(payload.get('models') or [])} snapshot models")
         if not args.dry_run:
             write_snapshot_pair(Path(args.output), Path(args.plugin_output), payload, args.pretty)

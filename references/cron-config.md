@@ -83,8 +83,8 @@ Example fallback chains (5-provider setup):
 
 | Category | Primary | Fallback 1 | Fallback 2 | Fallback 3 |
 |----------|---------|------------|------------|------------|
-| Code | GPT-5.5 (OpenAI) | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Kimi K2.6 (Kimi) |
-| Research | GPT-5.5 (OpenAI) | GPT-5.4 (OpenAI) | MiniMax-M2.7 (MiniMax) | Kimi K2.6 (Kimi) |
-| Orchestration | GLM-5.1 (Z AI) | Kimi K2.6 (Kimi) | Qwen Portal (Qwen proxy) | — |
-| Math | GPT-5.5 (OpenAI) | GPT-5.4 (OpenAI) | GLM-5.1 (Z AI) | Qwen Portal (Qwen proxy) |
-| Fast | GLM-5.1 (Z AI) | MiniMax-M2.7 (MiniMax) | Kimi K2.6 (Kimi) | — |
+| Code | GPT-5.6 Sol (OpenAI) | GPT-5.6 Terra (OpenAI) | GLM-5.2 (Z AI) | Kimi K2.7 Code (Kimi) |
+| Research | GPT-5.6 Sol (OpenAI) | Grok 4.5 (xAI) | MiniMax M3 (MiniMax) | Kimi K2.6 (Kimi) |
+| Orchestration | GLM-5.2 (Z AI) | Grok 4.5 (xAI) | Kimi K2.6 (Kimi) | Qwen Portal 3.5 Plus |
+| Math | GPT-5.6 Sol (OpenAI) | GLM-5.2 (Z AI) | Grok 4.5 (xAI) | Qwen Portal 3.5 Plus |
+| Fast | GLM-5.2 (Z AI) | MiniMax M3 (MiniMax) | Kimi K2.6 (Kimi) | Grok Build 0.1 (xAI) |

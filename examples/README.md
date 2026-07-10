@@ -64,7 +64,7 @@ cp examples/<file>.json ~/.openclaw/zeroapi-config.json
 
 ```bash
 # OpenAI Codex (ChatGPT OAuth)
-openclaw models auth login --provider openai-codex
+openclaw models auth login --provider openai
 
 # Z AI GLM (API key)
 openclaw onboard --auth-choice zai-coding-global
@@ -73,9 +73,9 @@ openclaw onboard --auth-choice zai-coding-global
 openclaw onboard --auth-choice moonshot-api-key
 
 # MiniMax (OAuth portal)
-openclaw onboard --auth-choice minimax-portal
+openclaw onboard --auth-choice minimax-global-oauth
 
-# Qwen Portal (OAuth)
+# Qwen Portal (current Portal token / legacy OAuth migration)
 openclaw onboard --auth-choice qwen-oauth
 ```
 

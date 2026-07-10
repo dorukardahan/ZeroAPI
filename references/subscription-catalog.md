@@ -92,7 +92,7 @@ Each tier should define:
 
 ### Qwen Portal
 
-Tier: Free OAuth. Qwen Portal is canonical `qwen-oauth`; `qwen-portal` and `qwen-cli` are compatibility aliases. Its documented static catalog uses `qwen3.5-plus` and does not include Qwen 3.7. Direct Qwen3.7 Plus/Max benchmark rows describe separate Qwen Cloud surfaces and cannot make them Portal-routeable.
+Tier id: `free` (retained for config compatibility). Access is a current Portal token, marked `legacy` because this surface exists for Portal users and legacy OAuth/CLI migration. Legacy OAuth profiles cannot refresh; re-run `openclaw onboard --auth-choice qwen-oauth` with a current token. Qwen Cloud and Coding Plan use separate `qwen` surfaces. Direct Qwen3.7 Plus/Max benchmark rows do not make them Portal-routeable.
 
 ### xAI Grok OAuth
 

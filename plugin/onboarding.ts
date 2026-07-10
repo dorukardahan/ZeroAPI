@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 import {
   getProviderCatalogEntry,
+  getVersionAwareCanonicalProviderId,
   SUBSCRIPTION_CATALOG,
   SUBSCRIPTION_CATALOG_VERSION,
   type ProviderCatalogEntry,
@@ -27,13 +28,13 @@ const BENCHMARKS_FILE_CANDIDATES = [
 const PACKAGE_FILE = resolve(MODULE_DIR, "package.json");
 
 export const STARTER_AUTH_CHOICES: Record<string, string> = {
-  "openai-codex": "openclaw models auth login --provider openai-codex",
+  "openai-codex": "openclaw models auth login --provider openai",
   "zai": "openclaw onboard --auth-choice zai-coding-global",
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
-  "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
+  "minimax-portal": "openclaw onboard --auth-choice minimax-global-oauth",
   "qwen-portal": "openclaw onboard --auth-choice qwen-oauth",
   "qwen-oauth": "openclaw onboard --auth-choice qwen-oauth",
-  "xai": "openclaw onboard --auth-choice xai-device-code",
+  "xai": "openclaw models auth login --provider xai --method oauth",
   "xai-oauth": "hermes auth add xai-oauth",
 };
 
@@ -172,6 +173,15 @@ function getProviderLabel(providerId: string): string {
 function getDefaultTierId(providerId: string): string {
   const entry = getProviderCatalogEntry(providerId);
   return entry?.tiers.find((tier) => tier.availability === "available")?.tierId ?? entry?.tiers[0]?.tierId ?? "unknown";
+}
+
+function canonicalStarterProviderId(providerId: string, catalogVersion?: string): string {
+  const normalized = providerId.trim().toLowerCase();
+  if (["qwen-oauth", "qwen-portal", "qwen-cli"].includes(normalized)) return "qwen-oauth";
+  if (/^1\.0(?:\.|$)/.test(catalogVersion ?? "") && ["qwen", "qwen-dashscope"].includes(normalized)) {
+    return getVersionAwareCanonicalProviderId(providerId, catalogVersion);
+  }
+  return providerId;
 }
 
 function normalizeBenchmarkValue(value: number | null | undefined): number | null {
@@ -412,7 +422,7 @@ export function getStarterProviders(): ProviderCatalogEntry[] {
 export function getStarterTierChoices(providerId: string) {
   const entry = getProviderCatalogEntry(providerId);
   if (!entry) return [];
-  return entry.tiers.filter((tier) => tier.availability === "available");
+  return entry.tiers.filter((tier) => tier.availability === "available" || tier.availability === "legacy");
 }
 
 export function getStarterAuthCommands(providerIds: string[]): string[] {
@@ -448,11 +458,15 @@ export function summarizeStarterConfig(config: ZeroAPIConfig): StarterConfigSumm
 
 export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
   const providers = new Map<string, StarterProviderSelection>();
+  const catalogVersion = config.subscription_catalog_version
+    ?? config.subscription_profile?.version
+    ?? config.subscription_inventory?.version;
 
   for (const [providerId, selection] of Object.entries(config.subscription_profile?.global ?? {})) {
     if (selection?.enabled === false || !selection?.tierId) continue;
-    providers.set(providerId, {
-      providerId,
+    const canonicalProviderId = canonicalStarterProviderId(providerId, catalogVersion);
+    providers.set(canonicalProviderId, {
+      providerId: canonicalProviderId,
       tierId: selection.tierId,
     });
   }
@@ -462,18 +476,19 @@ export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
       if (!account || account.enabled === false || !account.provider) {
         return [];
       }
+      const canonicalProviderId = canonicalStarterProviderId(account.provider, catalogVersion);
       const next: StarterInventoryAccountInput = {
         accountId,
-        providerId: account.provider,
-        tierId: account.tierId ?? getDefaultTierId(account.provider),
+        providerId: canonicalProviderId,
+        tierId: account.tierId ?? getDefaultTierId(canonicalProviderId),
         authProfile: account.authProfile ?? undefined,
         usagePriority: account.usagePriority,
         intendedUse: account.intendedUse,
       };
-      const currentProvider = providers.get(account.provider);
-      if (!currentProvider || getTierRank(account.provider, next.tierId) > getTierRank(account.provider, currentProvider.tierId)) {
-        providers.set(account.provider, {
-          providerId: account.provider,
+      const currentProvider = providers.get(canonicalProviderId);
+      if (!currentProvider || getTierRank(canonicalProviderId, next.tierId) > getTierRank(canonicalProviderId, currentProvider.tierId)) {
+        providers.set(canonicalProviderId, {
+          providerId: canonicalProviderId,
           tierId: next.tierId,
         });
       }
@@ -492,9 +507,17 @@ export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
 }
 
 export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig {
+  const normalizedProviders = options.providers.map((provider) => ({
+    ...provider,
+    providerId: canonicalStarterProviderId(provider.providerId),
+  }));
+  const normalizedInventoryAccounts = options.inventoryAccounts?.map((account) => ({
+    ...account,
+    providerId: canonicalStarterProviderId(account.providerId),
+  }));
   const providerIds = Array.from(new Set([
-    ...options.providers.map((provider) => provider.providerId),
-    ...(options.inventoryAccounts ?? []).map((account) => account.providerId),
+    ...normalizedProviders.map((provider) => provider.providerId),
+    ...(normalizedInventoryAccounts ?? []).map((account) => account.providerId),
   ]));
 
   if (providerIds.length === 0) {
@@ -504,9 +527,9 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
   const snapshot = loadBenchmarkSnapshot();
   const models = buildStarterModels(snapshot, providerIds);
   const routingRules = buildRoutingRules(models);
-  const inventoryProviderIds = new Set((options.inventoryAccounts ?? []).map((account) => account.providerId));
-  const subscriptionProfile = buildSubscriptionProfile(options.providers, inventoryProviderIds);
-  const subscriptionInventory = buildSubscriptionInventory(options.inventoryAccounts);
+  const inventoryProviderIds = new Set((normalizedInventoryAccounts ?? []).map((account) => account.providerId));
+  const subscriptionProfile = buildSubscriptionProfile(normalizedProviders, inventoryProviderIds);
+  const subscriptionInventory = buildSubscriptionInventory(normalizedInventoryAccounts);
   const weightedDefaultCandidates = getSubscriptionWeightedCandidates(
     "default",
     models,

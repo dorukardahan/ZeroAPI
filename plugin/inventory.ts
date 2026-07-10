@@ -204,6 +204,6 @@ export function isModelAllowedBySubscriptions(params: {
     agentId,
     providerId,
   });
-  if (!resolved) return true;
+  if (!resolved) return profile === undefined && inventory === undefined;
   return resolved.enabled;
 }

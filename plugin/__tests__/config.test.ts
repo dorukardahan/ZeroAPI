@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -343,6 +343,68 @@ describe("config", () => {
     const { loadConfig } = await import("../config.js");
     const result = loadConfig(testDir);
     expect(result).toBeNull();
+  });
+
+  it("migrates 1.0 Qwen Portal aliases in memory without rewriting the user file", async () => {
+    const legacy = {
+      version: "3.8.37",
+      generated: "2026-07-01",
+      benchmarks_date: "2026-07-01",
+      subscription_catalog_version: "1.0.0",
+      default_model: "qwen/coder-model",
+      models: {
+        "qwen/coder-model": { context_window: 1000000, supports_vision: false, speed_tps: null, ttft_seconds: null, benchmarks: {} },
+      },
+      routing_rules: {
+        default: { primary: "qwen-dashscope/coder-model", fallbacks: ["qwen-cli/coder-model"] },
+      },
+      workspace_hints: {},
+      keywords: {},
+      high_risk_keywords: [],
+      fast_ttft_max_seconds: 5,
+      subscription_profile: {
+        version: "1.0.0",
+        global: { qwen: { enabled: true, tierId: "free" } },
+        agentOverrides: { worker: { "qwen-portal": { enabled: true, tierId: "free" } } },
+      },
+      subscription_inventory: {
+        version: "1.0.0",
+        accounts: { portal: { provider: "qwen-cli", tierId: "free" } },
+      },
+    };
+    const path = join(testDir, "zeroapi-config.json");
+    const original = JSON.stringify(legacy, null, 2);
+    writeFileSync(path, original);
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir)!;
+    expect(result.default_model).toBe("qwen-oauth/coder-model");
+    expect(Object.keys(result.models)).toEqual(["qwen-oauth/coder-model"]);
+    expect(result.routing_rules.default).toEqual({
+      primary: "qwen-oauth/coder-model",
+      fallbacks: ["qwen-oauth/coder-model"],
+    });
+    expect(result.subscription_profile?.global).toHaveProperty("qwen-oauth");
+    expect(result.subscription_profile?.agentOverrides?.worker).toHaveProperty("qwen-oauth");
+    expect(result.subscription_inventory?.accounts.portal.provider).toBe("qwen-oauth");
+    expect(readFileSync(path, "utf8")).toBe(original);
+  });
+
+  it("does not conflate fresh 1.1 Qwen Cloud with Qwen Portal", async () => {
+    const fresh = {
+      version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",
+      subscription_catalog_version: "1.1.0",
+      default_model: "qwen/qwen3.7-plus",
+      models: { "qwen/qwen3.7-plus": { context_window: 1000000, supports_vision: true, speed_tps: null, ttft_seconds: null, benchmarks: {} } },
+      routing_rules: { default: { primary: "qwen/qwen3.7-plus", fallbacks: [] } },
+      workspace_hints: {}, keywords: {}, high_risk_keywords: [], fast_ttft_max_seconds: 5,
+      subscription_profile: { version: "1.1.0", global: { qwen: { enabled: true, tierId: "free" } } },
+    };
+    writeFileSync(join(testDir, "zeroapi-config.json"), JSON.stringify(fresh));
+    const { loadConfig } = await import("../config.js");
+    const result = loadConfig(testDir)!;
+    expect(result.default_model).toBe("qwen/qwen3.7-plus");
+    expect(result.subscription_profile?.global).toHaveProperty("qwen");
+    expect(result.subscription_profile?.global).not.toHaveProperty("qwen-oauth");
   });
 
   describe("getConfigLoadStatus", () => {

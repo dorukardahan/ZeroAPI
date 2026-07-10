@@ -134,6 +134,43 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(route["provider"], "openai-codex")
         self.assertEqual(route["model"], "gpt-5.5")
 
+    def test_migrates_legacy_qwen_portal_config_in_memory(self):
+        legacy = {
+            **CONFIG,
+            "subscription_catalog_version": "1.0.0",
+            "default_model": "qwen/coder-model",
+            "models": {
+                "qwen/coder-model": {
+                    "context_window": 1000000, "supports_vision": False,
+                    "speed_tps": 10, "ttft_seconds": 1,
+                    "benchmarks": {"intelligence": 50},
+                },
+            },
+            "routing_rules": {
+                "default": {"primary": "qwen-dashscope/coder-model", "fallbacks": ["qwen-cli/coder-model"]},
+            },
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {"qwen": {"enabled": True, "tierId": "free"}},
+            },
+            "subscription_inventory": {
+                "version": "1.0.0",
+                "accounts": {"portal": {"provider": "qwen-portal", "tierId": "free"}},
+            },
+        }
+        router = ZeroAPIRouter(legacy)
+        self.assertEqual(router.config["default_model"], "qwen-oauth/coder-model")
+        self.assertIn("qwen-oauth/coder-model", router.config["models"])
+        self.assertIn("qwen-oauth", router.config["subscription_profile"]["global"])
+        self.assertEqual(router.config["subscription_inventory"]["accounts"]["portal"]["provider"], "qwen-oauth")
+        self.assertEqual(legacy["default_model"], "qwen/coder-model")
+
+    def test_keeps_fresh_qwen_cloud_on_alibaba_coding_plan(self):
+        fresh = {**CONFIG, "subscription_catalog_version": "1.1.0"}
+        self.assertEqual(HERMES_PROVIDER_MAP["qwen"], "alibaba-coding-plan")
+        router = ZeroAPIRouter(fresh)
+        self.assertIs(router.config, fresh)
+
     def test_keeps_qwen_portal_and_cloud_provider_ids_separate(self):
         for provider in ("qwen-oauth", "qwen-portal", "qwen-cli"):
             self.assertEqual(HERMES_PROVIDER_MAP[provider], "qwen-oauth")

@@ -181,10 +181,13 @@ describe("starter onboarding helpers", () => {
     expect(Object.keys(config.models).some((model) => model.includes("qwen3.7"))).toBe(false);
   });
   it("returns auth commands in provider order", () => {
-    expect(getStarterAuthCommands(["openai-codex", "zai", "xai"])).toEqual([
-      "openclaw models auth login --provider openai-codex",
+    expect(getStarterAuthCommands(["openai-codex", "zai", "minimax-portal", "qwen-oauth", "xai", "xai-oauth"])).toEqual([
+      "openclaw models auth login --provider openai",
       "openclaw onboard --auth-choice zai-coding-global",
-      "openclaw onboard --auth-choice xai-device-code",
+      "openclaw onboard --auth-choice minimax-global-oauth",
+      "openclaw onboard --auth-choice qwen-oauth",
+      "openclaw models auth login --provider xai --method oauth",
+      "hermes auth add xai-oauth",
     ]);
   });
 
@@ -219,6 +222,26 @@ describe("starter onboarding helpers", () => {
       modifier: "research-aware",
       providerLabels: ["OpenAI", "Z AI (GLM)"],
     });
+  });
+
+  it("canonicalizes legacy Qwen Portal defaults so a rerun preserves the provider", () => {
+    const legacy = buildStarterConfig({ providers: [{ providerId: "qwen-oauth", tierId: "free" }] });
+    legacy.subscription_catalog_version = "1.0.0";
+    legacy.subscription_profile = {
+      version: "1.0.0",
+      global: { "qwen-portal": { enabled: true, tierId: "free" } },
+    };
+    legacy.subscription_inventory = {
+      version: "1.0.0",
+      accounts: { portal: { provider: "qwen-cli", tierId: "free" } },
+    };
+
+    const defaults = deriveStarterDefaults(legacy);
+    expect(defaults.providers).toEqual([{ providerId: "qwen-oauth", tierId: "free" }]);
+    expect(defaults.inventoryAccounts[0]?.providerId).toBe("qwen-oauth");
+    const regenerated = buildStarterConfig(defaults);
+    expect(regenerated.subscription_inventory?.accounts.portal.provider).toBe("qwen-oauth");
+    expect(Object.keys(regenerated.models)).toEqual(["qwen-oauth/qwen3.5-plus"]);
   });
 
   it("derives rerun defaults from current config including inventory providers", () => {

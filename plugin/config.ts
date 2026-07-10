@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { ZeroAPIConfig } from "./types.js";
+import { getVersionAwareCanonicalProviderId, isLegacySubscriptionCatalogVersion } from "./subscriptions.js";
 
 export type ConfigLoadStatus = "ok" | "missing" | "invalid" | "parse_error";
 
@@ -22,6 +23,72 @@ function parseOptionalBooleanEnv(value: string | undefined): boolean | undefined
   if (["1", "true", "yes", "on"].includes(normalized)) return true;
   if (["0", "false", "no", "off"].includes(normalized)) return false;
   return undefined;
+}
+
+function remapModelRef(modelRef: string, catalogVersion: string): string {
+  const slash = modelRef.indexOf("/");
+  if (slash < 0) return modelRef;
+  const provider = getVersionAwareCanonicalProviderId(modelRef.slice(0, slash), catalogVersion);
+  return `${provider}/${modelRef.slice(slash + 1)}`;
+}
+
+function remapSelections<T>(selections: Record<string, T> | undefined, catalogVersion: string): Record<string, T> | undefined {
+  if (!selections) return undefined;
+  const result: Record<string, T> = {};
+  for (const [provider, selection] of Object.entries(selections)) {
+    const canonical = getVersionAwareCanonicalProviderId(provider, catalogVersion);
+    if (!(canonical in result) || provider === canonical) result[canonical] = selection;
+  }
+  return result;
+}
+
+/** Return a migrated in-memory copy; never writes or mutates the user's file. */
+export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig {
+  const catalogVersion = config.subscription_catalog_version
+    ?? config.subscription_profile?.version
+    ?? config.subscription_inventory?.version;
+  if (!isLegacySubscriptionCatalogVersion(catalogVersion)) return config;
+
+  const models = Object.fromEntries(Object.entries(config.models).map(([key, value]) => [
+    remapModelRef(key, catalogVersion), value,
+  ]));
+  const routingRules = Object.fromEntries(Object.entries(config.routing_rules).map(([category, rule]) => [
+    category,
+    {
+      ...rule,
+      primary: remapModelRef(rule.primary, catalogVersion),
+      fallbacks: rule.fallbacks.map((model) => remapModelRef(model, catalogVersion)),
+    },
+  ]));
+  const profile = config.subscription_profile
+    ? {
+        ...config.subscription_profile,
+        global: remapSelections(config.subscription_profile.global, catalogVersion) ?? {},
+        ...(config.subscription_profile.agentOverrides
+          ? { agentOverrides: Object.fromEntries(Object.entries(config.subscription_profile.agentOverrides).map(
+              ([agentId, selections]) => [agentId, remapSelections(selections, catalogVersion) ?? {}],
+            )) }
+          : {}),
+      }
+    : undefined;
+  const inventory = config.subscription_inventory
+    ? {
+        ...config.subscription_inventory,
+        accounts: Object.fromEntries(Object.entries(config.subscription_inventory.accounts).map(([accountId, account]) => [
+          accountId,
+          { ...account, provider: getVersionAwareCanonicalProviderId(account.provider, catalogVersion) },
+        ])),
+      }
+    : undefined;
+
+  return {
+    ...config,
+    default_model: remapModelRef(config.default_model, catalogVersion),
+    models,
+    routing_rules: routingRules,
+    ...(profile ? { subscription_profile: profile } : {}),
+    ...(inventory ? { subscription_inventory: inventory } : {}),
+  };
 }
 
 function isValidConfig(obj: unknown): obj is ZeroAPIConfig {
@@ -105,17 +172,18 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
       return null;
     }
     lastLoadStatus = "ok";
+    const migrated = migrateLegacyCatalogConfig(parsed);
     cachedConfig = {
-      ...parsed,
-      routing_mode: parsed.routing_mode ?? "balanced",
-      external_model_policy: parsed.external_model_policy ?? "stay",
+      ...migrated,
+      routing_mode: migrated.routing_mode ?? "balanced",
+      external_model_policy: migrated.external_model_policy ?? "stay",
       channel_advisories_enabled:
         parseOptionalBooleanEnv(process.env.ZEROAPI_CHANNEL_ADVISORIES) ??
-        parsed.channel_advisories_enabled ??
+        migrated.channel_advisories_enabled ??
         true,
-      workspace_hints: parsed.workspace_hints ?? {},
+      workspace_hints: migrated.workspace_hints ?? {},
       disabled_providers: [
-        ...((parsed.disabled_providers ?? []).filter((provider: unknown): provider is string => typeof provider === "string")),
+        ...((migrated.disabled_providers ?? []).filter((provider: unknown): provider is string => typeof provider === "string")),
         ...parseDisabledProvidersEnv(),
       ],
     };

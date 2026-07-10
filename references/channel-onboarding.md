@@ -95,11 +95,10 @@ If auth is missing, the chat flow should:
 
 Examples:
 
-- `openclaw models auth login --provider openai-codex`
+- `openclaw models auth login --provider openai`
 - `openclaw onboard --auth-choice moonshot-api-key`
-- `openclaw models auth login --provider qwen-portal --set-default`
-- `openclaw onboard --auth-choice xai-device-code` for OpenClaw 2026.5.20+ SuperGrok routing
-- `openclaw onboard --auth-choice xai-oauth` for older OpenClaw browser-OAuth installs
+- `openclaw onboard --auth-choice qwen-oauth`
+- `openclaw models auth login --provider xai --method oauth` for current OpenClaw SuperGrok routing
 - `hermes auth add xai-oauth` for Hermes SuperGrok routing
 
 ## Host-only follow-up steps

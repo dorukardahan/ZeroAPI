@@ -110,13 +110,13 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     openclawProviderId: "qwen-oauth",
     openclawProviderAliases: ["qwen-portal", "qwen-cli"],
     status: "active",
-    authMode: "oauth",
+    authMode: "api_key",
     selectionMode: "single_tier",
     tiers: [
-      { tierId: "free", label: "Free OAuth", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "available", routingWeight: 1, recommendedUsage: "Qwen Portal free-tier routing when daily quota is enough." },
+      { tierId: "free", label: "Portal token", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "legacy", routingWeight: 1, recommendedUsage: "Existing Qwen Portal token and legacy OAuth migration surface; re-onboard with a current token when needed." },
     ],
     benchmarkRoutingBias: 0.95,
-    notes: "As of 2026-07-10, Portal uses canonical qwen-oauth with qwen-portal and qwen-cli legacy aliases. Its documented static catalog excludes Qwen 3.7; qwen3.7-plus/max belong to separate Qwen Cloud endpoints.",
+    notes: "Portal uses canonical qwen-oauth with qwen-portal and qwen-cli legacy aliases. Legacy OAuth profiles are not refreshable; re-run onboarding with a current Portal token. Qwen Cloud and Coding Plan remain separate providers.",
   },
   {
     providerId: "xai",
@@ -164,4 +164,18 @@ export function getProviderCatalogEntry(openclawProviderId: string): ProviderCat
 
 export function getCanonicalOpenClawProviderId(providerId: string): string {
   return getProviderCatalogEntry(providerId)?.openclawProviderId ?? providerId;
+}
+
+const LEGACY_QWEN_PORTAL_IDS = new Set(["qwen", "qwen-dashscope", "qwen-portal", "qwen-cli"]);
+
+export function isLegacySubscriptionCatalogVersion(version: string | undefined): boolean {
+  return typeof version === "string" && /^1\.0(?:\.|$)/.test(version);
+}
+
+export function getVersionAwareCanonicalProviderId(providerId: string, version?: string): string {
+  const normalized = providerId.trim().toLowerCase();
+  if (isLegacySubscriptionCatalogVersion(version) && LEGACY_QWEN_PORTAL_IDS.has(normalized)) {
+    return "qwen-oauth";
+  }
+  return getCanonicalOpenClawProviderId(providerId);
 }

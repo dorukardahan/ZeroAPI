@@ -84,7 +84,7 @@ Six subscription or account-quota providers are currently supported by the routi
 | Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | API key | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
 | MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
-| Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token | Free OAuth |
+| Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token; legacy OAuth migration requires re-onboarding | Portal token (`free` tier id retained for compatibility) |
 | xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | OpenClaw or Hermes OAuth via SuperGrok | SuperGrok |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
