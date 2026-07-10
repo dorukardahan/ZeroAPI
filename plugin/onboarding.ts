@@ -31,41 +31,51 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
   "zai": "openclaw onboard --auth-choice zai-coding-global",
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
   "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
-  "qwen-portal": "openclaw models auth login --provider qwen-portal --set-default",
+  "qwen-portal": "openclaw onboard --auth-choice qwen-oauth",
+  "qwen-oauth": "openclaw onboard --auth-choice qwen-oauth",
   "xai": "openclaw onboard --auth-choice xai-device-code",
   "xai-oauth": "hermes auth add xai-oauth",
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
-  "openai/gpt-5.5": { context_window: 272000, supports_vision: true },
-  "openai/gpt-5.5-pro": { context_window: 272000, supports_vision: true },
-  "openai/gpt-5.4": { context_window: 272000, supports_vision: true },
-  "openai/gpt-5.4-mini": { context_window: 272000, supports_vision: true },
+  // Codex/ChatGPT subscription routes expose 372K, while direct API routes expose 1.05M.
+  "openai/gpt-5.6-sol": { context_window: 372000, supports_vision: true },
+  "openai/gpt-5.6-terra": { context_window: 372000, supports_vision: true },
+  "openai/gpt-5.6-luna": { context_window: 372000, supports_vision: true },
+  "zai/glm-5.2": { context_window: 1000000, supports_vision: false },
   "zai/glm-5.1": { context_window: 202800, supports_vision: false },
+  "moonshot/kimi-k2.7-code": { context_window: 262144, supports_vision: true },
   "moonshot/kimi-k2.6": { context_window: 262144, supports_vision: true },
-  "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
+  "minimax-portal/MiniMax-M3": { context_window: 1000000, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
-  "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
+  "qwen-oauth/qwen3.5-plus": { context_window: 1000000, supports_vision: true },
+  "xai/grok-4.5": { context_window: 500000, supports_vision: true },
+  "xai/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai/grok-4.3": { context_window: 1000000, supports_vision: true },
+  "xai-oauth/grok-4.5": { context_window: 500000, supports_vision: true },
+  "xai-oauth/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai-oauth/grok-4.3": { context_window: 1000000, supports_vision: true },
 };
 
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
-  "openai-codex": ["openai/gpt-5.5", "openai/gpt-5.4", "openai/gpt-5.4-mini"],
-  "zai": ["zai/glm-5.1"],
-  "moonshot": ["moonshot/kimi-k2.6"],
-  "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
-  "qwen-portal": ["qwen-portal/coder-model"],
-  "xai": ["xai/grok-4.3"],
-  "xai-oauth": ["xai-oauth/grok-4.3"],
+  "openai-codex": ["openai/gpt-5.6-sol", "openai/gpt-5.6-terra", "openai/gpt-5.6-luna"],
+  "zai": ["zai/glm-5.2", "zai/glm-5.1"],
+  "moonshot": ["moonshot/kimi-k2.7-code", "moonshot/kimi-k2.6"],
+  "minimax-portal": ["minimax-portal/MiniMax-M3", "minimax-portal/MiniMax-M2.7"],
+  "qwen-oauth": ["qwen-oauth/qwen3.5-plus"],
+  "qwen-portal": ["qwen-oauth/qwen3.5-plus"],
+  "xai": ["xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"],
+  "xai-oauth": ["xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"],
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
-  "openai/gpt-5.5-pro": "openai-codex/gpt-5.5",
-  "openai/gpt-5.5": "openai-codex/gpt-5.5",
-  "openai/gpt-5.4": "openai-codex/gpt-5.4",
-  "openai/gpt-5.4-mini": "openai-codex/gpt-5.4-mini",
-  "moonshot/kimi-k2.6": "moonshot/kimi-k2.5",
+  "openai/gpt-5.6-sol": "openai-codex/gpt-5.5",
+  "openai/gpt-5.6-terra": "openai-codex/gpt-5.5",
+  "openai/gpt-5.6-luna": "openai-codex/gpt-5.5",
+  "qwen-oauth/qwen3.5-plus": "qwen/qwen3.6-plus",
+  "xai/grok-4.5": "xai-oauth/grok-4.3",
+  "xai-oauth/grok-4.5": "xai-oauth/grok-4.3",
+  "xai/grok-build-0.1": "xai-oauth/grok-build-0.1",
   "xai/grok-4.3": "xai-oauth/grok-4.3",
 };
 
@@ -318,7 +328,7 @@ function sortModelsForCategory(category: TaskCategory, models: Record<string, Mo
     if (strengthB !== strengthA) {
       return strengthB - strengthA;
     }
-    return a.localeCompare(b);
+    return 0;
   });
 }
 
@@ -328,6 +338,10 @@ function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<st
 
   for (const category of categories) {
     const ranked = sortModelsForCategory(category, models);
+    if (category === "default" && ranked[0] === "moonshot/kimi-k2.7-code" && models["moonshot/kimi-k2.6"]) {
+      ranked.splice(ranked.indexOf("moonshot/kimi-k2.6"), 1);
+      ranked.unshift("moonshot/kimi-k2.6");
+    }
     rules[category] = {
       primary: ranked[0],
       fallbacks: ranked.slice(1),

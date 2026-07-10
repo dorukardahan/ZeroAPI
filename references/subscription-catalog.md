@@ -2,6 +2,8 @@
 
 This document defines the provider and subscription catalog used by ZeroAPI for subscription-aware routing.
 
+The current static catalog contract is `1.1.0`. Existing `1.0.0` configs remain accepted; `1.1.0` only changes fresh metadata and canonical Qwen aliasing, not the runtime config schema.
+
 ZeroAPI does not read live provider quota or private usage telemetry. Catalog weights are static policy hints based on public/provider-declared tiers and account-quota shape.
 
 ## Goals
@@ -24,10 +26,9 @@ ZeroAPI v1 subscription-aware routing supports exactly these subscription or acc
 
 Excluded from catalog:
 
-- Anthropic, excluded for subscription coverage reasons
-- Google/Gemini, excluded for OAuth/ToS reasons in third-party tool flows
-- xAI API-key billing, excluded unless the operator explicitly models it as account-quota capacity instead of SuperGrok OAuth
-- Any provider without a meaningful subscription, plan, or account-quota abstraction
+- Anthropic: official 2026-06-15 guidance confirms `claude -p` and third-party Agent SDK usage still draw subscription limits, but ZeroAPI waits for a tested canonical `anthropic/*` + `agentRuntime claude-cli` path before auto-routing
+- Google/Gemini: non-routeable; individual Gemini CLI access is sunsetting through the Antigravity transition, and API keys are usage-billed
+- DeepSeek, Mistral, and Cohere: API-only reference horizon providers
 
 ## Design Principles
 
@@ -91,7 +92,7 @@ Each tier should define:
 
 ### Qwen Portal
 
-- Free OAuth
+Tier: Free OAuth. Qwen Portal is canonical `qwen-oauth`; `qwen-portal` and `qwen-cli` are compatibility aliases. Its documented static catalog uses `qwen3.5-plus` and does not include Qwen 3.7. Direct Qwen3.7 Plus/Max benchmark rows describe separate Qwen Cloud surfaces and cannot make them Portal-routeable.
 
 ### xAI Grok OAuth
 

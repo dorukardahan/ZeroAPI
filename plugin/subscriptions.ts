@@ -25,7 +25,7 @@ export type ProviderCatalogEntry = {
   notes?: string;
 };
 
-export const SUBSCRIPTION_CATALOG_VERSION = "1.0.0";
+export const SUBSCRIPTION_CATALOG_VERSION = "1.1.0";
 
 export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
@@ -107,8 +107,8 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
     providerId: "alibaba",
     label: "Qwen Portal",
-    openclawProviderId: "qwen-portal",
-    openclawProviderAliases: ["qwen", "qwen-dashscope"],
+    openclawProviderId: "qwen-oauth",
+    openclawProviderAliases: ["qwen-portal", "qwen-cli"],
     status: "active",
     authMode: "oauth",
     selectionMode: "single_tier",
@@ -116,7 +116,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       { tierId: "free", label: "Free OAuth", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "available", routingWeight: 1, recommendedUsage: "Qwen Portal free-tier routing when daily quota is enough." },
     ],
     benchmarkRoutingBias: 0.95,
-    notes: "OpenClaw exposes Qwen through qwen-portal OAuth. ZeroAPI uses Qwen benchmark rows as a proxy for the portal coder model.",
+    notes: "As of 2026-07-10, Portal uses canonical qwen-oauth with qwen-portal and qwen-cli legacy aliases. Its documented static catalog excludes Qwen 3.7; qwen3.7-plus/max belong to separate Qwen Cloud endpoints.",
   },
   {
     providerId: "xai",

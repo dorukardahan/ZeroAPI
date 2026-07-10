@@ -1,39 +1,174 @@
 {
-  "version": "1.0.0",
-  "global": {
-    "openai-codex": {
-      "enabled": true,
-      "tierId": "plus"
-    },
-    "moonshot": {
-      "enabled": false,
-      "tierId": null
-    },
-    "zai": {
-      "enabled": true,
-      "tierId": "max"
-    },
-    "minimax-portal": {
-      "enabled": false,
-      "tierId": null
-    },
-    "qwen-portal": {
-      "enabled": false,
-      "tierId": null
+  "version": "3.8.37",
+  "generated": "2026-07-05T00:00:00.000Z",
+  "benchmarks_date": "2026-07-05",
+  "subscription_catalog_version": "1.1.0",
+  "routing_mode": "balanced",
+  "external_model_policy": "stay",
+  "subscription_profile": {
+    "version": "1.1.0",
+    "global": {
+      "openai-codex": {
+        "enabled": true,
+        "tierId": "plus"
+      }
     }
   },
-  "agentOverrides": {
-    "research-agent": {
-      "openai-codex": {
-        "enabled": false,
-        "tierId": null
+  "default_model": "openai/gpt-5.6-sol",
+  "models": {
+    "openai/gpt-5.6-sol": {
+      "context_window": 372000,
+      "supports_vision": true,
+      "speed_tps": 91.869,
+      "ttft_seconds": 29.368,
+      "benchmarks": {
+        "intelligence": 54.8,
+        "coding": 74.9,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
       }
     },
-    "cost-optimized-agent": {
-      "zai": {
-        "enabled": true,
-        "tierId": "pro"
+    "openai/gpt-5.6-terra": {
+      "context_window": 372000,
+      "supports_vision": true,
+      "speed_tps": 91.869,
+      "ttft_seconds": 29.368,
+      "benchmarks": {
+        "intelligence": 54.8,
+        "coding": 74.9,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
+      }
+    },
+    "openai/gpt-5.6-luna": {
+      "context_window": 372000,
+      "supports_vision": true,
+      "speed_tps": 91.869,
+      "ttft_seconds": 29.368,
+      "benchmarks": {
+        "intelligence": 54.8,
+        "coding": 74.9,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
       }
     }
-  }
+  },
+  "routing_rules": {
+    "code": {
+      "primary": "openai/gpt-5.6-sol",
+      "fallbacks": [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
+      ]
+    },
+    "research": {
+      "primary": "openai/gpt-5.6-sol",
+      "fallbacks": [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
+      ]
+    },
+    "orchestration": {
+      "primary": "openai/gpt-5.6-sol",
+      "fallbacks": [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
+      ]
+    },
+    "math": {
+      "primary": "openai/gpt-5.6-sol",
+      "fallbacks": [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
+      ]
+    },
+    "fast": {
+      "primary": "openai/gpt-5.6-sol",
+      "fallbacks": [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
+      ]
+    },
+    "default": {
+      "primary": "openai/gpt-5.6-sol",
+      "fallbacks": [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
+      ]
+    }
+  },
+  "workspace_hints": {},
+  "keywords": {
+    "code": [
+      "implement",
+      "function",
+      "class",
+      "refactor",
+      "fix",
+      "test",
+      "debug",
+      "build",
+      "write"
+    ],
+    "research": [
+      "research",
+      "analyze",
+      "explain",
+      "compare",
+      "investigate",
+      "summarize",
+      "review"
+    ],
+    "orchestration": [
+      "orchestrate",
+      "coordinate",
+      "pipeline",
+      "workflow",
+      "plan",
+      "manage"
+    ],
+    "math": [
+      "calculate",
+      "solve",
+      "equation",
+      "proof",
+      "compute",
+      "formula"
+    ],
+    "fast": [
+      "quick",
+      "simple",
+      "format",
+      "convert",
+      "translate",
+      "list",
+      "rename"
+    ]
+  },
+  "high_risk_keywords": [
+    "deploy",
+    "delete",
+    "drop",
+    "rm",
+    "production",
+    "credentials",
+    "secret",
+    "password"
+  ],
+  "fast_ttft_max_seconds": 8
 }
