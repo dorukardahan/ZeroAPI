@@ -407,6 +407,96 @@ describe("config", () => {
     expect(readFileSync(path, "utf8")).toBe(original);
   });
 
+  it("limits legacy 1.0 structural migration to Qwen Portal and preserves runtime route ids", async () => {
+    const model = { context_window: 1000000, supports_vision: false, speed_tps: 10, ttft_seconds: 1, benchmarks: {} };
+    const preservedProviders = ["openai", "xai", "moonshot", "minimax-portal", "zai"];
+    const preservedModels = [
+      "openai/gpt-5.5", "xai/grok-4.5", "moonshot/kimi-k2.7", "minimax-portal/m3", "zai/glm-5.2",
+    ];
+    const legacy = {
+      version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",
+      subscription_catalog_version: "1.0.0",
+      default_model: preservedModels[0],
+      disabled_providers: ["openai", "minimax"],
+      models: Object.fromEntries([
+        ...preservedModels.map((key) => [key, model]),
+        ["qwen/portal-model", model],
+        ["qwen-portal/portal-model", model],
+        ["qwen-dashscope/cloud-model", model],
+        ["qwen-cli/cli-model", model],
+      ]),
+      routing_rules: {
+        code: { primary: preservedModels[0], fallbacks: [preservedModels[1], "qwen/portal-model"] },
+        research: { primary: preservedModels[2], fallbacks: [preservedModels[3], "qwen-portal/portal-model"] },
+        default: { primary: preservedModels[4], fallbacks: ["qwen-dashscope/cloud-model", "qwen-cli/cli-model"] },
+      },
+      workspace_hints: {}, keywords: {}, high_risk_keywords: [], fast_ttft_max_seconds: 5,
+      subscription_profile: {
+        version: "1.0.0",
+        global: Object.fromEntries([
+          ...preservedProviders.map((provider) => [provider, { enabled: true, tierId: "test" }]),
+          ["qwen", { enabled: false, tierId: "alias" }],
+          ["qwen-portal", { enabled: false, tierId: "portal-alias" }],
+          ["qwen-oauth", { enabled: true, tierId: "canonical" }],
+        ]),
+        agentOverrides: {
+          direct: Object.fromEntries([
+            ...preservedProviders.map((provider) => [provider, { enabled: true }]),
+            ["qwen-dashscope", { enabled: true }],
+          ]),
+          user: { "qwen-cli": { enabled: true } },
+        },
+      },
+      subscription_inventory: {
+        version: "1.0.0",
+        accounts: Object.fromEntries([
+          ...preservedProviders.map((provider) => [`${provider}-account`, { provider, tierId: "test" }]),
+          ["qwen-account", { provider: "qwen-portal", tierId: "free" }],
+        ]),
+      },
+    };
+    const path = join(testDir, "zeroapi-config.json");
+    const original = JSON.stringify(legacy, null, 2);
+    writeFileSync(path, original);
+
+    const { loadConfig, migrateLegacyCatalogConfig } = await import("../config.js");
+    const direct = migrateLegacyCatalogConfig(legacy);
+    const result = loadConfig(testDir)!;
+
+    for (const migrated of [direct, result]) {
+      expect(migrated.default_model).toBe(preservedModels[0]);
+      expect(Object.keys(migrated.models).filter((key) => preservedModels.includes(key))).toEqual(preservedModels);
+      expect(migrated.routing_rules.code).toEqual({
+        primary: preservedModels[0], fallbacks: [preservedModels[1], "qwen-oauth/portal-model"],
+      });
+      expect(migrated.routing_rules.research).toEqual({
+        primary: preservedModels[2], fallbacks: [preservedModels[3], "qwen-oauth/portal-model"],
+      });
+      expect(migrated.routing_rules.default).toEqual({
+        primary: preservedModels[4], fallbacks: ["qwen-oauth/cloud-model", "qwen-oauth/cli-model"],
+      });
+      expect(Object.keys(migrated.subscription_profile!.global).filter((key) => preservedProviders.includes(key)))
+        .toEqual(preservedProviders);
+      expect(migrated.subscription_profile!.global["qwen-oauth"]).toEqual({ enabled: true, tierId: "canonical" });
+      expect(Object.keys(migrated.subscription_profile!.agentOverrides!.direct).filter((key) => preservedProviders.includes(key)))
+        .toEqual(preservedProviders);
+      expect(migrated.subscription_profile!.agentOverrides!.direct).toHaveProperty("qwen-oauth");
+      expect(migrated.subscription_profile!.agentOverrides!.user).toHaveProperty("qwen-oauth");
+      for (const provider of preservedProviders) {
+        expect(migrated.subscription_inventory!.accounts[`${provider}-account`].provider).toBe(provider);
+      }
+      expect(migrated.subscription_inventory!.accounts["qwen-account"].provider).toBe("qwen-oauth");
+    }
+    // Policy IDs intentionally keep version-aware canonicalization, unlike structural route IDs.
+    expect(result.disabled_providers).toEqual(["openai-codex", "minimax-portal"]);
+    const { resolveRoutingDecision } = await import("../decision.js");
+    const directOverride = resolveRoutingDecision(result, { prompt: "hello", currentModel: preservedModels[0] });
+    const userOverride = resolveRoutingDecision(result, { prompt: "hello", currentModel: preservedModels[0], agentId: "user" });
+    expect(directOverride.reason).not.toBe("stay:external_current_model");
+    expect(userOverride.reason).not.toBe("stay:external_current_model");
+    expect(readFileSync(path, "utf8")).toBe(original);
+  });
+
   it("normalizes a legacy environment disable with file entries before downstream routing", async () => {
     const legacy = {
       version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",

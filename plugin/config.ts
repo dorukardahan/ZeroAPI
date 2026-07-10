@@ -1,7 +1,11 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { ZeroAPIConfig } from "./types.js";
-import { getVersionAwareCanonicalProviderId, isLegacySubscriptionCatalogVersion } from "./subscriptions.js";
+import {
+  getLegacyStructuralProviderId,
+  getVersionAwareCanonicalProviderId,
+  isLegacySubscriptionCatalogVersion,
+} from "./subscriptions.js";
 
 export type ConfigLoadStatus = "ok" | "missing" | "invalid" | "parse_error";
 
@@ -28,7 +32,7 @@ function parseOptionalBooleanEnv(value: string | undefined): boolean | undefined
 function remapModelRef(modelRef: string, catalogVersion: string): string {
   const slash = modelRef.indexOf("/");
   if (slash < 0) return modelRef;
-  const provider = getVersionAwareCanonicalProviderId(modelRef.slice(0, slash), catalogVersion);
+  const provider = getLegacyStructuralProviderId(modelRef.slice(0, slash), catalogVersion);
   return `${provider}/${modelRef.slice(slash + 1)}`;
 }
 
@@ -36,7 +40,7 @@ function remapSelections<T>(selections: Record<string, T> | undefined, catalogVe
   if (!selections) return undefined;
   const result: Record<string, T> = {};
   for (const [provider, selection] of Object.entries(selections)) {
-    const canonical = getVersionAwareCanonicalProviderId(provider, catalogVersion);
+    const canonical = getLegacyStructuralProviderId(provider, catalogVersion);
     if (!(canonical in result) || provider === canonical) result[canonical] = selection;
   }
   return result;
@@ -96,7 +100,7 @@ export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig
         ...config.subscription_inventory,
         accounts: Object.fromEntries(Object.entries(config.subscription_inventory.accounts).map(([accountId, account]) => [
           accountId,
-          { ...account, provider: getVersionAwareCanonicalProviderId(account.provider, catalogVersion) },
+          { ...account, provider: getLegacyStructuralProviderId(account.provider, catalogVersion) },
         ])),
       }
     : undefined;

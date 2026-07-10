@@ -172,10 +172,15 @@ export function isLegacySubscriptionCatalogVersion(version: string | undefined):
   return typeof version === "string" && /^1\.0(?:\.|$)/.test(version);
 }
 
-export function getVersionAwareCanonicalProviderId(providerId: string, version?: string): string {
+/** Rewrite only provider ids whose meaning changed in the 1.0 Qwen Portal split. */
+export function getLegacyStructuralProviderId(providerId: string, version?: string): string {
   const normalized = providerId.trim().toLowerCase();
   if (isLegacySubscriptionCatalogVersion(version) && LEGACY_QWEN_PORTAL_IDS.has(normalized)) {
     return "qwen-oauth";
   }
-  return getCanonicalOpenClawProviderId(providerId);
+  return providerId;
+}
+
+export function getVersionAwareCanonicalProviderId(providerId: string, version?: string): string {
+  return getCanonicalOpenClawProviderId(getLegacyStructuralProviderId(providerId, version));
 }

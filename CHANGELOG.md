@@ -12,6 +12,7 @@
 - Align current OpenClaw auth guidance with `openai`, `minimax-global-oauth`, `qwen-oauth`, and xAI provider-method OAuth; retain Hermes `xai-oauth` guidance only in Hermes-labeled paths.
 
 ### Fixed
+- Preserve non-Qwen runtime route ids byte-for-byte during legacy 1.0 structural migration while continuing to migrate Qwen Portal aliases and normalize disabled-provider policy ids.
 - Prevent excluded or unknown inventory accounts from contributing capacity to active subscription routes, and prevent active accounts from admitting excluded model-provider surfaces that share a runtime provider id.
 - Preserve legacy 1.0 Qwen Portal disable intent across file and environment provider lists with matching OpenClaw/Hermes canonical migration and deduplication of `disabled_providers`, without conflating fresh 1.1 Qwen Cloud disables.
 - Harden benchmark snapshot writes against duplicate output paths, final-component symlinks, predictable artifact collisions, permission drift, preparation leaks, and ownership-unsafe rollback; document the single-writer trusted-directory boundary.

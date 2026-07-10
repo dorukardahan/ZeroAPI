@@ -75,16 +75,29 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
-    def _qwen_fixture(self, version_fields, disabled):
+    def _qwen_fixture(self, version_fields, disabled, legacy_structural):
+        qwen_model = "qwen/coder-model" if legacy_structural else "qwen-oauth/coder-model"
         profile = copy.deepcopy(version_fields.get("subscription_profile", {}))
         profile["global"] = {
-            "openai-codex": {"enabled": True, "tierId": "pro"},
+            "openai": {"enabled": True, "tierId": "pro"},
+            "xai": {"enabled": True, "tierId": "supergrok"},
+            "moonshot": {"enabled": True, "tierId": "moderato"},
+            "minimax-portal": {"enabled": True, "tierId": "starter"},
+            "zai": {"enabled": True, "tierId": "lite"},
             "qwen": {"enabled": True, "tierId": "free"},
             "qwen-oauth": {"enabled": True, "tierId": "free"},
         }
+        profile["agentOverrides"] = {
+            "worker": {"openai": {"enabled": True}, "qwen-cli": {"enabled": True}},
+        }
         inventory = copy.deepcopy(version_fields.get("subscription_inventory", {}))
         inventory["accounts"] = {
-            "portal": {"provider": "qwen-oauth", "tierId": "free"},
+            "openai-main": {"provider": "openai", "tierId": "pro"},
+            "xai-main": {"provider": "xai", "tierId": "supergrok"},
+            "moonshot-main": {"provider": "moonshot", "tierId": "moderato"},
+            "minimax-main": {"provider": "minimax-portal", "tierId": "starter"},
+            "zai-main": {"provider": "zai", "tierId": "lite"},
+            "portal": {"provider": "qwen-portal" if legacy_structural else "qwen-oauth", "tierId": "free"},
         }
         top = {
             key: copy.deepcopy(value)
@@ -93,13 +106,18 @@ class HermesParityTest(unittest.TestCase):
         }
         return _base(
             {
-                "openai-codex/current-model": _m(1000000, False, 9, 1, intelligence=40, coding=40),
-                "qwen-oauth/coder-model": _m(1000000, False, 10, 1, intelligence=50, coding=50),
+                "openai/current-model": _m(1000000, False, 9, 1, intelligence=40, coding=40),
+                "xai/grok-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
+                "moonshot/kimi-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
+                "minimax-portal/minimax-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
+                "zai/glm-model": _m(1000000, False, 8, 1, intelligence=39, coding=39),
+                qwen_model: _m(1000000, False, 10, 1, intelligence=50, coding=50),
             },
-            {"code": {"primary": "qwen-oauth/coder-model", "fallbacks": []},
-             "default": {"primary": "qwen-oauth/coder-model", "fallbacks": []}},
+            {"code": {"primary": qwen_model, "fallbacks": ["openai/current-model"]},
+             "default": {"primary": qwen_model, "fallbacks": ["xai/grok-model", "moonshot/kimi-model",
+                                                                  "minimax-portal/minimax-model", "zai/glm-model"]}},
             **top,
-            default_model="openai-codex/current-model",
+            default_model="openai/current-model",
             disabled_providers=copy.deepcopy(disabled),
             subscription_profile=profile,
             subscription_inventory=inventory,
@@ -120,9 +138,17 @@ const before = readFileSync(path, 'utf8');
 const config = loadConfig(fixtureDir);
 if (!config) throw new Error('loadConfig rejected parity fixture');
 const decision = resolveRoutingDecision(config, {
-  prompt: 'implement this feature', currentModel: 'openai-codex/current-model', includeDiagnostics: true,
+  prompt: 'implement this feature', currentModel: 'openai/current-model', includeDiagnostics: true,
 });
 process.stdout.write(JSON.stringify({
+  defaultModel: config.default_model,
+  modelKeys: Object.keys(config.models),
+  routingRules: config.routing_rules,
+  profileKeys: Object.keys(config.subscription_profile?.global ?? {}),
+  agentOverrideKeys: Object.fromEntries(Object.entries(config.subscription_profile?.agentOverrides ?? {})
+    .map(([agent, selections]) => [agent, Object.keys(selections)])),
+  inventoryProviders: Object.fromEntries(Object.entries(config.subscription_inventory?.accounts ?? {})
+    .map(([account, value]) => [account, value.provider])),
   disabled: config.disabled_providers,
   allowed: decision.selectedModel !== null,
   rejected: decision.subscriptionRejected.includes('qwen-oauth/coder-model'),
@@ -142,7 +168,7 @@ process.stdout.write(JSON.stringify({
         return json.loads(completed.stdout)
 
     def _assert_load_parity(self, label, version_fields, file_disabled, env_value, expected, portal_disabled):
-        cfg = self._qwen_fixture(version_fields, file_disabled)
+        cfg = self._qwen_fixture(version_fields, file_disabled, portal_disabled)
         untouched = copy.deepcopy(cfg)
         repo_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory(prefix="zeroapi-load-parity-") as temp_dir:
@@ -158,8 +184,23 @@ process.stdout.write(JSON.stringify({
                 python_disabled = _disabled_provider_list(python_router.config)
                 python_rejected = _provider_disabled(python_router.config, "qwen-oauth")
                 python_route = python_router.resolve(
-                    "implement this feature", current_model="openai-codex/current-model",
+                    "implement this feature", current_model="openai/current-model",
                 )
+
+                python_structural = {
+                    "defaultModel": python_config["default_model"],
+                    "modelKeys": list(python_config["models"]),
+                    "routingRules": python_config["routing_rules"],
+                    "profileKeys": list(python_config.get("subscription_profile", {}).get("global", {})),
+                    "agentOverrideKeys": {
+                        agent: list(selections)
+                        for agent, selections in python_config.get("subscription_profile", {}).get("agentOverrides", {}).items()
+                    },
+                    "inventoryProviders": {
+                        account: value["provider"]
+                        for account, value in python_config.get("subscription_inventory", {}).get("accounts", {}).items()
+                    },
+                }
 
             self.assertEqual(config_path.read_text(encoding="utf-8"), original_text, label)
 
@@ -168,6 +209,7 @@ process.stdout.write(JSON.stringify({
         self.assertEqual(typescript["disabled"], expected, label)
         self.assertEqual(python_disabled, expected, label)
         self.assertEqual(typescript["disabled"], python_disabled, label)
+        self.assertEqual({key: typescript[key] for key in python_structural}, python_structural, label)
         self.assertEqual(typescript["rejected"], portal_disabled, label)
         self.assertEqual(python_rejected, portal_disabled, label)
         self.assertEqual(typescript["rejected"], python_rejected, label)

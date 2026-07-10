@@ -3,6 +3,7 @@ import { isModelAllowedBySubscriptions } from "../inventory.js";
 import { getStarterProviders } from "../onboarding.js";
 import { isModelAllowedBySubscriptionProfile, resolveProviderSubscription } from "../profile.js";
 import {
+  getLegacyStructuralProviderId,
   getProviderCatalogEntry,
   getVersionAwareCanonicalProviderId,
   SUBSCRIPTION_CATALOG_VERSION,
@@ -23,6 +24,15 @@ describe("subscription catalog", () => {
       expect(getVersionAwareCanonicalProviderId(id, "1.0.0")).toBe("qwen-oauth");
     }
     expect(getVersionAwareCanonicalProviderId("qwen", "1.1.0")).toBe("qwen");
+  });
+
+  it("keeps non-Qwen legacy structural provider ids byte-for-byte", () => {
+    for (const id of ["openai", "xai", "moonshot", "minimax-portal", "zai", " OpenAI "]) {
+      expect(getLegacyStructuralProviderId(id, "1.0.0")).toBe(id);
+    }
+    for (const id of ["qwen", "qwen-dashscope", "qwen-portal", "qwen-cli"]) {
+      expect(getLegacyStructuralProviderId(id, "1.0.0")).toBe("qwen-oauth");
+    }
   });
 
   it("models Qwen Portal as a legacy token surface, not refreshable free OAuth", () => {
