@@ -33,4 +33,6 @@ python3 scripts/refresh_benchmarks.py --reannotate --input benchmarks.json --pre
 
 Both paths atomically update both committed snapshot files. The weekly workflow stages both, tests check byte identity, and release preflight fails on drift.
 
+Run the writer as a single process against operator-owned, non-group/world-writable output directories. Final-component output symlinks are rejected, artifacts are created exclusively with random names, and rollback is inode-gated. Concurrent same-principal directory mutation or non-cooperating parallel writers are outside the supported threat model.
+
 Source: [Artificial Analysis Data API v2](https://artificialanalysis.ai/) and [Artificial Analysis methodology](https://artificialanalysis.ai/methodology/intelligence-benchmarking), fetched 2026-07-05. Provider route sources are linked from [provider-model-status.md](provider-model-status.md).
