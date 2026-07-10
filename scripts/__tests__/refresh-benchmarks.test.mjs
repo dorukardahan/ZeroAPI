@@ -706,6 +706,84 @@ assert not list(work_dir.rglob("*.bak"))
 `, [root]);
 });
 
+test("refresh_benchmarks preserves substituted rollback destinations", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-rollback-substitution-"));
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+for substitution in ("regular", "symlink", "missing"):
+    case_dir = work_dir / substitution
+    case_dir.mkdir()
+    root = case_dir / "root.json"
+    plugin = case_dir / "plugin.json"
+    root.write_bytes(b"root-original\\x00\\xff")
+    plugin.write_bytes(b"plugin-original\\x00\\xfe")
+    root.chmod(0o600)
+    plugin.chmod(0o640)
+    original_plugin = plugin.read_bytes()
+    unrelated = case_dir / "unrelated"
+    unrelated.write_bytes(b"unrelated-content")
+    unrelated.chmod(0o604)
+    unrelated_link = case_dir / "unrelated-link"
+    unrelated_link.symlink_to(unrelated.name)
+    displaced = case_dir / "displaced-installed"
+
+    original_replace = pathlib.Path.replace
+    calls = 0
+    def substitute_then_fail(self, target):
+        global calls
+        if self.name.endswith(".tmp"):
+            calls += 1
+            if calls == 2:
+                root.rename(displaced)
+                if substitution == "regular":
+                    root.write_bytes(b"foreign-substitute\\x00distinct")
+                    root.chmod(0o622)
+                elif substitution == "symlink":
+                    root.symlink_to(unrelated.name)
+                raise OSError(f"injected second replace failure ({substitution})")
+        return original_replace(self, target)
+
+    pathlib.Path.replace = substitute_then_fail
+    try:
+        try:
+            module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+        except OSError as exc:
+            assert str(exc) == f"injected second replace failure ({substitution})"
+        else:
+            raise AssertionError("second replacement should fail")
+    finally:
+        pathlib.Path.replace = original_replace
+
+    if substitution == "regular":
+        assert root.read_bytes() == b"foreign-substitute\\x00distinct"
+        assert (root.stat().st_mode & 0o7777) == 0o622
+    elif substitution == "symlink":
+        assert root.is_symlink()
+        assert root.readlink() == pathlib.Path(unrelated.name)
+    else:
+        assert not root.exists()
+        assert not root.is_symlink()
+    assert plugin.read_bytes() == original_plugin
+    assert (plugin.stat().st_mode & 0o7777) == 0o640
+    assert unrelated.read_bytes() == b"unrelated-content"
+    assert (unrelated.stat().st_mode & 0o7777) == 0o604
+    assert unrelated_link.is_symlink()
+    assert unrelated_link.readlink() == pathlib.Path(unrelated.name)
+    assert not displaced.exists()
+    assert not list(case_dir.glob(".*.tmp"))
+    assert not list(case_dir.glob(".*.bak"))
+`, [root]);
+});
+
 test("offline reannotation upgrades version and applies mapped provider metadata", () => {
   runPython(`
 import importlib.util

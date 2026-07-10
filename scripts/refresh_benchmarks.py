@@ -107,6 +107,9 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
     backup_paths: List[Optional[Path]] = []
     replaced = {}
 
+    def matches_identity(current: os.stat_result, identity: tuple[int, int]) -> bool:
+        return (current.st_dev, current.st_ino) == identity
+
     def cleanup_unhanded_identity(parent: Path, identity: tuple[int, int]) -> None:
         """Remove matching links in the artifact parent without following symlinks."""
         flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
@@ -118,12 +121,12 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
                         current = entry.stat(follow_symlinks=False)
                     except FileNotFoundError:
                         continue
-                    if (current.st_dev, current.st_ino) != identity:
+                    if not matches_identity(current, identity):
                         continue
                     try:
                         # Recheck through the held parent fd immediately before unlink.
                         current = os.stat(entry.name, dir_fd=directory_fd, follow_symlinks=False)
-                        if (current.st_dev, current.st_ino) == identity:
+                        if matches_identity(current, identity):
                             os.unlink(entry.name, dir_fd=directory_fd)
                     except FileNotFoundError:
                         pass
@@ -165,7 +168,7 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
     def assert_owned(path: Path) -> None:
         identity = owned.get(path)
         current = path.lstat()
-        if identity is None or (current.st_dev, current.st_ino) != identity:
+        if identity is None or not matches_identity(current, identity):
             raise OSError(f"Owned snapshot artifact changed unexpectedly: {path}")
 
     def cleanup_owned(path: Path) -> None:
@@ -176,8 +179,42 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
             current = path.lstat()
         except FileNotFoundError:
             return
-        if (current.st_dev, current.st_ino) == identity:
+        if matches_identity(current, identity):
             path.unlink()
+
+    def replace_owned_destination(source: Path, destination: Path, identity: tuple[int, int]) -> bool:
+        """Replace only if the destination still names this invocation's inode."""
+        source_identity = owned.get(source)
+        if source_identity is None:
+            raise OSError(f"Snapshot backup ownership missing: {source}")
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        directory_fd = os.open(str(destination.parent), flags)
+        try:
+            try:
+                current = os.stat(destination.name, dir_fd=directory_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                return False
+            if not matches_identity(current, identity):
+                return False
+
+            # Recheck the backup and destination through the held parent fd
+            # immediately before the rename. Neither check follows symlinks.
+            backup = os.stat(source.name, dir_fd=directory_fd, follow_symlinks=False)
+            if not matches_identity(backup, source_identity):
+                raise OSError(f"Owned snapshot artifact changed unexpectedly: {source}")
+            current = os.stat(destination.name, dir_fd=directory_fd, follow_symlinks=False)
+            if not matches_identity(current, identity):
+                return False
+            os.replace(
+                source.name,
+                destination.name,
+                src_dir_fd=directory_fd,
+                dst_dir_fd=directory_fd,
+            )
+        finally:
+            os.close(directory_fd)
+        owned.pop(source, None)
+        return True
 
     def fsync_directory(path: Path) -> None:
         flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
@@ -243,16 +280,22 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
             if path not in replaced:
                 continue
             if backup_path is not None:
-                assert_owned(backup_path)
-                backup_path.replace(path)
-                owned.pop(backup_path, None)
+                installed_identity = replaced[path]
+                restored = replace_owned_destination(backup_path, path, installed_identity)
+                if not restored:
+                    try:
+                        cleanup_unhanded_identity(path.parent, installed_identity)
+                    except OSError:
+                        # Preserve the original write failure and never touch an
+                        # ownership-unknown rollback destination.
+                        pass
             else:
                 installed_identity = replaced[path]
                 try:
                     current = path.lstat()
                 except FileNotFoundError:
                     current = None
-                if current is not None and (current.st_dev, current.st_ino) == installed_identity:
+                if current is not None and matches_identity(current, installed_identity):
                     path.unlink()
             fsync_directory(path.parent)
         raise
