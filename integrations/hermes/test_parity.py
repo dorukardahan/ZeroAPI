@@ -350,6 +350,39 @@ process.stdout.write(JSON.stringify({
                     legacy_structural=True,
                 )
 
+    def test_P2_malformed_legacy_migration_fails_closed_without_rewriting_in_both_loaders(self):
+        malformed = self._qwen_fixture(
+            {"subscription_catalog_version": "1.0.0"}, [], True,
+        )
+        malformed["routing_rules"]["code"]["fallbacks"] = None
+        repo_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix="zeroapi-malformed-parity-") as temp_dir:
+            config_path = Path(temp_dir) / "zeroapi-config.json"
+            original = json.dumps(malformed, separators=(",", ":"))
+            config_path.write_text(original, encoding="utf-8")
+            script = """
+import { loadConfig } from './plugin/config.ts';
+import { readFileSync } from 'node:fs';
+const dir = process.env.ZEROAPI_PARITY_FIXTURE_DIR;
+const path = `${dir}/zeroapi-config.json`;
+const before = readFileSync(path, 'utf8');
+const config = loadConfig(dir);
+process.stdout.write(JSON.stringify({ config, unchanged: readFileSync(path, 'utf8') === before }));
+"""
+            env = os.environ.copy()
+            env["ZEROAPI_PARITY_FIXTURE_DIR"] = temp_dir
+            completed = subprocess.run(
+                [str(repo_root / "node_modules" / ".bin" / "tsx"), "--eval", script],
+                cwd=repo_root, text=True, env=env, capture_output=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            typescript = json.loads(completed.stdout)
+            self.assertIsNone(typescript["config"])
+            self.assertTrue(typescript["unchanged"])
+
+            self.assertIsNone(load_config(str(config_path)))
+            self.assertEqual(config_path.read_text(encoding="utf-8"), original)
+
     def test_S1_high_risk_still_routes(self):
         cfg = _base(
             {"zai/glm-5.1": ZAI, "openai-codex/gpt-5.4": OPENAI},

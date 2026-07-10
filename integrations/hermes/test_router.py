@@ -1,7 +1,10 @@
 import copy
+import json
 import os
 import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from router import HERMES_PROVIDER_MAP, ZeroAPIRouter, load_config
 
@@ -504,13 +507,70 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
 
     def test_loads_config_from_explicit_path(self):
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
-            import json
-
             json.dump(CONFIG, handle)
             path = handle.name
         try:
             loaded = load_config(path)
             self.assertEqual(loaded["version"], "test")
+        finally:
+            os.unlink(path)
+
+    def test_malformed_explicit_legacy_configs_fail_closed_without_rewriting(self):
+        malformed_cases = (
+            ("scalar fallbacks", {"primary": "qwen/model", "fallbacks": 17}),
+            ("null fallbacks", {"primary": "qwen/model", "fallbacks": None}),
+            ("object fallbacks", {"primary": "qwen/model", "fallbacks": {"model": "qwen/other"}}),
+            ("malformed rule object", {"primary": {"provider": "qwen"}, "fallbacks": []}),
+        )
+        for label, malformed_rule in malformed_cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="zeroapi-malformed-") as temp_dir:
+                path = Path(temp_dir) / "zeroapi-config.json"
+                malformed = {
+                    **CONFIG,
+                    "subscription_catalog_version": "1.0.0",
+                    "routing_rules": {"default": malformed_rule},
+                }
+                original = json.dumps(malformed, separators=(",", ":")).encode()
+                path.write_bytes(original)
+
+                self.assertIsNone(load_config(str(path)))
+                self.assertEqual(path.read_bytes(), original)
+
+    def test_default_candidates_continue_after_malformed_legacy_config(self):
+        with tempfile.TemporaryDirectory(prefix="zeroapi-home-") as temp_dir:
+            home = Path(temp_dir)
+            hermes_path = home / ".hermes" / "zeroapi-config.json"
+            openclaw_path = home / ".openclaw" / "zeroapi-config.json"
+            hermes_path.parent.mkdir()
+            openclaw_path.parent.mkdir()
+            malformed = {
+                **CONFIG,
+                "subscription_catalog_version": "1.0.0",
+                "routing_rules": {"default": {"primary": "qwen/model", "fallbacks": None}},
+            }
+            malformed_bytes = json.dumps(malformed).encode()
+            hermes_path.write_bytes(malformed_bytes)
+            later = {**CONFIG, "version": "later-valid"}
+            openclaw_path.write_text(json.dumps(later), encoding="utf-8")
+
+            with patch.dict(os.environ, {"HOME": str(home), "HERMES_HOME": str(home / ".hermes")}, clear=False):
+                loaded = load_config()
+
+            self.assertIsNotNone(loaded)
+            assert loaded is not None
+            self.assertEqual(loaded["version"], "later-valid")
+            self.assertEqual(hermes_path.read_bytes(), malformed_bytes)
+
+    def test_migration_does_not_swallow_process_control_or_memory_failures(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
+            json.dump(CONFIG, handle)
+            path = handle.name
+        try:
+            for error_type in (KeyboardInterrupt, SystemExit, MemoryError):
+                with self.subTest(error=error_type.__name__):
+                    with patch("router._migrate_legacy_config", side_effect=error_type("sentinel")):
+                        with self.assertRaises(error_type):
+                            load_config(path)
         finally:
             os.unlink(path)
 

@@ -238,6 +238,8 @@ def _migrate_legacy_config(config: Config) -> Config:
     migrated = copy.deepcopy(config)
 
     def model_ref(value: str) -> str:
+        if not isinstance(value, str):
+            raise TypeError("legacy model references must be strings")
         if "/" not in value:
             return value
         provider, model = value.split("/", 1)
@@ -246,9 +248,13 @@ def _migrate_legacy_config(config: Config) -> Config:
     migrated["default_model"] = model_ref(migrated["default_model"])
     migrated["models"] = {model_ref(key): value for key, value in migrated["models"].items()}
     for rule in migrated["routing_rules"].values():
-        if isinstance(rule, dict):
-            rule["primary"] = model_ref(rule.get("primary", ""))
-            rule["fallbacks"] = [model_ref(item) for item in rule.get("fallbacks", [])]
+        if not isinstance(rule, dict):
+            raise TypeError("legacy routing rules must be objects")
+        fallbacks = rule.get("fallbacks", [])
+        if not isinstance(fallbacks, list):
+            raise TypeError("legacy routing rule fallbacks must be arrays")
+        rule["primary"] = model_ref(rule.get("primary", ""))
+        rule["fallbacks"] = [model_ref(item) for item in fallbacks]
     profile = migrated.get("subscription_profile")
     if isinstance(profile, dict):
         values = profile.get("global")
@@ -307,7 +313,14 @@ def load_config(path: str | None = None) -> Config | None:
                 parsed = json.loads(candidate.read_text(encoding="utf-8"))
                 if _valid_config(parsed):
                     return _migrate_legacy_config(parsed)
-        except (OSError, json.JSONDecodeError):
+        except (
+            OSError,
+            json.JSONDecodeError,
+            TypeError,
+            ValueError,
+            KeyError,
+            AttributeError,
+        ):
             continue
     return None
 
