@@ -455,7 +455,7 @@ describe("config", () => {
     const { loadConfig, migrateLegacyCatalogConfig } = await import("../config.js");
     expect(migrateLegacyCatalogConfig(unversioned)).toBe(unversioned);
     expect(unversioned).toEqual(untouched);
-    expect(loadConfig(testDir)?.disabled_providers).toEqual(["qwen", "qWeN"]);
+    expect(loadConfig(testDir)?.disabled_providers).toEqual(["qwen"]);
   });
 
   it("does not conflate fresh 1.1 Qwen Cloud with Qwen Portal", async () => {

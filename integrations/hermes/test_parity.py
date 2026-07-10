@@ -14,11 +14,14 @@ divergences fixed for TS<->Python parity:
 """
 import copy
 import json
+import os
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from router import ZeroAPIRouter
+from router import ZeroAPIRouter, _disabled_provider_list, _provider_disabled, load_config
 
 
 def _m(ctx, vision, tps, ttft, **bm):
@@ -72,52 +75,160 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
-    def test_P1_legacy_qwen_disabled_provider_matches_typescript(self):
-        cfg = _base(
-            {"qwen/coder-model": _m(1000000, False, 10, 1, intelligence=50, coding=50)},
-            {"code": {"primary": "qwen-dashscope/coder-model", "fallbacks": ["qwen-cli/coder-model"]},
-             "default": {"primary": "qwen-portal/coder-model", "fallbacks": []}},
-            subscription_catalog_version="1.0.0", default_model="qwen/coder-model",
-            disabled_providers=[
-                " ZAI ", None, " qWeN ", "qwen-portal", "moonshot", "QWEN-DASHSCOPE",
-                " qwen-cli ", "qwen-oauth", 17, {"provider": "qwen"}, "zai",
-            ],
-            subscription_profile={"version": "1.0.0", "global": {
-                "qwen": {"enabled": True, "tierId": "free"}}},
-            subscription_inventory={"version": "1.0.0", "accounts": {
-                "portal": {"provider": "qwen-cli", "tierId": "free"}}})
-        untouched = copy.deepcopy(cfg)
-        python_router = ZeroAPIRouter(cfg)
-        python_route = python_router.resolve("implement this feature", current_model="qwen-oauth/coder-model")
+    def _qwen_fixture(self, version_fields, disabled):
+        profile = copy.deepcopy(version_fields.get("subscription_profile", {}))
+        profile["global"] = {
+            "openai-codex": {"enabled": True, "tierId": "pro"},
+            "qwen": {"enabled": True, "tierId": "free"},
+            "qwen-oauth": {"enabled": True, "tierId": "free"},
+        }
+        inventory = copy.deepcopy(version_fields.get("subscription_inventory", {}))
+        inventory["accounts"] = {
+            "portal": {"provider": "qwen-oauth", "tierId": "free"},
+        }
+        top = {
+            key: copy.deepcopy(value)
+            for key, value in version_fields.items()
+            if key not in {"subscription_profile", "subscription_inventory"}
+        }
+        return _base(
+            {
+                "openai-codex/current-model": _m(1000000, False, 9, 1, intelligence=40, coding=40),
+                "qwen-oauth/coder-model": _m(1000000, False, 10, 1, intelligence=50, coding=50),
+            },
+            {"code": {"primary": "qwen-oauth/coder-model", "fallbacks": []},
+             "default": {"primary": "qwen-oauth/coder-model", "fallbacks": []}},
+            **top,
+            default_model="openai-codex/current-model",
+            disabled_providers=copy.deepcopy(disabled),
+            subscription_profile=profile,
+            subscription_inventory=inventory,
+        )
 
+    def _typescript_load(self, repo_root, fixture_dir, env_value):
         repo_root = Path(__file__).resolve().parents[2]
         tsx = repo_root / "node_modules" / ".bin" / "tsx"
         script = """
-import { migrateLegacyCatalogConfig } from './plugin/config.ts';
+import { loadConfig } from './plugin/config.ts';
 import { resolveRoutingDecision } from './plugin/decision.ts';
 import { readFileSync } from 'node:fs';
-const input = readFileSync(0, 'utf8');
-const config = migrateLegacyCatalogConfig(JSON.parse(input));
+import { join } from 'node:path';
+const fixtureDir = process.env.ZEROAPI_PARITY_FIXTURE_DIR;
+if (!fixtureDir) throw new Error('missing ZEROAPI_PARITY_FIXTURE_DIR');
+const path = join(fixtureDir, 'zeroapi-config.json');
+const before = readFileSync(path, 'utf8');
+const config = loadConfig(fixtureDir);
+if (!config) throw new Error('loadConfig rejected parity fixture');
 const decision = resolveRoutingDecision(config, {
-  prompt: 'implement this feature', currentModel: 'qwen-oauth/coder-model', includeDiagnostics: true,
+  prompt: 'implement this feature', currentModel: 'openai-codex/current-model', includeDiagnostics: true,
 });
 process.stdout.write(JSON.stringify({
   disabled: config.disabled_providers,
   allowed: decision.selectedModel !== null,
   rejected: decision.subscriptionRejected.includes('qwen-oauth/coder-model'),
+  subscriptionRejected: decision.subscriptionRejected,
+  weightedCandidates: decision.weightedCandidates,
+  fileUnchanged: readFileSync(path, 'utf8') === before,
 }));
 """
+        child_env = os.environ.copy()
+        child_env["ZEROAPI_DISABLED_PROVIDERS"] = env_value
+        child_env["ZEROAPI_PARITY_FIXTURE_DIR"] = str(fixture_dir)
         completed = subprocess.run(
-            [str(tsx), "--eval", script], cwd=repo_root, input=json.dumps(cfg), text=True,
+            [str(tsx), "--eval", script], cwd=repo_root, text=True, env=child_env,
             capture_output=True, check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        typescript = json.loads(completed.stdout)
+        return json.loads(completed.stdout)
 
-        self.assertEqual(python_router.config["disabled_providers"], typescript["disabled"])
-        self.assertEqual(python_route is not None, typescript["allowed"])
-        self.assertTrue(typescript["rejected"])
-        self.assertEqual(cfg, untouched)
+    def _assert_load_parity(self, label, version_fields, file_disabled, env_value, expected, portal_disabled):
+        cfg = self._qwen_fixture(version_fields, file_disabled)
+        untouched = copy.deepcopy(cfg)
+        repo_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix="zeroapi-load-parity-") as temp_dir:
+            config_path = Path(temp_dir) / "zeroapi-config.json"
+            original_text = json.dumps(cfg)
+            config_path.write_text(original_text, encoding="utf-8")
+            typescript = self._typescript_load(repo_root, temp_dir, env_value)
+            with patch.dict(os.environ, {"ZEROAPI_DISABLED_PROVIDERS": env_value}, clear=False):
+                python_config = load_config(str(config_path))
+                self.assertIsNotNone(python_config, label)
+                assert python_config is not None
+                python_router = ZeroAPIRouter(python_config)
+                python_disabled = _disabled_provider_list(python_router.config)
+                python_rejected = _provider_disabled(python_router.config, "qwen-oauth")
+                python_route = python_router.resolve(
+                    "implement this feature", current_model="openai-codex/current-model",
+                )
+
+            self.assertEqual(config_path.read_text(encoding="utf-8"), original_text, label)
+
+        self.assertEqual(cfg, untouched, label)
+        self.assertTrue(typescript["fileUnchanged"], label)
+        self.assertEqual(typescript["disabled"], expected, label)
+        self.assertEqual(python_disabled, expected, label)
+        self.assertEqual(typescript["disabled"], python_disabled, label)
+        self.assertEqual(typescript["rejected"], portal_disabled, label)
+        self.assertEqual(python_rejected, portal_disabled, label)
+        self.assertEqual(typescript["rejected"], python_rejected, label)
+        self.assertEqual(typescript["allowed"], python_route is not None, label)
+        if portal_disabled:
+            self.assertIn("qwen-oauth/coder-model", typescript["subscriptionRejected"], label)
+            self.assertNotIn("qwen-oauth/coder-model", typescript["weightedCandidates"], label)
+
+    def test_P1_effective_version_nullish_precedence_matches_typescript_load_config(self):
+        cases = (
+            ("numeric top blocks profile legacy", {
+                "subscription_catalog_version": 17,
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen"], False),
+            ("numeric profile blocks inventory legacy", {
+                "subscription_profile": {"version": 17},
+                "subscription_inventory": {"version": "1.0.0"},
+            }, ["qwen"], False),
+            ("absent top and null profile fall through", {
+                "subscription_profile": {"version": None},
+                "subscription_inventory": {"version": "1.0.0"},
+            }, ["qwen-oauth"], True),
+            ("null top falls through to profile", {
+                "subscription_catalog_version": None,
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen-oauth"], True),
+            ("blank top blocks profile legacy", {
+                "subscription_catalog_version": "",
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen"], False),
+            ("valid legacy top", {"subscription_catalog_version": "1.0.0"}, ["qwen-oauth"], True),
+            ("valid fresh top", {
+                "subscription_catalog_version": "1.1.0",
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen"], False),
+        )
+        for label, versions, expected, portal_disabled in cases:
+            with self.subTest(label=label):
+                self._assert_load_parity(label, versions, ["qwen"], "", expected, portal_disabled)
+
+    def test_P2_file_and_environment_disabled_sequence_matches_typescript_load_config(self):
+        cases = (
+            ("env-only legacy alias", {"subscription_catalog_version": "1.0.0"}, [],
+             " qWeN ", ["qwen-oauth"], True),
+            ("file-env collisions malformed and unrelated order", {"subscription_catalog_version": "1.0.0"},
+             [" ZAI ", None, "qwen-portal", 17, {"provider": "qwen"}, "moonshot", "qwen-oauth", "zai"],
+             " QWEN-DASHSCOPE , minimax, moonshot, qwen-oauth ",
+             ["zai", "qwen-oauth", "moonshot", "minimax-portal"], True),
+            ("fresh Cloud stays separate from Portal", {"subscription_catalog_version": "1.1.0"},
+             [" QWEN "], "qwen", ["qwen"], False),
+            ("missing version stays non-legacy", {}, ["qwen"], " qwen ", ["qwen"], False),
+            ("malformed top blocks profile for env too", {
+                "subscription_catalog_version": 17,
+                "subscription_profile": {"version": "1.0.0"},
+             }, [], " QWEN-DASHSCOPE ", ["qwen-dashscope"], False),
+        )
+        for label, versions, file_disabled, env_value, expected, portal_disabled in cases:
+            with self.subTest(label=label):
+                self._assert_load_parity(
+                    label, versions, file_disabled, env_value, expected, portal_disabled,
+                )
 
     def test_S1_high_risk_still_routes(self):
         cfg = _base(

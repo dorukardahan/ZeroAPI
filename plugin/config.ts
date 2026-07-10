@@ -48,7 +48,9 @@ function remapProviderIds(providers: string[] | undefined, catalogVersion: strin
   const seen = new Set<string>();
   for (const provider of providers) {
     if (typeof provider !== "string") continue;
-    const canonical = getVersionAwareCanonicalProviderId(provider, catalogVersion);
+    const normalized = provider.trim().toLowerCase();
+    if (!normalized) continue;
+    const canonical = getVersionAwareCanonicalProviderId(normalized, catalogVersion);
     if (seen.has(canonical)) continue;
     seen.add(canonical);
     result.push(canonical);

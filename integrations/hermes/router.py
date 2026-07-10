@@ -200,7 +200,7 @@ HERMES_PROVIDER_MAP = {
 LEGACY_QWEN_PORTAL_IDS = {"qwen", "qwen-dashscope", "qwen-portal", "qwen-cli"}
 
 
-def _catalog_version(config: Config) -> str:
+def _catalog_version(config: Config) -> str | None:
     profile = config.get("subscription_profile")
     inventory = config.get("subscription_inventory")
     for candidate in (
@@ -208,20 +208,23 @@ def _catalog_version(config: Config) -> str:
         profile.get("version") if isinstance(profile, dict) else None,
         inventory.get("version") if isinstance(inventory, dict) else None,
     ):
-        if isinstance(candidate, str):
-            return candidate
-    return ""
+        if candidate is not None:
+            # Match TypeScript's nullish precedence exactly: a malformed non-null
+            # candidate wins this selection but cannot identify a legacy catalog.
+            # In particular, do not fall through to a lower-priority valid string.
+            return candidate if isinstance(candidate, str) else None
+    return None
 
 
-def _legacy_provider(provider: str, version: str) -> str:
-    if re.match(r"^1\.0(?:\.|$)", version) and provider.strip().lower() in LEGACY_QWEN_PORTAL_IDS:
+def _legacy_provider(provider: str, version: str | None) -> str:
+    if isinstance(version, str) and re.match(r"^1\.0(?:\.|$)", version) and provider.strip().lower() in LEGACY_QWEN_PORTAL_IDS:
         return "qwen-oauth"
     return provider
 
 
 def _migrate_legacy_config(config: Config) -> Config:
     version = _catalog_version(config)
-    if not re.match(r"^1\.0(?:\.|$)", version):
+    if not isinstance(version, str) or not re.match(r"^1\.0(?:\.|$)", version):
         return config
     migrated = copy.deepcopy(config)
 
@@ -327,21 +330,32 @@ def _canonical_provider(provider: str) -> str:
     return provider
 
 
-def _disabled_providers(config: Config) -> set[str]:
-    disabled: set[str] = set()
+def _disabled_provider_list(config: Config) -> list[str]:
+    disabled: list[str] = []
+    seen: set[str] = set()
     version = _catalog_version(config)
     configured = config.get("disabled_providers")
     if isinstance(configured, list):
         for provider in configured:
             if isinstance(provider, str) and provider.strip():
-                disabled.add(_canonical_provider(_legacy_provider(provider, version).strip().lower()))
+                canonical = _canonical_provider(_legacy_provider(provider, version).strip().lower())
+                if canonical not in seen:
+                    seen.add(canonical)
+                    disabled.append(canonical)
 
     env_value = os.getenv("ZEROAPI_DISABLED_PROVIDERS", "")
     for provider in env_value.split(","):
         if provider.strip():
-            disabled.add(_canonical_provider(_legacy_provider(provider, version).strip().lower()))
+            canonical = _canonical_provider(_legacy_provider(provider, version).strip().lower())
+            if canonical not in seen:
+                seen.add(canonical)
+                disabled.append(canonical)
 
     return disabled
+
+
+def _disabled_providers(config: Config) -> set[str]:
+    return set(_disabled_provider_list(config))
 
 
 def _provider_disabled(config: Config, provider: str) -> bool:
