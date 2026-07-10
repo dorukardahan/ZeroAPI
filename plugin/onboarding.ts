@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { getSubscriptionWeightedCandidates } from "./router.js";
 import {
   getProviderCatalogEntry,
+  getVersionAwareCanonicalProviderId,
   SUBSCRIPTION_CATALOG,
   SUBSCRIPTION_CATALOG_VERSION,
   type ProviderCatalogEntry,
@@ -27,45 +28,55 @@ const BENCHMARKS_FILE_CANDIDATES = [
 const PACKAGE_FILE = resolve(MODULE_DIR, "package.json");
 
 export const STARTER_AUTH_CHOICES: Record<string, string> = {
-  "openai-codex": "openclaw models auth login --provider openai-codex",
+  "openai-codex": "openclaw models auth login --provider openai",
   "zai": "openclaw onboard --auth-choice zai-coding-global",
   "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
-  "minimax-portal": "openclaw onboard --auth-choice minimax-portal",
-  "qwen-portal": "openclaw models auth login --provider qwen-portal --set-default",
-  "xai": "openclaw onboard --auth-choice xai-device-code",
+  "minimax-portal": "openclaw onboard --auth-choice minimax-global-oauth",
+  "qwen-portal": "openclaw onboard --auth-choice qwen-oauth",
+  "qwen-oauth": "openclaw onboard --auth-choice qwen-oauth",
+  "xai": "openclaw models auth login --provider xai --method oauth",
   "xai-oauth": "hermes auth add xai-oauth",
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
-  "openai/gpt-5.5": { context_window: 272000, supports_vision: true },
-  "openai/gpt-5.5-pro": { context_window: 272000, supports_vision: true },
-  "openai/gpt-5.4": { context_window: 272000, supports_vision: true },
-  "openai/gpt-5.4-mini": { context_window: 272000, supports_vision: true },
+  // Codex/ChatGPT subscription routes expose 372K, while direct API routes expose 1.05M.
+  "openai/gpt-5.6-sol": { context_window: 372000, supports_vision: true },
+  "openai/gpt-5.6-terra": { context_window: 372000, supports_vision: true },
+  "openai/gpt-5.6-luna": { context_window: 372000, supports_vision: true },
+  "zai/glm-5.2": { context_window: 1000000, supports_vision: false },
   "zai/glm-5.1": { context_window: 202800, supports_vision: false },
+  "moonshot/kimi-k2.7-code": { context_window: 262144, supports_vision: true },
   "moonshot/kimi-k2.6": { context_window: 262144, supports_vision: true },
-  "moonshot/kimi-k2.5": { context_window: 262144, supports_vision: true },
+  "minimax-portal/MiniMax-M3": { context_window: 1000000, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
-  "qwen-portal/coder-model": { context_window: 1000000, supports_vision: false },
+  "qwen-oauth/qwen3.5-plus": { context_window: 1000000, supports_vision: true },
+  "xai/grok-4.5": { context_window: 500000, supports_vision: true },
+  "xai/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai/grok-4.3": { context_window: 1000000, supports_vision: true },
+  "xai-oauth/grok-4.5": { context_window: 500000, supports_vision: true },
+  "xai-oauth/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai-oauth/grok-4.3": { context_window: 1000000, supports_vision: true },
 };
 
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
-  "openai-codex": ["openai/gpt-5.5", "openai/gpt-5.4", "openai/gpt-5.4-mini"],
-  "zai": ["zai/glm-5.1"],
-  "moonshot": ["moonshot/kimi-k2.6"],
-  "minimax-portal": ["minimax-portal/MiniMax-M2.7"],
-  "qwen-portal": ["qwen-portal/coder-model"],
-  "xai": ["xai/grok-4.3"],
-  "xai-oauth": ["xai-oauth/grok-4.3"],
+  "openai-codex": ["openai/gpt-5.6-sol", "openai/gpt-5.6-terra", "openai/gpt-5.6-luna"],
+  "zai": ["zai/glm-5.2", "zai/glm-5.1"],
+  "moonshot": ["moonshot/kimi-k2.7-code", "moonshot/kimi-k2.6"],
+  "minimax-portal": ["minimax-portal/MiniMax-M3", "minimax-portal/MiniMax-M2.7"],
+  "qwen-oauth": ["qwen-oauth/qwen3.5-plus"],
+  "qwen-portal": ["qwen-oauth/qwen3.5-plus"],
+  "xai": ["xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"],
+  "xai-oauth": ["xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"],
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
-  "openai/gpt-5.5-pro": "openai-codex/gpt-5.5",
-  "openai/gpt-5.5": "openai-codex/gpt-5.5",
-  "openai/gpt-5.4": "openai-codex/gpt-5.4",
-  "openai/gpt-5.4-mini": "openai-codex/gpt-5.4-mini",
-  "moonshot/kimi-k2.6": "moonshot/kimi-k2.5",
+  "openai/gpt-5.6-sol": "openai-codex/gpt-5.5",
+  "openai/gpt-5.6-terra": "openai-codex/gpt-5.5",
+  "openai/gpt-5.6-luna": "openai-codex/gpt-5.5",
+  "qwen-oauth/qwen3.5-plus": "qwen/qwen3.6-plus",
+  "xai/grok-4.5": "xai-oauth/grok-4.3",
+  "xai-oauth/grok-4.5": "xai-oauth/grok-4.3",
+  "xai/grok-build-0.1": "xai-oauth/grok-build-0.1",
   "xai/grok-4.3": "xai-oauth/grok-4.3",
 };
 
@@ -162,6 +173,15 @@ function getProviderLabel(providerId: string): string {
 function getDefaultTierId(providerId: string): string {
   const entry = getProviderCatalogEntry(providerId);
   return entry?.tiers.find((tier) => tier.availability === "available")?.tierId ?? entry?.tiers[0]?.tierId ?? "unknown";
+}
+
+function canonicalStarterProviderId(providerId: string, catalogVersion?: string): string {
+  const normalized = providerId.trim().toLowerCase();
+  if (["qwen-oauth", "qwen-portal", "qwen-cli"].includes(normalized)) return "qwen-oauth";
+  if (/^1\.0(?:\.|$)/.test(catalogVersion ?? "") && ["qwen", "qwen-dashscope"].includes(normalized)) {
+    return getVersionAwareCanonicalProviderId(providerId, catalogVersion);
+  }
+  return providerId;
 }
 
 function normalizeBenchmarkValue(value: number | null | undefined): number | null {
@@ -318,8 +338,17 @@ function sortModelsForCategory(category: TaskCategory, models: Record<string, Mo
     if (strengthB !== strengthA) {
       return strengthB - strengthA;
     }
-    return a.localeCompare(b);
+    return 0;
   });
+}
+
+function preferKimiGeneralDefault(candidates: string[]): string[] {
+  const codeModel = "moonshot/kimi-k2.7-code";
+  const generalModel = "moonshot/kimi-k2.6";
+  if (candidates[0] !== codeModel || !candidates.includes(generalModel)) {
+    return candidates;
+  }
+  return [generalModel, ...candidates.filter((candidate) => candidate !== generalModel)];
 }
 
 function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<string, RoutingRule> {
@@ -327,7 +356,8 @@ function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<st
   const rules: Record<string, RoutingRule> = {};
 
   for (const category of categories) {
-    const ranked = sortModelsForCategory(category, models);
+    const scored = sortModelsForCategory(category, models);
+    const ranked = category === "default" ? preferKimiGeneralDefault(scored) : scored;
     rules[category] = {
       primary: ranked[0],
       fallbacks: ranked.slice(1),
@@ -398,7 +428,7 @@ export function getStarterProviders(): ProviderCatalogEntry[] {
 export function getStarterTierChoices(providerId: string) {
   const entry = getProviderCatalogEntry(providerId);
   if (!entry) return [];
-  return entry.tiers.filter((tier) => tier.availability === "available");
+  return entry.tiers.filter((tier) => tier.availability === "available" || tier.availability === "legacy");
 }
 
 export function getStarterAuthCommands(providerIds: string[]): string[] {
@@ -434,11 +464,15 @@ export function summarizeStarterConfig(config: ZeroAPIConfig): StarterConfigSumm
 
 export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
   const providers = new Map<string, StarterProviderSelection>();
+  const catalogVersion = config.subscription_catalog_version
+    ?? config.subscription_profile?.version
+    ?? config.subscription_inventory?.version;
 
   for (const [providerId, selection] of Object.entries(config.subscription_profile?.global ?? {})) {
     if (selection?.enabled === false || !selection?.tierId) continue;
-    providers.set(providerId, {
-      providerId,
+    const canonicalProviderId = canonicalStarterProviderId(providerId, catalogVersion);
+    providers.set(canonicalProviderId, {
+      providerId: canonicalProviderId,
       tierId: selection.tierId,
     });
   }
@@ -448,18 +482,19 @@ export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
       if (!account || account.enabled === false || !account.provider) {
         return [];
       }
+      const canonicalProviderId = canonicalStarterProviderId(account.provider, catalogVersion);
       const next: StarterInventoryAccountInput = {
         accountId,
-        providerId: account.provider,
-        tierId: account.tierId ?? getDefaultTierId(account.provider),
+        providerId: canonicalProviderId,
+        tierId: account.tierId ?? getDefaultTierId(canonicalProviderId),
         authProfile: account.authProfile ?? undefined,
         usagePriority: account.usagePriority,
         intendedUse: account.intendedUse,
       };
-      const currentProvider = providers.get(account.provider);
-      if (!currentProvider || getTierRank(account.provider, next.tierId) > getTierRank(account.provider, currentProvider.tierId)) {
-        providers.set(account.provider, {
-          providerId: account.provider,
+      const currentProvider = providers.get(canonicalProviderId);
+      if (!currentProvider || getTierRank(canonicalProviderId, next.tierId) > getTierRank(canonicalProviderId, currentProvider.tierId)) {
+        providers.set(canonicalProviderId, {
+          providerId: canonicalProviderId,
           tierId: next.tierId,
         });
       }
@@ -478,9 +513,17 @@ export function deriveStarterDefaults(config: ZeroAPIConfig): StarterDefaults {
 }
 
 export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig {
+  const normalizedProviders = options.providers.map((provider) => ({
+    ...provider,
+    providerId: canonicalStarterProviderId(provider.providerId),
+  }));
+  const normalizedInventoryAccounts = options.inventoryAccounts?.map((account) => ({
+    ...account,
+    providerId: canonicalStarterProviderId(account.providerId),
+  }));
   const providerIds = Array.from(new Set([
-    ...options.providers.map((provider) => provider.providerId),
-    ...(options.inventoryAccounts ?? []).map((account) => account.providerId),
+    ...normalizedProviders.map((provider) => provider.providerId),
+    ...(normalizedInventoryAccounts ?? []).map((account) => account.providerId),
   ]));
 
   if (providerIds.length === 0) {
@@ -490,9 +533,9 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
   const snapshot = loadBenchmarkSnapshot();
   const models = buildStarterModels(snapshot, providerIds);
   const routingRules = buildRoutingRules(models);
-  const inventoryProviderIds = new Set((options.inventoryAccounts ?? []).map((account) => account.providerId));
-  const subscriptionProfile = buildSubscriptionProfile(options.providers, inventoryProviderIds);
-  const subscriptionInventory = buildSubscriptionInventory(options.inventoryAccounts);
+  const inventoryProviderIds = new Set((normalizedInventoryAccounts ?? []).map((account) => account.providerId));
+  const subscriptionProfile = buildSubscriptionProfile(normalizedProviders, inventoryProviderIds);
+  const subscriptionInventory = buildSubscriptionInventory(normalizedInventoryAccounts);
   const weightedDefaultCandidates = getSubscriptionWeightedCandidates(
     "default",
     models,
@@ -503,7 +546,7 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
     "balanced",
     options.routingModifier,
   );
-  const defaultModel = weightedDefaultCandidates[0] ?? routingRules.default.primary;
+  const defaultModel = preferKimiGeneralDefault(weightedDefaultCandidates)[0] ?? routingRules.default.primary;
 
   return {
     version: loadZeroAPIVersion(),

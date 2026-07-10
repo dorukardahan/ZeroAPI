@@ -22,8 +22,11 @@ const PREFLIGHT_INPUTS = [
   "plugin/index.ts",
   "integrations/hermes/plugin.yaml",
   "README.md",
+  "plugin/README.md",
   "scripts/stage_clawhub_plugin.mjs",
   "scripts/refresh_benchmarks.py",
+  "benchmarks.json",
+  "plugin/benchmarks.json",
 ];
 
 function runPreflight(cwd) {
@@ -67,6 +70,19 @@ test("release_preflight passes on a minimal aligned fixture (no full-repo copy)"
     // Prove the fixture is minimal: none of the heavy dirs exist.
     assert.equal(existsSync(join(tmp, "node_modules")), false);
     assert.equal(existsSync(join(tmp, ".git")), false);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("release_preflight catches benchmark snapshot drift", () => {
+  const tmp = buildAlignedFixture();
+  try {
+    writeFileSync(join(tmp, "plugin", "benchmarks.json"), "{}\n");
+    assert.throws(
+      () => runPreflight(tmp),
+      (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes("benchmark snapshots must be byte-identical"),
+    );
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -130,6 +146,36 @@ test("release_preflight catches README release-link version drift", () => {
       );
     }
     assert.equal(threw, true, "preflight must fail when only the release link drifts");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("release_preflight catches root install-pin version drift", () => {
+  const tmp = buildAlignedFixture();
+  try {
+    const version = realVersion();
+    const path = join(tmp, "README.md");
+    writeFileSync(path, readFileSync(path, "utf8").replace(`clawhub:zeroapi@${version}`, "clawhub:zeroapi@0.0.0-stale"));
+    assert.throws(
+      () => runPreflight(tmp),
+      (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes(`README.md is missing clawhub:zeroapi@${version}`),
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("release_preflight catches plugin install-pin version drift", () => {
+  const tmp = buildAlignedFixture();
+  try {
+    const version = realVersion();
+    const path = join(tmp, "plugin", "README.md");
+    writeFileSync(path, readFileSync(path, "utf8").replace(`clawhub:zeroapi@${version}`, "clawhub:zeroapi@0.0.0-stale"));
+    assert.throws(
+      () => runPreflight(tmp),
+      (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes(`plugin/README.md is missing clawhub:zeroapi@${version}`),
+    );
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

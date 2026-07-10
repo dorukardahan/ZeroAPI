@@ -25,7 +25,7 @@ export type ProviderCatalogEntry = {
   notes?: string;
 };
 
-export const SUBSCRIPTION_CATALOG_VERSION = "1.0.0";
+export const SUBSCRIPTION_CATALOG_VERSION = "1.1.0";
 
 export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
@@ -107,16 +107,16 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
     providerId: "alibaba",
     label: "Qwen Portal",
-    openclawProviderId: "qwen-portal",
-    openclawProviderAliases: ["qwen", "qwen-dashscope"],
+    openclawProviderId: "qwen-oauth",
+    openclawProviderAliases: ["qwen-portal", "qwen-cli"],
     status: "active",
-    authMode: "oauth",
+    authMode: "api_key",
     selectionMode: "single_tier",
     tiers: [
-      { tierId: "free", label: "Free OAuth", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "available", routingWeight: 1, recommendedUsage: "Qwen Portal free-tier routing when daily quota is enough." },
+      { tierId: "free", label: "Portal token", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "legacy", routingWeight: 1, recommendedUsage: "Existing Qwen Portal token and legacy OAuth migration surface; re-onboard with a current token when needed." },
     ],
     benchmarkRoutingBias: 0.95,
-    notes: "OpenClaw exposes Qwen through qwen-portal OAuth. ZeroAPI uses Qwen benchmark rows as a proxy for the portal coder model.",
+    notes: "Portal uses canonical qwen-oauth with qwen-portal and qwen-cli legacy aliases. Legacy OAuth profiles are not refreshable; re-run onboarding with a current Portal token. Qwen Cloud and Coding Plan remain separate providers.",
   },
   {
     providerId: "xai",
@@ -139,7 +139,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       },
     ],
     benchmarkRoutingBias: 0.85,
-    notes: "OpenClaw exposes SuperGrok OAuth through the native xai provider, preferring the xai-device-code auth choice on 2026.5.20+ and browser OAuth on older 2026.5.18+ installs. Hermes legacy configs may still use xai-oauth as an alias. Only enable this provider for subscription-backed OAuth accounts; plain xAI API-key usage should stay outside ZeroAPI subscription routing.",
+    notes: "Use `openclaw models auth login --provider xai --method oauth` or onboarding choice `xai-oauth` on current OpenClaw. Hermes legacy configs may still use `xai-oauth` as an alias. Only enable this provider for subscription-backed OAuth accounts; plain xAI API-key usage should stay outside ZeroAPI subscription routing.",
   },
   {
     providerId: "xai-api",
@@ -164,4 +164,23 @@ export function getProviderCatalogEntry(openclawProviderId: string): ProviderCat
 
 export function getCanonicalOpenClawProviderId(providerId: string): string {
   return getProviderCatalogEntry(providerId)?.openclawProviderId ?? providerId;
+}
+
+const LEGACY_QWEN_PORTAL_IDS = new Set(["qwen", "qwen-dashscope", "qwen-portal", "qwen-cli"]);
+
+export function isLegacySubscriptionCatalogVersion(version: string | undefined): boolean {
+  return typeof version === "string" && /^1\.0(?:\.|$)/.test(version);
+}
+
+/** Rewrite only provider ids whose meaning changed in the 1.0 Qwen Portal split. */
+export function getLegacyStructuralProviderId(providerId: string, version?: string): string {
+  const normalized = providerId.trim().toLowerCase();
+  if (isLegacySubscriptionCatalogVersion(version) && LEGACY_QWEN_PORTAL_IDS.has(normalized)) {
+    return "qwen-oauth";
+  }
+  return providerId;
+}
+
+export function getVersionAwareCanonicalProviderId(providerId: string, version?: string): string {
+  return getCanonicalOpenClawProviderId(getLegacyStructuralProviderId(providerId, version));
 }

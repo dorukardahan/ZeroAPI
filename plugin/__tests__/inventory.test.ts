@@ -244,4 +244,282 @@ describe("subscription inventory", () => {
       modelKey: "openai/gpt-5.5",
     })).toBe(true);
   });
+
+  it.each<{
+    name: string;
+    inventory: SubscriptionInventory | undefined;
+    source: "inventory" | "profile";
+  }>([
+    {
+      name: "no inventory",
+      inventory: undefined,
+      source: "profile" as const,
+    },
+    {
+      name: "unrelated active inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "zai-max": {
+            provider: "zai",
+            tierId: "max",
+            authProfile: "zai:max",
+          },
+        },
+      } as SubscriptionInventory,
+      source: "profile" as const,
+    },
+    {
+      name: "matching-runtime active inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "xai-supergrok": {
+            provider: "xai",
+            tierId: "supergrok",
+            authProfile: "xai:supergrok",
+            usagePriority: 3,
+          },
+        },
+      } as SubscriptionInventory,
+      source: "inventory" as const,
+    },
+    {
+      name: "excluded matching-runtime inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "xai-paid-api": {
+            provider: "xai-api",
+            tierId: "supergrok",
+            authProfile: "xai:paid-api",
+          },
+        },
+      } as SubscriptionInventory,
+      source: "profile" as const,
+    },
+    {
+      name: "unknown inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "future-xai-route": {
+            provider: "future-xai-api",
+            tierId: "supergrok",
+            authProfile: "xai:future",
+          },
+        },
+      } as SubscriptionInventory,
+      source: "profile" as const,
+    },
+  ])("keeps excluded xai-api disabled with $name provenance", ({ inventory, source }) => {
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai-api",
+      category: "default",
+    });
+
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      modelKey: "xai-api/grok-4.5",
+    })).toBe(false);
+    expect(resolved?.source).toBe(source);
+    expect(resolved?.enabled).toBe(false);
+    expect(resolved?.routingWeight).toBe(0);
+    expect(resolved?.accountCount).toBe(0);
+    expect(resolved?.matchedAccountIds).toEqual([]);
+    expect(resolved?.preferredAccountId).toBeNull();
+    expect(resolved?.preferredAuthProfile).toBeNull();
+  });
+
+  it("does not let excluded xai-api inventory enable or weight the xai subscription route", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-paid-api": {
+          provider: "xai-api",
+          tierId: "supergrok",
+          authProfile: "xai:paid-api",
+          usagePriority: 3,
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai",
+      category: "default",
+    });
+
+    expect(resolved?.enabled).toBe(false);
+    expect(resolved?.routingWeight).toBe(0);
+    expect(resolved?.accountCount).toBe(0);
+    expect(resolved?.matchedAccountIds).toEqual([]);
+    expect(resolved?.preferredAccountId).toBeNull();
+    expect(resolved?.preferredAuthProfile).toBeNull();
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      modelKey: "xai/grok-4.5",
+    })).toBe(false);
+  });
+
+  it("keeps unknown models outside candidate routing when inventory filtering is configured", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-supergrok": {
+          provider: "xai",
+          tierId: "supergrok",
+        },
+      },
+    };
+
+    expect(resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "external-provider",
+    })).toBeNull();
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      modelKey: "external-provider/model",
+    })).toBe(false);
+    expect(isModelAllowedBySubscriptions({
+      profile: undefined,
+      inventory: undefined,
+      agentId: undefined,
+      modelKey: "external-provider/model",
+    })).toBe(true);
+  });
+
+  it("does not let an unknown inventory provider enable a known subscription route", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "unknown-xai-route": {
+          provider: "future-xai-api",
+          tierId: "supergrok",
+          authProfile: "xai:unknown",
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai-oauth",
+    });
+
+    expect(resolved?.enabled).toBe(false);
+    expect(resolved?.routingWeight).toBe(0);
+    expect(resolved?.accountCount).toBe(0);
+    expect(resolved?.preferredAuthProfile).toBeNull();
+  });
+
+  it("uses active xai inventory for xai subscription routing", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-supergrok": {
+          provider: "xai",
+          tierId: "supergrok",
+          authProfile: "xai:supergrok",
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai-oauth",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.enabled).toBe(true);
+    expect(resolved?.routingWeight).toBe(2);
+    expect(resolved?.accountCount).toBe(1);
+    expect(resolved?.preferredAccountId).toBe("xai-supergrok");
+    expect(resolved?.preferredAuthProfile).toBe("xai:supergrok");
+  });
+
+  it("filters excluded xai-api accounts from mixed active xai inventory", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-active-supergrok": {
+          provider: "xai",
+          tierId: "supergrok",
+          authProfile: "xai:active-supergrok",
+          usagePriority: 1,
+        },
+        "xai-excluded-api": {
+          provider: "xai-api",
+          tierId: "supergrok",
+          authProfile: "xai:excluded-api",
+          usagePriority: 3,
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai-oauth",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.enabled).toBe(true);
+    expect(resolved?.accountCount).toBe(1);
+    expect(resolved?.routingWeight).toBe(2);
+    expect(resolved?.matchedAccountIds).toEqual(["xai-active-supergrok"]);
+    expect(resolved?.preferredAccountId).toBe("xai-active-supergrok");
+    expect(resolved?.preferredAuthProfile).toBe("xai:active-supergrok");
+  });
+
+  it("ignores excluded xai-api inventory when an active xai profile supplies capacity", () => {
+    const xaiProfile: SubscriptionProfile = {
+      version: "1.0.0",
+      global: {
+        xai: { enabled: true, tierId: "supergrok" },
+      },
+    };
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-paid-api": {
+          provider: "xai-api",
+          tierId: "supergrok",
+          authProfile: "xai:paid-api",
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: xaiProfile,
+      inventory,
+      agentId: undefined,
+      providerId: "xai",
+    });
+
+    expect(resolved?.source).toBe("profile");
+    expect(resolved?.enabled).toBe(true);
+    expect(resolved?.routingWeight).toBe(2);
+    expect(resolved?.accountCount).toBe(1);
+    expect(resolved?.matchedAccountIds).toEqual([]);
+    expect(resolved?.preferredAccountId).toBeNull();
+    expect(resolved?.preferredAuthProfile).toBeNull();
+  });
 });

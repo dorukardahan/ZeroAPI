@@ -1,7 +1,11 @@
 import importlib.util
+import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 
 def _load_adapter():
@@ -21,6 +25,25 @@ adapter = _load_adapter()
 
 
 class HermesAdapterPayloadTest(unittest.TestCase):
+    def test_malformed_only_config_keeps_router_unset(self):
+        malformed = {
+            "version": "test", "default_model": "qwen/model", "models": {},
+            "routing_rules": {"default": {"primary": "qwen/model", "fallbacks": []}},
+            "keywords": {}, "high_risk_keywords": [],
+            "subscription_catalog_version": "1.0.0",
+            "subscription_inventory": {"version": "1.0.0"},
+        }
+        with tempfile.TemporaryDirectory(prefix="zeroapi-adapter-malformed-") as temp_dir:
+            path = Path(temp_dir) / "zeroapi-config.json"
+            original = json.dumps(malformed).encode()
+            path.write_bytes(original)
+            adapter._router = None
+            with patch.dict(os.environ, {"ZEROAPI_CONFIG_PATH": str(path)}, clear=False):
+                result = adapter._pre_model_route(user_message="implement this", provider="qwen", model="model")
+            self.assertIsNone(result)
+            self.assertIsNone(adapter._router)
+            self.assertEqual(path.read_bytes(), original)
+
     def test_detects_image_parts_in_conversation_history(self):
         payload = [
             {

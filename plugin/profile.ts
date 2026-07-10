@@ -56,6 +56,14 @@ export function resolveProviderSubscription(
 ): ResolvedProviderSubscription | null {
   const catalog = getProviderCatalogEntry(openclawProviderId);
   if (!catalog) return null;
+  if (catalog.status !== "active") {
+    return {
+      providerId: openclawProviderId,
+      enabled: false,
+      tierId: null,
+      routingWeight: 0,
+    };
+  }
 
   const globalSelection = normalizeSelection(
     findProviderSelection(profile?.global, openclawProviderId, catalog),
@@ -93,6 +101,6 @@ export function isModelAllowedBySubscriptionProfile(
   if (slash === -1) return true;
   const providerId = modelKey.slice(0, slash);
   const resolved = resolveProviderSubscription(profile, agentId, providerId);
-  if (!resolved) return true;
+  if (!resolved) return profile === undefined;
   return resolved.enabled;
 }

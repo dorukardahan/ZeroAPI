@@ -42,8 +42,8 @@ If the channel exposes only the generic skill runner, `/skill zeroapi` is an acc
 
 ZeroAPI only routes across subscription-covered alternatives.
 
-- **Anthropic (Claude):** as of 2026-04-04, Claude subscriptions no longer cover OpenClaw usage in third-party tools. Anthropic models should not be included in ZeroAPI routing.
-- **Google (Gemini):** CLI OAuth usage with third-party tools is a ToS violation as of 2026-03-25. Google/Gemini should not be included in ZeroAPI routing.
+- **Anthropic (Claude):** official 2026-06-15 guidance says Agent SDK, `claude -p`, and third-party apps still draw subscription limits. Do not auto-enable it until canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` is implemented and tested.
+- **Google (Gemini):** as checked 2026-07-10, individual Gemini CLI access is sunsetting through the Antigravity transition. Google remains non-routeable; API-key billing is not subscription capacity.
 - **xAI OAuth vs API keys:** OpenClaw 2026.5.20+ can use SuperGrok device-code OAuth through the native `xai` provider; older 2026.5.18+ installs use browser OAuth. Only enable `xai/*` models in a subscription policy when that runtime account is OAuth/subscription-backed. Do not auto-add plain `XAI_API_KEY` billing as subscription capacity.
 
 ## How it works
@@ -84,7 +84,7 @@ Six subscription or account-quota providers are currently supported by the routi
 | Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | API key | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
 | MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
-| Qwen Portal | `qwen-portal` (`qwen`, `qwen-dashscope` aliases) | OAuth portal | Free OAuth |
+| Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token; legacy OAuth migration requires re-onboarding | Portal token (`free` tier id retained for compatibility) |
 | xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | OpenClaw or Hermes OAuth via SuperGrok | SuperGrok |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
@@ -197,12 +197,12 @@ Conversation rules for this step:
 
 Practical subscription mapping:
 
-- OpenAI -> GPT-5.5 family, with GPT-5.4 fallback
-- Kimi -> K2.5
-- Z AI -> GLM-5.1 / GLM-5 / GLM-5-Turbo / GLM-4.7 family
-- MiniMax -> MiniMax-M2.7
-- Qwen Portal -> coder-model, using Qwen3.6 Plus benchmark data as the closest public proxy
-- xAI Grok OAuth -> grok-4.3, only when OpenClaw exposes SuperGrok as `xai` OAuth or Hermes exposes it as `xai-oauth`
+- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks; all use an explicit GPT-5.5 benchmark proxy until direct rows exist
+- Kimi -> K2.7 Code for code and K2.6 for general/default
+- Z AI -> GLM-5.2, retaining GLM-5.1 compatibility
+- MiniMax -> MiniMax-M3 with M2.7 fallback
+- Qwen Portal -> canonical `qwen-oauth/qwen3.5-plus`, using Qwen3.6 Plus as an explicit proxy; never treat Qwen Cloud 3.7 rows as Portal routes
+- xAI -> Grok 4.5 with conservative Grok 4.3 proxy, direct Grok Build 0.1, and Grok 4.3 fallback
 
 Persist the result into a subscription profile with:
 - `global` provider selections
@@ -238,11 +238,11 @@ Required config shape:
   "version": "3.8.37",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
-  "subscription_catalog_version": "1.0.0",
+  "subscription_catalog_version": "1.1.0",
   "routing_mode": "balanced",
   "routing_modifier": "coding-aware",
   "subscription_profile": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "global": {},
     "agentOverrides": {}
   },

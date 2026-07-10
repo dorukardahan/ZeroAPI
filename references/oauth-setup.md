@@ -10,14 +10,14 @@
 
 | Provider | Auth Method | Setup Command | Token Lifetime |
 |----------|-------------|---------------|----------------|
-| OpenAI | OAuth PKCE via ChatGPT | `openclaw models auth login --provider openai-codex` | Refreshable OAuth token |
+| OpenAI | OAuth PKCE via ChatGPT | `openclaw models auth login --provider openai` | Refreshable OAuth token |
 | Kimi | Static API key | `openclaw onboard --auth-choice moonshot-api-key` | Never expires |
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
-| MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-portal` | Refreshable OAuth token |
-| Qwen Portal | OAuth portal | `openclaw models auth login --provider qwen-portal --set-default` | Refreshable OAuth token |
-| xAI Grok OAuth | OpenClaw OAuth via SuperGrok, or Hermes legacy OAuth | `openclaw onboard --auth-choice xai-device-code` / `hermes auth add xai-oauth` | Refreshable OAuth token |
+| MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-global-oauth` | Refreshable OAuth token |
+| Qwen Portal | Current Portal token / legacy OAuth migration | `openclaw onboard --auth-choice qwen-oauth` | Token; legacy OAuth is not refreshable—re-onboard with a current token |
+| xAI Grok OAuth | OpenClaw OAuth via SuperGrok, or Hermes legacy OAuth | `openclaw models auth login --provider xai --method oauth` / `hermes auth add xai-oauth` | Refreshable OAuth token |
 
-**Reliability ranking**: Kimi / GLM static keys > portal OAuth providers with auto-refresh > providers with unhealthy or stale local profiles.
+**Reliability note**: Kimi / GLM static keys are stable. MiniMax and OpenAI OAuth can refresh. Qwen Portal is token-like and legacy OAuth profiles cannot refresh; re-onboard with a current token when needed.
 
 ---
 
@@ -54,37 +54,36 @@ The wizard prompts for the API key and saves it to auth profiles. Never paste AP
 
 ---
 
-## Portal OAuth Providers
+## Portal and OAuth Providers
 
 MiniMax uses the OpenClaw onboarding flow:
 
 ```bash
 openclaw plugins enable minimax-portal-auth
-openclaw onboard --auth-choice minimax-portal
+openclaw onboard --auth-choice minimax-global-oauth
 ```
 
-Qwen uses the OpenClaw model-auth flow:
+Qwen Portal uses a current token through onboarding. This is also the migration path for old Qwen OAuth/CLI profiles; those legacy OAuth profiles are not refreshable:
 
 ```bash
-openclaw plugins enable qwen-portal-auth
-openclaw models auth login --provider qwen-portal --set-default
+openclaw onboard --auth-choice qwen-oauth
 ```
 
 OpenAI Codex also uses the model-auth flow:
 
 ```bash
-openclaw models auth login --provider openai-codex
+openclaw models auth login --provider openai
 ```
 
-OpenClaw 2026.5.20+ SuperGrok should use the remote-friendly native xAI device-code OAuth flow:
+Current OpenClaw SuperGrok uses provider-method OAuth:
 
 ```bash
-openclaw onboard --auth-choice xai-device-code
+openclaw models auth login --provider xai --method oauth
 ```
 
-Older OpenClaw 2026.5.18+ installs can still use the browser OAuth choice `xai-oauth`.
+### Hermes-only xAI guidance
 
-Hermes SuperGrok can still use Hermes' own OAuth flow:
+Hermes SuperGrok uses Hermes' own legacy adapter flow:
 
 ```bash
 hermes auth add xai-oauth
@@ -102,7 +101,7 @@ Some OAuth commands require an interactive TTY. On a headless VPS, run them in `
 
 ```bash
 # Step 1: Start a TTY session
-tmux new-session -d -s oauth 'openclaw models auth login --provider openai-codex'
+tmux new-session -d -s oauth 'openclaw models auth login --provider openai'
 
 # Step 2: Read the screen
 tmux capture-pane -t oauth -p
@@ -120,13 +119,13 @@ openclaw models status
 For Qwen, replace the session command with:
 
 ```bash
-openclaw models auth login --provider qwen-portal --set-default
+openclaw onboard --auth-choice qwen-oauth
 ```
 
 For MiniMax, use:
 
 ```bash
-openclaw onboard --auth-choice minimax-portal
+openclaw onboard --auth-choice minimax-global-oauth
 ```
 
 ### General principle

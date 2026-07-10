@@ -7,6 +7,7 @@ LLMs, or external APIs on every message.
 
 from __future__ import annotations
 
+import copy
 import functools
 import json
 import math
@@ -158,9 +159,9 @@ PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
         "tier_weights": {"starter": 1, "plus": 2, "max": 3, "ultra_hs": 4},
         "bias": 1.0,
     },
-    "qwen-portal": {
-        "canonical": "qwen-portal",
-        "aliases": ["qwen", "qwen-dashscope", "alibaba"],
+    "qwen-oauth": {
+        "canonical": "qwen-oauth",
+        "aliases": ["qwen-portal", "qwen-cli"],
         "tier_weights": {"free": 1},
         "bias": 0.95,
     },
@@ -184,8 +185,10 @@ HERMES_PROVIDER_MAP = {
     "zai": "zai",
     "minimax-portal": "minimax-oauth",
     "minimax": "minimax-oauth",
+    "qwen-oauth": "qwen-oauth",
     "qwen-portal": "qwen-oauth",
-    "qwen": "qwen-oauth",
+    "qwen-cli": "qwen-oauth",
+    "qwen": "alibaba-coding-plan",
     "qwen-dashscope": "alibaba-coding-plan",
     "xai-oauth": "xai-oauth",
     "grok-oauth": "xai-oauth",
@@ -193,6 +196,95 @@ HERMES_PROVIDER_MAP = {
     "xai-grok-oauth": "xai-oauth",
     "supergrok": "xai-oauth",
 }
+
+LEGACY_QWEN_PORTAL_IDS = {"qwen", "qwen-dashscope", "qwen-portal", "qwen-cli"}
+
+
+def _catalog_version(config: Config) -> str | None:
+    profile = config.get("subscription_profile")
+    inventory = config.get("subscription_inventory")
+    for candidate in (
+        config.get("subscription_catalog_version"),
+        profile.get("version") if isinstance(profile, dict) else None,
+        inventory.get("version") if isinstance(inventory, dict) else None,
+    ):
+        if candidate is not None:
+            # Match TypeScript's nullish precedence exactly: a malformed non-null
+            # candidate wins this selection but cannot identify a legacy catalog.
+            # In particular, do not fall through to a lower-priority valid string.
+            return candidate if isinstance(candidate, str) else None
+    return None
+
+
+def _legacy_provider(provider: str, version: str | None) -> str:
+    if isinstance(version, str) and re.match(r"^1\.0(?:\.|$)", version) and provider.strip().lower() in LEGACY_QWEN_PORTAL_IDS:
+        return "qwen-oauth"
+    return provider
+
+
+def _remap_selections(selections: dict[str, Any], version: str) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for provider, selection in selections.items():
+        canonical = _legacy_provider(provider, version)
+        if canonical not in result or provider == canonical:
+            result[canonical] = selection
+    return result
+
+
+def _migrate_legacy_config(config: Config) -> Config:
+    version = _catalog_version(config)
+    if not isinstance(version, str) or not re.match(r"^1\.0(?:\.|$)", version):
+        return config
+    migrated = copy.deepcopy(config)
+
+    def model_ref(value: str) -> str:
+        if not isinstance(value, str):
+            raise TypeError("legacy model references must be strings")
+        if "/" not in value:
+            return value
+        provider, model = value.split("/", 1)
+        return f"{_legacy_provider(provider, version)}/{model}"
+
+    migrated["default_model"] = model_ref(migrated["default_model"])
+    migrated["models"] = {model_ref(key): value for key, value in migrated["models"].items()}
+    for rule in migrated["routing_rules"].values():
+        if not isinstance(rule, dict):
+            raise TypeError("legacy routing rules must be objects")
+        fallbacks = rule.get("fallbacks", [])
+        if not isinstance(fallbacks, list):
+            raise TypeError("legacy routing rule fallbacks must be arrays")
+        rule["primary"] = model_ref(rule.get("primary", ""))
+        rule["fallbacks"] = [model_ref(item) for item in fallbacks]
+    profile = migrated.get("subscription_profile")
+    if isinstance(profile, dict):
+        values = profile.get("global")
+        if isinstance(values, dict):
+            profile["global"] = _remap_selections(values, version)
+        overrides = profile.get("agentOverrides")
+        if isinstance(overrides, dict):
+            for agent_id, values in overrides.items():
+                if isinstance(values, dict):
+                    overrides[agent_id] = _remap_selections(values, version)
+    inventory = migrated.get("subscription_inventory")
+    if isinstance(inventory, dict):
+        accounts = inventory.get("accounts")
+        if isinstance(accounts, dict):
+            for account in accounts.values():
+                if isinstance(account, dict) and isinstance(account.get("provider"), str):
+                    account["provider"] = _legacy_provider(account["provider"], version)
+    disabled = migrated.get("disabled_providers")
+    if isinstance(disabled, list):
+        migrated_disabled: list[str] = []
+        seen_disabled: set[str] = set()
+        for provider in disabled:
+            if not isinstance(provider, str) or not provider.strip():
+                continue
+            canonical = _canonical_provider(_legacy_provider(provider, version).strip().lower())
+            if canonical not in seen_disabled:
+                seen_disabled.add(canonical)
+                migrated_disabled.append(canonical)
+        migrated["disabled_providers"] = migrated_disabled
+    return migrated
 
 DEFAULT_RISK_LEVELS: dict[str, str] = {
     "code": "medium",
@@ -217,24 +309,93 @@ def load_config(path: str | None = None) -> Config | None:
 
     for candidate in candidates:
         try:
-            if candidate.exists():
-                parsed = json.loads(candidate.read_text(encoding="utf-8"))
-                if _valid_config(parsed):
-                    return parsed
+            if not candidate.exists():
+                continue
+            parsed = json.loads(candidate.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        if _valid_config(parsed):
+            return _migrate_legacy_config(parsed)
     return None
 
 
+def _valid_routing_rules(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    for rule in value.values():
+        if not isinstance(rule, dict):
+            return False
+        fallbacks = rule.get("fallbacks")
+        if not isinstance(rule.get("primary"), str) or not isinstance(fallbacks, list):
+            return False
+        if not all(isinstance(model_ref, str) for model_ref in fallbacks):
+            return False
+    return True
+
+
+def _valid_models(value: Any) -> bool:
+    return isinstance(value, dict) and all(
+        isinstance(capabilities, dict) for capabilities in value.values()
+    )
+
+
+def _valid_subscription_profile(value: Any) -> bool:
+    if not isinstance(value, dict) or "global" not in value:
+        return False
+    selections = value["global"]
+    if not isinstance(selections, dict) or not all(
+        isinstance(selection, dict) for selection in selections.values()
+    ):
+        return False
+    if "agentOverrides" not in value:
+        return True
+    overrides = value["agentOverrides"]
+    return isinstance(overrides, dict) and all(
+        isinstance(agent_selections, dict) and all(
+            isinstance(selection, dict) for selection in agent_selections.values()
+        )
+        for agent_selections in overrides.values()
+    )
+
+
+def _valid_subscription_inventory(value: Any) -> bool:
+    if not isinstance(value, dict) or "accounts" not in value:
+        return False
+    accounts = value["accounts"]
+    if not isinstance(accounts, dict):
+        return False
+    return all(
+        isinstance(account, dict) and isinstance(account.get("provider"), str)
+        for account in accounts.values()
+    )
+
+
+def _valid_optional_string_list(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
 def _valid_config(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
     return (
-        isinstance(value, dict)
-        and isinstance(value.get("version"), str)
+        isinstance(value.get("version"), str)
         and isinstance(value.get("default_model"), str)
-        and isinstance(value.get("models"), dict)
-        and isinstance(value.get("routing_rules"), dict)
+        and _valid_models(value.get("models"))
+        and _valid_routing_rules(value.get("routing_rules"))
         and isinstance(value.get("keywords"), dict)
         and isinstance(value.get("high_risk_keywords"), list)
+        and (
+            "subscription_profile" not in value
+            or _valid_subscription_profile(value["subscription_profile"])
+        )
+        and (
+            "subscription_inventory" not in value
+            or _valid_subscription_inventory(value["subscription_inventory"])
+        )
+        and (
+            "disabled_providers" not in value
+            or _valid_optional_string_list(value["disabled_providers"])
+        )
     )
 
 
@@ -253,20 +414,32 @@ def _canonical_provider(provider: str) -> str:
     return provider
 
 
-def _disabled_providers(config: Config) -> set[str]:
-    disabled: set[str] = set()
+def _disabled_provider_list(config: Config) -> list[str]:
+    disabled: list[str] = []
+    seen: set[str] = set()
+    version = _catalog_version(config)
     configured = config.get("disabled_providers")
     if isinstance(configured, list):
         for provider in configured:
             if isinstance(provider, str) and provider.strip():
-                disabled.add(_canonical_provider(provider.strip()))
+                canonical = _canonical_provider(_legacy_provider(provider, version).strip().lower())
+                if canonical not in seen:
+                    seen.add(canonical)
+                    disabled.append(canonical)
 
     env_value = os.getenv("ZEROAPI_DISABLED_PROVIDERS", "")
     for provider in env_value.split(","):
         if provider.strip():
-            disabled.add(_canonical_provider(provider.strip()))
+            canonical = _canonical_provider(_legacy_provider(provider, version).strip().lower())
+            if canonical not in seen:
+                seen.add(canonical)
+                disabled.append(canonical)
 
     return disabled
+
+
+def _disabled_providers(config: Config) -> set[str]:
+    return set(_disabled_provider_list(config))
 
 
 def _provider_disabled(config: Config, provider: str) -> bool:
@@ -274,6 +447,7 @@ def _provider_disabled(config: Config, provider: str) -> bool:
 
 
 def _hermes_provider(provider: str, config: Config) -> str:
+    provider = _legacy_provider(provider, _catalog_version(config))
     aliases = config.get("hermes_provider_map")
     if isinstance(aliases, dict):
         for candidate in (provider, _canonical_provider(provider)):
@@ -654,7 +828,12 @@ def _resolve_capacity(config: Config, provider: str, category: TaskCategory | No
     if _provider_disabled(config, provider):
         return {"enabled": False, "routing_weight": 0.0, "preferred_account_id": None, "preferred_auth_profile": None}
 
-    canonical = _canonical_provider(provider)
+    # Inventory is subscription capacity, not an alternate provider catalog. Require
+    # an active catalog entry before inspecting raw account provider strings.
+    entry = _catalog_entry(provider)
+    if entry is None:
+        return None
+    canonical = str(entry["canonical"])
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
     inventory_configured = isinstance(accounts, dict) and any(
@@ -693,10 +872,8 @@ def _allowed_by_subscriptions(config: Config, model_key: str, agent_id: str | No
         return False
     resolved = _resolve_capacity(config, provider, None, agent_id)
     if resolved is None:
-        # Provider is not in the subscription catalog -> external passthrough, matching
-        # inventory.ts isModelAllowedBySubscriptions (null capacity -> allowed). A catalog
-        # provider absent from subscription_profile.global resolves to enabled=False here.
-        return True
+        # Unknown providers fail closed once a ZeroAPI subscription candidate pool exists.
+        return not isinstance(config.get("subscription_profile"), dict) and not isinstance(config.get("subscription_inventory"), dict)
     return bool(resolved["enabled"])
 
 
@@ -817,7 +994,7 @@ def _rank_candidate_pool(
 
 class ZeroAPIRouter:
     def __init__(self, config: Config):
-        self.config = config
+        self.config = _migrate_legacy_config(config)
 
     def resolve(
         self,

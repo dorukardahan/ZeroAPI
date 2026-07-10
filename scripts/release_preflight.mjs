@@ -42,6 +42,8 @@ const versionNeedles = [
   ["integrations/hermes/plugin.yaml", `version: ${version}`],
   ["README.md", `version-${version}-green`],
   ["README.md", `releases/tag/v${version}`],
+  ["README.md", `clawhub:zeroapi@${version}`],
+  ["plugin/README.md", `clawhub:zeroapi@${version}`],
 ];
 for (const [path, needle] of versionNeedles) {
   assert(readText(join(repoRoot, path)).includes(needle), `${path} is missing ${needle}`);
@@ -55,5 +57,9 @@ const refreshBenchmarks = readText(join(repoRoot, "scripts", "refresh_benchmarks
 assert(refreshBenchmarks.includes("--api-key-file"), "benchmark refresh must keep --api-key-file support");
 assert(!refreshBenchmarks.includes('parser.add_argument("--api-key"'), "benchmark refresh must not accept raw --api-key");
 assert(refreshBenchmarks.includes("temp_path.replace(output_path)"), "benchmark refresh must keep atomic replace semantics");
+assert(
+  readText(join(repoRoot, "benchmarks.json")) === readText(join(repoRoot, "plugin", "benchmarks.json")),
+  "root and plugin benchmark snapshots must be byte-identical",
+);
 
 console.log(`ZeroAPI release preflight ok for ${version}`);

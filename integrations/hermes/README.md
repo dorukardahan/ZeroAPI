@@ -88,8 +88,8 @@ Hermes provider IDs before returning a route:
 - `zai` -> `zai`
 - `moonshot`, `kimi`, `kimi-coding` -> `kimi-for-coding`
 - `minimax-portal`, `minimax` -> `minimax-oauth`
-- `qwen-portal`, `qwen` -> `qwen-oauth`
-- `qwen-dashscope` -> `alibaba-coding-plan`
+- `qwen-oauth`, `qwen-portal`, `qwen-cli` -> `qwen-oauth`
+- `qwen`, `qwen-dashscope` -> `alibaba-coding-plan` (separate Qwen Cloud/Coding Plan; not Portal)
 
 You can override these defaults with a `hermes_provider_map` object in
 `zeroapi-config.json`.
@@ -99,7 +99,7 @@ You can override these defaults with a `hermes_provider_map` object in
 ZeroAPI returns only:
 
 ```json
-{"provider": "zai", "model": "glm-5.1", "reason": "zeroapi:orchestration:keyword:workflow"}
+{"provider": "zai", "model": "glm-5.2", "reason": "zeroapi:orchestration:keyword:workflow"}
 ```
 
 It never returns API keys, auth profiles, base URLs, or transport settings.
@@ -159,14 +159,14 @@ python3 integrations/hermes/vision_aux.py \
   --zeroapi-config ~/.hermes/zeroapi-config.json
 ```
 
-For a `zai/glm-5.1` main model with OpenAI Codex as the best eligible vision
+For a `zai/glm-5.2` main model with OpenAI Codex as the best eligible vision
 subscription, this writes:
 
 ```yaml
 auxiliary:
   vision:
     provider: openai-codex
-    model: gpt-5.5
+    model: gpt-5.6-sol
     timeout: 120
 ```
 

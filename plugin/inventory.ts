@@ -1,5 +1,9 @@
 import { resolveProviderSubscription } from "./profile.js";
-import { getCanonicalOpenClawProviderId, getProviderCatalogEntry } from "./subscriptions.js";
+import {
+  getCanonicalOpenClawProviderId,
+  getProviderCatalogEntry,
+  type ProviderCatalogEntry,
+} from "./subscriptions.js";
 import type { SubscriptionInventory, SubscriptionProfile, TaskCategory } from "./types.js";
 
 export type ResolvedProviderCapacity = {
@@ -21,9 +25,41 @@ function normalizeOpenClawProviderId(providerId: string): string {
   return getCanonicalOpenClawProviderId(providerId);
 }
 
-function getAccountBaseWeight(providerId: string, tierId: string | null | undefined): number {
-  const catalog = getProviderCatalogEntry(providerId);
-  if (!catalog) return 1;
+function isActiveProviderRoute(
+  catalog: ProviderCatalogEntry | null,
+): catalog is ProviderCatalogEntry {
+  return catalog?.status === "active";
+}
+
+function inventoryOwnsProvider(
+  inventory: SubscriptionInventory | undefined,
+  providerId: string,
+): boolean {
+  const canonicalProviderId = normalizeOpenClawProviderId(providerId);
+  return Object.values(inventory?.accounts ?? {}).some((account) => {
+    const accountCatalog = getProviderCatalogEntry(account.provider);
+    return isActiveProviderRoute(accountCatalog) &&
+      accountCatalog.openclawProviderId === canonicalProviderId;
+  });
+}
+
+function disabledProviderCapacity(
+  providerId: string,
+  source: ResolvedProviderCapacity["source"],
+): ResolvedProviderCapacity {
+  return {
+    providerId,
+    enabled: false,
+    routingWeight: 0,
+    source,
+    accountCount: 0,
+    matchedAccountIds: [],
+    preferredAccountId: null,
+    preferredAuthProfile: null,
+  };
+}
+
+function getAccountBaseWeight(catalog: ProviderCatalogEntry, tierId: string | null | undefined): number {
   if (!tierId) return 1;
   return catalog.tiers.find((tier) => tier.tierId === tierId)?.routingWeight ?? 1;
 }
@@ -53,19 +89,25 @@ function resolveInventoryAccounts(params: {
   }
 
   const canonicalProviderId = normalizeOpenClawProviderId(providerId);
-  const enabledAccounts = Object.entries(inventory.accounts)
-    .filter(([, account]) => {
-      const accountProviderId = normalizeOpenClawProviderId(account.provider);
-      return accountProviderId === canonicalProviderId && account.enabled !== false;
-    })
-    .map(([accountId, account]) => ({
+  const enabledAccounts = Object.entries(inventory.accounts).flatMap(([accountId, account]) => {
+    const accountCatalog = getProviderCatalogEntry(account.provider);
+    if (
+      !isActiveProviderRoute(accountCatalog) ||
+      accountCatalog.openclawProviderId !== canonicalProviderId ||
+      account.enabled === false
+    ) {
+      return [];
+    }
+
+    return [{
       accountId,
       weight:
-        getAccountBaseWeight(providerId, account.tierId) *
+        getAccountBaseWeight(accountCatalog, account.tierId) *
         getUsagePriorityFactor(account.usagePriority),
       authProfile: normalizeAuthProfile(account.authProfile),
       intendedUse: account.intendedUse ?? [],
-    }));
+    }];
+  });
 
   if (enabledAccounts.length === 0) {
     return {
@@ -137,24 +179,18 @@ export function resolveProviderCapacity(params: {
   category?: TaskCategory;
 }): ResolvedProviderCapacity | null {
   const { profile, inventory, agentId, providerId, category } = params;
-  const canonicalProviderId = normalizeOpenClawProviderId(providerId);
-  const inventoryConfiguredForProvider = Object.values(inventory?.accounts ?? {}).some(
-    (account) => normalizeOpenClawProviderId(account.provider) === canonicalProviderId,
-  );
+  const requestedCatalog = getProviderCatalogEntry(providerId);
+  if (requestedCatalog && !isActiveProviderRoute(requestedCatalog)) {
+    const source = inventoryOwnsProvider(inventory, providerId) ? "inventory" : "profile";
+    return disabledProviderCapacity(providerId, source);
+  }
+
+  const inventoryConfiguredForProvider = inventoryOwnsProvider(inventory, providerId);
 
   if (inventoryConfiguredForProvider) {
     const accounts = resolveInventoryAccounts({ inventory, providerId, category });
     if (accounts.allAccounts.length === 0) {
-      return {
-        providerId,
-        enabled: false,
-        routingWeight: 0,
-        source: "inventory",
-        accountCount: 0,
-        matchedAccountIds: [],
-        preferredAccountId: null,
-        preferredAuthProfile: null,
-      };
+      return disabledProviderCapacity(providerId, "inventory");
     }
 
     const strongestAccount = Math.max(...accounts.scoringAccounts.map((account) => account.weight));
@@ -204,6 +240,6 @@ export function isModelAllowedBySubscriptions(params: {
     agentId,
     providerId,
   });
-  if (!resolved) return true;
+  if (!resolved) return profile === undefined && inventory === undefined;
   return resolved.enabled;
 }

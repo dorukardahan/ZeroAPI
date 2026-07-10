@@ -26,6 +26,7 @@
     "release:check": "node scripts/release_preflight.mjs",
     "managed:install": "node scripts/managed_install.mjs",
     "managed:update": "node scripts/managed_update.mjs",
+    "examples:refresh": "tsx scripts/refresh_examples.ts",
     "benchmarks:refresh": "python3 scripts/refresh_benchmarks.py"
   },
   "devDependencies": {

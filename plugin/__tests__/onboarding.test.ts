@@ -17,14 +17,16 @@ describe("buildStarterConfig", () => {
     });
 
     expect(config.routing_mode).toBe("balanced");
-    expect(config.default_model).toBe("zai/glm-5.1");
+    expect(config.default_model).toBe("zai/glm-5.2");
     expect(Object.keys(config.models)).toEqual([
-      "openai/gpt-5.5",
-      "openai/gpt-5.4",
+      "openai/gpt-5.6-sol",
+      "openai/gpt-5.6-terra",
+      "openai/gpt-5.6-luna",
+      "zai/glm-5.2",
       "zai/glm-5.1",
     ]);
-    expect(config.routing_rules.code.primary).toBe("openai/gpt-5.5");
-    expect(config.routing_rules.orchestration.primary).toBe("zai/glm-5.1");
+    expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
+    expect(config.routing_rules.orchestration.primary).toBe("zai/glm-5.2");
     expect(config.subscription_profile?.global).toEqual({
       "openai-codex": { enabled: true, tierId: "plus" },
       "zai": { enabled: true, tierId: "max" },
@@ -38,11 +40,14 @@ describe("buildStarterConfig", () => {
     });
 
     expect(Object.keys(config.models)).toEqual([
-      "openai/gpt-5.5",
-      "openai/gpt-5.4",
-      "openai/gpt-5.4-mini",
+      "openai/gpt-5.6-sol",
+      "openai/gpt-5.6-terra",
+      "openai/gpt-5.6-luna",
     ]);
-    expect(config.routing_rules.fast.primary).toBe("openai/gpt-5.4-mini");
+    expect(config.routing_rules.default.primary).toBe("openai/gpt-5.6-sol");
+    expect(config.models["openai/gpt-5.6-sol"]?.context_window).toBe(372000);
+    expect(config.models["openai/gpt-5.6-terra"]?.context_window).toBe(372000);
+    expect(config.models["openai/gpt-5.6-luna"]?.context_window).toBe(372000);
     expect(config.fast_ttft_max_seconds).toBe(8);
   });
 
@@ -51,16 +56,67 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "moonshot", tierId: "moderato" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["moonshot/kimi-k2.6"]);
+    expect(Object.keys(config.models)).toEqual(["moonshot/kimi-k2.7-code", "moonshot/kimi-k2.6"]);
     expect(config.models["moonshot/kimi-k2.6"]?.context_window).toBe(262144);
+    expect(config.default_model).toBe("moonshot/kimi-k2.6");
     expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+    expect(config.routing_rules.default.fallbacks).toEqual(["moonshot/kimi-k2.7-code"]);
+    expect(config.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+    expect(config.routing_rules.code.fallbacks).toEqual(["moonshot/kimi-k2.6"]);
   });
 
-  it("keeps MiniMax M2.7 text-only in starter runtime metadata", () => {
+  it("uses the Kimi general default for Moonshot inventory-only starters and reruns", () => {
+    const config = buildStarterConfig({
+      providers: [],
+      inventoryAccounts: [{
+        accountId: "moonshot-main",
+        providerId: "moonshot",
+        tierId: "moderato",
+        authProfile: "moonshot:main",
+        usagePriority: 2,
+        intendedUse: ["code", "default"],
+      }],
+    });
+
+    expect(config.subscription_profile).toBeUndefined();
+    expect(config.subscription_inventory?.accounts["moonshot-main"]).toMatchObject({
+      provider: "moonshot",
+      tierId: "moderato",
+      authProfile: "moonshot:main",
+      usagePriority: 2,
+      intendedUse: ["code", "default"],
+    });
+    expect(config.default_model).toBe("moonshot/kimi-k2.6");
+    expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+    expect(config.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+
+    const regenerated = buildStarterConfig(deriveStarterDefaults(config));
+    expect(regenerated.default_model).toBe("moonshot/kimi-k2.6");
+    expect(regenerated.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+    expect(regenerated.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+    expect(regenerated.subscription_inventory).toEqual(config.subscription_inventory);
+  });
+
+  it("does not force Kimi over an unrelated subscription-weighted default winner", () => {
+    const config = buildStarterConfig({
+      providers: [
+        { providerId: "openai-codex", tierId: "plus" },
+        { providerId: "moonshot", tierId: "moderato" },
+      ],
+    });
+
+    expect(config.default_model).toBe("openai/gpt-5.6-sol");
+    expect(config.routing_rules.default.primary).toBe("openai/gpt-5.6-sol");
+    expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
+    expect(new Set(config.routing_rules.default.fallbacks).size).toBe(config.routing_rules.default.fallbacks.length);
+  });
+
+  it("adds MiniMax M3 and keeps M2.7 text-only as a fallback", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "minimax-portal", tierId: "starter" }],
     });
 
+    expect(config.models["minimax-portal/MiniMax-M3"]).toBeDefined();
     expect(config.models["minimax-portal/MiniMax-M2.7"]?.supports_vision).toBe(false);
   });
 
@@ -69,7 +125,7 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "zai", tierId: "max" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["zai/glm-5.1"]);
+    expect(Object.keys(config.models)).toEqual(["zai/glm-5.2", "zai/glm-5.1"]);
     expect(Object.keys(config.models).some((model) => model.includes("glm-5v"))).toBe(false);
   });
 
@@ -78,8 +134,9 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "xai-oauth", tierId: "supergrok" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.3"]);
+    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"]);
     expect(config.models["xai-oauth/grok-4.3"]?.supports_vision).toBe(true);
+    expect(config.models["xai-oauth/grok-build-0.1"]?.supports_vision).toBe(true);
     expect(config.models["xai-oauth/grok-4.3"]?.context_window).toBe(1000000);
     expect(config.subscription_profile?.global).toEqual({
       "xai-oauth": { enabled: true, tierId: "supergrok" },
@@ -91,8 +148,9 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "xai", tierId: "supergrok" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["xai/grok-4.3"]);
+    expect(Object.keys(config.models)).toEqual(["xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"]);
     expect(config.models["xai/grok-4.3"]?.supports_vision).toBe(true);
+    expect(config.models["xai/grok-build-0.1"]?.supports_vision).toBe(true);
     expect(config.models["xai/grok-4.3"]?.context_window).toBe(1000000);
     expect(config.subscription_profile?.global).toEqual({
       "xai": { enabled: true, tierId: "supergrok" },
@@ -133,9 +191,11 @@ describe("buildStarterConfig", () => {
       authProfile: "openai:work",
     });
     expect(Object.keys(config.models)).toEqual([
+      "zai/glm-5.2",
       "zai/glm-5.1",
-      "openai/gpt-5.5",
-      "openai/gpt-5.4",
+      "openai/gpt-5.6-sol",
+      "openai/gpt-5.6-terra",
+      "openai/gpt-5.6-luna",
     ]);
   });
 
@@ -165,11 +225,19 @@ describe("buildStarterConfig", () => {
 });
 
 describe("starter onboarding helpers", () => {
+  it("uses the canonical Qwen Portal model while legacy provider aliases resolve", () => {
+    const config = buildStarterConfig({ providers: [{ providerId: "qwen-portal", tierId: "free" }] });
+    expect(Object.keys(config.models)).toEqual(["qwen-oauth/qwen3.5-plus"]);
+    expect(Object.keys(config.models).some((model) => model.includes("qwen3.7"))).toBe(false);
+  });
   it("returns auth commands in provider order", () => {
-    expect(getStarterAuthCommands(["openai-codex", "zai", "xai"])).toEqual([
-      "openclaw models auth login --provider openai-codex",
+    expect(getStarterAuthCommands(["openai-codex", "zai", "minimax-portal", "qwen-oauth", "xai", "xai-oauth"])).toEqual([
+      "openclaw models auth login --provider openai",
       "openclaw onboard --auth-choice zai-coding-global",
-      "openclaw onboard --auth-choice xai-device-code",
+      "openclaw onboard --auth-choice minimax-global-oauth",
+      "openclaw onboard --auth-choice qwen-oauth",
+      "openclaw models auth login --provider xai --method oauth",
+      "hermes auth add xai-oauth",
     ]);
   });
 
@@ -199,11 +267,31 @@ describe("starter onboarding helpers", () => {
     });
 
     expect(summarizeStarterConfig(config)).toEqual({
-      defaultModel: "zai/glm-5.1",
+      defaultModel: "zai/glm-5.2",
       inventoryAccountCount: 1,
       modifier: "research-aware",
       providerLabels: ["OpenAI", "Z AI (GLM)"],
     });
+  });
+
+  it("canonicalizes legacy Qwen Portal defaults so a rerun preserves the provider", () => {
+    const legacy = buildStarterConfig({ providers: [{ providerId: "qwen-oauth", tierId: "free" }] });
+    legacy.subscription_catalog_version = "1.0.0";
+    legacy.subscription_profile = {
+      version: "1.0.0",
+      global: { "qwen-portal": { enabled: true, tierId: "free" } },
+    };
+    legacy.subscription_inventory = {
+      version: "1.0.0",
+      accounts: { portal: { provider: "qwen-cli", tierId: "free" } },
+    };
+
+    const defaults = deriveStarterDefaults(legacy);
+    expect(defaults.providers).toEqual([{ providerId: "qwen-oauth", tierId: "free" }]);
+    expect(defaults.inventoryAccounts[0]?.providerId).toBe("qwen-oauth");
+    const regenerated = buildStarterConfig(defaults);
+    expect(regenerated.subscription_inventory?.accounts.portal.provider).toBe("qwen-oauth");
+    expect(Object.keys(regenerated.models)).toEqual(["qwen-oauth/qwen3.5-plus"]);
   });
 
   it("derives rerun defaults from current config including inventory providers", () => {

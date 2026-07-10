@@ -12,9 +12,16 @@ divergences fixed for TS<->Python parity:
 - D5: catalog provider absent from subscription_profile.global is disabled (profile.ts:69)
 - S1: high-risk keywords are diagnostic only and do NOT block routing (CHANGELOG 3.8.21)
 """
+import copy
+import json
+import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from router import ZeroAPIRouter
+from router import ZeroAPIRouter, _disabled_provider_list, _provider_disabled, _resolve_capacity, load_config
 
 
 def _m(ctx, vision, tps, ttft, **bm):
@@ -68,6 +75,350 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
+    def _qwen_fixture(self, version_fields, disabled, legacy_structural, collision_order="alias-first"):
+        qwen_model = "qwen/coder-model" if legacy_structural else "qwen-oauth/coder-model"
+        profile = copy.deepcopy(version_fields.get("subscription_profile", {}))
+        canonical = {"enabled": True, "tierId": "canonical-tier", "tag": "canonical"}
+        alias = {"enabled": False, "tierId": "alias-tier", "tag": "alias"}
+        collision_entries = (
+            [("qwen-oauth", canonical), ("qwen", alias)]
+            if collision_order == "canonical-first"
+            else [("qwen", alias), ("qwen-oauth", canonical)]
+        )
+        profile["global"] = dict([
+            ("openai", {"enabled": True, "tierId": "pro"}),
+            ("xai", {"enabled": True, "tierId": "supergrok"}),
+            ("moonshot", {"enabled": True, "tierId": "moderato"}),
+            ("minimax-portal", {"enabled": True, "tierId": "starter"}),
+            ("zai", {"enabled": True, "tierId": "lite"}),
+            *collision_entries,
+        ])
+        profile["agentOverrides"] = {
+            "worker": dict([("openai", {"enabled": True, "tag": "preserved"}), *collision_entries]),
+        }
+        inventory = copy.deepcopy(version_fields.get("subscription_inventory", {}))
+        inventory["accounts"] = {
+            "openai-main": {"provider": "openai", "tierId": "pro", "enabled": True,
+                             "authProfile": None, "usagePriority": 1.0,
+                             "intendedUse": []},
+            "xai-main": {"provider": "xai", "tierId": "supergrok", "enabled": True,
+                          "authProfile": "xai-secondary", "usagePriority": 1.0,
+                          "intendedUse": []},
+            "moonshot-main": {"provider": "moonshot", "tierId": "moderato", "enabled": True,
+                               "authProfile": "moonshot-main", "usagePriority": 1.0,
+                               "intendedUse": []},
+            "minimax-main": {"provider": "minimax-portal", "tierId": "starter", "enabled": True,
+                              "authProfile": None, "usagePriority": 1.0,
+                              "intendedUse": []},
+            "zai-main": {"provider": "zai", "tierId": "lite", "enabled": True,
+                         "authProfile": "zai-default", "usagePriority": 1.0,
+                         "intendedUse": []},
+            "portal": {"provider": "qwen-portal" if legacy_structural else "qwen-oauth",
+                       "tierId": "free", "enabled": True, "authProfile": "qwen-legacy",
+                       "usagePriority": 1.0, "intendedUse": []},
+        }
+        top = {
+            key: copy.deepcopy(value)
+            for key, value in version_fields.items()
+            if key not in {"subscription_profile", "subscription_inventory"}
+        }
+        common_models = [
+            ("openai/current-model", _m(1000000, False, 9, 1, intelligence=40, coding=40)),
+            ("xai/grok-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("moonshot/kimi-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("minimax-portal/minimax-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("zai/glm-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+        ]
+        canonical_model = _m(1000000, False, 10, 1, intelligence=50, coding=50)
+        alias_model = _m(800002, True, 10, 1, intelligence=50, coding=50)
+        model_entries = (
+            [("qwen-oauth/coder-model", canonical_model), ("qwen/coder-model", alias_model)]
+            if legacy_structural and collision_order == "canonical-first"
+            else [("qwen/coder-model", alias_model), ("qwen-oauth/coder-model", canonical_model)]
+            if legacy_structural
+            else [(qwen_model, canonical_model)]
+        )
+        return _base(
+            dict([*common_models, *model_entries]),
+            {"code": {"primary": qwen_model, "fallbacks": ["openai/current-model"]},
+             "default": {"primary": qwen_model, "fallbacks": ["xai/grok-model", "moonshot/kimi-model",
+                                                                  "minimax-portal/minimax-model", "zai/glm-model"]}},
+            **top,
+            default_model="openai/current-model",
+            disabled_providers=copy.deepcopy(disabled),
+            subscription_profile=profile,
+            subscription_inventory=inventory,
+        )
+
+    def _typescript_load(self, repo_root, fixture_dir, env_value):
+        repo_root = Path(__file__).resolve().parents[2]
+        tsx = repo_root / "node_modules" / ".bin" / "tsx"
+        script = """
+import { loadConfig } from './plugin/config.ts';
+import { resolveRoutingDecision } from './plugin/decision.ts';
+import { resolveProviderCapacity } from './plugin/inventory.ts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+const fixtureDir = process.env.ZEROAPI_PARITY_FIXTURE_DIR;
+if (!fixtureDir) throw new Error('missing ZEROAPI_PARITY_FIXTURE_DIR');
+const path = join(fixtureDir, 'zeroapi-config.json');
+const before = readFileSync(path, 'utf8');
+const config = loadConfig(fixtureDir);
+if (!config) throw new Error('loadConfig rejected parity fixture');
+const decision = resolveRoutingDecision(config, {
+  prompt: 'implement this feature', currentModel: 'openai/current-model', includeDiagnostics: true,
+});
+const qwenCapacity = resolveProviderCapacity({
+  profile: config.subscription_profile, inventory: config.subscription_inventory,
+  agentId: undefined, providerId: 'qwen', category: 'code',
+});
+process.stdout.write(JSON.stringify({
+  defaultModel: config.default_model,
+  models: config.models,
+  modelEntries: Object.entries(config.models),
+  routingRules: config.routing_rules,
+  profileSelections: config.subscription_profile?.global ?? {},
+  agentOverrideSelections: config.subscription_profile?.agentOverrides ?? {},
+  inventoryAccounts: config.subscription_inventory?.accounts ?? {},
+  inventoryAccountEntries: Object.entries(config.subscription_inventory?.accounts ?? {}),
+  disabled: config.disabled_providers,
+  allowed: decision.selectedModel !== null,
+  selectedModel: decision.selectedModel,
+  rejected: decision.subscriptionRejected.includes('qwen-oauth/coder-model'),
+  qwenCloudRejected: decision.subscriptionRejected.includes('qwen/cloud-model'),
+  qwenCapacity,
+  subscriptionRejected: decision.subscriptionRejected,
+  weightedCandidates: decision.weightedCandidates,
+  fileUnchanged: readFileSync(path, 'utf8') === before,
+}));
+"""
+        child_env = os.environ.copy()
+        child_env["ZEROAPI_DISABLED_PROVIDERS"] = env_value
+        child_env["ZEROAPI_PARITY_FIXTURE_DIR"] = str(fixture_dir)
+        completed = subprocess.run(
+            [str(tsx), "--eval", script], cwd=repo_root, text=True, env=child_env,
+            capture_output=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        return json.loads(completed.stdout)
+
+    def _assert_load_parity(self, label, version_fields, file_disabled, env_value, expected, portal_disabled,
+                            collision_order="alias-first", legacy_structural=None):
+        if legacy_structural is None:
+            legacy_structural = portal_disabled
+        cfg = self._qwen_fixture(version_fields, file_disabled, legacy_structural, collision_order)
+        untouched = copy.deepcopy(cfg)
+        repo_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix="zeroapi-load-parity-") as temp_dir:
+            config_path = Path(temp_dir) / "zeroapi-config.json"
+            original_text = json.dumps(cfg)
+            config_path.write_text(original_text, encoding="utf-8")
+            typescript = self._typescript_load(repo_root, temp_dir, env_value)
+            with patch.dict(os.environ, {"ZEROAPI_DISABLED_PROVIDERS": env_value}, clear=False):
+                python_config = load_config(str(config_path))
+                self.assertIsNotNone(python_config, label)
+                assert python_config is not None
+                python_router = ZeroAPIRouter(python_config)
+                python_disabled = _disabled_provider_list(python_router.config)
+                python_rejected = _provider_disabled(python_router.config, "qwen-oauth")
+                python_route = python_router.resolve(
+                    "implement this feature", current_model="openai/current-model",
+                )
+
+                python_structural = {
+                    "defaultModel": python_config["default_model"],
+                    "models": python_config["models"],
+                    "modelEntries": [list(item) for item in python_config["models"].items()],
+                    "routingRules": python_config["routing_rules"],
+                    "profileSelections": python_config.get("subscription_profile", {}).get("global", {}),
+                    "agentOverrideSelections": python_config.get("subscription_profile", {}).get("agentOverrides", {}),
+                    "inventoryAccounts": python_config.get("subscription_inventory", {}).get("accounts", {}),
+                    "inventoryAccountEntries": [
+                        list(item)
+                        for item in python_config.get("subscription_inventory", {}).get("accounts", {}).items()
+                    ],
+                }
+
+            self.assertEqual(config_path.read_text(encoding="utf-8"), original_text, label)
+
+        self.assertEqual(cfg, untouched, label)
+        self.assertTrue(typescript["fileUnchanged"], label)
+        self.assertEqual(typescript["disabled"], expected, label)
+        self.assertEqual(python_disabled, expected, label)
+        self.assertEqual(typescript["disabled"], python_disabled, label)
+        self.assertEqual({key: typescript[key] for key in python_structural}, python_structural, label)
+        self.assertEqual(typescript["models"], dict(typescript["modelEntries"]), label)
+        self.assertEqual(typescript["inventoryAccounts"], dict(typescript["inventoryAccountEntries"]), label)
+
+        expected_models = {}
+        for model_ref, payload in cfg["models"].items():
+            if legacy_structural and model_ref.startswith("qwen/"):
+                model_ref = f"qwen-oauth/{model_ref.split('/', 1)[1]}"
+            expected_models[model_ref] = payload
+        self.assertEqual(typescript["models"], expected_models, label)
+        self.assertEqual(python_structural["models"], expected_models, label)
+        self.assertEqual(typescript["modelEntries"], [list(item) for item in expected_models.items()], label)
+
+        expected_accounts = copy.deepcopy(cfg["subscription_inventory"]["accounts"])
+        if legacy_structural:
+            expected_accounts["portal"]["provider"] = "qwen-oauth"
+        self.assertEqual(typescript["inventoryAccounts"], expected_accounts, label)
+        self.assertEqual(python_structural["inventoryAccounts"], expected_accounts, label)
+        self.assertEqual(
+            typescript["inventoryAccountEntries"], [list(item) for item in expected_accounts.items()], label,
+        )
+        for account_id in ("openai-main", "xai-main", "moonshot-main", "minimax-main", "zai-main"):
+            self.assertEqual(expected_accounts[account_id], cfg["subscription_inventory"]["accounts"][account_id], label)
+
+        if legacy_structural:
+            expected_winner_source = (
+                "qwen/coder-model" if collision_order == "canonical-first" else "qwen-oauth/coder-model"
+            )
+            expected_winner = cfg["models"][expected_winner_source]
+            self.assertEqual(list(expected_models).count("qwen-oauth/coder-model"), 1, label)
+            self.assertEqual(typescript["models"]["qwen-oauth/coder-model"], expected_winner, label)
+            self.assertEqual(python_structural["models"]["qwen-oauth/coder-model"], expected_winner, label)
+        self.assertEqual(typescript["rejected"], portal_disabled, label)
+        self.assertEqual(python_rejected, portal_disabled, label)
+        self.assertEqual(typescript["rejected"], python_rejected, label)
+        self.assertEqual(
+            typescript["allowed"], python_route is not None,
+            f"{label}: TS selected={typescript['selectedModel']!r}; Python route={python_route!r}",
+        )
+        if portal_disabled:
+            self.assertIn("qwen-oauth/coder-model", typescript["subscriptionRejected"], label)
+            self.assertNotIn("qwen-oauth/coder-model", typescript["weightedCandidates"], label)
+
+    def test_P1_effective_version_nullish_precedence_matches_typescript_load_config(self):
+        cases = (
+            ("numeric top blocks profile legacy", {
+                "subscription_catalog_version": 17,
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen"], False),
+            ("numeric profile blocks inventory legacy", {
+                "subscription_profile": {"version": 17},
+                "subscription_inventory": {"version": "1.0.0"},
+            }, ["qwen"], False),
+            ("absent top and null profile fall through", {
+                "subscription_profile": {"version": None},
+                "subscription_inventory": {"version": "1.0.0"},
+            }, ["qwen-oauth"], True),
+            ("null top falls through to profile", {
+                "subscription_catalog_version": None,
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen-oauth"], True),
+            ("blank top blocks profile legacy", {
+                "subscription_catalog_version": "",
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen"], False),
+            ("valid legacy top", {"subscription_catalog_version": "1.0.0"}, ["qwen-oauth"], True),
+            ("valid fresh top", {
+                "subscription_catalog_version": "1.1.0",
+                "subscription_profile": {"version": "1.0.0"},
+            }, ["qwen"], False),
+        )
+        for label, versions, expected, portal_disabled in cases:
+            with self.subTest(label=label):
+                self._assert_load_parity(label, versions, ["qwen"], "", expected, portal_disabled)
+
+    def test_P2_file_and_environment_disabled_sequence_matches_typescript_load_config(self):
+        cases = (
+            ("env-only legacy alias", {"subscription_catalog_version": "1.0.0"}, [],
+             " qWeN ", ["qwen-oauth"], True),
+            ("file-env collisions and unrelated order", {"subscription_catalog_version": "1.0.0"},
+             [" ZAI ", "qwen-portal", "moonshot", "qwen-oauth", "zai"],
+             " QWEN-DASHSCOPE , minimax, moonshot, qwen-oauth ",
+             ["zai", "qwen-oauth", "moonshot", "minimax-portal"], True),
+            ("fresh Cloud stays separate from Portal", {"subscription_catalog_version": "1.1.0"},
+             [" QWEN "], "qwen", ["qwen"], False),
+            ("missing version stays non-legacy", {}, ["qwen"], " qwen ", ["qwen"], False),
+            ("malformed top blocks profile for env too", {
+                "subscription_catalog_version": 17,
+                "subscription_profile": {"version": "1.0.0"},
+             }, [], " QWEN-DASHSCOPE ", ["qwen-dashscope"], False),
+        )
+        for label, versions, file_disabled, env_value, expected, portal_disabled in cases:
+            with self.subTest(label=label):
+                self._assert_load_parity(
+                    label, versions, file_disabled, env_value, expected, portal_disabled,
+                )
+
+    def test_P3_full_structural_collision_payloads_match_typescript_in_both_orders(self):
+        for order in ("canonical-first", "alias-first"):
+            with self.subTest(order=order):
+                self._assert_load_parity(
+                    order,
+                    {"subscription_catalog_version": "1.0.0"},
+                    [],
+                    "",
+                    [],
+                    False,
+                    collision_order=order,
+                    legacy_structural=True,
+                )
+
+    def test_P2_malformed_nested_matrix_fails_closed_without_rewriting_in_both_loaders(self):
+        replacements = (
+            ("model capability non-object", ("models", "qwen/coder-model"), None),
+            ("routing rule non-object", ("routing_rules", "code"), None),
+            ("primary non-string", ("routing_rules", "code", "primary"), 17),
+            ("fallbacks non-array", ("routing_rules", "code", "fallbacks"), {}),
+            ("fallback member non-string", ("routing_rules", "code", "fallbacks"), [None]),
+            ("profile non-object", ("subscription_profile",), []),
+            ("profile missing global", ("subscription_profile", "global"), "__DELETE__"),
+            ("global non-object", ("subscription_profile", "global"), []),
+            ("agentOverrides non-object", ("subscription_profile", "agentOverrides"), []),
+            ("per-agent selections non-object", ("subscription_profile", "agentOverrides", "worker"), None),
+            ("inventory non-object", ("subscription_inventory",), []),
+            ("inventory missing accounts", ("subscription_inventory", "accounts"), "__DELETE__"),
+            ("accounts non-object", ("subscription_inventory", "accounts"), None),
+            ("account non-object", ("subscription_inventory", "accounts", "portal"), []),
+            ("provider non-string", ("subscription_inventory", "accounts", "portal", "provider"), {"id": "qwen"}),
+            ("disabled non-array", ("disabled_providers",), "qwen"),
+            ("disabled member non-string", ("disabled_providers",), ["qwen", None]),
+            *((f"global selection {value!r}", ("subscription_profile", "global", "qwen"), value)
+              for value in (None, [], "selection", 17, True)),
+            *((f"override selection {value!r}",
+               ("subscription_profile", "agentOverrides", "worker", "qwen"), value)
+              for value in (None, [], "selection", 17, True)),
+        )
+        repo_root = Path(__file__).resolve().parents[2]
+        script = """
+import { getConfigLoadStatus, loadConfig } from './plugin/config.ts';
+import { readFileSync } from 'node:fs';
+const dir = process.env.ZEROAPI_PARITY_FIXTURE_DIR;
+const path = `${dir}/zeroapi-config.json`;
+const before = readFileSync(path, 'utf8');
+const config = loadConfig(dir);
+process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unchanged: readFileSync(path, 'utf8') === before }));
+"""
+        for label, keys, value in replacements:
+            with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="zeroapi-malformed-parity-") as temp_dir:
+                malformed = self._qwen_fixture({"subscription_catalog_version": "1.0.0"}, [], True)
+                target = malformed
+                for key in keys[:-1]:
+                    target = target[key]
+                if value == "__DELETE__":
+                    del target[keys[-1]]
+                else:
+                    target[keys[-1]] = value
+                config_path = Path(temp_dir) / "zeroapi-config.json"
+                original = json.dumps(malformed, separators=(",", ":"))
+                config_path.write_text(original, encoding="utf-8")
+                env = os.environ.copy()
+                env["ZEROAPI_PARITY_FIXTURE_DIR"] = temp_dir
+                completed = subprocess.run(
+                    [str(repo_root / "node_modules" / ".bin" / "tsx"), "--eval", script],
+                    cwd=repo_root, text=True, env=env, capture_output=True, check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                typescript = json.loads(completed.stdout)
+                self.assertIsNone(typescript["config"])
+                self.assertEqual(typescript["status"], "invalid")
+                self.assertTrue(typescript["unchanged"])
+                self.assertIsNone(load_config(str(config_path)))
+                self.assertEqual(config_path.read_text(encoding="utf-8"), original)
+
     def test_S1_high_risk_still_routes(self):
         cfg = _base(
             {"zai/glm-5.1": ZAI, "openai-codex/gpt-5.4": OPENAI},
@@ -118,6 +469,44 @@ class HermesParityTest(unittest.TestCase):
                 "moonshot": {"enabled": True, "tierId": "moderato"}}})
         route = ZeroAPIRouter(cfg).resolve("quick format this list", current_model="zai/glm-5.1")
         self.assertIsNone(route, "fast task must drop a model with no measured TTFT")
+
+    def test_fresh_qwen_cloud_inventory_rejection_matches_typescript_without_mutation(self):
+        cfg = _base(
+            {"qwen/cloud-model": R_XAI, "zai/glm-5.1": R_ZAI, "openai/current-model": R_OPENAI},
+            {"code": {"primary": "qwen/cloud-model", "fallbacks": ["zai/glm-5.1"]},
+             "default": {"primary": "qwen/cloud-model", "fallbacks": ["zai/glm-5.1"]}},
+            subscription_catalog_version="1.1.0", default_model="openai/current-model",
+            subscription_profile={"version": "1.1.0", "global": {}},
+            subscription_inventory={"version": "1.1.0", "accounts": {
+                "cloud": {"provider": "qwen", "enabled": True, "tierId": "free",
+                          "authProfile": "must-not-leak", "usagePriority": 99},
+                "zai-main": {"provider": "zai", "enabled": True, "tierId": "lite",
+                             "authProfile": "zai-main", "usagePriority": 1},
+            }},
+        )
+        untouched = copy.deepcopy(cfg)
+        with tempfile.TemporaryDirectory(prefix="zeroapi-qwen-cloud-parity-") as temp_dir:
+            path = Path(temp_dir) / "zeroapi-config.json"
+            original = json.dumps(cfg)
+            path.write_text(original, encoding="utf-8")
+            typescript = self._typescript_load(Path(__file__).resolve().parents[2], temp_dir, "")
+            python_config = load_config(str(path))
+            self.assertIsNotNone(python_config)
+            assert python_config is not None
+            python_route = ZeroAPIRouter(python_config).resolve(
+                "implement this feature", current_model="openai/current-model",
+            )
+            python_capacity = _resolve_capacity(python_config, "qwen", "code", None)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+        self.assertEqual(cfg, untouched)
+        self.assertTrue(typescript["fileUnchanged"])
+        self.assertTrue(typescript["qwenCloudRejected"])
+        self.assertIsNone(typescript["qwenCapacity"])
+        self.assertEqual(typescript["qwenCapacity"], python_capacity)
+        self.assertNotIn("must-not-leak", json.dumps(typescript["qwenCapacity"]))
+        self.assertIsNotNone(python_route)
+        self.assertEqual(python_route["provider"], "zai")
 
     def test_D1_modifier_account_bonus_changes_winner(self):
         cfg = _base(

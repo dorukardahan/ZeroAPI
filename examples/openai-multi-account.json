@@ -1,56 +1,44 @@
 {
-  "version": "3.7.7",
-  "generated": "2026-04-24T00:00:00Z",
-  "benchmarks_date": "2026-04-24",
-  "subscription_catalog_version": "1.0.0",
+  "version": "3.8.37",
+  "generated": "2026-07-05T00:00:00.000Z",
+  "benchmarks_date": "2026-07-05",
+  "subscription_catalog_version": "1.1.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
   "subscription_inventory": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "accounts": {
-      "openai-work-pro": {
+      "openai-personal": {
+        "provider": "openai-codex",
+        "tierId": "plus",
+        "authProfile": "openai:personal",
+        "usagePriority": 1,
+        "intendedUse": [
+          "fast"
+        ]
+      },
+      "openai-work": {
         "provider": "openai-codex",
         "tierId": "pro",
         "authProfile": "openai:work",
         "usagePriority": 2,
         "intendedUse": [
           "code",
-          "research",
-          "math"
-        ]
-      },
-      "openai-personal-plus-1": {
-        "provider": "openai-codex",
-        "tierId": "plus",
-        "authProfile": "openai:personal-1",
-        "usagePriority": 1,
-        "intendedUse": [
-          "default",
-          "fast"
-        ]
-      },
-      "openai-personal-plus-2": {
-        "provider": "openai-codex",
-        "tierId": "plus",
-        "authProfile": "openai:personal-2",
-        "usagePriority": 1,
-        "intendedUse": [
-          "default",
-          "fast"
+          "research"
         ]
       }
     }
   },
-  "default_model": "openai/gpt-5.5",
+  "default_model": "openai/gpt-5.6-sol",
   "models": {
-    "openai/gpt-5.5": {
-      "context_window": 272000,
+    "openai/gpt-5.6-sol": {
+      "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": null,
-      "ttft_seconds": null,
+      "speed_tps": 91.869,
+      "ttft_seconds": 29.368,
       "benchmarks": {
-        "intelligence": 60.2,
-        "coding": 59.1,
+        "intelligence": 54.8,
+        "coding": 74.9,
         "tau2": 0.939,
         "terminalbench": 0.606,
         "ifbench": 0.759,
@@ -60,82 +48,82 @@
         "scicode": 0.561
       }
     },
-    "openai/gpt-5.4": {
-      "context_window": 272000,
+    "openai/gpt-5.6-terra": {
+      "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 82.67,
-      "ttft_seconds": 183.504,
+      "speed_tps": 91.869,
+      "ttft_seconds": 29.368,
       "benchmarks": {
-        "intelligence": 56.8,
-        "coding": 57.3,
-        "tau2": 0.871,
-        "terminalbench": 0.576,
-        "ifbench": 0.739,
-        "gpqa": 0.92,
-        "lcr": 0.74,
-        "hle": 0.416,
-        "scicode": 0.566
+        "intelligence": 54.8,
+        "coding": 74.9,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
       }
     },
-    "openai/gpt-5.4-mini": {
-      "context_window": 272000,
+    "openai/gpt-5.6-luna": {
+      "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 175.709,
-      "ttft_seconds": 7.319,
+      "speed_tps": 91.869,
+      "ttft_seconds": 29.368,
       "benchmarks": {
-        "intelligence": 48.9,
-        "coding": 51.5,
-        "tau2": 0.833,
-        "terminalbench": 0.523,
-        "ifbench": 0.733,
-        "gpqa": 0.875,
-        "lcr": 0.693,
-        "hle": 0.266,
-        "scicode": 0.499
+        "intelligence": 54.8,
+        "coding": 74.9,
+        "tau2": 0.939,
+        "terminalbench": 0.606,
+        "ifbench": 0.759,
+        "gpqa": 0.935,
+        "lcr": 0.743,
+        "hle": 0.443,
+        "scicode": 0.561
       }
     }
   },
   "routing_rules": {
     "code": {
-      "primary": "openai/gpt-5.5",
+      "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "openai/gpt-5.4",
-        "openai/gpt-5.4-mini"
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
       ]
     },
     "research": {
-      "primary": "openai/gpt-5.5",
+      "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "openai/gpt-5.4",
-        "openai/gpt-5.4-mini"
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
       ]
     },
     "orchestration": {
-      "primary": "openai/gpt-5.5",
+      "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "openai/gpt-5.4",
-        "openai/gpt-5.4-mini"
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
       ]
     },
     "math": {
-      "primary": "openai/gpt-5.5",
+      "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "openai/gpt-5.4",
-        "openai/gpt-5.4-mini"
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
       ]
     },
     "fast": {
-      "primary": "openai/gpt-5.4-mini",
+      "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "openai/gpt-5.4",
-        "openai/gpt-5.5"
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
       ]
     },
     "default": {
-      "primary": "openai/gpt-5.5",
+      "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "openai/gpt-5.4",
-        "openai/gpt-5.4-mini"
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-luna"
       ]
     }
   },
