@@ -4,6 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import stat
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -82,46 +85,135 @@ def write_json_atomic(path: Path, payload: Dict[str, Any], pretty: int) -> None:
 def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, Any], pretty: int) -> None:
     """Serialize once and replace both snapshots as a rollback-safe pair."""
     data = json.dumps(payload, indent=pretty, ensure_ascii=False) + "\n"
+    candidates = (Path(root_path), Path(plugin_path))
+
+    # A final symlink has different replacement semantics from its resolved target.
+    # Reject the whole pair before creating parents or artifacts.
+    for candidate in candidates:
+        if candidate.is_symlink():
+            raise OSError(f"Refusing final-component snapshot symlink: {candidate}")
+
     paths: List[Path] = []
     resolved_paths = set()
-    for candidate in (Path(root_path), Path(plugin_path)):
-        resolved_path = candidate.resolve()
+    for candidate in candidates:
+        resolved_path = candidate.resolve(strict=False)
         if resolved_path in resolved_paths:
             continue
         resolved_paths.add(resolved_path)
-        paths.append(candidate)
+        paths.append(resolved_path)
+
+    owned = {}
     temp_paths: List[Path] = []
     backup_paths: List[Optional[Path]] = []
-    replaced: List[Path] = []
+    replaced = {}
+
+    def create_artifact(path: Path, suffix: str):
+        fd, raw_path = tempfile.mkstemp(prefix=f".{path.name}.", suffix=suffix, dir=str(path.parent))
+        artifact_path = Path(raw_path)
+        # Register ownership before any payload write, fsync, or metadata copy.
+        owned[artifact_path] = None
+        artifact_stat = os.fstat(fd)
+        owned[artifact_path] = (artifact_stat.st_dev, artifact_stat.st_ino)
+        return fd, artifact_path
+
+    def assert_owned(path: Path) -> None:
+        identity = owned.get(path)
+        current = path.lstat()
+        if identity is None or (current.st_dev, current.st_ino) != identity:
+            raise OSError(f"Owned snapshot artifact changed unexpectedly: {path}")
+
+    def cleanup_owned(path: Path) -> None:
+        identity = owned.get(path)
+        if identity is None:
+            return
+        try:
+            current = path.lstat()
+        except FileNotFoundError:
+            return
+        if (current.st_dev, current.st_ino) == identity:
+            path.unlink()
+
+    def fsync_directory(path: Path) -> None:
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        directory_fd = os.open(str(path), flags)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+
     try:
         for path in paths:
             path.parent.mkdir(parents=True, exist_ok=True)
-            temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-            with temp_path.open("w", encoding="utf-8") as handle:
-                handle.write(data)
-                handle.flush()
-                os.fsync(handle.fileno())
+            if path.is_symlink():
+                raise OSError(f"Refusing final-component snapshot symlink: {path}")
+            try:
+                target_stat = path.lstat()
+            except FileNotFoundError:
+                target_stat = None
+
+            temp_fd, temp_path = create_artifact(path, ".tmp")
             temp_paths.append(temp_path)
-            if path.exists():
-                backup_path = path.with_name(f".{path.name}.{os.getpid()}.bak")
-                backup_path.write_bytes(path.read_bytes())
+            try:
+                if target_stat is not None:
+                    os.fchmod(temp_fd, stat.S_IMODE(target_stat.st_mode))
+                with os.fdopen(temp_fd, "w", encoding="utf-8") as handle:
+                    temp_fd = -1
+                    handle.write(data)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+            finally:
+                if temp_fd >= 0:
+                    os.close(temp_fd)
+
+            if target_stat is not None:
+                backup_fd, backup_path = create_artifact(path, ".bak")
                 backup_paths.append(backup_path)
+                try:
+                    if path.is_symlink():
+                        raise OSError(f"Refusing final-component snapshot symlink: {path}")
+                    with path.open("rb") as source_handle, os.fdopen(backup_fd, "wb") as backup_handle:
+                        backup_fd = -1
+                        shutil.copyfileobj(source_handle, backup_handle)
+                        os.fchmod(backup_handle.fileno(), stat.S_IMODE(target_stat.st_mode))
+                        backup_handle.flush()
+                        os.fsync(backup_handle.fileno())
+                finally:
+                    if backup_fd >= 0:
+                        os.close(backup_fd)
             else:
                 backup_paths.append(None)
+
         for temp_path, path in zip(temp_paths, paths):
+            if path.is_symlink():
+                raise OSError(f"Refusing final-component snapshot symlink: {path}")
+            assert_owned(temp_path)
+            installed_identity = owned[temp_path]
             temp_path.replace(path)
-            replaced.append(path)
+            owned.pop(temp_path, None)
+            replaced[path] = installed_identity
+            fsync_directory(path.parent)
     except Exception:
-        for path, backup_path in zip(paths, backup_paths):
-            if backup_path is not None and backup_path.exists():
+        for path, backup_path in reversed(list(zip(paths, backup_paths))):
+            if path not in replaced:
+                continue
+            if backup_path is not None:
+                assert_owned(backup_path)
                 backup_path.replace(path)
-            elif path in replaced and path.exists():
-                path.unlink()
+                owned.pop(backup_path, None)
+            else:
+                installed_identity = replaced[path]
+                try:
+                    current = path.lstat()
+                except FileNotFoundError:
+                    current = None
+                if current is not None and (current.st_dev, current.st_ino) == installed_identity:
+                    path.unlink()
+            fsync_directory(path.parent)
         raise
     finally:
-        for cleanup_path in [*temp_paths, *(path for path in backup_paths if path is not None)]:
-            if cleanup_path.exists():
-                cleanup_path.unlink()
+        # Only inode identities created exclusively above are eligible for removal.
+        for cleanup_path in list(owned):
+            cleanup_owned(cleanup_path)
 
 
 def fetch_data(api_key: str) -> Dict[str, Any]:

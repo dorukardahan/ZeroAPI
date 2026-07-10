@@ -217,6 +217,176 @@ assert not list(work_dir.rglob("*.bak"))
 `, [root]);
 });
 
+test("refresh_benchmarks rejects final snapshot symlinks before any write", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-symlink-"));
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+target = work_dir / "target.json"
+target.write_bytes(b"target-original")
+link = work_dir / "link.json"
+link.symlink_to(target.name)
+other = work_dir / "other.json"
+other.write_bytes(b"other-original")
+before = {entry.name for entry in work_dir.iterdir()}
+try:
+    module.write_snapshot_pair(link, other, {"new": True}, 2)
+except OSError as exc:
+    assert "symlink" in str(exc).lower()
+else:
+    raise AssertionError("final-component symlink output should fail closed")
+assert link.is_symlink()
+assert link.readlink() == pathlib.Path(target.name)
+assert target.read_bytes() == b"target-original"
+assert other.read_bytes() == b"other-original"
+assert {entry.name for entry in work_dir.iterdir()} == before
+`, [root]);
+});
+
+test("refresh_benchmarks uses exclusive random artifacts and preserves success modes", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-artifacts-"));
+  runPython(`
+import importlib.util
+import os
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "root.json"
+plugin = work_dir / "plugin.json"
+root.write_bytes(b"root-original")
+plugin.write_bytes(b"plugin-original")
+root.chmod(0o600)
+plugin.chmod(0o640)
+victim = work_dir / "victim"
+victim.write_bytes(b"victim-original")
+legacy = []
+for target in (root, plugin):
+    for suffix in ("tmp", "bak"):
+        collision = target.with_name(f".{target.name}.{os.getpid()}.{suffix}")
+        collision.symlink_to(victim.name)
+        legacy.append(collision)
+before = {entry.name for entry in work_dir.iterdir()}
+created = []
+original_mkstemp = module.tempfile.mkstemp
+def record_mkstemp(*args, **kwargs):
+    fd, name = original_mkstemp(*args, **kwargs)
+    created.append(pathlib.Path(name))
+    return fd, name
+module.tempfile.mkstemp = record_mkstemp
+try:
+    module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+finally:
+    module.tempfile.mkstemp = original_mkstemp
+assert len(created) == 4
+assert len({path.name for path in created}) == 4
+assert all(path not in legacy for path in created)
+assert victim.read_bytes() == b"victim-original"
+assert all(path.is_symlink() for path in legacy)
+assert (root.stat().st_mode & 0o7777) == 0o600
+assert (plugin.stat().st_mode & 0o7777) == 0o640
+assert {entry.name for entry in work_dir.iterdir()} == before
+
+new_target = work_dir / "new" / "snapshot.json"
+module.write_snapshot_pair(new_target, new_target, {"new": True}, 2)
+assert (new_target.stat().st_mode & 0o7777) == 0o600
+`, [root]);
+});
+
+test("refresh_benchmarks cleans owned artifacts after preparation failures", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-prepare-"));
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+def targets(case):
+    case_dir = work_dir / case
+    case_dir.mkdir()
+    root = case_dir / "root.json"
+    plugin = case_dir / "plugin.json"
+    root.write_bytes(b"root-original")
+    plugin.write_bytes(b"plugin-original")
+    root.chmod(0o600)
+    plugin.chmod(0o640)
+    return case_dir, root, plugin
+
+def assert_intact(case_dir, root, plugin):
+    assert root.read_bytes() == b"root-original"
+    assert plugin.read_bytes() == b"plugin-original"
+    assert (root.stat().st_mode & 0o7777) == 0o600
+    assert (plugin.stat().st_mode & 0o7777) == 0o640
+    assert {path.name for path in case_dir.iterdir()} == {"root.json", "plugin.json"}
+
+case_dir, root, plugin = targets("temp-fsync")
+original_fsync = module.os.fsync
+def fail_fsync(_fd):
+    raise OSError("injected temp fsync failure")
+module.os.fsync = fail_fsync
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "temp fsync" in str(exc)
+    else:
+        raise AssertionError("temp fsync failure should surface")
+finally:
+    module.os.fsync = original_fsync
+assert_intact(case_dir, root, plugin)
+
+case_dir, root, plugin = targets("backup-copy")
+original_copyfileobj = module.shutil.copyfileobj
+def fail_copyfileobj(*_args, **_kwargs):
+    raise OSError("injected backup copy failure")
+module.shutil.copyfileobj = fail_copyfileobj
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "backup copy" in str(exc)
+    else:
+        raise AssertionError("backup copy failure should surface")
+finally:
+    module.shutil.copyfileobj = original_copyfileobj
+assert_intact(case_dir, root, plugin)
+
+case_dir, root, plugin = targets("backup-create")
+original_mkstemp = module.tempfile.mkstemp
+def fail_backup_create(*args, **kwargs):
+    if kwargs.get("suffix") == ".bak":
+        raise OSError("injected backup creation failure")
+    return original_mkstemp(*args, **kwargs)
+module.tempfile.mkstemp = fail_backup_create
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "backup creation" in str(exc)
+    else:
+        raise AssertionError("backup creation failure should surface")
+finally:
+    module.tempfile.mkstemp = original_mkstemp
+assert_intact(case_dir, root, plugin)
+`, [root]);
+});
+
 test("refresh_benchmarks restores both snapshots when the second replace fails", () => {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-rollback-"));
   runPython(`
@@ -233,6 +403,8 @@ plugin = work_dir / "plugin" / "benchmarks.json"
 plugin.parent.mkdir()
 root.write_bytes(b"root-original\\x00\\xff")
 plugin.write_bytes(b"plugin-original\\x00\\xfe")
+root.chmod(0o600)
+plugin.chmod(0o640)
 original_root = root.read_bytes()
 original_plugin = plugin.read_bytes()
 original_replace = pathlib.Path.replace
@@ -256,6 +428,8 @@ finally:
     pathlib.Path.replace = original_replace
 assert root.read_bytes() == original_root
 assert plugin.read_bytes() == original_plugin
+assert (root.stat().st_mode & 0o7777) == 0o600
+assert (plugin.stat().st_mode & 0o7777) == 0o640
 assert not list(work_dir.rglob("*.tmp"))
 assert not list(work_dir.rglob("*.bak"))
 `, [root]);
