@@ -497,6 +497,37 @@ describe("config", () => {
     expect(readFileSync(path, "utf8")).toBe(original);
   });
 
+  it("prefers explicit qwen-oauth selection payloads over aliases in both insertion orders", async () => {
+    const { migrateLegacyCatalogConfig } = await import("../config.js");
+    const canonical = { enabled: true, tierId: "canonical-tier", tag: "canonical" };
+    const alias = { enabled: false, tierId: "alias-tier", tag: "alias" };
+    const preserved = { enabled: true, tierId: "pro", tag: "preserved" };
+
+    for (const collisionEntries of [
+      [["qwen-oauth", canonical], ["qwen", alias]],
+      [["qwen", alias], ["qwen-oauth", canonical]],
+    ] as const) {
+      const config = {
+        version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",
+        subscription_catalog_version: "1.0.0",
+        default_model: "zai/glm-5.2",
+        models: { "zai/glm-5.2": { context_window: 1000000, supports_vision: false, speed_tps: 10, ttft_seconds: 1, benchmarks: {} } },
+        routing_rules: { default: { primary: "zai/glm-5.2", fallbacks: [] } },
+        workspace_hints: {}, keywords: {}, high_risk_keywords: [], fast_ttft_max_seconds: 5,
+        subscription_profile: {
+          version: "1.0.0",
+          global: Object.fromEntries([["openai", preserved], ...collisionEntries]),
+          agentOverrides: { worker: Object.fromEntries([["zai", preserved], ...collisionEntries]) },
+        },
+      };
+      const untouched = structuredClone(config);
+      const migrated = migrateLegacyCatalogConfig(config);
+      expect(migrated.subscription_profile!.global).toEqual({ openai: preserved, "qwen-oauth": canonical });
+      expect(migrated.subscription_profile!.agentOverrides!.worker).toEqual({ zai: preserved, "qwen-oauth": canonical });
+      expect(config).toEqual(untouched);
+    }
+  });
+
   it("normalizes a legacy environment disable with file entries before downstream routing", async () => {
     const legacy = {
       version: "3.8.37", generated: "2026-07-01", benchmarks_date: "2026-07-01",

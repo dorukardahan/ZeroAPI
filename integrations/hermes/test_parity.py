@@ -75,20 +75,26 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
-    def _qwen_fixture(self, version_fields, disabled, legacy_structural):
+    def _qwen_fixture(self, version_fields, disabled, legacy_structural, collision_order="alias-first"):
         qwen_model = "qwen/coder-model" if legacy_structural else "qwen-oauth/coder-model"
         profile = copy.deepcopy(version_fields.get("subscription_profile", {}))
-        profile["global"] = {
-            "openai": {"enabled": True, "tierId": "pro"},
-            "xai": {"enabled": True, "tierId": "supergrok"},
-            "moonshot": {"enabled": True, "tierId": "moderato"},
-            "minimax-portal": {"enabled": True, "tierId": "starter"},
-            "zai": {"enabled": True, "tierId": "lite"},
-            "qwen": {"enabled": True, "tierId": "free"},
-            "qwen-oauth": {"enabled": True, "tierId": "free"},
-        }
+        canonical = {"enabled": True, "tierId": "canonical-tier", "tag": "canonical"}
+        alias = {"enabled": False, "tierId": "alias-tier", "tag": "alias"}
+        collision_entries = (
+            [("qwen-oauth", canonical), ("qwen", alias)]
+            if collision_order == "canonical-first"
+            else [("qwen", alias), ("qwen-oauth", canonical)]
+        )
+        profile["global"] = dict([
+            ("openai", {"enabled": True, "tierId": "pro"}),
+            ("xai", {"enabled": True, "tierId": "supergrok"}),
+            ("moonshot", {"enabled": True, "tierId": "moderato"}),
+            ("minimax-portal", {"enabled": True, "tierId": "starter"}),
+            ("zai", {"enabled": True, "tierId": "lite"}),
+            *collision_entries,
+        ])
         profile["agentOverrides"] = {
-            "worker": {"openai": {"enabled": True}, "qwen-cli": {"enabled": True}},
+            "worker": dict([("openai", {"enabled": True, "tag": "preserved"}), *collision_entries]),
         }
         inventory = copy.deepcopy(version_fields.get("subscription_inventory", {}))
         inventory["accounts"] = {
@@ -144,9 +150,8 @@ process.stdout.write(JSON.stringify({
   defaultModel: config.default_model,
   modelKeys: Object.keys(config.models),
   routingRules: config.routing_rules,
-  profileKeys: Object.keys(config.subscription_profile?.global ?? {}),
-  agentOverrideKeys: Object.fromEntries(Object.entries(config.subscription_profile?.agentOverrides ?? {})
-    .map(([agent, selections]) => [agent, Object.keys(selections)])),
+  profileSelections: config.subscription_profile?.global ?? {},
+  agentOverrideSelections: config.subscription_profile?.agentOverrides ?? {},
   inventoryProviders: Object.fromEntries(Object.entries(config.subscription_inventory?.accounts ?? {})
     .map(([account, value]) => [account, value.provider])),
   disabled: config.disabled_providers,
@@ -167,8 +172,9 @@ process.stdout.write(JSON.stringify({
         self.assertEqual(completed.returncode, 0, completed.stderr)
         return json.loads(completed.stdout)
 
-    def _assert_load_parity(self, label, version_fields, file_disabled, env_value, expected, portal_disabled):
-        cfg = self._qwen_fixture(version_fields, file_disabled, portal_disabled)
+    def _assert_load_parity(self, label, version_fields, file_disabled, env_value, expected, portal_disabled,
+                            collision_order="alias-first"):
+        cfg = self._qwen_fixture(version_fields, file_disabled, portal_disabled, collision_order)
         untouched = copy.deepcopy(cfg)
         repo_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory(prefix="zeroapi-load-parity-") as temp_dir:
@@ -191,11 +197,8 @@ process.stdout.write(JSON.stringify({
                     "defaultModel": python_config["default_model"],
                     "modelKeys": list(python_config["models"]),
                     "routingRules": python_config["routing_rules"],
-                    "profileKeys": list(python_config.get("subscription_profile", {}).get("global", {})),
-                    "agentOverrideKeys": {
-                        agent: list(selections)
-                        for agent, selections in python_config.get("subscription_profile", {}).get("agentOverrides", {}).items()
-                    },
+                    "profileSelections": python_config.get("subscription_profile", {}).get("global", {}),
+                    "agentOverrideSelections": python_config.get("subscription_profile", {}).get("agentOverrides", {}),
                     "inventoryProviders": {
                         account: value["provider"]
                         for account, value in python_config.get("subscription_inventory", {}).get("accounts", {}).items()
@@ -270,6 +273,19 @@ process.stdout.write(JSON.stringify({
             with self.subTest(label=label):
                 self._assert_load_parity(
                     label, versions, file_disabled, env_value, expected, portal_disabled,
+                )
+
+    def test_P3_selection_collision_payloads_match_typescript_in_both_orders(self):
+        for order in ("canonical-first", "alias-first"):
+            with self.subTest(order=order):
+                self._assert_load_parity(
+                    order,
+                    {"subscription_catalog_version": "1.0.0"},
+                    [],
+                    "",
+                    [],
+                    False,
+                    collision_order=order,
                 )
 
     def test_S1_high_risk_still_routes(self):

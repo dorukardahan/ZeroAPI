@@ -166,6 +166,41 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(router.config["subscription_inventory"]["accounts"]["portal"]["provider"], "qwen-oauth")
         self.assertEqual(legacy["default_model"], "qwen/coder-model")
 
+    def test_legacy_selection_collisions_prefer_explicit_qwen_oauth_in_both_orders(self):
+        canonical = {"enabled": True, "tierId": "canonical-tier", "tag": "canonical"}
+        alias = {"enabled": False, "tierId": "alias-tier", "tag": "alias"}
+        preserved = {"enabled": True, "tierId": "pro", "tag": "preserved"}
+
+        for label, collision_entries in (
+            ("canonical-first", [("qwen-oauth", canonical), ("qwen", alias)]),
+            ("alias-first", [("qwen", alias), ("qwen-oauth", canonical)]),
+        ):
+            with self.subTest(order=label):
+                legacy = {
+                    **CONFIG,
+                    "subscription_catalog_version": "1.0.0",
+                    "subscription_profile": {
+                        "version": "1.0.0",
+                        "global": dict([("openai", preserved), *collision_entries]),
+                        "agentOverrides": {
+                            "worker": dict([("zai", preserved), *collision_entries]),
+                        },
+                    },
+                }
+                untouched = copy.deepcopy(legacy)
+
+                migrated = ZeroAPIRouter(legacy).config
+
+                self.assertEqual(migrated["subscription_profile"]["global"], {
+                    "openai": preserved,
+                    "qwen-oauth": canonical,
+                })
+                self.assertEqual(migrated["subscription_profile"]["agentOverrides"]["worker"], {
+                    "zai": preserved,
+                    "qwen-oauth": canonical,
+                })
+                self.assertEqual(legacy, untouched)
+
     def test_migrates_legacy_qwen_portal_disabled_aliases_and_denies_route(self):
         legacy = {
             **CONFIG,

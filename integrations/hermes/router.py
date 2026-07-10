@@ -222,6 +222,15 @@ def _legacy_provider(provider: str, version: str | None) -> str:
     return provider
 
 
+def _remap_selections(selections: dict[str, Any], version: str) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for provider, selection in selections.items():
+        canonical = _legacy_provider(provider, version)
+        if canonical not in result or provider == canonical:
+            result[canonical] = selection
+    return result
+
+
 def _migrate_legacy_config(config: Config) -> Config:
     version = _catalog_version(config)
     if not isinstance(version, str) or not re.match(r"^1\.0(?:\.|$)", version):
@@ -244,12 +253,12 @@ def _migrate_legacy_config(config: Config) -> Config:
     if isinstance(profile, dict):
         values = profile.get("global")
         if isinstance(values, dict):
-            profile["global"] = {_legacy_provider(key, version): value for key, value in values.items()}
+            profile["global"] = _remap_selections(values, version)
         overrides = profile.get("agentOverrides")
         if isinstance(overrides, dict):
             for agent_id, values in overrides.items():
                 if isinstance(values, dict):
-                    overrides[agent_id] = {_legacy_provider(key, version): value for key, value in values.items()}
+                    overrides[agent_id] = _remap_selections(values, version)
     inventory = migrated.get("subscription_inventory")
     if isinstance(inventory, dict):
         accounts = inventory.get("accounts")
