@@ -88,8 +88,8 @@ Hermes provider IDs before returning a route:
 - `zai` -> `zai`
 - `moonshot`, `kimi`, `kimi-coding` -> `kimi-for-coding`
 - `minimax-portal`, `minimax` -> `minimax-oauth`
-- `qwen-portal`, `qwen` -> `qwen-oauth`
-- `qwen-dashscope` -> `alibaba-coding-plan`
+- `qwen-oauth`, `qwen-portal`, `qwen-cli` -> `qwen-oauth`
+- `qwen`, `qwen-dashscope` -> `alibaba-coding-plan` (separate Qwen Cloud/Coding Plan; not Portal)
 
 You can override these defaults with a `hermes_provider_map` object in
 `zeroapi-config.json`.

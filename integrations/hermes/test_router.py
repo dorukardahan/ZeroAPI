@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from router import ZeroAPIRouter, load_config
+from router import HERMES_PROVIDER_MAP, ZeroAPIRouter, load_config
 
 
 CONFIG = {
@@ -133,6 +133,12 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertIsNotNone(route)
         self.assertEqual(route["provider"], "openai-codex")
         self.assertEqual(route["model"], "gpt-5.5")
+
+    def test_keeps_qwen_portal_and_cloud_provider_ids_separate(self):
+        for provider in ("qwen-oauth", "qwen-portal", "qwen-cli"):
+            self.assertEqual(HERMES_PROVIDER_MAP[provider], "qwen-oauth")
+        for provider in ("qwen", "qwen-dashscope"):
+            self.assertEqual(HERMES_PROVIDER_MAP[provider], "alibaba-coding-plan")
 
     def test_routes_high_risk_categorized_messages(self):
         config = {**CONFIG, "high_risk_keywords": ["deploy", "production", "secret", "password"]}
