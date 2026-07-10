@@ -1,3 +1,4 @@
+import copy
 import os
 import tempfile
 import unittest
@@ -164,6 +165,91 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertIn("qwen-oauth", router.config["subscription_profile"]["global"])
         self.assertEqual(router.config["subscription_inventory"]["accounts"]["portal"]["provider"], "qwen-oauth")
         self.assertEqual(legacy["default_model"], "qwen/coder-model")
+
+    def test_migrates_legacy_qwen_portal_disabled_aliases_and_denies_route(self):
+        legacy = {
+            **CONFIG,
+            "subscription_catalog_version": "1.0.0",
+            "default_model": "qwen/coder-model",
+            "disabled_providers": [
+                " ZAI ", None, " qWeN ", "qwen-portal", "moonshot",
+                "QWEN-DASHSCOPE", " qwen-cli ", "qwen-oauth", 17,
+                {"provider": "qwen"}, "zai",
+            ],
+            "models": {
+                "qwen/coder-model": {
+                    "context_window": 1000000, "supports_vision": False,
+                    "speed_tps": 10, "ttft_seconds": 1,
+                    "benchmarks": {"intelligence": 50, "coding": 50},
+                },
+            },
+            "routing_rules": {
+                "code": {"primary": "qwen-dashscope/coder-model", "fallbacks": ["qwen-cli/coder-model"]},
+                "default": {"primary": "qwen-portal/coder-model", "fallbacks": []},
+            },
+            "subscription_profile": {
+                "version": "1.0.0",
+                "global": {"qwen": {"enabled": True, "tierId": "free"}},
+            },
+            "subscription_inventory": {
+                "version": "1.0.0",
+                "accounts": {"portal": {"provider": "qwen-cli", "tierId": "free"}},
+            },
+        }
+        untouched = copy.deepcopy(legacy)
+
+        router = ZeroAPIRouter(legacy)
+
+        self.assertEqual(router.config["disabled_providers"], ["zai", "qwen-oauth", "moonshot"])
+        self.assertIsNone(router.resolve("implement this feature", current_model="qwen/coder-model"))
+        self.assertEqual(legacy, untouched)
+
+    def test_fresh_and_unversioned_qwen_disables_do_not_disable_portal(self):
+        for label, version_fields in (
+            ("fresh", {"subscription_catalog_version": "1.1.0"}),
+            ("unversioned", {
+                "subscription_profile": {"global": {
+                    "qwen": {"enabled": True, "tierId": "free"},
+                    "qwen-oauth": {"enabled": True, "tierId": "free"},
+                }},
+            }),
+        ):
+            with self.subTest(label=label):
+                config = {
+                    **CONFIG,
+                    **version_fields,
+                    "default_model": "qwen-oauth/coder-model",
+                    "disabled_providers": ["qwen"],
+                    "models": {
+                        "qwen/coder-model": {
+                            "context_window": 1000000, "supports_vision": False,
+                            "speed_tps": 10, "ttft_seconds": 1,
+                            "benchmarks": {"intelligence": 49, "coding": 49},
+                        },
+                        "qwen-oauth/coder-model": {
+                            "context_window": 1000000, "supports_vision": False,
+                            "speed_tps": 10, "ttft_seconds": 1,
+                            "benchmarks": {"intelligence": 50, "coding": 50},
+                        },
+                    },
+                    "routing_rules": {
+                        "code": {"primary": "qwen-oauth/coder-model", "fallbacks": ["qwen/coder-model"]},
+                        "default": {"primary": "qwen-oauth/coder-model", "fallbacks": []},
+                    },
+                    "subscription_profile": version_fields.get("subscription_profile", {
+                        "version": version_fields.get("subscription_catalog_version"),
+                        "global": {
+                            "qwen": {"enabled": True, "tierId": "free"},
+                            "qwen-oauth": {"enabled": True, "tierId": "free"},
+                        },
+                    }),
+                }
+                route = ZeroAPIRouter(config).resolve(
+                    "implement this feature", current_model="qwen/coder-model",
+                )
+                assert route is not None
+                self.assertEqual(route["provider"], "qwen-oauth")
+                self.assertEqual(config["disabled_providers"], ["qwen"])
 
     def test_keeps_fresh_qwen_cloud_on_alibaba_coding_plan(self):
         fresh = {**CONFIG, "subscription_catalog_version": "1.1.0"}

@@ -12,7 +12,11 @@ divergences fixed for TS<->Python parity:
 - D5: catalog provider absent from subscription_profile.global is disabled (profile.ts:69)
 - S1: high-risk keywords are diagnostic only and do NOT block routing (CHANGELOG 3.8.21)
 """
+import copy
+import json
+import subprocess
 import unittest
+from pathlib import Path
 
 from router import ZeroAPIRouter
 
@@ -68,6 +72,53 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
+    def test_P1_legacy_qwen_disabled_provider_matches_typescript(self):
+        cfg = _base(
+            {"qwen/coder-model": _m(1000000, False, 10, 1, intelligence=50, coding=50)},
+            {"code": {"primary": "qwen-dashscope/coder-model", "fallbacks": ["qwen-cli/coder-model"]},
+             "default": {"primary": "qwen-portal/coder-model", "fallbacks": []}},
+            subscription_catalog_version="1.0.0", default_model="qwen/coder-model",
+            disabled_providers=[
+                " ZAI ", None, " qWeN ", "qwen-portal", "moonshot", "QWEN-DASHSCOPE",
+                " qwen-cli ", "qwen-oauth", 17, {"provider": "qwen"}, "zai",
+            ],
+            subscription_profile={"version": "1.0.0", "global": {
+                "qwen": {"enabled": True, "tierId": "free"}}},
+            subscription_inventory={"version": "1.0.0", "accounts": {
+                "portal": {"provider": "qwen-cli", "tierId": "free"}}})
+        untouched = copy.deepcopy(cfg)
+        python_router = ZeroAPIRouter(cfg)
+        python_route = python_router.resolve("implement this feature", current_model="qwen-oauth/coder-model")
+
+        repo_root = Path(__file__).resolve().parents[2]
+        tsx = repo_root / "node_modules" / ".bin" / "tsx"
+        script = """
+import { migrateLegacyCatalogConfig } from './plugin/config.ts';
+import { resolveRoutingDecision } from './plugin/decision.ts';
+import { readFileSync } from 'node:fs';
+const input = readFileSync(0, 'utf8');
+const config = migrateLegacyCatalogConfig(JSON.parse(input));
+const decision = resolveRoutingDecision(config, {
+  prompt: 'implement this feature', currentModel: 'qwen-oauth/coder-model', includeDiagnostics: true,
+});
+process.stdout.write(JSON.stringify({
+  disabled: config.disabled_providers,
+  allowed: decision.selectedModel !== null,
+  rejected: decision.subscriptionRejected.includes('qwen-oauth/coder-model'),
+}));
+"""
+        completed = subprocess.run(
+            [str(tsx), "--eval", script], cwd=repo_root, input=json.dumps(cfg), text=True,
+            capture_output=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        typescript = json.loads(completed.stdout)
+
+        self.assertEqual(python_router.config["disabled_providers"], typescript["disabled"])
+        self.assertEqual(python_route is not None, typescript["allowed"])
+        self.assertTrue(typescript["rejected"])
+        self.assertEqual(cfg, untouched)
+
     def test_S1_high_risk_still_routes(self):
         cfg = _base(
             {"zai/glm-5.1": ZAI, "openai-codex/gpt-5.4": OPENAI},

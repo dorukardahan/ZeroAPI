@@ -214,7 +214,7 @@ def _catalog_version(config: Config) -> str:
 
 
 def _legacy_provider(provider: str, version: str) -> str:
-    if re.match(r"^1\.0(?:\.|$)", version) and provider.lower() in LEGACY_QWEN_PORTAL_IDS:
+    if re.match(r"^1\.0(?:\.|$)", version) and provider.strip().lower() in LEGACY_QWEN_PORTAL_IDS:
         return "qwen-oauth"
     return provider
 
@@ -254,6 +254,18 @@ def _migrate_legacy_config(config: Config) -> Config:
             for account in accounts.values():
                 if isinstance(account, dict) and isinstance(account.get("provider"), str):
                     account["provider"] = _legacy_provider(account["provider"], version)
+    disabled = migrated.get("disabled_providers")
+    if isinstance(disabled, list):
+        migrated_disabled: list[str] = []
+        seen_disabled: set[str] = set()
+        for provider in disabled:
+            if not isinstance(provider, str) or not provider.strip():
+                continue
+            canonical = _canonical_provider(_legacy_provider(provider, version).strip().lower())
+            if canonical not in seen_disabled:
+                seen_disabled.add(canonical)
+                migrated_disabled.append(canonical)
+        migrated["disabled_providers"] = migrated_disabled
     return migrated
 
 DEFAULT_RISK_LEVELS: dict[str, str] = {
@@ -317,16 +329,17 @@ def _canonical_provider(provider: str) -> str:
 
 def _disabled_providers(config: Config) -> set[str]:
     disabled: set[str] = set()
+    version = _catalog_version(config)
     configured = config.get("disabled_providers")
     if isinstance(configured, list):
         for provider in configured:
             if isinstance(provider, str) and provider.strip():
-                disabled.add(_canonical_provider(provider.strip()))
+                disabled.add(_canonical_provider(_legacy_provider(provider, version).strip().lower()))
 
     env_value = os.getenv("ZEROAPI_DISABLED_PROVIDERS", "")
     for provider in env_value.split(","):
         if provider.strip():
-            disabled.add(_canonical_provider(provider.strip()))
+            disabled.add(_canonical_provider(_legacy_provider(provider, version).strip().lower()))
 
     return disabled
 
