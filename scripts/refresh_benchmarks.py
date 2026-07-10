@@ -107,6 +107,29 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
     backup_paths: List[Optional[Path]] = []
     replaced = {}
 
+    def cleanup_unhanded_identity(parent: Path, identity: tuple[int, int]) -> None:
+        """Remove matching links in the artifact parent without following symlinks."""
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        directory_fd = os.open(str(parent), flags)
+        try:
+            with os.scandir(directory_fd) as entries:
+                for entry in entries:
+                    try:
+                        current = entry.stat(follow_symlinks=False)
+                    except FileNotFoundError:
+                        continue
+                    if (current.st_dev, current.st_ino) != identity:
+                        continue
+                    try:
+                        # Recheck through the held parent fd immediately before unlink.
+                        current = os.stat(entry.name, dir_fd=directory_fd, follow_symlinks=False)
+                        if (current.st_dev, current.st_ino) == identity:
+                            os.unlink(entry.name, dir_fd=directory_fd)
+                    except FileNotFoundError:
+                        pass
+        finally:
+            os.close(directory_fd)
+
     def create_artifact(path: Path, suffix: str):
         fd, raw_path = tempfile.mkstemp(prefix=f".{path.name}.", suffix=suffix, dir=str(path.parent))
         try:
@@ -116,14 +139,26 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
             owned[artifact_path] = (artifact_stat.st_dev, artifact_stat.st_ino)
             return fd, artifact_path
         except BaseException:
-            # This pathname was created exclusively by the mkstemp call above and
-            # has not been handed off. Clean it here without requiring identity.
+            # Retry once while the exclusive descriptor is still open. Without a
+            # recovered identity, ownership is unknown and deleting any path could
+            # remove a substitute installed by another actor.
+            identity = None
             try:
-                os.close(fd)
+                retry_stat = os.fstat(fd)
+                identity = (retry_stat.st_dev, retry_stat.st_ino)
+            except BaseException:
+                pass
             finally:
                 try:
-                    os.unlink(raw_path)
-                except FileNotFoundError:
+                    os.close(fd)
+                except OSError:
+                    pass
+            if identity is not None:
+                try:
+                    cleanup_unhanded_identity(path.parent, identity)
+                except OSError:
+                    # Preserve the original identity-capture error. Cleanup is
+                    # best-effort under concurrent directory mutation.
                     pass
             raise
 

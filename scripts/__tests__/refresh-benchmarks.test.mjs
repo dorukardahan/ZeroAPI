@@ -326,12 +326,17 @@ plugin.chmod(0o640)
 created = []
 original_mkstemp = module.tempfile.mkstemp
 original_fstat = module.os.fstat
+fstat_calls = 0
 def record_mkstemp(*args, **kwargs):
     fd, name = original_mkstemp(*args, **kwargs)
     created.append((fd, pathlib.Path(name)))
     return fd, name
-def fail_fstat(_fd):
-    raise OSError("injected temp identity capture failure")
+def fail_fstat(fd):
+    global fstat_calls
+    fstat_calls += 1
+    if fstat_calls == 1:
+        raise OSError("injected temp identity capture failure")
+    return original_fstat(fd)
 module.tempfile.mkstemp = record_mkstemp
 module.os.fstat = fail_fstat
 try:
@@ -422,6 +427,151 @@ assert plugin.read_bytes() == b"plugin-original"
 assert (root.stat().st_mode & 0o7777) == 0o600
 assert (plugin.stat().st_mode & 0o7777) == 0o640
 assert {path.name for path in work_dir.iterdir()} == {"root.json", "plugin.json"}
+`, [root]);
+});
+
+test("refresh_benchmarks preserves a substituted temp pathname on identity failure", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-temp-substitution-"));
+  runPython(`
+import errno
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "root.json"
+plugin = work_dir / "plugin.json"
+root.write_bytes(b"root-original")
+plugin.write_bytes(b"plugin-original")
+root.chmod(0o600)
+plugin.chmod(0o640)
+created = []
+renamed_owned = None
+original_mkstemp = module.tempfile.mkstemp
+original_fstat = module.os.fstat
+def record_mkstemp(*args, **kwargs):
+    fd, name = original_mkstemp(*args, **kwargs)
+    created.append((fd, pathlib.Path(name)))
+    return fd, name
+def substitute_then_fail(fd):
+    global renamed_owned
+    artifact_path = created[-1][1]
+    renamed_owned = artifact_path.with_name("renamed-owned-temp")
+    artifact_path.rename(renamed_owned)
+    artifact_path.write_bytes(b"foreign-temp-replacement")
+    artifact_path.chmod(0o620)
+    module.os.fstat = original_fstat
+    raise OSError("injected substituted temp identity capture failure")
+module.tempfile.mkstemp = record_mkstemp
+module.os.fstat = substitute_then_fail
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "substituted temp identity capture" in str(exc)
+    else:
+        raise AssertionError("substituted temp identity failure should surface")
+finally:
+    module.os.fstat = original_fstat
+    module.tempfile.mkstemp = original_mkstemp
+assert len(created) == 1
+fd, artifact_path = created[0]
+try:
+    original_fstat(fd)
+except OSError as exc:
+    assert exc.errno == errno.EBADF
+else:
+    raise AssertionError(f"artifact fd {fd} leaked")
+assert artifact_path.read_bytes() == b"foreign-temp-replacement"
+assert (artifact_path.stat().st_mode & 0o7777) == 0o620
+assert not renamed_owned.exists()
+assert root.read_bytes() == b"root-original"
+assert plugin.read_bytes() == b"plugin-original"
+assert (root.stat().st_mode & 0o7777) == 0o600
+assert (plugin.stat().st_mode & 0o7777) == 0o640
+assert {path.name for path in work_dir.iterdir()} == {
+    "root.json", "plugin.json", artifact_path.name
+}
+`, [root]);
+});
+
+test("refresh_benchmarks preserves a substituted backup pathname on identity failure", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-backup-substitution-"));
+  runPython(`
+import errno
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "root.json"
+plugin = work_dir / "plugin.json"
+root.write_bytes(b"root-original")
+plugin.write_bytes(b"plugin-original")
+root.chmod(0o600)
+plugin.chmod(0o640)
+created = []
+fstat_calls = 0
+renamed_owned = None
+original_mkstemp = module.tempfile.mkstemp
+original_fstat = module.os.fstat
+def record_mkstemp(*args, **kwargs):
+    fd, name = original_mkstemp(*args, **kwargs)
+    created.append((fd, pathlib.Path(name)))
+    return fd, name
+def substitute_backup_then_fail(fd):
+    global fstat_calls, renamed_owned
+    fstat_calls += 1
+    if fstat_calls == 2:
+        artifact_path = created[-1][1]
+        renamed_owned = artifact_path.with_name("renamed-owned-backup")
+        artifact_path.rename(renamed_owned)
+        artifact_path.write_bytes(b"foreign-backup-replacement")
+        artifact_path.chmod(0o604)
+        raise OSError("injected substituted backup identity capture failure")
+    return original_fstat(fd)
+module.tempfile.mkstemp = record_mkstemp
+module.os.fstat = substitute_backup_then_fail
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "substituted backup identity capture" in str(exc)
+    else:
+        raise AssertionError("substituted backup identity failure should surface")
+finally:
+    module.os.fstat = original_fstat
+    module.tempfile.mkstemp = original_mkstemp
+assert len(created) == 2
+assert created[0][1].name.endswith(".tmp")
+assert created[1][1].name.endswith(".bak")
+for fd, _artifact_path in created:
+    try:
+        original_fstat(fd)
+    except OSError as exc:
+        assert exc.errno == errno.EBADF
+    else:
+        raise AssertionError(f"artifact fd {fd} leaked")
+backup_path = created[1][1]
+assert backup_path.read_bytes() == b"foreign-backup-replacement"
+assert (backup_path.stat().st_mode & 0o7777) == 0o604
+assert not renamed_owned.exists()
+assert not created[0][1].exists()
+assert root.read_bytes() == b"root-original"
+assert plugin.read_bytes() == b"plugin-original"
+assert (root.stat().st_mode & 0o7777) == 0o600
+assert (plugin.stat().st_mode & 0o7777) == 0o640
+assert {path.name for path in work_dir.iterdir()} == {
+    "root.json", "plugin.json", backup_path.name
+}
 `, [root]);
 });
 
