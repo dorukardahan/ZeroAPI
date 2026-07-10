@@ -24,6 +24,8 @@ const PREFLIGHT_INPUTS = [
   "README.md",
   "scripts/stage_clawhub_plugin.mjs",
   "scripts/refresh_benchmarks.py",
+  "benchmarks.json",
+  "plugin/benchmarks.json",
 ];
 
 function runPreflight(cwd) {
@@ -67,6 +69,19 @@ test("release_preflight passes on a minimal aligned fixture (no full-repo copy)"
     // Prove the fixture is minimal: none of the heavy dirs exist.
     assert.equal(existsSync(join(tmp, "node_modules")), false);
     assert.equal(existsSync(join(tmp, ".git")), false);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("release_preflight catches benchmark snapshot drift", () => {
+  const tmp = buildAlignedFixture();
+  try {
+    writeFileSync(join(tmp, "plugin", "benchmarks.json"), "{}\n");
+    assert.throws(
+      () => runPreflight(tmp),
+      (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes("benchmark snapshots must be byte-identical"),
+    );
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -142,4 +142,52 @@ assert not list(work_dir.glob(".benchmarks.json.*.tmp"))
 module.write_json_atomic(target, {"ok": True}, 2)
 assert '"ok": true' in target.read_text(encoding="utf-8")
 `, [root]);
+});
+
+test("refresh_benchmarks writes one identical payload to root and plugin snapshots", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-sync-"));
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "benchmarks.json"
+plugin = work_dir / "plugin" / "benchmarks.json"
+module.write_snapshot_pair(root, plugin, {"models": [{"slug": "x"}]}, 2)
+assert root.read_bytes() == plugin.read_bytes()
+assert not list(work_dir.rglob("*.tmp"))
+`, [root]);
+});
+
+test("offline reannotation remaps the committed snapshot without an API key", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-reannotate-"));
+  const output = join(root, "benchmarks.json");
+  const plugin = join(root, "plugin-benchmarks.json");
+  const input = new URL("../../benchmarks.json", import.meta.url).pathname;
+  const result = spawnSync("python3", [scriptPath.pathname, "--reannotate", "--input", input, "--output", output, "--plugin-output", plugin], {
+    cwd: repoRoot, encoding: "utf-8", env: { ...process.env, AA_API_KEY: "", AA_API_KEY_FILE: "" },
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.deepEqual(readFileSync(output), readFileSync(plugin));
+  const snapshot = JSON.parse(readFileSync(output, "utf8"));
+  const mapped = Object.fromEntries(snapshot.models.map((model) => [model.slug, model.openclaw_model]));
+  const providers = Object.fromEntries(snapshot.models.map((model) => [model.slug, model.openclaw_provider]));
+  assert.equal(mapped["glm-5-2"], "glm-5.2");
+  assert.equal(mapped["kimi-k2-7-code"], "kimi-k2.7-code");
+  assert.equal(mapped["minimax-m3"], "MiniMax-M3");
+  assert.equal(mapped["qwen3-7-plus"], "qwen3.7-plus");
+  assert.equal(mapped["qwen3-7-max"], "qwen3.7-max");
+  assert.equal(providers["qwen3-7-plus"], "qwen");
+  assert.equal(mapped["grok-build-0-1-06-16"], "grok-build-0.1");
+  assert.equal(providers["grok-build-0-1-06-16"], "xai-oauth");
+  const families = Object.fromEntries(snapshot.policy_families.families.map((family) => [family.id, family]));
+  assert.deepEqual(families["openai-gpt56-routes"].route_model_ids, [
+    "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna",
+  ]);
+  assert.equal(families["openai-gpt56-routes"].benchmark_proxy, "gpt-5.5");
+  assert.equal(families["qwen-portal-routes"].provider, "qwen-oauth");
 });

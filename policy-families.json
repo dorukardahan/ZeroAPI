@@ -1,102 +1,74 @@
 {
-  "version": "1.0.0",
-  "description": "Conservative routeable model families that ZeroAPI currently documents as practical subscription-first policy targets.",
+  "version": "1.1.0",
+  "description": "Benchmark mappings and separately documented current subscription routes. A benchmark row does not by itself imply routeability.",
   "families": [
+    {
+      "id": "openai-gpt56-routes",
+      "provider": "openai-codex",
+      "label": "OpenAI GPT-5.6 subscription routes",
+      "openclaw_model_ids": [],
+      "benchmark_slugs": [],
+      "route_model_ids": ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"],
+      "benchmark_proxy": "gpt-5.5",
+      "notes": "GPT-5.6 Sol, Terra, and Luna are routeable preview tiers but have no direct Artificial Analysis rows in the 2026-07-05 snapshot. Starter metrics explicitly proxy GPT-5.5."
+    },
     {
       "id": "openai-gpt55-core",
       "provider": "openai-codex",
-      "label": "OpenAI GPT-5.5 core family",
-      "openclaw_model_ids": [
-        "gpt-5.5",
-        "gpt-5.4",
-        "gpt-5.4-mini",
-        "gpt-5.3-codex"
-      ],
-      "benchmark_slugs": [
-        "gpt-5-5",
-        "gpt-5-4",
-        "gpt-5-4-mini",
-        "gpt-5-3-codex"
-      ],
-      "notes": "OpenClaw v2026.4.23 defaults OpenAI and OpenAI Codex to gpt-5.5. gpt-5.5-pro is provider-supported as forward-compatible metadata, but Artificial Analysis does not publish a separate benchmark row yet; use gpt-5.5 as the proxy if a custom policy enables gpt-5.5-pro."
+      "label": "OpenAI GPT-5.5 compatibility family",
+      "openclaw_model_ids": ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"],
+      "benchmark_slugs": ["gpt-5-5", "gpt-5-4", "gpt-5-4-mini", "gpt-5-3-codex"]
     },
     {
       "id": "zai-glm-core",
       "provider": "zai",
       "label": "Z AI GLM core family",
-      "openclaw_model_ids": [
-        "glm-5.1",
-        "glm-5",
-        "glm-5-turbo",
-        "glm-4.7-flash"
-      ],
-      "benchmark_slugs": [
-        "glm-5-1",
-        "glm-5",
-        "glm-5-turbo",
-        "glm-4-7-flash"
-      ]
+      "openclaw_model_ids": ["glm-5.2", "glm-5.1", "glm-5", "glm-5-turbo", "glm-4.7-flash"],
+      "benchmark_slugs": ["glm-5-2", "glm-5-1", "glm-5", "glm-5-turbo", "glm-4-7-flash"]
     },
     {
       "id": "kimi-k2-core",
       "provider": "moonshot",
-      "label": "Kimi K2 core family",
-      "openclaw_model_ids": [
-        "kimi-k2.6",
-        "kimi-k2.5",
-        "kimi-k2-thinking",
-        "kimi-k2-thinking-turbo",
-        "kimi-k2-turbo"
-      ],
-      "benchmark_slugs": [
-        "kimi-k2-6",
-        "kimi-k2-5",
-        "kimi-k2-thinking",
-        "kimi-k2-thinking-turbo",
-        "kimi-k2-turbo"
-      ],
-      "notes": "OpenClaw v2026.4.20 defaults Moonshot to kimi-k2.6. Starter configs use kimi-k2.5 benchmark values as a transparent proxy until Artificial Analysis publishes a matching kimi-k2-6 row."
+      "label": "Moonshot Kimi K2 family",
+      "openclaw_model_ids": ["kimi-k2.7-code", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-thinking-turbo", "kimi-k2-turbo"],
+      "benchmark_slugs": ["kimi-k2-7-code", "kimi-k2-6", "kimi-k2-5", "kimi-k2-thinking", "kimi-k2-thinking-turbo", "kimi-k2-turbo"],
+      "notes": "Kimi K2.6 remains the general/default route. K2.7 Code is code-focused and always-thinking."
     },
     {
-      "id": "minimax-m27-core",
+      "id": "minimax-core",
       "provider": "minimax-portal",
-      "label": "MiniMax M2.7 core family",
-      "openclaw_model_ids": [
-        "MiniMax-M2.7",
-        "MiniMax-M2.7-highspeed"
-      ],
-      "benchmark_slugs": [
-        "minimax-m2-7"
-      ],
-      "notes": "OpenClaw exposes MiniMax subscription routing through minimax-portal. The benchmark snapshot currently has a direct row only for MiniMax-M2.7. Starter metadata keeps the core M2.7 route text-only unless the runtime config explicitly marks an image-capable MiniMax model."
+      "label": "MiniMax hosted family",
+      "openclaw_model_ids": ["MiniMax-M3", "MiniMax-M2.7"],
+      "benchmark_slugs": ["minimax-m3", "minimax-m2-7"],
+      "notes": "MiniMax-M3 is the current hosted default; M2.7 remains a compatibility fallback."
     },
     {
-      "id": "qwen-portal-coder-core",
-      "provider": "qwen-portal",
-      "label": "Qwen Portal coder routeable family",
-      "openclaw_model_ids": [
-        "coder-model"
-      ],
-      "benchmark_slugs": [
-        "qwen3-6-plus"
-      ],
-      "notes": "OpenClaw currently exposes Qwen through qwen-portal/coder-model. Artificial Analysis tracks named Qwen releases, so ZeroAPI uses Qwen3.6 Plus as the closest benchmark proxy for this portal route. Qwen VL or Omni routes are not auto-added to starter configs unless a user explicitly configures an image-capable runtime model."
+      "id": "qwen-cloud-reference",
+      "provider": "qwen",
+      "label": "Qwen Cloud benchmark reference",
+      "openclaw_model_ids": ["qwen3.7-plus", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
+      "benchmark_slugs": ["qwen3-7-plus", "qwen3-7-max", "qwen3-6-plus", "qwen3-5-plus"],
+      "notes": "These rows describe Qwen Cloud/Coding Plan or Standard endpoints. They are not claims that Qwen Portal qwen-oauth can route Qwen 3.7."
+    },
+    {
+      "id": "qwen-portal-routes",
+      "provider": "qwen-oauth",
+      "label": "Qwen Portal static route catalog",
+      "openclaw_model_ids": [],
+      "benchmark_slugs": [],
+      "route_model_ids": ["qwen3.5-plus", "qwen3.6-plus", "qwen3-max-2026-01-23", "qwen3-coder-next", "qwen3-coder-plus", "MiniMax-M2.5", "glm-5", "glm-4.7", "kimi-k2.5"],
+      "benchmark_proxy": "qwen/qwen3.6-plus",
+      "notes": "Canonical provider qwen-oauth; qwen-portal and qwen-cli are legacy aliases. The documented Portal static catalog does not include Qwen 3.7."
     },
     {
       "id": "xai-grok-core",
       "provider": "xai-oauth",
       "label": "xAI Grok OAuth routeable family",
-      "openclaw_model_ids": [
-        "grok-4.3",
-        "grok-4.20-0309-reasoning",
-        "grok-4.20-0309-non-reasoning"
-      ],
-      "benchmark_slugs": [
-        "grok-4-3",
-        "grok-4-20",
-        "grok-4-20-0309-non-reasoning"
-      ],
-      "notes": "OpenClaw 2026.5.20+ exposes remote-friendly SuperGrok device-code OAuth through the native xai provider, older 2026.5.18+ installs expose browser OAuth, and Hermes legacy configs use xai-oauth. Treat xai-oauth benchmark rows as SuperGrok OAuth proxies for native xai routes; plain XAI_API_KEY billing is not automatically subscription-covered."
+      "openclaw_model_ids": ["grok-build-0.1", "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
+      "benchmark_slugs": ["grok-build-0-1-06-16", "grok-4-3", "grok-4-20", "grok-4-20-0309-non-reasoning"],
+      "route_model_ids": ["grok-4.5"],
+      "benchmark_proxy": "grok-4.3",
+      "notes": "Grok 4.5 is routeable but has no direct row in the snapshot, so starter metrics use the conservative Grok 4.3 proxy. Grok Build 0.1 has a direct row."
     }
   ]
 }
