@@ -13,7 +13,7 @@
 
 ### Fixed
 - Prevent excluded or unknown inventory accounts from contributing capacity to active subscription routes, and prevent active accounts from admitting excluded model-provider surfaces that share a runtime provider id.
-- Preserve legacy 1.0 Qwen Portal disable intent by canonically migrating and deduplicating `disabled_providers`, without conflating fresh 1.1 Qwen Cloud disables.
+- Preserve legacy 1.0 Qwen Portal disable intent across file and environment provider lists by canonically migrating and deduplicating `disabled_providers`, without conflating fresh 1.1 Qwen Cloud disables.
 - Harden benchmark snapshot writes against duplicate output paths, final-component symlinks, predictable artifact collisions, permission drift, preparation leaks, and ownership-unsafe rollback; document the single-writer trusted-directory boundary.
 - Keep Qwen Portal rerun defaults and model references intact across legacy onboarding regeneration without rewriting user config files.
 - Align Hermes doctor/runtime provider mapping with the current OpenClaw model pool, including version-aware legacy Qwen Portal migration and fresh Qwen Cloud mapping to `alibaba-coding-plan`.

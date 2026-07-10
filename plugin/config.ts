@@ -56,11 +56,15 @@ function remapProviderIds(providers: string[] | undefined, catalogVersion: strin
   return result;
 }
 
-/** Return a migrated in-memory copy; never writes or mutates the user's file. */
-export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig {
-  const catalogVersion = config.subscription_catalog_version
+function getConfigCatalogVersion(config: ZeroAPIConfig): string | undefined {
+  return config.subscription_catalog_version
     ?? config.subscription_profile?.version
     ?? config.subscription_inventory?.version;
+}
+
+/** Return a migrated in-memory copy; never writes or mutates the user's file. */
+export function migrateLegacyCatalogConfig(config: ZeroAPIConfig): ZeroAPIConfig {
+  const catalogVersion = getConfigCatalogVersion(config);
   if (!isLegacySubscriptionCatalogVersion(catalogVersion)) return config;
 
   const models = Object.fromEntries(Object.entries(config.models).map(([key, value]) => [
@@ -198,10 +202,10 @@ export function loadConfig(openclawDir: string): ZeroAPIConfig | null {
         migrated.channel_advisories_enabled ??
         true,
       workspace_hints: migrated.workspace_hints ?? {},
-      disabled_providers: [
-        ...((migrated.disabled_providers ?? []).filter((provider: unknown): provider is string => typeof provider === "string")),
-        ...parseDisabledProvidersEnv(),
-      ],
+      disabled_providers: remapProviderIds(
+        [...(parsed.disabled_providers ?? []), ...parseDisabledProvidersEnv()],
+        getConfigCatalogVersion(parsed),
+      ) ?? [],
     };
     return cachedConfig;
   } catch {
