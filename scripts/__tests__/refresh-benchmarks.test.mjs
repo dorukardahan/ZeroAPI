@@ -304,6 +304,127 @@ assert (new_target.stat().st_mode & 0o7777) == 0o600
 `, [root]);
 });
 
+test("refresh_benchmarks cleans a temp artifact when identity capture fails", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-temp-identity-"));
+  runPython(`
+import errno
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "root.json"
+plugin = work_dir / "plugin.json"
+root.write_bytes(b"root-original")
+plugin.write_bytes(b"plugin-original")
+root.chmod(0o600)
+plugin.chmod(0o640)
+created = []
+original_mkstemp = module.tempfile.mkstemp
+original_fstat = module.os.fstat
+def record_mkstemp(*args, **kwargs):
+    fd, name = original_mkstemp(*args, **kwargs)
+    created.append((fd, pathlib.Path(name)))
+    return fd, name
+def fail_fstat(_fd):
+    raise OSError("injected temp identity capture failure")
+module.tempfile.mkstemp = record_mkstemp
+module.os.fstat = fail_fstat
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "temp identity capture" in str(exc)
+    else:
+        raise AssertionError("temp identity capture failure should surface")
+finally:
+    module.os.fstat = original_fstat
+    module.tempfile.mkstemp = original_mkstemp
+assert len(created) == 1
+for fd, artifact_path in created:
+    try:
+        original_fstat(fd)
+    except OSError as exc:
+        assert exc.errno == errno.EBADF
+    else:
+        raise AssertionError(f"artifact fd {fd} leaked")
+    assert not artifact_path.exists()
+assert root.read_bytes() == b"root-original"
+assert plugin.read_bytes() == b"plugin-original"
+assert (root.stat().st_mode & 0o7777) == 0o600
+assert (plugin.stat().st_mode & 0o7777) == 0o640
+assert {path.name for path in work_dir.iterdir()} == {"root.json", "plugin.json"}
+`, [root]);
+});
+
+test("refresh_benchmarks cleans temp and backup artifacts when backup identity capture fails", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-backup-identity-"));
+  runPython(`
+import errno
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = work_dir / "root.json"
+plugin = work_dir / "plugin.json"
+root.write_bytes(b"root-original")
+plugin.write_bytes(b"plugin-original")
+root.chmod(0o600)
+plugin.chmod(0o640)
+created = []
+fstat_calls = 0
+original_mkstemp = module.tempfile.mkstemp
+original_fstat = module.os.fstat
+def record_mkstemp(*args, **kwargs):
+    fd, name = original_mkstemp(*args, **kwargs)
+    created.append((fd, pathlib.Path(name)))
+    return fd, name
+def fail_backup_fstat(fd):
+    global fstat_calls
+    fstat_calls += 1
+    if fstat_calls == 2:
+        raise OSError("injected backup identity capture failure")
+    return original_fstat(fd)
+module.tempfile.mkstemp = record_mkstemp
+module.os.fstat = fail_backup_fstat
+try:
+    try:
+        module.write_snapshot_pair(root, plugin, {"new": True}, 2)
+    except OSError as exc:
+        assert "backup identity capture" in str(exc)
+    else:
+        raise AssertionError("backup identity capture failure should surface")
+finally:
+    module.os.fstat = original_fstat
+    module.tempfile.mkstemp = original_mkstemp
+assert len(created) == 2
+assert created[0][1].name.endswith(".tmp")
+assert created[1][1].name.endswith(".bak")
+for fd, artifact_path in created:
+    try:
+        original_fstat(fd)
+    except OSError as exc:
+        assert exc.errno == errno.EBADF
+    else:
+        raise AssertionError(f"artifact fd {fd} leaked")
+    assert not artifact_path.exists()
+assert root.read_bytes() == b"root-original"
+assert plugin.read_bytes() == b"plugin-original"
+assert (root.stat().st_mode & 0o7777) == 0o600
+assert (plugin.stat().st_mode & 0o7777) == 0o640
+assert {path.name for path in work_dir.iterdir()} == {"root.json", "plugin.json"}
+`, [root]);
+});
+
 test("refresh_benchmarks cleans owned artifacts after preparation failures", () => {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-prepare-"));
   runPython(`

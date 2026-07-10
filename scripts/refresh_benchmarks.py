@@ -109,12 +109,23 @@ def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, A
 
     def create_artifact(path: Path, suffix: str):
         fd, raw_path = tempfile.mkstemp(prefix=f".{path.name}.", suffix=suffix, dir=str(path.parent))
-        artifact_path = Path(raw_path)
-        # Register ownership before any payload write, fsync, or metadata copy.
-        owned[artifact_path] = None
-        artifact_stat = os.fstat(fd)
-        owned[artifact_path] = (artifact_stat.st_dev, artifact_stat.st_ino)
-        return fd, artifact_path
+        try:
+            artifact_path = Path(raw_path)
+            artifact_stat = os.fstat(fd)
+            # Hand off to inode-gated outer cleanup only after identity capture.
+            owned[artifact_path] = (artifact_stat.st_dev, artifact_stat.st_ino)
+            return fd, artifact_path
+        except BaseException:
+            # This pathname was created exclusively by the mkstemp call above and
+            # has not been handed off. Clean it here without requiring identity.
+            try:
+                os.close(fd)
+            finally:
+                try:
+                    os.unlink(raw_path)
+                except FileNotFoundError:
+                    pass
+            raise
 
     def assert_owned(path: Path) -> None:
         identity = owned.get(path)
