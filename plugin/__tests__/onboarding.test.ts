@@ -58,7 +58,57 @@ describe("buildStarterConfig", () => {
 
     expect(Object.keys(config.models)).toEqual(["moonshot/kimi-k2.7-code", "moonshot/kimi-k2.6"]);
     expect(config.models["moonshot/kimi-k2.6"]?.context_window).toBe(262144);
+    expect(config.default_model).toBe("moonshot/kimi-k2.6");
     expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+    expect(config.routing_rules.default.fallbacks).toEqual(["moonshot/kimi-k2.7-code"]);
+    expect(config.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+    expect(config.routing_rules.code.fallbacks).toEqual(["moonshot/kimi-k2.6"]);
+  });
+
+  it("uses the Kimi general default for Moonshot inventory-only starters and reruns", () => {
+    const config = buildStarterConfig({
+      providers: [],
+      inventoryAccounts: [{
+        accountId: "moonshot-main",
+        providerId: "moonshot",
+        tierId: "moderato",
+        authProfile: "moonshot:main",
+        usagePriority: 2,
+        intendedUse: ["code", "default"],
+      }],
+    });
+
+    expect(config.subscription_profile).toBeUndefined();
+    expect(config.subscription_inventory?.accounts["moonshot-main"]).toMatchObject({
+      provider: "moonshot",
+      tierId: "moderato",
+      authProfile: "moonshot:main",
+      usagePriority: 2,
+      intendedUse: ["code", "default"],
+    });
+    expect(config.default_model).toBe("moonshot/kimi-k2.6");
+    expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+    expect(config.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+
+    const regenerated = buildStarterConfig(deriveStarterDefaults(config));
+    expect(regenerated.default_model).toBe("moonshot/kimi-k2.6");
+    expect(regenerated.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
+    expect(regenerated.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+    expect(regenerated.subscription_inventory).toEqual(config.subscription_inventory);
+  });
+
+  it("does not force Kimi over an unrelated subscription-weighted default winner", () => {
+    const config = buildStarterConfig({
+      providers: [
+        { providerId: "openai-codex", tierId: "plus" },
+        { providerId: "moonshot", tierId: "moderato" },
+      ],
+    });
+
+    expect(config.default_model).toBe("openai/gpt-5.6-sol");
+    expect(config.routing_rules.default.primary).toBe("openai/gpt-5.6-sol");
+    expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
+    expect(new Set(config.routing_rules.default.fallbacks).size).toBe(config.routing_rules.default.fallbacks.length);
   });
 
   it("adds MiniMax M3 and keeps M2.7 text-only as a fallback", () => {

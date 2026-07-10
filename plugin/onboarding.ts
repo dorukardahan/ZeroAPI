@@ -342,16 +342,22 @@ function sortModelsForCategory(category: TaskCategory, models: Record<string, Mo
   });
 }
 
+function preferKimiGeneralDefault(candidates: string[]): string[] {
+  const codeModel = "moonshot/kimi-k2.7-code";
+  const generalModel = "moonshot/kimi-k2.6";
+  if (candidates[0] !== codeModel || !candidates.includes(generalModel)) {
+    return candidates;
+  }
+  return [generalModel, ...candidates.filter((candidate) => candidate !== generalModel)];
+}
+
 function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<string, RoutingRule> {
   const categories: TaskCategory[] = ["code", "research", "orchestration", "math", "fast", "default"];
   const rules: Record<string, RoutingRule> = {};
 
   for (const category of categories) {
-    const ranked = sortModelsForCategory(category, models);
-    if (category === "default" && ranked[0] === "moonshot/kimi-k2.7-code" && models["moonshot/kimi-k2.6"]) {
-      ranked.splice(ranked.indexOf("moonshot/kimi-k2.6"), 1);
-      ranked.unshift("moonshot/kimi-k2.6");
-    }
+    const scored = sortModelsForCategory(category, models);
+    const ranked = category === "default" ? preferKimiGeneralDefault(scored) : scored;
     rules[category] = {
       primary: ranked[0],
       fallbacks: ranked.slice(1),
@@ -540,7 +546,7 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
     "balanced",
     options.routingModifier,
   );
-  const defaultModel = weightedDefaultCandidates[0] ?? routingRules.default.primary;
+  const defaultModel = preferKimiGeneralDefault(weightedDefaultCandidates)[0] ?? routingRules.default.primary;
 
   return {
     version: loadZeroAPIVersion(),
