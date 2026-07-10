@@ -31,6 +31,18 @@ function isActiveProviderRoute(
   return catalog?.status === "active";
 }
 
+function inventoryOwnsProvider(
+  inventory: SubscriptionInventory | undefined,
+  providerId: string,
+): boolean {
+  const canonicalProviderId = normalizeOpenClawProviderId(providerId);
+  return Object.values(inventory?.accounts ?? {}).some((account) => {
+    const accountCatalog = getProviderCatalogEntry(account.provider);
+    return isActiveProviderRoute(accountCatalog) &&
+      accountCatalog.openclawProviderId === canonicalProviderId;
+  });
+}
+
 function disabledProviderCapacity(
   providerId: string,
   source: ResolvedProviderCapacity["source"],
@@ -169,15 +181,11 @@ export function resolveProviderCapacity(params: {
   const { profile, inventory, agentId, providerId, category } = params;
   const requestedCatalog = getProviderCatalogEntry(providerId);
   if (requestedCatalog && !isActiveProviderRoute(requestedCatalog)) {
-    return disabledProviderCapacity(providerId, inventory ? "inventory" : "profile");
+    const source = inventoryOwnsProvider(inventory, providerId) ? "inventory" : "profile";
+    return disabledProviderCapacity(providerId, source);
   }
 
-  const canonicalProviderId = requestedCatalog?.openclawProviderId ?? normalizeOpenClawProviderId(providerId);
-  const inventoryConfiguredForProvider = Object.values(inventory?.accounts ?? {}).some((account) => {
-    const accountCatalog = getProviderCatalogEntry(account.provider);
-    return isActiveProviderRoute(accountCatalog) &&
-      accountCatalog.openclawProviderId === canonicalProviderId;
-  });
+  const inventoryConfiguredForProvider = inventoryOwnsProvider(inventory, providerId);
 
   if (inventoryConfiguredForProvider) {
     const accounts = resolveInventoryAccounts({ inventory, providerId, category });

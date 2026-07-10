@@ -245,19 +245,74 @@ describe("subscription inventory", () => {
     })).toBe(true);
   });
 
-  it("does not let active xai inventory enable or weight the excluded xai-api model route", () => {
-    const inventory: SubscriptionInventory = {
-      version: "1.0.0",
-      accounts: {
-        "xai-supergrok": {
-          provider: "xai",
-          tierId: "supergrok",
-          authProfile: "xai:supergrok",
-          usagePriority: 3,
+  it.each<{
+    name: string;
+    inventory: SubscriptionInventory | undefined;
+    source: "inventory" | "profile";
+  }>([
+    {
+      name: "no inventory",
+      inventory: undefined,
+      source: "profile" as const,
+    },
+    {
+      name: "unrelated active inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "zai-max": {
+            provider: "zai",
+            tierId: "max",
+            authProfile: "zai:max",
+          },
         },
-      },
-    };
-
+      } as SubscriptionInventory,
+      source: "profile" as const,
+    },
+    {
+      name: "matching-runtime active inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "xai-supergrok": {
+            provider: "xai",
+            tierId: "supergrok",
+            authProfile: "xai:supergrok",
+            usagePriority: 3,
+          },
+        },
+      } as SubscriptionInventory,
+      source: "inventory" as const,
+    },
+    {
+      name: "excluded matching-runtime inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "xai-paid-api": {
+            provider: "xai-api",
+            tierId: "supergrok",
+            authProfile: "xai:paid-api",
+          },
+        },
+      } as SubscriptionInventory,
+      source: "profile" as const,
+    },
+    {
+      name: "unknown inventory",
+      inventory: {
+        version: "1.0.0",
+        accounts: {
+          "future-xai-route": {
+            provider: "future-xai-api",
+            tierId: "supergrok",
+            authProfile: "xai:future",
+          },
+        },
+      } as SubscriptionInventory,
+      source: "profile" as const,
+    },
+  ])("keeps excluded xai-api disabled with $name provenance", ({ inventory, source }) => {
     const resolved = resolveProviderCapacity({
       profile: undefined,
       inventory,
@@ -272,6 +327,7 @@ describe("subscription inventory", () => {
       agentId: undefined,
       modelKey: "xai-api/grok-4.5",
     })).toBe(false);
+    expect(resolved?.source).toBe(source);
     expect(resolved?.enabled).toBe(false);
     expect(resolved?.routingWeight).toBe(0);
     expect(resolved?.accountCount).toBe(0);
