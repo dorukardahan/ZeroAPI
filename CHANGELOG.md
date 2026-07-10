@@ -12,6 +12,7 @@
 - Align current OpenClaw auth guidance with `openai`, `minimax-global-oauth`, `qwen-oauth`, and xAI provider-method OAuth; retain Hermes `xai-oauth` guidance only in Hermes-labeled paths.
 
 ### Fixed
+- Require an active subscription-catalog entry before Hermes profile or inventory data can grant routing capacity, preventing fresh Qwen Cloud accounts from auto-routing through `alibaba-coding-plan` while preserving legacy Qwen Portal migration and explicit no-pool provider mapping.
 - Make the TypeScript and Hermes config loaders require present profile `global` and inventory `accounts` members, validate every global/override selection payload and account/provider container, fail closed without partial legacy loads, continue to later valid Hermes candidates, and keep programmer exceptions outside the narrow I/O/JSON catch boundary.
 - Align Moonshot-only starter `default_model` selection with the current OpenClaw Kimi K2.6 general/default route while retaining K2.7 Code for code routing and preserving unrelated subscription-weighted winners.
 - Preserve non-Qwen runtime route ids byte-for-byte during legacy 1.0 structural migration while continuing to migrate Qwen Portal aliases and normalize disabled-provider policy ids.

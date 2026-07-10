@@ -21,7 +21,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from router import ZeroAPIRouter, _disabled_provider_list, _provider_disabled, load_config
+from router import ZeroAPIRouter, _disabled_provider_list, _provider_disabled, _resolve_capacity, load_config
 
 
 def _m(ctx, vision, tps, ttft, **bm):
@@ -156,6 +156,7 @@ class HermesParityTest(unittest.TestCase):
         script = """
 import { loadConfig } from './plugin/config.ts';
 import { resolveRoutingDecision } from './plugin/decision.ts';
+import { resolveProviderCapacity } from './plugin/inventory.ts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 const fixtureDir = process.env.ZEROAPI_PARITY_FIXTURE_DIR;
@@ -166,6 +167,10 @@ const config = loadConfig(fixtureDir);
 if (!config) throw new Error('loadConfig rejected parity fixture');
 const decision = resolveRoutingDecision(config, {
   prompt: 'implement this feature', currentModel: 'openai/current-model', includeDiagnostics: true,
+});
+const qwenCapacity = resolveProviderCapacity({
+  profile: config.subscription_profile, inventory: config.subscription_inventory,
+  agentId: undefined, providerId: 'qwen', category: 'code',
 });
 process.stdout.write(JSON.stringify({
   defaultModel: config.default_model,
@@ -180,6 +185,8 @@ process.stdout.write(JSON.stringify({
   allowed: decision.selectedModel !== null,
   selectedModel: decision.selectedModel,
   rejected: decision.subscriptionRejected.includes('qwen-oauth/coder-model'),
+  qwenCloudRejected: decision.subscriptionRejected.includes('qwen/cloud-model'),
+  qwenCapacity,
   subscriptionRejected: decision.subscriptionRejected,
   weightedCandidates: decision.weightedCandidates,
   fileUnchanged: readFileSync(path, 'utf8') === before,
@@ -462,6 +469,44 @@ process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unc
                 "moonshot": {"enabled": True, "tierId": "moderato"}}})
         route = ZeroAPIRouter(cfg).resolve("quick format this list", current_model="zai/glm-5.1")
         self.assertIsNone(route, "fast task must drop a model with no measured TTFT")
+
+    def test_fresh_qwen_cloud_inventory_rejection_matches_typescript_without_mutation(self):
+        cfg = _base(
+            {"qwen/cloud-model": R_XAI, "zai/glm-5.1": R_ZAI, "openai/current-model": R_OPENAI},
+            {"code": {"primary": "qwen/cloud-model", "fallbacks": ["zai/glm-5.1"]},
+             "default": {"primary": "qwen/cloud-model", "fallbacks": ["zai/glm-5.1"]}},
+            subscription_catalog_version="1.1.0", default_model="openai/current-model",
+            subscription_profile={"version": "1.1.0", "global": {}},
+            subscription_inventory={"version": "1.1.0", "accounts": {
+                "cloud": {"provider": "qwen", "enabled": True, "tierId": "free",
+                          "authProfile": "must-not-leak", "usagePriority": 99},
+                "zai-main": {"provider": "zai", "enabled": True, "tierId": "lite",
+                             "authProfile": "zai-main", "usagePriority": 1},
+            }},
+        )
+        untouched = copy.deepcopy(cfg)
+        with tempfile.TemporaryDirectory(prefix="zeroapi-qwen-cloud-parity-") as temp_dir:
+            path = Path(temp_dir) / "zeroapi-config.json"
+            original = json.dumps(cfg)
+            path.write_text(original, encoding="utf-8")
+            typescript = self._typescript_load(Path(__file__).resolve().parents[2], temp_dir, "")
+            python_config = load_config(str(path))
+            self.assertIsNotNone(python_config)
+            assert python_config is not None
+            python_route = ZeroAPIRouter(python_config).resolve(
+                "implement this feature", current_model="openai/current-model",
+            )
+            python_capacity = _resolve_capacity(python_config, "qwen", "code", None)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+        self.assertEqual(cfg, untouched)
+        self.assertTrue(typescript["fileUnchanged"])
+        self.assertTrue(typescript["qwenCloudRejected"])
+        self.assertIsNone(typescript["qwenCapacity"])
+        self.assertEqual(typescript["qwenCapacity"], python_capacity)
+        self.assertNotIn("must-not-leak", json.dumps(typescript["qwenCapacity"]))
+        self.assertIsNotNone(python_route)
+        self.assertEqual(python_route["provider"], "zai")
 
     def test_D1_modifier_account_bonus_changes_winner(self):
         cfg = _base(

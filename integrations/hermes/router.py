@@ -828,7 +828,12 @@ def _resolve_capacity(config: Config, provider: str, category: TaskCategory | No
     if _provider_disabled(config, provider):
         return {"enabled": False, "routing_weight": 0.0, "preferred_account_id": None, "preferred_auth_profile": None}
 
-    canonical = _canonical_provider(provider)
+    # Inventory is subscription capacity, not an alternate provider catalog. Require
+    # an active catalog entry before inspecting raw account provider strings.
+    entry = _catalog_entry(provider)
+    if entry is None:
+        return None
+    canonical = str(entry["canonical"])
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}
     inventory_configured = isinstance(accounts, dict) and any(

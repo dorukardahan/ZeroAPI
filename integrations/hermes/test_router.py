@@ -6,7 +6,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from router import HERMES_PROVIDER_MAP, ZeroAPIRouter, _valid_config, load_config
+from router import (
+    HERMES_PROVIDER_MAP,
+    ZeroAPIRouter,
+    _allowed_by_subscriptions,
+    _hermes_provider,
+    _resolve_capacity,
+    _valid_config,
+    load_config,
+)
 
 
 CONFIG = {
@@ -294,6 +302,72 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(HERMES_PROVIDER_MAP["qwen"], "alibaba-coding-plan")
         router = ZeroAPIRouter(fresh)
         self.assertIs(router.config, fresh)
+
+    def test_fresh_qwen_cloud_inventory_cannot_create_subscription_capacity(self):
+        qwen_model = copy.deepcopy(CONFIG["models"]["zai/glm-5.1"])
+        fresh = {
+            **CONFIG,
+            "subscription_catalog_version": "1.1.0",
+            "default_model": "qwen/cloud-model",
+            "models": {"qwen/cloud-model": qwen_model},
+            "routing_rules": {
+                "code": {"primary": "qwen/cloud-model", "fallbacks": []},
+                "default": {"primary": "qwen/cloud-model", "fallbacks": []},
+            },
+            "subscription_profile": {"version": "1.1.0", "global": {}},
+            "subscription_inventory": {"version": "1.1.0", "accounts": {
+                "cloud": {"provider": "qwen", "enabled": True, "tierId": "free",
+                          "authProfile": "must-not-leak", "usagePriority": 99},
+            }},
+        }
+        router = ZeroAPIRouter(fresh)
+        self.assertIsNone(_resolve_capacity(router.config, "qwen", "code", None))
+        self.assertFalse(_allowed_by_subscriptions(router.config, "qwen/cloud-model", None))
+        self.assertIsNone(router.resolve("implement this feature", current_model="openai/current"))
+
+    def test_fresh_qwen_cloud_profile_only_is_rejected(self):
+        fresh = {
+            **CONFIG,
+            "subscription_catalog_version": "1.1.0",
+            "subscription_profile": {"version": "1.1.0", "global": {
+                "qwen": {"enabled": True, "tierId": "free"},
+            }},
+        }
+        self.assertIsNone(_resolve_capacity(fresh, "qwen", None, None))
+        self.assertFalse(_allowed_by_subscriptions(fresh, "qwen/cloud-model", None))
+
+    def test_mixed_inventory_routes_active_provider_without_qwen_provenance(self):
+        mixed = {
+            **CONFIG,
+            "subscription_catalog_version": "1.1.0",
+            "subscription_profile": {"version": "1.1.0", "global": {}},
+            "subscription_inventory": {"version": "1.1.0", "accounts": {
+                "cloud": {"provider": "qwen", "enabled": True, "tierId": "free",
+                          "authProfile": "must-not-leak", "usagePriority": 99},
+                "codex": {"provider": "openai-codex", "enabled": True, "tierId": "plus",
+                          "authProfile": "codex-main", "usagePriority": 1},
+            }},
+        }
+        self.assertIsNone(_resolve_capacity(mixed, "qwen", "code", None))
+        active = _resolve_capacity(mixed, "openai-codex", "code", None)
+        self.assertEqual(active["preferred_account_id"], "codex")
+        self.assertEqual(active["preferred_auth_profile"], "codex-main")
+        route = ZeroAPIRouter(mixed).resolve("implement this feature", current_model="zai/glm-5.1")
+        self.assertIsNotNone(route)
+        self.assertEqual(route["provider"], "openai-codex")
+
+    def test_qwen_direct_mapping_remains_available_without_subscription_pool(self):
+        qwen_model = copy.deepcopy(CONFIG["models"]["zai/glm-5.1"])
+        direct = {
+            **CONFIG,
+            "default_model": "qwen/cloud-model",
+            "models": {"qwen/cloud-model": qwen_model},
+            "routing_rules": {"code": {"primary": "qwen/cloud-model", "fallbacks": []},
+                              "default": {"primary": "qwen/cloud-model", "fallbacks": []}},
+        }
+        direct.pop("subscription_profile", None)
+        self.assertTrue(_allowed_by_subscriptions(direct, "qwen/cloud-model", None))
+        self.assertEqual(_hermes_provider("qwen", direct), "alibaba-coding-plan")
 
     def test_keeps_qwen_portal_and_cloud_provider_ids_separate(self):
         for provider in ("qwen-oauth", "qwen-portal", "qwen-cli"):
