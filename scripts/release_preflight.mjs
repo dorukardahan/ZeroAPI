@@ -42,6 +42,8 @@ const versionNeedles = [
   ["integrations/hermes/plugin.yaml", `version: ${version}`],
   ["README.md", `version-${version}-green`],
   ["README.md", `releases/tag/v${version}`],
+  ["README.md", `clawhub:zeroapi@${version}`],
+  ["plugin/README.md", `clawhub:zeroapi@${version}`],
 ];
 for (const [path, needle] of versionNeedles) {
   assert(readText(join(repoRoot, path)).includes(needle), `${path} is missing ${needle}`);

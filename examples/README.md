@@ -134,7 +134,7 @@ ZeroAPI classifies each task into one of six categories based on keywords in the
 | `fast` | quick, format, convert, translate | "quickly format this list as CSV" |
 | `default` | (no keyword match) | "bunu düzelt" |
 
-High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc.) block automatic routing regardless of category. Conservative skips are expected; not every message should switch models.
+High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc.) are diagnostic-only. They do not block or downgrade routing; category, capability, subscription, and external-model policy continue to decide the route.
 
 ## Multi-account note
 

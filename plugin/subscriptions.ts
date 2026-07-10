@@ -139,7 +139,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       },
     ],
     benchmarkRoutingBias: 0.85,
-    notes: "OpenClaw exposes SuperGrok OAuth through the native xai provider, preferring the xai-device-code auth choice on 2026.5.20+ and browser OAuth on older 2026.5.18+ installs. Hermes legacy configs may still use xai-oauth as an alias. Only enable this provider for subscription-backed OAuth accounts; plain xAI API-key usage should stay outside ZeroAPI subscription routing.",
+    notes: "Use `openclaw models auth login --provider xai --method oauth` or onboarding choice `xai-oauth` on current OpenClaw. Hermes legacy configs may still use `xai-oauth` as an alias. Only enable this provider for subscription-backed OAuth accounts; plain xAI API-key usage should stay outside ZeroAPI subscription routing.",
   },
   {
     providerId: "xai-api",

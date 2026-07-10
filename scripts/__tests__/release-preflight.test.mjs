@@ -22,6 +22,7 @@ const PREFLIGHT_INPUTS = [
   "plugin/index.ts",
   "integrations/hermes/plugin.yaml",
   "README.md",
+  "plugin/README.md",
   "scripts/stage_clawhub_plugin.mjs",
   "scripts/refresh_benchmarks.py",
   "benchmarks.json",
@@ -145,6 +146,36 @@ test("release_preflight catches README release-link version drift", () => {
       );
     }
     assert.equal(threw, true, "preflight must fail when only the release link drifts");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("release_preflight catches root install-pin version drift", () => {
+  const tmp = buildAlignedFixture();
+  try {
+    const version = realVersion();
+    const path = join(tmp, "README.md");
+    writeFileSync(path, readFileSync(path, "utf8").replace(`clawhub:zeroapi@${version}`, "clawhub:zeroapi@0.0.0-stale"));
+    assert.throws(
+      () => runPreflight(tmp),
+      (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes(`README.md is missing clawhub:zeroapi@${version}`),
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("release_preflight catches plugin install-pin version drift", () => {
+  const tmp = buildAlignedFixture();
+  try {
+    const version = realVersion();
+    const path = join(tmp, "plugin", "README.md");
+    writeFileSync(path, readFileSync(path, "utf8").replace(`clawhub:zeroapi@${version}`, "clawhub:zeroapi@0.0.0-stale"));
+    assert.throws(
+      () => runPreflight(tmp),
+      (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes(`plugin/README.md is missing clawhub:zeroapi@${version}`),
+    );
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

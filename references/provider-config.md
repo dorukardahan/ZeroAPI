@@ -77,7 +77,7 @@ openclaw models auth login --provider openai
 
 | Model ID | Notes |
 |----------|-------|
-| `gpt-5.5` | Current OpenClaw v2026.4.23 default frontier model |
+| `gpt-5.5` | Former OpenClaw default; retained for legacy configs and as the GPT-5.6 benchmark proxy |
 | `gpt-5.5-pro` | Forward-compatible Pro-tier model; use GPT-5.5 benchmark proxy until AA publishes a separate row |
 | `gpt-5.4` | Previous flagship - high TTFT, not suitable for fast tasks |
 | `gpt-5.4-mini` | Fast fallback |
@@ -167,8 +167,8 @@ openclaw onboard --auth-choice zai-coding-global
 
 | Model ID | Notes |
 |----------|-------|
-| `glm-5` | Flagship |
-| `glm-5.1` | Improved reasoning |
+| `glm-5` | Former flagship; retained for legacy configs |
+| `glm-5.1` | Previous reasoning default; fresh starters use GLM-5.2 |
 | `glm-5-turbo` | Balanced |
 | `glm-4.7-flash` | Fast path |
 
@@ -208,8 +208,8 @@ openclaw onboard --auth-choice minimax-global-oauth
 
 | Model ID | Notes |
 |----------|-------|
-| `MiniMax-M2.7` | Flagship text route in starter metadata |
-| `MiniMax-M2.7-highspeed` | Fast text variant |
+| `MiniMax-M2.7` | Former hosted default; retained as a text-only fallback |
+| `MiniMax-M2.7-highspeed` | Legacy fast text variant |
 
 **Provider entry** (in `openclaw.json`):
 
@@ -285,7 +285,7 @@ hermes auth add xai-oauth
 
 | Model ID | Notes |
 |----------|-------|
-| `grok-4.3` | Default SuperGrok route, vision-capable |
+| `grok-4.3` | Former default and regional-safe compatibility fallback; fresh starters prefer Grok 4.5 |
 | `grok-4.20-0309-reasoning` | Fallback/explicit policy route when available |
 
 **Important**: Only enable `xai` in ZeroAPI when the runtime account is backed by OpenClaw xAI OAuth / SuperGrok. `XAI_API_KEY` remains explicit API billing and should stay outside subscription routing unless the operator intentionally models it as account-quota capacity.
