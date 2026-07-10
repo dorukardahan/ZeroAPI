@@ -332,6 +332,41 @@ describe("subscription inventory", () => {
     expect(resolved?.preferredAuthProfile).toBe("xai:supergrok");
   });
 
+  it("filters excluded xai-api accounts from mixed active xai inventory", () => {
+    const inventory: SubscriptionInventory = {
+      version: "1.0.0",
+      accounts: {
+        "xai-active-supergrok": {
+          provider: "xai",
+          tierId: "supergrok",
+          authProfile: "xai:active-supergrok",
+          usagePriority: 1,
+        },
+        "xai-excluded-api": {
+          provider: "xai-api",
+          tierId: "supergrok",
+          authProfile: "xai:excluded-api",
+          usagePriority: 3,
+        },
+      },
+    };
+
+    const resolved = resolveProviderCapacity({
+      profile: undefined,
+      inventory,
+      agentId: undefined,
+      providerId: "xai-oauth",
+    });
+
+    expect(resolved?.source).toBe("inventory");
+    expect(resolved?.enabled).toBe(true);
+    expect(resolved?.accountCount).toBe(1);
+    expect(resolved?.routingWeight).toBe(2);
+    expect(resolved?.matchedAccountIds).toEqual(["xai-active-supergrok"]);
+    expect(resolved?.preferredAccountId).toBe("xai-active-supergrok");
+    expect(resolved?.preferredAuthProfile).toBe("xai:active-supergrok");
+  });
+
   it("ignores excluded xai-api inventory when an active xai profile supplies capacity", () => {
     const xaiProfile: SubscriptionProfile = {
       version: "1.0.0",
