@@ -82,7 +82,14 @@ def write_json_atomic(path: Path, payload: Dict[str, Any], pretty: int) -> None:
 def write_snapshot_pair(root_path: Path, plugin_path: Path, payload: Dict[str, Any], pretty: int) -> None:
     """Serialize once and replace both snapshots as a rollback-safe pair."""
     data = json.dumps(payload, indent=pretty, ensure_ascii=False) + "\n"
-    paths = [Path(root_path), Path(plugin_path)]
+    paths: List[Path] = []
+    resolved_paths = set()
+    for candidate in (Path(root_path), Path(plugin_path)):
+        resolved_path = candidate.resolve()
+        if resolved_path in resolved_paths:
+            continue
+        resolved_paths.add(resolved_path)
+        paths.append(candidate)
     temp_paths: List[Path] = []
     backup_paths: List[Optional[Path]] = []
     replaced: List[Path] = []

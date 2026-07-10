@@ -163,6 +163,60 @@ assert not list(work_dir.rglob("*.tmp"))
 `, [root]);
 });
 
+test("refresh_benchmarks writes an equivalent snapshot target exactly once", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-dedup-"));
+  runPython(`
+import importlib.util
+import json
+import pathlib
+import sys
+script_path = pathlib.Path(sys.argv[1])
+work_dir = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+target = work_dir / "benchmarks.json"
+lexical_dir = work_dir / "lexical"
+lexical_dir.mkdir()
+equivalent_target = lexical_dir / ".." / target.name
+assert target.resolve() == equivalent_target.resolve()
+target.write_text("original snapshot\\n", encoding="utf-8")
+original_replace = pathlib.Path.replace
+replacements = []
+def count_temp_replaces(self, replacement_target):
+    if self.name.endswith(".tmp"):
+        replacements.append(pathlib.Path(replacement_target).resolve())
+    return original_replace(self, replacement_target)
+pathlib.Path.replace = count_temp_replaces
+payload = {"models": [{"slug": "deduplicated"}]}
+try:
+    module.write_snapshot_pair(target, equivalent_target, payload, 2)
+finally:
+    pathlib.Path.replace = original_replace
+assert replacements == [target.resolve()]
+assert json.loads(target.read_text(encoding="utf-8")) == payload
+assert target.read_text(encoding="utf-8") != "original snapshot\\n"
+written_snapshot = target.read_bytes()
+def fail_temp_replace(self, replacement_target):
+    if self.name.endswith(".tmp"):
+        raise OSError("injected single-target replace failure")
+    return original_replace(self, replacement_target)
+pathlib.Path.replace = fail_temp_replace
+try:
+    try:
+        module.write_snapshot_pair(target, equivalent_target, {"new": False}, 2)
+    except OSError as exc:
+        assert "single-target" in str(exc)
+    else:
+        raise AssertionError("single replacement should fail")
+finally:
+    pathlib.Path.replace = original_replace
+assert target.read_bytes() == written_snapshot
+assert not list(work_dir.rglob("*.tmp"))
+assert not list(work_dir.rglob("*.bak"))
+`, [root]);
+});
+
 test("refresh_benchmarks restores both snapshots when the second replace fails", () => {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-benchmark-rollback-"));
   runPython(`
