@@ -44,7 +44,7 @@ ZeroAPI routes exclusively across subscription or account-quota providers: OpenA
 Message → Plugin (before_model_resolve) → Classify task → Filter capable models → Select best → Model processes message
 ```
 
-The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight two-stage decision:
+The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight five-stage decision:
 
 1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
 2. **Subscription filter** — eliminate models not allowed by the user's legacy profile or preferred account inventory
