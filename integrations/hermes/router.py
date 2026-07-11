@@ -1061,10 +1061,15 @@ class ZeroAPIRouter:
         # override the default-category stay and route to a vision-capable model.
         current = current_model or self.config.get("default_model")
         models = self.config.get("models", {})
-        comparison_models = {
-            _comparison_model_ref(model_key): (model_key, capabilities)
-            for model_key, capabilities in models.items()
-        }
+        comparison_models: dict[str, tuple[str, Any]] = {}
+        for model_key, capabilities in models.items():
+            identity = _comparison_model_ref(model_key)
+            # Alias-equivalent configured keys are ambiguous even when their
+            # capability records currently match. Reject the entire route
+            # deterministically rather than selecting by insertion order.
+            if identity in comparison_models:
+                return None
+            comparison_models[identity] = (model_key, capabilities)
         current_identity = _comparison_model_ref(current) if isinstance(current, str) else None
         modifier = self.config.get("routing_modifier")
         modifier = modifier if isinstance(modifier, str) else None
