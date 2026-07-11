@@ -414,6 +414,14 @@ def _canonical_provider(provider: str) -> str:
     return provider
 
 
+def _comparison_model_ref(model_ref: str) -> str:
+    """Canonicalize provider aliases only for ephemeral model identity checks."""
+    if "/" not in model_ref:
+        return model_ref
+    provider, model = model_ref.split("/", 1)
+    return f"{_canonical_provider(provider)}/{model}"
+
+
 def _disabled_provider_list(config: Config) -> list[str]:
     disabled: list[str] = []
     seen: set[str] = set()
@@ -1016,7 +1024,11 @@ class ZeroAPIRouter:
         if agent_id and workspace_hints is None and agent_id in workspace_hints_by_agent:
             return None
 
-        if agent_id and workspace_hints is None and current_model and current_model != self.config.get("default_model"):
+        if (
+            agent_id and workspace_hints is None and current_model
+            and _comparison_model_ref(current_model)
+            != _comparison_model_ref(self.config.get("default_model", ""))
+        ):
             return None
 
         if trigger in {"cron", "heartbeat"}:
@@ -1049,11 +1061,17 @@ class ZeroAPIRouter:
         # override the default-category stay and route to a vision-capable model.
         current = current_model or self.config.get("default_model")
         models = self.config.get("models", {})
+        comparison_models = {
+            _comparison_model_ref(model_key): (model_key, capabilities)
+            for model_key, capabilities in models.items()
+        }
+        current_identity = _comparison_model_ref(current) if isinstance(current, str) else None
         modifier = self.config.get("routing_modifier")
         modifier = modifier if isinstance(modifier, str) else None
 
         if category == "default" and likely_vision and current:
-            current_caps = models.get(current)
+            current_entry = comparison_models.get(current_identity) if current_identity else None
+            current_caps = current_entry[1] if current_entry else None
             if isinstance(current_caps, dict) and not current_caps.get("supports_vision", False):
                 vision_capable = []
                 for model_key, caps in models.items():
@@ -1068,7 +1086,7 @@ class ZeroAPIRouter:
                     if not ordered:
                         ordered = vision_capable
                     target = ordered[0] if ordered else vision_capable[0]
-                    if target != current:
+                    if _comparison_model_ref(target) != current_identity:
                         provider = _provider_id(target)
                         return {
                             "provider": _hermes_provider(provider, self.config),
@@ -1082,7 +1100,7 @@ class ZeroAPIRouter:
         if (
             isinstance(current, str)
             and current
-            and current not in models
+            and current_identity not in comparison_models
             and self.config.get("external_model_policy", "stay") != "allow"
         ):
             return None
@@ -1139,7 +1157,7 @@ class ZeroAPIRouter:
         _sort_ranked(ranked, modifier, category)
 
         selected = ranked[0]["model_key"]
-        if selected == current:
+        if _comparison_model_ref(selected) == current_identity:
             return None
 
         provider = _provider_id(selected)
