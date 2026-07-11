@@ -410,6 +410,69 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         )
         self.assertIsNone(route)
 
+    def test_alias_equivalent_current_is_in_pool_and_routes_to_deterministic_target(self):
+        config = copy.deepcopy(CONFIG)
+        sol = copy.deepcopy(config["models"]["openai-codex/gpt-5.4"])
+        luna = copy.deepcopy(sol)
+        luna["benchmarks"]["coding"] = 99
+        config["default_model"] = "openai/gpt-5.6-sol"
+        config["models"] = {"openai/gpt-5.6-sol": sol, "openai/gpt-5.6-luna": luna}
+        config["routing_rules"]["code"] = {
+            "primary": "openai/gpt-5.6-luna", "fallbacks": ["openai/gpt-5.6-sol"],
+        }
+        route = ZeroAPIRouter(config).resolve(
+            "implement this feature", current_model="openai-codex/gpt-5.6-sol",
+        )
+        self.assertIsNotNone(route)
+        self.assertEqual((route["provider"], route["model"]), ("openai-codex", "gpt-5.6-luna"))
+
+    def test_alias_equivalent_selected_model_does_not_redundantly_switch(self):
+        config = copy.deepcopy(CONFIG)
+        config["models"] = {"openai/gpt-5.4": config["models"]["openai-codex/gpt-5.4"]}
+        config["routing_rules"]["code"] = {"primary": "openai/gpt-5.4", "fallbacks": []}
+        self.assertIsNone(ZeroAPIRouter(config).resolve(
+            "implement this feature", current_model="openai-codex/gpt-5.4",
+        ))
+
+    def test_non_openai_catalog_alias_uses_same_comparison_identity(self):
+        config = copy.deepcopy(CONFIG)
+        config["models"] = {"moonshot/synthetic-model": config["models"]["moonshot/kimi-k2.5"]}
+        config["routing_rules"]["code"] = {"primary": "moonshot/synthetic-model", "fallbacks": []}
+        self.assertIsNone(ZeroAPIRouter(config).resolve(
+            "implement this feature", current_model="kimi/synthetic-model",
+        ))
+
+    def test_alias_collision_with_conflicting_capabilities_fails_closed_in_both_orders(self):
+        blind = copy.deepcopy(CONFIG["models"]["openai-codex/gpt-5.4"])
+        sighted = copy.deepcopy(blind)
+        sighted["supports_vision"] = True
+        for entries in (
+            [("openai/gpt-collision", blind), ("openai-codex/gpt-collision", sighted)],
+            [("openai-codex/gpt-collision", sighted), ("openai/gpt-collision", blind)],
+        ):
+            with self.subTest(order=[key for key, _ in entries]):
+                config = copy.deepcopy(CONFIG)
+                config["models"] = dict([*entries, ("moonshot/kimi-k2.5", CONFIG["models"]["moonshot/kimi-k2.5"])])
+                config["default_model"] = entries[0][0]
+                config["routing_rules"]["default"] = {"primary": "moonshot/kimi-k2.5", "fallbacks": []}
+                self.assertIsNone(ZeroAPIRouter(config).resolve(
+                    "inspect this screenshot", current_model="openai/gpt-collision",
+                ))
+
+    def test_identical_alias_duplicate_is_rejected_not_silently_deduplicated(self):
+        # Duplicate canonical identities are invalid even when capability records
+        # currently match; rejecting them prevents later edits becoming ambiguous.
+        capabilities = copy.deepcopy(CONFIG["models"]["openai-codex/gpt-5.4"])
+        config = copy.deepcopy(CONFIG)
+        config["models"] = {
+            "openai/gpt-collision": capabilities,
+            "openai-codex/gpt-collision": copy.deepcopy(capabilities),
+        }
+        config["routing_rules"]["code"] = {"primary": "openai/gpt-collision", "fallbacks": []}
+        self.assertIsNone(ZeroAPIRouter(config).resolve(
+            "implement this feature", current_model="openai/gpt-collision",
+        ))
+
     def test_skips_explicit_specialist_agent(self):
         config = {**CONFIG, "workspace_hints": {"codex": None}}
         route = ZeroAPIRouter(config).resolve(

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.9.1] - 2026-07-11
+
+### Fixed
+- Treat provider-catalog aliases as the same current model for Hermes capability, external-pool, specialist-agent, and selected/current comparisons without rewriting configured model or routing-rule keys.
+
 ## [3.9.0] - 2026-07-11
 
 ### Added

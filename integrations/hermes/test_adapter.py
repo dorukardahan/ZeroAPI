@@ -25,6 +25,29 @@ adapter = _load_adapter()
 
 
 class HermesAdapterPayloadTest(unittest.TestCase):
+    def test_actual_codex_payload_matches_openai_config_and_routes(self):
+        caps = {"context_window": 100000, "supports_vision": False, "speed_tps": 50,
+                "ttft_seconds": 1, "benchmarks": {"coding": 90, "intelligence": 90}}
+        config = {
+            "version": "test", "default_model": "openai/gpt-5.6-sol",
+            "external_model_policy": "stay",
+            "models": {"openai/gpt-5.6-sol": caps, "openai/gpt-5.6-luna": caps},
+            "routing_rules": {"code": {"primary": "openai/gpt-5.6-luna", "fallbacks": []}},
+            "keywords": {"code": ["implement"]}, "high_risk_keywords": [],
+            "subscription_profile": {"global": {"openai-codex": {"enabled": True, "tierId": "pro"}}},
+        }
+        with tempfile.TemporaryDirectory(prefix="zeroapi-adapter-alias-") as temp_dir:
+            path = Path(temp_dir) / "zeroapi-config.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            adapter._router = None
+            with patch.dict(os.environ, {"ZEROAPI_CONFIG_PATH": str(path)}, clear=False):
+                route = adapter._pre_model_route(
+                    user_message="implement this", provider="openai-codex", model="gpt-5.6-sol",
+                )
+            self.assertIsNotNone(route)
+            assert route is not None
+            self.assertEqual((route["provider"], route["model"]), ("openai-codex", "gpt-5.6-luna"))
+
     def test_malformed_only_config_keeps_router_unset(self):
         malformed = {
             "version": "test", "default_model": "qwen/model", "models": {},
