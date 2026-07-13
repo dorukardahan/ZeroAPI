@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveRoutingDecision } from "../decision.js";
+import { buildStarterConfig } from "../onboarding.js";
 import type { ZeroAPIConfig } from "../types.js";
 
 const config: ZeroAPIConfig = {
@@ -84,6 +85,21 @@ const config: ZeroAPIConfig = {
 };
 
 describe("resolveRoutingDecision", () => {
+  it("preserves the Kimi code route after subscription-weighted runtime ranking", () => {
+    const kimiConfig = buildStarterConfig({
+      providers: [{ providerId: "moonshot", tierId: "moderato" }],
+    });
+    const result = resolveRoutingDecision(kimiConfig, {
+      prompt: "implement a function and add tests",
+      currentModel: kimiConfig.default_model,
+    });
+
+    expect(kimiConfig.default_model).toBe("moonshot/kimi-k2.6");
+    expect(result.weightedCandidates[0]).toBe("moonshot/kimi-k2.7-code");
+    expect(result.action).toBe("route");
+    expect(result.selectedModel).toBe("moonshot/kimi-k2.7-code");
+  });
+
   it("skips specialist agents before classification", () => {
     const result = resolveRoutingDecision(config, {
       prompt: "refactor the worker queue",
