@@ -351,13 +351,26 @@ function preferKimiGeneralDefault(candidates: string[]): string[] {
   return [generalModel, ...candidates.filter((candidate) => candidate !== generalModel)];
 }
 
+function preferKimiCodeDefault(candidates: string[]): string[] {
+  const codeModel = "moonshot/kimi-k2.7-code";
+  const generalModel = "moonshot/kimi-k2.6";
+  if (candidates[0] !== generalModel || !candidates.includes(codeModel)) {
+    return candidates;
+  }
+  return [codeModel, ...candidates.filter((candidate) => candidate !== codeModel)];
+}
+
 function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<string, RoutingRule> {
   const categories: TaskCategory[] = ["code", "research", "orchestration", "math", "fast", "default"];
   const rules: Record<string, RoutingRule> = {};
 
   for (const category of categories) {
     const scored = sortModelsForCategory(category, models);
-    const ranked = category === "default" ? preferKimiGeneralDefault(scored) : scored;
+    const ranked = category === "default"
+      ? preferKimiGeneralDefault(scored)
+      : category === "code"
+        ? preferKimiCodeDefault(scored)
+        : scored;
     rules[category] = {
       primary: ranked[0],
       fallbacks: ranked.slice(1),
