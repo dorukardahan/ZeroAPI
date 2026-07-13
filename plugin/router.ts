@@ -337,6 +337,20 @@ export function rankSubscriptionWeightedCandidates(
     return a.originalIndex - b.originalIndex;
   });
 
+  if (category === "code" && ranked[0]?.candidate === "moonshot/kimi-k2.6") {
+    const codeIndex = ranked.findIndex((item) => item.candidate === "moonshot/kimi-k2.7-code");
+    const codeCandidate = ranked[codeIndex];
+    if (
+      codeCandidate
+      && codeCandidate.withinFrontier
+      && ranked[0].withinFrontier
+      && codeCandidate.effectivePressureScore === ranked[0].effectivePressureScore
+    ) {
+      ranked.splice(codeIndex, 1);
+      ranked.unshift(codeCandidate);
+    }
+  }
+
   return ranked.map((item) => ({
     candidate: item.candidate,
     benchmarkStrength: item.benchmarkStrength,
