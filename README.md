@@ -24,7 +24,7 @@ For the written product contract behind the current router, see [`references/rou
 
 **What makes it different:**
 - **Balanced by default** — optimizes for sustainable quality, not blind benchmark chasing
-- **Benchmark-aware** — routes by real benchmark scores (Artificial Analysis), not vibes
+- **Benchmark-aware** — routes using [direct Artificial Analysis benchmark scores where available and documented benchmark proxies otherwise](references/benchmarks.md); each proxy is replaced when a matching direct benchmark row becomes available
 - **Subscription-aware** — uses your declared provider tiers, account priorities, and intended-use hints without reading private live quota data
 - **Data-driven tuning** — built-in eval script analyzes routing logs and suggests config improvements
 - **Zero runtime cost** — keyword classification under 1ms, no LLM call, no external API
