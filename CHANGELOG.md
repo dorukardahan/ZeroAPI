@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.9.2] - 2026-07-18
+
+### Fixed
+- Include the continuation route-state runtime module in ClawHub packages, and add a staged-package closure test that rejects unresolved relative imports before release.
+
 ## [3.9.1] - 2026-07-11
 
 ### Fixed

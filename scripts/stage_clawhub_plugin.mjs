@@ -33,6 +33,7 @@ const runtimeEntries = [
   "logger.ts",
   "onboarding.ts",
   "profile.ts",
+  "route-state.ts",
   "router.ts",
   "selector.ts",
   "session-auth.ts",
