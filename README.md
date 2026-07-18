@@ -46,7 +46,7 @@ Message → Plugin (before_model_resolve) → Classify task → Filter capable m
 
 The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight five-stage decision:
 
-1. **Capability filter** — eliminate models that cannot fit the task (context window, vision, auth, rate limit)
+1. **Capability filter** — eliminate models that cannot fit the request based on configured metadata (context window, vision support, and, for `fast` tasks, the TTFT ceiling) plus any explicit caller-supplied provider exclusions
 2. **Subscription filter** — eliminate models not allowed by the user's legacy profile or preferred account inventory
 3. **Benchmark frontier** — keep only candidates that stay close enough to the category leader for their declared subscription profile
 4. **Subscription pressure ordering** — inside that frontier, prefer providers whose configured tier and account hints make them more appropriate for routine use
@@ -54,7 +54,7 @@ The plugin fires before eligible messages via OpenClaw's `before_model_resolve` 
 
 The default policy mode is `balanced`. That means ZeroAPI will not blindly force the raw benchmark winner on every turn. It only lets declared subscription/account capacity reorder candidates when they stay close enough to the category leader. This is the intended default for users who have uneven subscription limits across providers.
 
-Important: ZeroAPI does **not** read provider dashboards, live remaining quota, billing counters, or private usage telemetry. In v1, "headroom" means a static policy signal derived from configured tier, `usagePriority`, `intendedUse`, and account count.
+Important: “Rate limit” did not correspond to an implemented capability-filter signal and has been removed from the stage description. [`plugin/filter.ts`](plugin/filter.ts) can reject configured models only for request size versus context window, required vision support, the `fast`-task TTFT ceiling, or an explicit caller-supplied provider exclusion; the live routing path in [`plugin/decision.ts`](plugin/decision.ts) supplies only the first three inputs. [`plugin/router.ts`](plugin/router.ts) then ranks that already-filtered candidate set and does not read provider responses or cooldown state. Therefore the capability filter has no runtime-local cooldown or live-availability input. ZeroAPI does **not** inspect provider dashboards, live remaining quota, billing counters, or private usage telemetry. In v1, “headroom” means a static policy signal derived from configured tier, `usagePriority`, `intendedUse`, and account count.
 
 Vision routing uses the same policy. Image attachments and visual requests are routed to the best eligible vision-capable model in the configured subscription pool, not to a hardcoded provider. For example, GPT-5.6 can win in an OpenAI + Z AI setup because Z AI Coding Plan text models do not include GLM-5V-Turbo API access by default. A different user with a configured Kimi vision subscription can route vision turns to Kimi instead.
 
