@@ -1,6 +1,6 @@
 {
   "name": "zeroapi",
-  "version": "3.9.2",
+  "version": "3.9.3",
   "private": true,
   "description": "ZeroAPI - transparent subscription-aware model and account routing for OpenClaw",
   "type": "module",

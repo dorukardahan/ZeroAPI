@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [3.9.3] - 2026-07-20
+
+### Changed
+- Refresh the Artificial Analysis benchmark snapshot to the 2026-07-19 dataset across the root and packaged plugin copies.
+
 ## [3.9.2] - 2026-07-18
 
 ### Fixed

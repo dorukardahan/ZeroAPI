@@ -55,7 +55,7 @@ The advisory file and logs can still be used for operators who do not want chann
 Install only from the source-linked package:
 
 ```bash
-openclaw plugins install clawhub:zeroapi@3.9.2
+openclaw plugins install clawhub:zeroapi@3.9.3
 ```
 
 Verify the package source points to:
