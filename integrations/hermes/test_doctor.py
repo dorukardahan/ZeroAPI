@@ -203,18 +203,39 @@ def _normalize_child_runtime_tuple():
     from hermes_cli.runtime_provider import resolve_runtime_provider
     resolve_runtime_provider()
 
-def _build_child_agent():
+def _resolve_child_credential_pool(effective_provider, parent_agent, effective_base_url=None):
+    from agent.credential_pool import get_custom_provider_pool_key, load_pool
+    child_key = get_custom_provider_pool_key(effective_base_url)
+    parent_key = get_custom_provider_pool_key(parent_agent.base_url)
+    parent_pool = parent_agent._credential_pool
+    parent_pool_provider = getattr(parent_pool, "provider", None)
+    if parent_key == child_key and parent_pool_provider in {effective_provider, child_key}:
+        return parent_pool
+    return load_pool(child_key)
+
+def _build_child_agent(parent_agent):
     effective_provider, effective_base_url, effective_api_key, effective_api_mode = _normalize_child_runtime_tuple(
         explicit_provider=override_provider is not None,
         explicit_base_url=override_base_url is not None,
+    )
+    credential_pool = _resolve_child_credential_pool(
+        effective_provider,
+        parent_agent,
+        effective_base_url,
     )
     return AIAgent(
         provider=effective_provider,
         base_url=effective_base_url,
         api_key=effective_api_key,
         api_mode=effective_api_mode,
+        credential_pool=credential_pool,
     )
 '''
+
+DELEGATE_TOOL_STALE_ENDPOINT_POOL = DELEGATE_TOOL_PATCHED.replace(
+    "get_custom_provider_pool_key",
+    "legacy_custom_provider_pool_key",
+)
 
 
 def levels(checks):
@@ -828,19 +849,25 @@ def run_conversation(agent, user_message, conversation_history):
 
     def test_fails_when_delegate_normalizer_is_dead_code(self):
         delegate_tool = DELEGATE_TOOL_PATCHED.replace(
-            '''def _build_child_agent():
+            '''def _build_child_agent(parent_agent):
     effective_provider, effective_base_url, effective_api_key, effective_api_mode = _normalize_child_runtime_tuple(
         explicit_provider=override_provider is not None,
         explicit_base_url=override_base_url is not None,
+    )
+    credential_pool = _resolve_child_credential_pool(
+        effective_provider,
+        parent_agent,
+        effective_base_url,
     )
     return AIAgent(
         provider=effective_provider,
         base_url=effective_base_url,
         api_key=effective_api_key,
         api_mode=effective_api_mode,
+        credential_pool=credential_pool,
     )
 ''',
-            '''def _build_child_agent():
+            '''def _build_child_agent(parent_agent):
     return None
 ''',
         )
@@ -937,6 +964,17 @@ def run_conversation(agent, user_message, conversation_history):
 
         self.assertIn("FAIL", levels(checks))
         self.assertTrue(any("stale base_url" in message for message in messages(checks)))
+
+    def test_fails_when_delegate_pool_lacks_custom_endpoint_identity(self):
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=RUN_AGENT_PATCHED,
+            delegate_tool_source=DELEGATE_TOOL_STALE_ENDPOINT_POOL,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+        self.assertTrue(any("credential pool" in message for message in messages(checks)))
 
 
 if __name__ == "__main__":

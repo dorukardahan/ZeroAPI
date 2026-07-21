@@ -630,7 +630,14 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
         if resolver_end == -1:
             raise ValueError("Could not locate existing delegate credential pool resolver block.")
         resolver = text[resolver_start:resolver_end]
-        if "parent_pool_provider" not in resolver:
+        required_resolver_contract = {
+            "parent_pool_provider",
+            "effective_base_url",
+            "get_custom_provider_pool_key",
+            "child_key",
+            "parent_key",
+        }
+        if any(token not in resolver for token in required_resolver_contract):
             text = (
                 text[:resolver_start]
                 + DELEGATE_CREDENTIAL_POOL_RESOLVER

@@ -533,6 +533,36 @@ VALID_HOOKS = {
         self.assertIn("parent_pool_provider", upgraded)
         self.assertIn("parent_pool_provider == effective_provider", upgraded)
 
+    def test_delegate_tool_patch_upgrades_previously_patched_pool_resolver(self):
+        patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+        resolver_start = patched.index("\ndef _resolve_child_credential_pool(")
+        resolver_end = patched.index("\ndef _resolve_delegation_credentials(", resolver_start)
+        previous_zeroapi_resolver = r'''
+def _resolve_child_credential_pool(effective_provider, parent_agent):
+    parent_provider = getattr(parent_agent, "provider", None) or ""
+    parent_pool = getattr(parent_agent, "_credential_pool", None)
+    parent_pool_provider = getattr(parent_pool, "provider", None)
+    if (
+        parent_pool is not None
+        and effective_provider == parent_provider
+        and parent_pool_provider == effective_provider
+    ):
+        return parent_pool
+    return None
+'''
+        legacy = (
+            patched[:resolver_start]
+            + previous_zeroapi_resolver
+            + patched[resolver_end:]
+        )
+
+        upgraded, changes = patch_delegate_tool_source(legacy)
+
+        self.assertIn("updated delegate credential pool resolver", changes)
+        self.assertIn("effective_base_url: Optional[str] = None", upgraded)
+        self.assertIn("get_custom_provider_pool_key", upgraded)
+        self.assertNotIn(previous_zeroapi_resolver, upgraded)
+
     def test_delegate_pool_upgrade_preserves_v019_endpoint_contract(self):
         patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
         resolver_start = patched.index("\ndef _resolve_child_credential_pool(")

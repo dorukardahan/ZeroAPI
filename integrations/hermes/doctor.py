@@ -943,6 +943,92 @@ def _delegate_tool_normalizes_runtime_tuple(delegate_tool_source: str) -> bool:
     )
 
 
+def _delegate_pool_preserves_custom_endpoint_identity(
+    delegate_tool_source: str,
+) -> bool:
+    tree = _parse_source(delegate_tool_source)
+    resolver = _module_function(tree, "_resolve_child_credential_pool")
+    builder = _module_function(tree, "_build_child_agent")
+    if resolver is None or builder is None:
+        return False
+
+    parameters = {
+        argument.arg
+        for argument in (*resolver.args.posonlyargs, *resolver.args.args)
+    }
+    if "effective_base_url" not in parameters:
+        return False
+
+    calls = _reachable_collector(resolver).calls
+    key_calls = [
+        call for call in calls if _call_name(call) == "get_custom_provider_pool_key"
+    ]
+    child_endpoint_key = any(
+        call.args
+        and isinstance(call.args[0], ast.Name)
+        and call.args[0].id == "effective_base_url"
+        for call in key_calls
+    )
+
+    def references_parent_base_url(node: ast.AST) -> bool:
+        return any(
+            (
+                isinstance(child, ast.Attribute)
+                and isinstance(child.value, ast.Name)
+                and child.value.id == "parent_agent"
+                and child.attr == "base_url"
+            )
+            or (
+                isinstance(child, ast.Call)
+                and _call_name(child) == "getattr"
+                and len(child.args) >= 2
+                and isinstance(child.args[0], ast.Name)
+                and child.args[0].id == "parent_agent"
+                and isinstance(child.args[1], ast.Constant)
+                and child.args[1].value == "base_url"
+            )
+            for child in ast.walk(node)
+        )
+
+    parent_endpoint_key = any(
+        call.args and references_parent_base_url(call.args[0])
+        for call in key_calls
+    )
+    loads_child_pool = any(
+        _call_name(call) == "load_pool"
+        and call.args
+        and isinstance(call.args[0], ast.Name)
+        and call.args[0].id == "child_key"
+        for call in calls
+    )
+    compares_endpoint_keys = any(
+        isinstance(node, ast.Compare)
+        and any(isinstance(operator, ast.Eq) for operator in node.ops)
+        and {child.id for child in ast.walk(node) if isinstance(child, ast.Name)}
+        >= {"parent_key", "child_key"}
+        for node in _reachable_collector(resolver).nodes
+    )
+    checks_parent_pool_provider = any(
+        isinstance(node, ast.Name) and node.id == "parent_pool_provider"
+        for node in _reachable_collector(resolver).nodes
+    )
+    resolver_calls = _calls_named(builder, "_resolve_child_credential_pool")
+    builder_passes_endpoint = not resolver_calls or all(
+        len(call.args) >= 3
+        and isinstance(call.args[2], ast.Name)
+        and call.args[2].id == "effective_base_url"
+        for call in resolver_calls
+    )
+    return bool(
+        child_endpoint_key
+        and parent_endpoint_key
+        and loads_child_pool
+        and compares_endpoint_keys
+        and checks_parent_pool_provider
+        and builder_passes_endpoint
+    )
+
+
 def analyze_runtime_sources(
     *,
     valid_hooks: set[str],
@@ -1019,6 +1105,23 @@ def analyze_runtime_sources(
         )
     else:
         checks.append(Check("OK", "delegate_task child runtime tuple normalization is present."))
+
+    if delegate_tool_source and not _delegate_pool_preserves_custom_endpoint_identity(
+        delegate_tool_source
+    ):
+        checks.append(
+            Check(
+                "FAIL",
+                "delegate_task credential pool resolution does not preserve custom endpoint identity.",
+            )
+        )
+    elif delegate_tool_source:
+        checks.append(
+            Check(
+                "OK",
+                "delegate_task credential pools preserve custom endpoint identity.",
+            )
+        )
 
     return checks
 
