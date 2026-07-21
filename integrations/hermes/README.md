@@ -11,6 +11,9 @@ provider normalization, base URLs, API modes, and model switching.
 ## Requirements
 
 - Hermes Agent with a working `pre_model_route` runtime path.
+- PyYAML 6.x for host-equivalent plugin manifest parsing. Hermes installations
+  normally provide it; repository test environments can install the pinned test
+  dependency from `integrations/hermes/requirements-test.txt`.
 - A ZeroAPI policy file at one of:
   - `$ZEROAPI_CONFIG_PATH`
   - `~/.hermes/zeroapi-config.json`
@@ -34,12 +37,26 @@ in the Hermes release you use.
 
 ## Install
 
-Copy this directory into the Hermes plugin directory:
+Use the transactional installer from a trusted checkout:
 
 ```bash
-mkdir -p ~/.hermes/plugins/zeroapi-router
-cp -R integrations/hermes/* ~/.hermes/plugins/zeroapi-router/
+python3 integrations/hermes/install.py
 ```
+
+The installer checks Hermes's bundled, user, and project plugin discovery roots
+before mutation and refuses duplicate `zeroapi-router` names from either
+`plugin.yaml` or `plugin.yml`. For custom layouts, pass `--destination`, one or
+more `--discovery-root` values, and `--backup-root` explicitly. Upgrade backups,
+staged candidates, and rollback journals are stored under
+`$HERMES_HOME/backups/zeroapi-router/`, outside plugin discovery roots and on the
+same filesystem as the destination. They are never created as discoverable
+sibling plugin directories.
+
+An upgrade first records a durable journal, then moves the current tree to the
+external transaction directory before activating the staged candidate. If the
+process stops between those steps, the next installer invocation recovers the
+exact pre-install tree before starting new work. Rollback uses the same journaled
+rename choreography and resumes safely after an interruption.
 
 Then enable the plugin in `~/.hermes/config.yaml`:
 
@@ -74,10 +91,56 @@ Then apply it and restart Hermes:
 python ~/.hermes/plugins/zeroapi-router/patch_runtime.py
 ```
 
-The patch writes timestamped backups next to `hermes_cli/plugins.py`,
-`run_agent.py`, and `tools/delegate_tool.py`, and is designed to be idempotent.
+The patch supports three verified runtime layouts:
+
+- the legacy monolithic turn loop in `run_agent.py`
+- the modular turn loop in `agent/conversation_loop.py`
+- Hermes v0.19's turn prologue in `agent/turn_context.py`
+
+Layout selection is structural and fail-closed. Every required source is read,
+transformed, compiled, and checked with the doctor's AST/call-graph proof before
+the first write. Changed files are staged beside their targets and committed with
+atomic per-file replacements. If a handled commit failure occurs, already replaced
+files are restored and verified from the transaction journal. A second successful
+run is a no-op and creates no additional backup.
+
+Runtime originals and journals are stored under
+`$HERMES_HOME/backups/zeroapi-router/`, outside plugin discovery roots. To restore
+one committed runtime transaction:
+
+```bash
+python ~/.hermes/plugins/zeroapi-router/patch_runtime.py \
+  --rollback-transaction "$HERMES_HOME/backups/zeroapi-router/<transaction>"
+```
+
+For a custom Hermes layout, repeat `--plugin-discovery-root` for every configured
+plugin root when passing `--backup-root`. Backup isolation is validated before
+recovery or mutation, and `--dry-run` never recovers or writes a transaction.
+
+To restore a plugin upgrade, pass its external transaction directory to the
+installer:
+
+```bash
+python ~/.hermes/plugins/zeroapi-router/install.py \
+  --rollback "$HERMES_HOME/backups/zeroapi-router/<transaction>"
+```
+
 Run the doctor again after restart. If a future Hermes release passes the doctor
 without the patch, prefer the upstream runtime.
+
+## Manual Model Selection Limitation
+
+Hermes v0.19 does not expose public per-turn model-selection provenance or scope
+to `pre_model_route`. The adapter can see the effective provider and model, but it
+cannot distinguish a manual session selection or a one-turn `/model --once`
+selection from an earlier automatic route. Therefore ZeroAPI cannot guarantee that
+manual or one-turn model selections take precedence on this Hermes release.
+
+ZeroAPI does not inspect or mutate private gateway/session override state as a
+workaround. A reliable precedence contract requires Hermes to expose immutable
+selection metadata (for example, source plus turn/session scope) or to suppress
+automatic routing for explicitly selected turns. Until that public host contract
+exists, manual and one-turn precedence are documented non-goals for this adapter.
 
 ## Provider Mapping
 
@@ -187,5 +250,6 @@ python3 integrations/hermes/test_auth_audit.py
 python3 integrations/hermes/test_vision_aux.py
 python3 integrations/hermes/test_doctor.py
 python3 integrations/hermes/test_runtime_patch.py
+python3 integrations/hermes/test_install.py
 python3 integrations/hermes/doctor.py
 ```

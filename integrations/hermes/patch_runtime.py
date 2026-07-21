@@ -1,8 +1,9 @@
 """Patch Hermes runtime so ZeroAPI can route Hermes turns reliably.
 
 This script is a compatibility bridge for Hermes versions that expose plugin
-hooks but do not yet call ``pre_model_route`` from ``run_agent.py``. It makes a
-timestamped backup before writing and is designed to be idempotent.
+hooks but do not yet call ``pre_model_route`` from the active turn owner. It
+plans and validates the complete multi-file change before writing, then uses
+same-directory atomic replacements with rollback data outside plugin discovery.
 
 Use this only on a Hermes installation you control. It does not read or print
 secrets.
@@ -11,10 +12,18 @@ secrets.
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
 import importlib.util
-import shutil
+import json
+import os
+import stat
+import tempfile
+import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 
 PRE_MODEL_ROUTE_METHOD = r'''
@@ -438,6 +447,48 @@ def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
     return text, changes
 
 
+def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
+    """Patch the Hermes v0.19 ``agent/turn_context.py`` turn prologue."""
+    changes: list[str] = []
+    text = source
+    marker = "# ZeroAPI compatibility: route before prompt restoration."
+    if marker in text:
+        return text, changes
+
+    anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+    if anchor not in text:
+        raise ValueError("Could not find turn_context system-prompt anchor for pre_model_route call.")
+
+    route_block = '''    # ZeroAPI compatibility: route before prompt restoration.
+    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+    if getattr(agent, "_pre_model_route_switched_this_turn", False):
+        # A routed turn must not reuse prompt metadata from the old runtime.
+        agent._cached_system_prompt = None
+        try:
+            from agent.auxiliary_client import set_runtime_main
+
+            set_runtime_main(
+                getattr(agent, "provider", "") or "",
+                getattr(agent, "model", "") or "",
+                base_url=getattr(agent, "base_url", "") or "",
+                api_key=getattr(agent, "api_key", "") or "",
+                api_mode=getattr(agent, "api_mode", "") or "",
+                auth_mode=getattr(agent, "auth_mode", "") or "",
+            )
+        except Exception:
+            pass
+
+'''
+    text = text.replace(anchor, route_block + anchor, 1)
+    changes.append("inserted pre_model_route call before system prompt")
+    changes.append("resynchronized auxiliary runtime after route switch")
+    return text, changes
+
+
 def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
     """Return patched ``tools/delegate_tool.py`` source and applied changes."""
     changes: list[str] = []
@@ -519,80 +570,796 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
     return text, changes
 
 
-def _auto_run_agent_path() -> Path:
-    spec = importlib.util.find_spec("run_agent")
+@dataclass(frozen=True)
+class SourceSnapshot:
+    label: str
+    path: Path
+    source: str
+    raw: bytes
+    digest: str
+    mode: int
+    uid: int
+    gid: int
+    device: int
+    inode: int
+    size: int
+    mtime_ns: int
+
+
+@dataclass(frozen=True)
+class PatchEntry:
+    snapshot: SourceSnapshot
+    patched: str
+    changes: tuple[str, ...]
+
+    @property
+    def label(self) -> str:
+        return self.snapshot.label
+
+    @property
+    def path(self) -> Path:
+        return self.snapshot.path
+
+
+@dataclass(frozen=True)
+class RuntimePatchPlan:
+    layout: str
+    snapshots: tuple[SourceSnapshot, ...]
+    entries: tuple[PatchEntry, ...]
+
+    @property
+    def changed_labels(self) -> tuple[str, ...]:
+        return tuple(entry.label for entry in self.entries)
+
+    @property
+    def changes(self) -> tuple[str, ...]:
+        return tuple(
+            f"{entry.label}: {change}"
+            for entry in self.entries
+            for change in entry.changes
+        )
+
+
+def _sha256(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _snapshot_source(label: str, path: Path) -> SourceSnapshot:
+    path = path.expanduser()
+    if path.is_symlink():
+        raise ValueError(f"Refusing symlink runtime target for {label}: {path}")
+    try:
+        metadata = path.stat()
+    except OSError as exc:
+        raise ValueError(f"Could not stat required {label} source: {path}: {exc}") from exc
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"Required {label} source is not a regular file: {path}")
+    try:
+        raw = path.read_bytes()
+        source = raw.decode("utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError(f"Could not read required {label} source: {path}: {exc}") from exc
+    return SourceSnapshot(
+        label=label,
+        path=path,
+        source=source,
+        raw=raw,
+        digest=_sha256(raw),
+        mode=stat.S_IMODE(metadata.st_mode),
+        uid=metadata.st_uid,
+        gid=metadata.st_gid,
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+        size=metadata.st_size,
+        mtime_ns=metadata.st_mtime_ns,
+    )
+
+
+def _function_calls(source: str, function_name: str, called_name: str) -> bool:
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+    functions = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == function_name
+    ]
+    for function in functions:
+        for node in ast.walk(function):
+            if not isinstance(node, ast.Call):
+                continue
+            if isinstance(node.func, ast.Name) and node.func.id == called_name:
+                return True
+            if isinstance(node.func, ast.Attribute) and node.func.attr == called_name:
+                return True
+    return False
+
+
+def _classify_layout(
+    run_agent_source: str,
+    conversation_loop_source: str | None,
+    turn_context_source: str | None,
+) -> str:
+    run_forwarder = _function_calls(run_agent_source, "run_conversation", "run_conversation")
+    conversation_calls_turn_context = bool(
+        conversation_loop_source
+        and _function_calls(conversation_loop_source, "run_conversation", "build_turn_context")
+    )
+    prompt_anchor = "# ── System prompt (cached per session for prefix caching) ──"
+    monolith_owner = not run_forwarder and prompt_anchor in run_agent_source
+    conversation_owner = bool(
+        run_forwarder
+        and conversation_loop_source
+        and prompt_anchor in conversation_loop_source
+        and not conversation_calls_turn_context
+    )
+    turn_context_owner = bool(
+        run_forwarder
+        and conversation_calls_turn_context
+        and turn_context_source
+        and prompt_anchor in turn_context_source
+    )
+    if conversation_calls_turn_context and conversation_loop_source and prompt_anchor in conversation_loop_source:
+        raise ValueError("Ambiguous Hermes layout: conversation_loop and turn_context both claim the turn prologue.")
+    owners = [
+        name
+        for name, claimed in (
+            ("legacy-monolith", monolith_owner),
+            ("modular-conversation-loop", conversation_owner),
+            ("v019-turn-context", turn_context_owner),
+        )
+        if claimed
+    ]
+    if len(owners) != 1:
+        raise ValueError(
+            "Unsupported or ambiguous Hermes turn layout; expected exactly one of "
+            "run_agent.py, agent/conversation_loop.py, or agent/turn_context.py to own the prompt prologue."
+        )
+    return owners[0]
+
+
+def _validate_python(label: str, source: str, path: Path) -> None:
+    try:
+        compile(source, str(path), "exec")
+    except (SyntaxError, ValueError) as exc:
+        raise ValueError(f"Planned {label} source does not compile: {exc}") from exc
+
+
+def _validate_runtime_postconditions(layout: str, sources: dict[str, str]) -> None:
+    """Use the doctor's AST/call-graph proof against the complete planned state."""
+    try:
+        from doctor import _valid_hooks_from_source, analyze_runtime_sources
+    except ModuleNotFoundError:  # Package import during repository-level test runs.
+        from .doctor import _valid_hooks_from_source, analyze_runtime_sources
+
+    checks = analyze_runtime_sources(
+        valid_hooks=_valid_hooks_from_source(sources.get("plugins")),
+        plugins_source=sources.get("plugins"),
+        run_agent_source=sources.get("run_agent"),
+        conversation_loop_source=sources.get("conversation_loop"),
+        turn_context_source=sources.get("turn_context"),
+        delegate_tool_source=sources.get("delegate_tool"),
+    )
+    failures = [check.message for check in checks if check.level == "FAIL"]
+    detected = next(
+        (
+            check.message
+            for check in checks
+            if check.level == "OK" and check.message.startswith("Detected ")
+        ),
+        "",
+    )
+    if failures:
+        raise ValueError(
+            "Runtime semantic postcondition failed: " + "; ".join(failures)
+        )
+    if layout not in detected:
+        raise ValueError(
+            "Runtime semantic postcondition failed: planned and proven layouts differ."
+        )
+
+
+def plan_runtime_patch(
+    *,
+    plugins: Path,
+    run_agent: Path,
+    delegate_tool: Path,
+    conversation_loop: Path | None = None,
+    turn_context: Path | None = None,
+) -> RuntimePatchPlan:
+    """Read and validate every required source before returning a pure patch plan."""
+    required: list[tuple[str, Path]] = [
+        ("plugins", plugins),
+        ("run_agent", run_agent),
+        ("delegate_tool", delegate_tool),
+    ]
+    if conversation_loop is not None:
+        required.append(("conversation_loop", conversation_loop))
+    if turn_context is not None:
+        required.append(("turn_context", turn_context))
+    snapshots = tuple(_snapshot_source(label, path) for label, path in required)
+    aliases: dict[tuple[int, int], str] = {}
+    for snapshot in snapshots:
+        identity = (snapshot.device, snapshot.inode)
+        if identity in aliases:
+            raise ValueError(
+                f"Runtime targets {aliases[identity]} and {snapshot.label} resolve to the same file."
+            )
+        aliases[identity] = snapshot.label
+        _validate_python(snapshot.label, snapshot.source, snapshot.path)
+
+    by_label = {snapshot.label: snapshot for snapshot in snapshots}
+    layout = _classify_layout(
+        by_label["run_agent"].source,
+        by_label.get("conversation_loop").source if "conversation_loop" in by_label else None,
+        by_label.get("turn_context").source if "turn_context" in by_label else None,
+    )
+    if layout == "modular-conversation-loop" and "conversation_loop" not in by_label:
+        raise ValueError("The modular Hermes layout requires agent/conversation_loop.py.")
+    if layout == "v019-turn-context" and "turn_context" not in by_label:
+        raise ValueError("The Hermes v0.19 layout requires agent/turn_context.py.")
+
+    patchers: list[tuple[str, Callable[[str], tuple[str, list[str]]]]] = [
+        ("run_agent", patch_run_agent_source),
+    ]
+    if layout == "legacy-monolith":
+        pass
+    elif layout == "modular-conversation-loop":
+        patchers.append(("conversation_loop", patch_conversation_loop_source))
+    else:
+        patchers.append(("turn_context", patch_turn_context_source))
+    patchers.extend(
+        [
+            ("delegate_tool", patch_delegate_tool_source),
+            # Register the hook last so a handled write failure never exposes
+            # a hook whose runtime owner has not committed yet.
+            ("plugins", patch_plugins_source),
+        ]
+    )
+
+    entries: list[PatchEntry] = []
+    for label, patcher in patchers:
+        snapshot = by_label[label]
+        try:
+            patched, changes = patcher(snapshot.source)
+        except Exception as exc:
+            raise ValueError(f"Could not plan {label} patch: {exc}") from exc
+        _validate_python(label, patched, snapshot.path)
+        if changes:
+            entries.append(PatchEntry(snapshot, patched, tuple(changes)))
+
+    planned_sources = {label: snapshot.source for label, snapshot in by_label.items()}
+    for entry in entries:
+        planned_sources[entry.label] = entry.patched
+    _validate_runtime_postconditions(layout, planned_sources)
+
+    return RuntimePatchPlan(layout, snapshots, tuple(entries))
+
+
+def _fsync_directory(path: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    descriptor = os.open(path, flags)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _write_bytes_durable(path: Path, raw: bytes, mode: int, uid: int, gid: int) -> None:
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+    try:
+        os.fchmod(descriptor, mode)
+        try:
+            os.fchown(descriptor, uid, gid)
+        except (AttributeError, PermissionError):
+            pass
+        with os.fdopen(descriptor, "wb", closefd=False) as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+    finally:
+        os.close(descriptor)
+
+
+def _stage_bytes(
+    snapshot: SourceSnapshot,
+    raw: bytes,
+    suffix: str,
+    *,
+    transaction_token: str = "",
+) -> Path:
+    if transaction_token and (
+        Path(transaction_token).name != transaction_token
+        or any(not (character.isalnum() or character in {"-", "_"}) for character in transaction_token)
+    ):
+        raise ValueError("Unsafe runtime transaction token for staged file.")
+    token = f"{transaction_token}-" if transaction_token else ""
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{snapshot.path.name}.zeroapi-{token}",
+        suffix=suffix,
+        dir=snapshot.path.parent,
+    )
+    os.close(descriptor)
+    staged = Path(name)
+    staged.unlink()
+    _write_bytes_durable(staged, raw, snapshot.mode, snapshot.uid, snapshot.gid)
+    return staged
+
+
+def _cleanup_transaction_stages(transaction_dir: Path, manifest: dict) -> None:
+    transaction_id = str(manifest.get("transaction_id") or "")
+    if not transaction_id or transaction_id != transaction_dir.name:
+        raise ValueError("Runtime transaction id does not match its journal directory.")
+    targets = manifest.get("targets")
+    if not isinstance(targets, list):
+        raise ValueError("Runtime transaction target list is invalid.")
+    touched_parents: set[Path] = set()
+    for target in targets:
+        if not isinstance(target, dict):
+            raise ValueError("Runtime transaction target entry is invalid.")
+        path = Path(str(target.get("path") or ""))
+        if not path.is_absolute():
+            raise ValueError("Runtime transaction stage target is not absolute.")
+        pattern = f".{path.name}.zeroapi-{transaction_id}-*"
+        for candidate in path.parent.glob(pattern):
+            if candidate.is_symlink() or not candidate.is_file():
+                raise ValueError(f"Unsafe runtime stage residue: {candidate}")
+            candidate.unlink()
+            touched_parents.add(path.parent)
+    for parent in touched_parents:
+        _fsync_directory(parent)
+
+
+def _assert_snapshot_unchanged(snapshot: SourceSnapshot) -> None:
+    if snapshot.path.is_symlink():
+        raise RuntimeError(f"Runtime target became a symlink after planning: {snapshot.label}")
+    metadata = snapshot.path.stat()
+    if (metadata.st_dev, metadata.st_ino) != (snapshot.device, snapshot.inode):
+        raise RuntimeError(f"Runtime target changed identity after planning: {snapshot.label}")
+    if _sha256(snapshot.path.read_bytes()) != snapshot.digest:
+        raise RuntimeError(f"Runtime target changed content after planning: {snapshot.label}")
+
+
+def _write_manifest(transaction_dir: Path, payload: dict) -> None:
+    destination = transaction_dir / "manifest.json"
+    temporary = transaction_dir / ".manifest.json.tmp"
+    raw = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    if temporary.exists():
+        temporary.unlink()
+    _write_bytes_durable(temporary, raw, 0o600, os.getuid(), os.getgid())
+    os.replace(temporary, destination)
+    _fsync_directory(transaction_dir)
+
+
+def _default_backup_root() -> Path:
+    configured = os.environ.get("HERMES_HOME")
+    hermes_home = Path(configured).expanduser() if configured else Path.home() / ".hermes"
+    return hermes_home / "backups" / "zeroapi-router"
+
+
+def _runtime_plugin_discovery_roots_for_run_agent(
+    run_agent: Path,
+) -> tuple[Path, ...]:
+    configured = os.environ.get("HERMES_HOME")
+    hermes_home = Path(configured).expanduser() if configured else Path.home() / ".hermes"
+    roots = {
+        run_agent.parent / "plugins",
+        hermes_home / "plugins",
+        Path.cwd() / ".hermes" / "plugins",
+    }
+    return tuple(sorted((path.resolve() for path in roots), key=lambda path: str(path)))
+
+
+def _runtime_plugin_discovery_roots(plan: RuntimePatchPlan) -> tuple[Path, ...]:
+    run_agent = next(
+        snapshot.path for snapshot in plan.snapshots if snapshot.label == "run_agent"
+    )
+    return _runtime_plugin_discovery_roots_for_run_agent(run_agent)
+
+
+def _validate_runtime_backup_root(
+    backup_root: Path,
+    discovery_roots: tuple[Path, ...],
+) -> None:
+    resolved_backup = backup_root.expanduser().resolve()
+    for discovery_root in discovery_roots:
+        resolved_discovery = discovery_root.expanduser().resolve()
+        if resolved_backup == resolved_discovery or resolved_backup.is_relative_to(
+            resolved_discovery
+        ):
+            raise ValueError(
+                "Runtime backup root must stay outside plugin discovery roots: "
+                f"{resolved_backup} is under {resolved_discovery}."
+            )
+
+
+def apply_runtime_patch(
+    plan: RuntimePatchPlan,
+    *,
+    backup_root: Path | None = None,
+    replace_file: Callable[[Path, Path], None] = os.replace,
+    plugin_discovery_roots: tuple[Path, ...] | None = None,
+) -> list[str]:
+    """Commit a validated plan atomically per file and roll back handled failures."""
+    if not plan.entries:
+        return []
+
+    root = (backup_root or _default_backup_root()).expanduser()
+    _validate_runtime_backup_root(
+        root,
+        plugin_discovery_roots or _runtime_plugin_discovery_roots(plan),
+    )
+    root.mkdir(parents=True, exist_ok=True)
+    transaction_id = (
+        datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        + "-"
+        + uuid.uuid4().hex[:12]
+    )
+    transaction_dir = root / transaction_id
+    transaction_dir.mkdir(mode=0o700)
+    originals_dir = transaction_dir / "originals"
+    originals_dir.mkdir(mode=0o700)
+    manifest = {
+        "version": 1,
+        "transaction_id": transaction_id,
+        "layout": plan.layout,
+        "state": "preparing",
+        "targets": [],
+    }
+    backup_paths: dict[str, Path] = {}
+    staged_paths: dict[str, Path] = {}
+    replaced: list[PatchEntry] = []
+    try:
+        for entry in plan.entries:
+            backup = originals_dir / f"{entry.label}.original"
+            _write_bytes_durable(
+                backup,
+                entry.snapshot.raw,
+                entry.snapshot.mode,
+                entry.snapshot.uid,
+                entry.snapshot.gid,
+            )
+            backup_paths[entry.label] = backup
+            manifest["targets"].append(
+                {
+                    "label": entry.label,
+                    "path": str(entry.path),
+                    "original_sha256": entry.snapshot.digest,
+                    "patched_sha256": _sha256(entry.patched.encode("utf-8")),
+                    "backup": str(backup.relative_to(transaction_dir)),
+                    "mode": entry.snapshot.mode,
+                }
+            )
+        _fsync_directory(originals_dir)
+        manifest["state"] = "staging"
+        _write_manifest(transaction_dir, manifest)
+
+        for entry in plan.entries:
+            staged_paths[entry.label] = _stage_bytes(
+                entry.snapshot,
+                entry.patched.encode("utf-8"),
+                ".staged",
+                transaction_token=transaction_id,
+            )
+
+        for snapshot in plan.snapshots:
+            _assert_snapshot_unchanged(snapshot)
+        manifest["state"] = "committing"
+        _write_manifest(transaction_dir, manifest)
+
+        for entry in plan.entries:
+            replace_file(staged_paths[entry.label], entry.path)
+            staged_paths.pop(entry.label, None)
+            replaced.append(entry)
+            _fsync_directory(entry.path.parent)
+
+        for entry in plan.entries:
+            if _sha256(entry.path.read_bytes()) != _sha256(entry.patched.encode("utf-8")):
+                raise RuntimeError(f"Final hash verification failed for {entry.label}.")
+        manifest["state"] = "committed"
+        _write_manifest(transaction_dir, manifest)
+        return list(plan.changes)
+    except Exception as commit_error:
+        if not replaced:
+            manifest["state"] = "aborted_before_commit"
+            manifest["error"] = type(commit_error).__name__
+            try:
+                _write_manifest(transaction_dir, manifest)
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Runtime patch failed before commit; no targets were written: {commit_error}"
+            ) from commit_error
+        rollback_error: Exception | None = None
+        manifest["state"] = "rolling_back"
+        manifest["error"] = type(commit_error).__name__
+        try:
+            _write_manifest(transaction_dir, manifest)
+        except Exception:
+            pass
+        try:
+            for entry in reversed(replaced):
+                restore_stage = _stage_bytes(
+                    entry.snapshot,
+                    entry.snapshot.raw,
+                    ".rollback",
+                    transaction_token=transaction_id,
+                )
+                try:
+                    replace_file(restore_stage, entry.path)
+                    _fsync_directory(entry.path.parent)
+                finally:
+                    if restore_stage.exists():
+                        restore_stage.unlink()
+            for snapshot in plan.snapshots:
+                if _sha256(snapshot.path.read_bytes()) != snapshot.digest:
+                    raise RuntimeError(f"Rollback hash verification failed for {snapshot.label}.")
+            manifest["state"] = "rolled_back"
+            _write_manifest(transaction_dir, manifest)
+        except Exception as exc:
+            rollback_error = exc
+            manifest["state"] = "dirty"
+            manifest["rollback_error"] = type(exc).__name__
+            try:
+                _write_manifest(transaction_dir, manifest)
+            except Exception:
+                pass
+        if rollback_error is not None:
+            raise RuntimeError(
+                f"Runtime patch failed and rollback is incomplete: {rollback_error}"
+            ) from commit_error
+        raise RuntimeError(f"Runtime patch failed and was rolled back: {commit_error}") from commit_error
+    finally:
+        for staged in staged_paths.values():
+            try:
+                staged.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def rollback_runtime_transaction(
+    transaction_dir: Path,
+    *,
+    replace_file: Callable[[Path, Path], None] = os.replace,
+) -> None:
+    """Restore all original runtime files recorded by a transaction journal."""
+    transaction_dir = transaction_dir.expanduser().resolve()
+    manifest_path = transaction_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    transaction_id = str(manifest.get("transaction_id") or "")
+    if manifest.get("state") in {"rolled_back", "rollback_committed"}:
+        _cleanup_transaction_stages(transaction_dir, manifest)
+        return
+    allowed_states = {
+        "preparing",
+        "staging",
+        "committing",
+        "rolling_back",
+        "rollback_committing",
+        "rollback_failed",
+        "dirty",
+        "committed",
+    }
+    if manifest.get("state") not in allowed_states:
+        raise ValueError(f"Unsupported runtime transaction state: {manifest.get('state')!r}")
+
+    targets = manifest.get("targets")
+    if not isinstance(targets, list) or not targets:
+        raise ValueError(f"Runtime transaction has no target manifest: {transaction_dir}")
+    snapshots: list[SourceSnapshot] = []
+    originals: dict[str, bytes] = {}
+    modes: dict[str, int] = {}
+    for target in targets:
+        if not isinstance(target, dict):
+            raise ValueError("Runtime transaction target entry is invalid.")
+        label = str(target.get("label") or "")
+        path = Path(str(target.get("path") or ""))
+        backup = transaction_dir / str(target.get("backup") or "")
+        if not label or not path.is_absolute() or path.is_symlink() or not path.is_file():
+            raise ValueError(f"Unsafe runtime rollback target for {label or 'unknown'}.")
+        original = backup.read_bytes()
+        original_digest = str(target.get("original_sha256") or "")
+        patched_digest = str(target.get("patched_sha256") or "")
+        if _sha256(original) != original_digest:
+            raise ValueError(f"Runtime backup hash mismatch for {label}.")
+        current_digest = _sha256(path.read_bytes())
+        if current_digest not in {original_digest, patched_digest}:
+            raise ValueError(f"Runtime target has foreign changes; refusing rollback for {label}.")
+        snapshots.append(_snapshot_source(label, path))
+        originals[label] = original
+        modes[label] = int(target.get("mode") or snapshots[-1].mode)
+
+    staged: dict[str, Path] = {}
+    replaced: list[SourceSnapshot] = []
+    try:
+        for snapshot in snapshots:
+            rollback_snapshot = SourceSnapshot(
+                label=snapshot.label,
+                path=snapshot.path,
+                source=snapshot.source,
+                raw=snapshot.raw,
+                digest=snapshot.digest,
+                mode=modes[snapshot.label],
+                uid=snapshot.uid,
+                gid=snapshot.gid,
+                device=snapshot.device,
+                inode=snapshot.inode,
+                size=snapshot.size,
+                mtime_ns=snapshot.mtime_ns,
+            )
+            staged[snapshot.label] = _stage_bytes(
+                rollback_snapshot,
+                originals[snapshot.label],
+                ".transaction-rollback",
+                transaction_token=transaction_id,
+            )
+        manifest["state"] = "rollback_committing"
+        _write_manifest(transaction_dir, manifest)
+        for snapshot in reversed(snapshots):
+            replace_file(staged[snapshot.label], snapshot.path)
+            staged.pop(snapshot.label, None)
+            replaced.append(snapshot)
+            _fsync_directory(snapshot.path.parent)
+        for snapshot in snapshots:
+            expected = _sha256(originals[snapshot.label])
+            if _sha256(snapshot.path.read_bytes()) != expected:
+                raise RuntimeError(f"Runtime rollback verification failed for {snapshot.label}.")
+        manifest["state"] = "rollback_committed"
+        _write_manifest(transaction_dir, manifest)
+    except Exception as rollback_error:
+        restore_error: Exception | None = None
+        try:
+            for snapshot in reversed(replaced):
+                restore = _stage_bytes(
+                    snapshot,
+                    snapshot.raw,
+                    ".rollback-revert",
+                    transaction_token=transaction_id,
+                )
+                try:
+                    replace_file(restore, snapshot.path)
+                    _fsync_directory(snapshot.path.parent)
+                finally:
+                    if restore.exists():
+                        restore.unlink()
+            for snapshot in snapshots:
+                if _sha256(snapshot.path.read_bytes()) != snapshot.digest:
+                    raise RuntimeError(f"Rollback reversion verification failed for {snapshot.label}.")
+        except Exception as exc:
+            restore_error = exc
+        manifest["state"] = "dirty" if restore_error else "rollback_failed"
+        manifest["rollback_error"] = type(rollback_error).__name__
+        if restore_error:
+            manifest["rollback_revert_error"] = type(restore_error).__name__
+        _write_manifest(transaction_dir, manifest)
+        if restore_error:
+            raise RuntimeError(
+                f"Runtime rollback failed and could not restore its starting state: {restore_error}"
+            ) from rollback_error
+        raise RuntimeError(f"Runtime rollback failed without mutating final state: {rollback_error}") from rollback_error
+    finally:
+        for path in staged.values():
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+        _cleanup_transaction_stages(transaction_dir, manifest)
+
+
+def recover_incomplete_transactions(backup_root: Path) -> list[Path]:
+    """Recover interrupted journals before a new patch transaction can start."""
+    root = backup_root.expanduser().resolve()
+    if not root.is_dir():
+        return []
+    recovered: list[Path] = []
+    incomplete_states = {
+        "preparing",
+        "staging",
+        "committing",
+        "rolling_back",
+        "rollback_committing",
+        "rollback_failed",
+        "dirty",
+    }
+    for transaction_dir in sorted(
+        (path for path in root.iterdir() if path.is_dir()),
+        key=lambda path: path.name,
+    ):
+        manifest_path = transaction_dir / "manifest.json"
+        if not manifest_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise RuntimeError(f"Unreadable runtime recovery journal: {transaction_dir}") from exc
+        if manifest.get("state") not in incomplete_states:
+            continue
+        rollback_runtime_transaction(transaction_dir)
+        recovered.append(transaction_dir)
+    return recovered
+
+
+def _auto_path(module_name: str, description: str) -> Path:
+    spec = importlib.util.find_spec(module_name)
     if spec is None or spec.origin is None:
-        raise SystemExit("Could not locate run_agent.py. Pass --run-agent explicitly.")
+        raise SystemExit(f"Could not locate {description}. Pass its explicit path.")
     return Path(spec.origin)
 
 
-def _auto_plugins_path() -> Path:
-    spec = importlib.util.find_spec("hermes_cli.plugins")
-    if spec is None or spec.origin is None:
-        raise SystemExit("Could not locate hermes_cli/plugins.py. Pass --plugins explicitly.")
-    return Path(spec.origin)
-
-
-def _auto_delegate_tool_path() -> Path:
-    spec = importlib.util.find_spec("tools.delegate_tool")
-    if spec is None or spec.origin is None:
-        raise SystemExit("Could not locate tools/delegate_tool.py. Pass --delegate-tool explicitly.")
-    return Path(spec.origin)
-
-
-def _auto_conversation_loop_path(run_agent: Path) -> Path | None:
-    candidate = run_agent.parent / "agent" / "conversation_loop.py"
+def _optional_sibling(run_agent: Path, relative: str) -> Path | None:
+    candidate = run_agent.parent / relative
     return candidate if candidate.exists() else None
 
 
-def _patch_file(path: Path, patcher, label: str, dry_run: bool) -> list[str]:
-    source = path.read_text(encoding="utf-8")
-    patched, changes = patcher(source)
-    if not changes:
-        return []
-
-    print(f"PATCH {path}")
-    for change in changes:
-        print(f"- {change}")
-    if dry_run:
-        return [f"{label}: {change}" for change in changes]
-
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    backup = path.with_name(f"{path.name}.bak-zeroapi-{stamp}")
-    shutil.copy2(path, backup)
-    path.write_text(patched, encoding="utf-8")
-    print(f"OK wrote patch. Backup: {backup}")
-    return [f"{label}: {change}" for change in changes]
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Patch Hermes run_agent.py for ZeroAPI pre_model_route compatibility.")
-    parser.add_argument("--plugins", type=Path, help="Path to Hermes hermes_cli/plugins.py. Defaults to importlib discovery.")
-    parser.add_argument("--run-agent", type=Path, help="Path to Hermes run_agent.py. Defaults to importlib discovery.")
-    parser.add_argument("--conversation-loop", type=Path, help="Path to Hermes agent/conversation_loop.py. Defaults to sibling of run_agent.py when present.")
-    parser.add_argument("--delegate-tool", type=Path, help="Path to Hermes tools/delegate_tool.py. Defaults to importlib discovery.")
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Patch Hermes runtime for ZeroAPI pre_model_route compatibility.")
+    parser.add_argument("--plugins", type=Path, help="Path to Hermes hermes_cli/plugins.py.")
+    parser.add_argument("--run-agent", type=Path, help="Path to Hermes run_agent.py.")
+    parser.add_argument("--conversation-loop", type=Path, help="Path to Hermes agent/conversation_loop.py.")
+    parser.add_argument("--turn-context", type=Path, help="Path to Hermes agent/turn_context.py.")
+    parser.add_argument("--delegate-tool", type=Path, help="Path to Hermes tools/delegate_tool.py.")
+    parser.add_argument("--backup-root", type=Path, help="External transaction backup root. Defaults to $HERMES_HOME/backups/zeroapi-router.")
+    parser.add_argument(
+        "--plugin-discovery-root",
+        type=Path,
+        action="append",
+        default=[],
+        help="Hermes plugin discovery root used to validate backup isolation. May be repeated.",
+    )
+    parser.add_argument("--rollback-transaction", type=Path, help="Restore originals from a committed transaction directory.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print planned changes without writing.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    plugins = args.plugins or _auto_plugins_path()
-    run_agent = args.run_agent or _auto_run_agent_path()
-    conversation_loop = args.conversation_loop or _auto_conversation_loop_path(run_agent)
-    delegate_tool = args.delegate_tool or _auto_delegate_tool_path()
-    changes = []
-    changes.extend(_patch_file(plugins, patch_plugins_source, "plugins", args.dry_run))
-    changes.extend(_patch_file(run_agent, patch_run_agent_source, "run_agent", args.dry_run))
-    if conversation_loop is not None:
-        changes.extend(_patch_file(conversation_loop, patch_conversation_loop_source, "conversation_loop", args.dry_run))
-    changes.extend(_patch_file(delegate_tool, patch_delegate_tool_source, "delegate_tool", args.dry_run))
-    if not changes:
-        print("OK Hermes already has the ZeroAPI runtime compatibility patch.")
+    try:
+        if args.rollback_transaction:
+            rollback_runtime_transaction(args.rollback_transaction)
+            print("OK runtime transaction rollback restored every recorded original.")
+            return 0
+        run_agent = args.run_agent or _auto_path("run_agent", "run_agent.py")
+        backup_root = args.backup_root or _default_backup_root()
+        discovery_roots = (
+            tuple(path.expanduser().resolve() for path in args.plugin_discovery_root)
+            if args.plugin_discovery_root
+            else _runtime_plugin_discovery_roots_for_run_agent(run_agent)
+        )
+        _validate_runtime_backup_root(backup_root, discovery_roots)
+        if not args.dry_run:
+            for recovered in recover_incomplete_transactions(backup_root):
+                print(f"OK recovered interrupted runtime transaction: {recovered}")
+        plugins = args.plugins or _auto_path("hermes_cli.plugins", "hermes_cli/plugins.py")
+        delegate_tool = args.delegate_tool or _auto_path("tools.delegate_tool", "tools/delegate_tool.py")
+        conversation_loop = args.conversation_loop or _optional_sibling(run_agent, "agent/conversation_loop.py")
+        turn_context = args.turn_context or _optional_sibling(run_agent, "agent/turn_context.py")
+        plan = plan_runtime_patch(
+            plugins=plugins,
+            run_agent=run_agent,
+            conversation_loop=conversation_loop,
+            turn_context=turn_context,
+            delegate_tool=delegate_tool,
+        )
+        if not plan.entries:
+            print("OK Hermes already has the ZeroAPI runtime compatibility patch.")
+            return 0
+        print(f"PLAN layout={plan.layout}")
+        for change in plan.changes:
+            print(f"- {change}")
+        if args.dry_run:
+            print("DRY-RUN no files written.")
+            return 0
+        changes = apply_runtime_patch(
+            plan,
+            backup_root=backup_root,
+            plugin_discovery_roots=discovery_roots,
+        )
+        for change in changes:
+            print(f"OK {change}")
+        print(f"OK transaction backups retained under {backup_root}")
         return 0
-
-    if args.dry_run:
-        print("DRY-RUN no files written.")
-        return 0
-
-    return 0
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"FAIL {exc}")
+        return 1
 
 
 if __name__ == "__main__":
