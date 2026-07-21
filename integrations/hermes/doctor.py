@@ -1093,7 +1093,6 @@ def main(argv: list[str] | None = None) -> int:
             hermes_root=hermes_root,
             project_root=Path.cwd(),
         )
-        + [plugin_root.parent]
     )
     checks.extend(analyze_plugin_installation(plugin_root, discovery_roots))
 

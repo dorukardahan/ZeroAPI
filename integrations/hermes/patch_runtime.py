@@ -266,14 +266,18 @@ def _normalize_child_runtime_tuple(
 
 
 DELEGATE_CREDENTIAL_POOL_RESOLVER = r'''
-def _resolve_child_credential_pool(effective_provider: Optional[str], parent_agent):
+def _resolve_child_credential_pool(
+    effective_provider: Optional[str],
+    parent_agent,
+    effective_base_url: Optional[str] = None,
+):
     """Resolve a credential pool for the child agent.
 
     Rules:
-    1. Same provider and same pool provider as the parent -> share the parent's
-       pool so cooldown state and rotation stay synchronized.
-    2. Different provider, or stale parent pool -> try to load that provider's
-       own pool.
+    1. Matching provider and endpoint identity -> share the parent's pool so
+       cooldown state and rotation stay synchronized.
+    2. Different provider, endpoint, or stale parent pool -> try to load that
+       runtime's own pool.
     3. No pool available -> return None and let the child keep the inherited
        fixed credential behavior.
     """
@@ -282,6 +286,42 @@ def _resolve_child_credential_pool(effective_provider: Optional[str], parent_age
 
     parent_provider = getattr(parent_agent, "provider", None) or ""
     parent_pool = getattr(parent_agent, "_credential_pool", None)
+
+    if effective_provider == "custom":
+        try:
+            from agent.credential_pool import get_custom_provider_pool_key, load_pool
+
+            child_key = get_custom_provider_pool_key(effective_base_url)
+            if child_key is None:
+                return None
+
+            parent_key = get_custom_provider_pool_key(
+                getattr(parent_agent, "base_url", None)
+            )
+            parent_pool_provider = getattr(parent_pool, "provider", None)
+            if (
+                parent_pool is not None
+                and parent_provider == "custom"
+                and parent_key is not None
+                and parent_key == child_key
+                and (
+                    not isinstance(parent_pool_provider, str)
+                    or parent_pool_provider in {effective_provider, child_key}
+                )
+            ):
+                return parent_pool
+
+            pool = load_pool(child_key)
+            if pool is not None and pool.has_credentials():
+                return pool
+        except Exception as exc:
+            logger.debug(
+                "Could not resolve custom credential pool for child endpoint '%s': %s",
+                effective_base_url,
+                exc,
+            )
+        return None
+
     if parent_pool is not None and effective_provider == parent_provider:
         parent_pool_provider = getattr(parent_pool, "provider", None)
         if not isinstance(parent_pool_provider, str) or (

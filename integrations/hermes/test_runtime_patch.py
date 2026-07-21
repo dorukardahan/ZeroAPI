@@ -449,22 +449,65 @@ VALID_HOOKS = {
         self.assertNotIn("detect_provider_for_model_old(", upgraded)
 
     def test_delegate_tool_patch_upgrades_stale_parent_pool_resolver(self):
-        patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
-        legacy = patched.replace(
-            '''        parent_pool_provider = getattr(parent_pool, "provider", None)
-        if not isinstance(parent_pool_provider, str) or (
-            parent_pool_provider == effective_provider
-        ):
-            return parent_pool
-''',
-            "        return parent_pool\n",
-        )
+        legacy = UPSTREAM_LIKE_DELEGATE_TOOL
 
         upgraded, changes = patch_delegate_tool_source(legacy)
 
         self.assertIn("updated delegate credential pool resolver", changes)
         self.assertIn("parent_pool_provider", upgraded)
         self.assertIn("parent_pool_provider == effective_provider", upgraded)
+
+    def test_delegate_pool_upgrade_preserves_v019_endpoint_contract(self):
+        patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)
+        resolver_start = patched.index("\ndef _resolve_child_credential_pool(")
+        resolver_end = patched.index("\ndef _resolve_delegation_credentials(", resolver_start)
+        stale_v019_resolver = r'''
+def _resolve_child_credential_pool(
+    effective_provider: Optional[str],
+    parent_agent,
+    effective_base_url: Optional[str] = None,
+):
+    if not effective_provider:
+        return getattr(parent_agent, "_credential_pool", None)
+    parent_provider = getattr(parent_agent, "provider", None) or ""
+    parent_pool = getattr(parent_agent, "_credential_pool", None)
+    if effective_provider == "custom":
+        try:
+            from agent.credential_pool import get_custom_provider_pool_key, load_pool
+            child_key = get_custom_provider_pool_key(effective_base_url)
+            if child_key is None:
+                return None
+            parent_key = get_custom_provider_pool_key(getattr(parent_agent, "base_url", None))
+            if parent_pool is not None and parent_provider == "custom" and parent_key == child_key:
+                return parent_pool
+            return load_pool(child_key)
+        except Exception:
+            return None
+    if parent_pool is not None and effective_provider == parent_provider:
+        return parent_pool
+    return None
+'''
+        legacy = patched[:resolver_start] + stale_v019_resolver + patched[resolver_end:]
+
+        upgraded, changes = patch_delegate_tool_source(legacy)
+        namespace = {}
+        exec(compile(upgraded, "delegate_tool.py", "exec"), namespace)
+        parent_agent = type(
+            "ParentAgent",
+            (),
+            {"provider": "custom", "base_url": "https://parent.invalid", "_credential_pool": None},
+        )()
+
+        result = namespace["_resolve_child_credential_pool"](
+            "custom",
+            parent_agent,
+            "https://child.invalid",
+        )
+
+        self.assertIn("updated delegate credential pool resolver", changes)
+        self.assertIn("effective_base_url: Optional[str] = None", upgraded)
+        self.assertIn("get_custom_provider_pool_key", upgraded)
+        self.assertIsNone(result)
 
     def test_delegate_tool_patch_upgrades_legacy_normalization_call(self):
         patched, _ = patch_delegate_tool_source(UPSTREAM_LIKE_DELEGATE_TOOL)

@@ -1,12 +1,17 @@
+import io
+import os
 import unittest
+from contextlib import redirect_stdout
 from tempfile import TemporaryDirectory
 from pathlib import Path
+from unittest import mock
 
 from doctor import (
     _source_for_module,
     _valid_hooks_from_source,
     analyze_plugin_installation,
     analyze_runtime_sources,
+    main,
 )
 
 
@@ -202,6 +207,46 @@ def messages(checks):
 
 
 class HermesDoctorRuntimeContractTest(unittest.TestCase):
+    def test_cli_does_not_treat_arbitrary_plugin_parent_as_discoverable(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plugin_root = root / "checkout" / "zeroapi-router"
+            plugin_root.mkdir(parents=True)
+            (plugin_root / "plugin.yaml").write_text(
+                "name: zeroapi-router\n",
+                encoding="utf-8",
+            )
+            (plugin_root / "__init__.py").write_text(
+                "def _pre_model_route(**kwargs):\n    return None\n\n"
+                "def register(ctx):\n    ctx.register_hook('pre_model_route', _pre_model_route)\n",
+                encoding="utf-8",
+            )
+            hermes_root = root / "hermes"
+            hermes_root.mkdir()
+            output = io.StringIO()
+
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "HERMES_HOME": str(root / "home"),
+                    "HERMES_ENABLE_PROJECT_PLUGINS": "",
+                    "HERMES_BUNDLED_PLUGINS": str(root / "bundled-plugins"),
+                },
+                clear=False,
+            ), redirect_stdout(output):
+                result = main(
+                    [
+                        "--hermes-root",
+                        str(hermes_root),
+                        "--plugin-root",
+                        str(plugin_root),
+                    ]
+                )
+
+            self.assertEqual(result, 2)
+            self.assertIn("Duplicate or missing 'zeroapi-router' discovery candidates: none", output.getvalue())
+            self.assertNotIn("Exactly one canonical ZeroAPI plugin path is discoverable", output.getvalue())
+
     def test_valid_hooks_ignores_nested_or_dead_assignments(self):
         source = '''
 def unused_helper():
