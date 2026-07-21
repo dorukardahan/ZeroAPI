@@ -664,6 +664,8 @@ def _flag_guard_present(
     function,
     route_line: int = 0,
     receiver: str = "agent",
+    *,
+    allow_cache_reset: bool = True,
 ) -> bool:
     if function is None:
         return False
@@ -700,7 +702,7 @@ def _flag_guard_present(
             )
             if (flag_getattr or flag_alias) and guards_stored_prompt:
                 return True
-        if isinstance(node, ast.Assign) and any(
+        if allow_cache_reset and isinstance(node, ast.Assign) and any(
             isinstance(target, ast.Attribute)
             and target.attr == "_cached_system_prompt"
             and isinstance(target.value, ast.Name)
@@ -795,11 +797,21 @@ def _runtime_proof(
         route_line,
         owner_receiver,
     )
+    prompt_restore_function = _module_function(
+        conversation_tree,
+        "_restore_or_build_system_prompt",
+    ) or _module_function(conversation_tree, "restore_or_build_system_prompt")
+    prompt_restore_guard = _flag_guard_present(
+        prompt_restore_function,
+        receiver="agent",
+        allow_cache_reset=False,
+    )
     if layout == "modular-conversation-loop" and not prompt_refresh:
-        prompt_refresh = _flag_guard_present(
-            _module_function(conversation_tree, "_restore_or_build_system_prompt"),
-            receiver="agent",
-        )
+        prompt_refresh = prompt_restore_guard
+    elif layout == "v019-turn-context":
+        # Clearing the in-memory cache is insufficient in v0.19 because the
+        # callback can restore the old provider/model prompt from the DB.
+        prompt_refresh = prompt_refresh and prompt_restore_guard
     auxiliary_sync = True
     if layout == "v019-turn-context":
         sync_calls = _calls_named(owner_function, "set_runtime_main")

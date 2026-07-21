@@ -168,6 +168,20 @@ UPSTREAM_V019_CONVERSATION_LOOP = '''
 from agent.turn_context import build_turn_context
 
 
+def _restore_or_build_system_prompt(agent, system_message, conversation_history):
+    stored_prompt = None
+    if conversation_history and agent._session_db:
+        session_row = agent._session_db.get_session(agent.session_id)
+        if session_row is not None:
+            stored_prompt = session_row.get("system_prompt") or None
+
+    if stored_prompt:
+        agent._cached_system_prompt = stored_prompt
+        return
+
+    agent._cached_system_prompt = agent._build_system_prompt(system_message)
+
+
 def run_conversation(agent, user_message, system_message=None, conversation_history=None):
     turn_ctx = build_turn_context(
         agent,
@@ -362,6 +376,53 @@ VALID_HOOKS = {
         self.assertIn("from agent.auxiliary_client import set_runtime_main", patched)
         self.assertIn("agent._cached_system_prompt = None", patched)
 
+    def test_v019_plan_skips_stored_prompt_restore_after_route_switch(self):
+        with TemporaryDirectory() as tmp:
+            paths = HermesRuntimeTransactionTest()._write_tree(Path(tmp))
+
+            plan = plan_runtime_patch(
+                plugins=paths["plugins"],
+                run_agent=paths["run_agent"],
+                conversation_loop=paths["conversation_loop"],
+                turn_context=paths["turn_context"],
+                delegate_tool=paths["delegate_tool"],
+            )
+
+        conversation_entry = next(
+            entry for entry in plan.entries if entry.label == "conversation_loop"
+        )
+        self.assertIn(
+            'not getattr(agent, "_pre_model_route_switched_this_turn", False)',
+            conversation_entry.patched,
+        )
+
+        namespace = {}
+        exec(compile(conversation_entry.patched, "conversation_loop.py", "exec"), namespace)
+
+        class SessionDB:
+            @staticmethod
+            def get_session(_session_id):
+                return {"system_prompt": "stale-provider-prompt"}
+
+        class Agent:
+            _cached_system_prompt = None
+            _pre_model_route_switched_this_turn = True
+            _session_db = SessionDB()
+            session_id = "session-1"
+
+            @staticmethod
+            def _build_system_prompt(_system_message):
+                return "fresh-routed-prompt"
+
+        agent = Agent()
+        namespace["_restore_or_build_system_prompt"](
+            agent,
+            None,
+            [{"role": "user", "content": "continue"}],
+        )
+
+        self.assertEqual(agent._cached_system_prompt, "fresh-routed-prompt")
+
     def test_v019_turn_context_patch_is_idempotent(self):
         patched, changes = patch_turn_context_source(UPSTREAM_V019_TURN_CONTEXT)
         self.assertTrue(changes)
@@ -392,7 +453,7 @@ VALID_HOOKS = {
         self.assertEqual(plan.layout, "v019-turn-context")
         self.assertEqual(
             plan.changed_labels,
-            ("run_agent", "turn_context", "delegate_tool", "plugins"),
+            ("run_agent", "conversation_loop", "turn_context", "delegate_tool", "plugins"),
         )
 
     def test_patch_is_idempotent(self):
@@ -558,7 +619,7 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
             for label, path in paths.items()
         }
 
-    def test_v019_plan_selects_turn_context_and_not_conversation_loop(self):
+    def test_v019_plan_selects_turn_context_owner_and_prompt_restore_guard(self):
         with TemporaryDirectory() as tmp:
             paths = self._write_tree(Path(tmp))
 
@@ -572,7 +633,14 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
 
             self.assertEqual(plan.layout, "v019-turn-context")
             self.assertIn("turn_context", plan.changed_labels)
-            self.assertNotIn("conversation_loop", plan.changed_labels)
+            self.assertIn("conversation_loop", plan.changed_labels)
+            conversation_entry = next(
+                entry for entry in plan.entries if entry.label == "conversation_loop"
+            )
+            self.assertNotIn(
+                "agent._apply_pre_model_route_hook(",
+                conversation_entry.patched,
+            )
 
     def test_planner_preserves_monolith_and_modular_conversation_layouts(self):
         with TemporaryDirectory() as tmp:

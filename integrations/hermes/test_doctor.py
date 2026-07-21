@@ -147,12 +147,31 @@ def run_conversation(agent, user_message, conversation_history):
 '''
 
 
-V019_CONVERSATION_LOOP = '''
+V019_CONVERSATION_LOOP_UNGUARDED = '''
 from agent.turn_context import build_turn_context
+
+def _restore_or_build_system_prompt(agent, system_message, conversation_history):
+    stored_prompt = None
+    if conversation_history and agent._session_db:
+        stored_prompt = agent._session_db.get_session(agent.session_id).get("system_prompt")
+    if stored_prompt:
+        agent._cached_system_prompt = stored_prompt
+        return
+    agent._cached_system_prompt = agent._build_system_prompt(system_message)
 
 def run_conversation(agent, user_message, conversation_history):
     return build_turn_context(agent, user_message, conversation_history)
 '''
+
+V019_CONVERSATION_LOOP = V019_CONVERSATION_LOOP_UNGUARDED.replace(
+    "    if conversation_history and agent._session_db:\n",
+    '''    if (
+        conversation_history
+        and agent._session_db
+        and not getattr(agent, "_pre_model_route_switched_this_turn", False)
+    ):
+''',
+)
 
 
 TURN_CONTEXT_PATCHED = '''
@@ -427,6 +446,37 @@ if False:
             delegate_tool_source=DELEGATE_TOOL_PATCHED,
         )
         self.assertNotIn("FAIL", levels(checks))
+
+    def test_v019_fails_when_stored_prompt_restore_ignores_route_switch(self):
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=RUN_AGENT_MODULAR_PATCHED,
+            conversation_loop_source=V019_CONVERSATION_LOOP_UNGUARDED,
+            turn_context_source=TURN_CONTEXT_PATCHED,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+        self.assertTrue(any("stale system_prompt cache" in message for message in messages(checks)))
+
+    def test_v019_fails_when_restore_helper_only_clears_in_memory_prompt(self):
+        conversation_loop = V019_CONVERSATION_LOOP_UNGUARDED.replace(
+            "    stored_prompt = None\n",
+            "    agent._cached_system_prompt = None\n    stored_prompt = None\n",
+            1,
+        )
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=RUN_AGENT_MODULAR_PATCHED,
+            conversation_loop_source=conversation_loop,
+            turn_context_source=TURN_CONTEXT_PATCHED,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+        self.assertTrue(any("stale system_prompt cache" in message for message in messages(checks)))
 
     def test_v019_accepts_the_route_sync_when_an_earlier_runtime_sync_also_exists(self):
         turn_context = TURN_CONTEXT_PATCHED.replace(

@@ -451,22 +451,14 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
     return text, changes
 
 
-def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
-    """Return patched ``agent/conversation_loop.py`` source and applied changes."""
+def _patch_conversation_prompt_restore_source(
+    source: str,
+    *,
+    require_session_start_anchor: bool,
+) -> tuple[str, list[str]]:
+    """Guard persisted prompt reuse when pre-model routing changed runtime."""
     changes: list[str] = []
     text = source
-
-    route_call_marker = "agent._apply_pre_model_route_hook(\n        original_user_message,"
-    if route_call_marker not in text:
-        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
-        if anchor not in text:
-            raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
-        text = text.replace(
-            anchor,
-            '''    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
-            1,
-        )
-        changes.append("inserted pre_model_route call before system prompt")
 
     prompt_guard_marker = 'not getattr(agent, "_pre_model_route_switched_this_turn", False)'
     if prompt_guard_marker not in text:
@@ -485,11 +477,45 @@ def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
         old_session_start = '''    # Plugin hook: on_session_start — fired once when a brand-new\n    # session is created (not on continuation).  Plugins can use this\n    # to initialise session-scoped state (e.g. warm a memory cache).\n    try:\n        from hermes_cli.plugins import invoke_hook as _invoke_hook\n        _invoke_hook(\n            "on_session_start",\n            session_id=agent.session_id,\n            model=agent.model,\n            platform=getattr(agent, "platform", None) or "",\n        )\n    except Exception as exc:\n        logger.warning("on_session_start hook failed: %s", exc)\n'''
         new_session_start = '''    if not conversation_history:\n        # Plugin hook: on_session_start — fired once when a brand-new\n        # session is created (not on continuation). Plugins can use this\n        # to initialise session-scoped state (e.g. warm a memory cache).\n        try:\n            from hermes_cli.plugins import invoke_hook as _invoke_hook\n            _invoke_hook(\n                "on_session_start",\n                session_id=agent.session_id,\n                model=agent.model,\n                platform=getattr(agent, "platform", None) or "",\n            )\n        except Exception as exc:\n            logger.warning("on_session_start hook failed: %s", exc)\n'''
         text, changed = _replace_once(text, old_session_start, new_session_start, "modular on_session_start guard")
-        if not changed:
+        if not changed and require_session_start_anchor:
             raise ValueError("Could not find modular on_session_start anchor.")
-        changes.append("guarded on_session_start on continuation prompt rebuild")
+        if changed:
+            changes.append("guarded on_session_start on continuation prompt rebuild")
 
     return text, changes
+
+
+def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
+    """Return patched modular ``agent/conversation_loop.py`` source."""
+    changes: list[str] = []
+    text = source
+
+    route_call_marker = "agent._apply_pre_model_route_hook(\n        original_user_message,"
+    if route_call_marker not in text:
+        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+        if anchor not in text:
+            raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
+        text = text.replace(
+            anchor,
+            '''    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
+            1,
+        )
+        changes.append("inserted pre_model_route call before system prompt")
+
+    text, prompt_changes = _patch_conversation_prompt_restore_source(
+        text,
+        require_session_start_anchor=True,
+    )
+    changes.extend(prompt_changes)
+    return text, changes
+
+
+def patch_v019_conversation_loop_source(source: str) -> tuple[str, list[str]]:
+    """Patch the v0.19 prompt restore helper without claiming turn ownership."""
+    return _patch_conversation_prompt_restore_source(
+        source,
+        require_session_start_anchor=False,
+    )
 
 
 def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
@@ -854,6 +880,7 @@ def plan_runtime_patch(
     elif layout == "modular-conversation-loop":
         patchers.append(("conversation_loop", patch_conversation_loop_source))
     else:
+        patchers.append(("conversation_loop", patch_v019_conversation_loop_source))
         patchers.append(("turn_context", patch_turn_context_source))
     patchers.extend(
         [
