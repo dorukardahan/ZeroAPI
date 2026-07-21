@@ -1,3 +1,4 @@
+import ast
 import hashlib
 import json
 import os
@@ -396,8 +397,22 @@ VALID_HOOKS = {
             conversation_entry.patched,
         )
 
+        module = ast.parse(conversation_entry.patched)
+        restore_function = next(
+            node
+            for node in module.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "_restore_or_build_system_prompt"
+        )
         namespace = {}
-        exec(compile(conversation_entry.patched, "conversation_loop.py", "exec"), namespace)
+        exec(
+            compile(
+                ast.fix_missing_locations(ast.Module(body=[restore_function], type_ignores=[])),
+                "conversation_loop.py",
+                "exec",
+            ),
+            namespace,
+        )
 
         class SessionDB:
             @staticmethod
