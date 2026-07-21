@@ -619,6 +619,43 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
 
             self.assertEqual(self._hashes(paths), before)
 
+    def test_planner_rejects_partially_patched_dead_route_state(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = self._write_tree(root)
+            patched_run_agent, _ = patch_run_agent_source(UPSTREAM_LIKE_RUN_AGENT)
+            patched_plugins, _ = patch_plugins_source(paths["plugins"].read_text(encoding="utf-8"))
+            patched_delegate, _ = patch_delegate_tool_source(
+                paths["delegate_tool"].read_text(encoding="utf-8")
+            )
+            patched_run_agent = patched_run_agent.replace(
+                '''        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+                '''        False and self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+            )
+            paths["run_agent"].write_text(patched_run_agent, encoding="utf-8")
+            paths["plugins"].write_text(patched_plugins, encoding="utf-8")
+            paths["delegate_tool"].write_text(patched_delegate, encoding="utf-8")
+            before = self._hashes(paths)
+
+            with self.assertRaisesRegex(ValueError, "semantic postcondition"):
+                plan_runtime_patch(
+                    plugins=paths["plugins"],
+                    run_agent=paths["run_agent"],
+                    delegate_tool=paths["delegate_tool"],
+                )
+
+            self.assertEqual(self._hashes(paths), before)
+
     def test_mid_commit_replace_failure_rolls_back_every_target(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -669,6 +706,33 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
                 apply_runtime_patch(plan, backup_root=unsafe_backup)
 
             self.assertEqual(self._hashes(paths), before)
+            self.assertFalse(unsafe_backup.exists())
+
+    def test_runtime_backup_root_honors_bundled_plugin_override(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = self._write_tree(root)
+            plan = plan_runtime_patch(
+                plugins=paths["plugins"],
+                run_agent=paths["run_agent"],
+                conversation_loop=paths["conversation_loop"],
+                turn_context=paths["turn_context"],
+                delegate_tool=paths["delegate_tool"],
+            )
+            bundled_root = root / "bundled-plugins"
+            unsafe_backup = bundled_root / "runtime-backups"
+
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "HERMES_BUNDLED_PLUGINS": str(bundled_root),
+                    "HERMES_ENABLE_PROJECT_PLUGINS": "",
+                },
+                clear=False,
+            ):
+                with self.assertRaisesRegex(ValueError, "outside plugin discovery"):
+                    apply_runtime_patch(plan, backup_root=unsafe_backup)
+
             self.assertFalse(unsafe_backup.exists())
 
     def test_dry_run_does_not_recover_or_write_transactions(self):
@@ -935,6 +999,81 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
             self.assertEqual(len(recovered), 1)
             self.assertEqual(self._hashes(paths), before)
             self.assertEqual(list(root.rglob("*.staged")), [])
+
+    def test_handled_post_create_stage_failure_cleans_by_transaction_token(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = self._write_tree(root)
+            before = self._hashes(paths)
+            backup_root = root / "state" / "backups" / "zeroapi-router"
+            plan = plan_runtime_patch(
+                plugins=paths["plugins"],
+                run_agent=paths["run_agent"],
+                conversation_loop=paths["conversation_loop"],
+                turn_context=paths["turn_context"],
+                delegate_tool=paths["delegate_tool"],
+            )
+            real_stage_bytes = patch_runtime._stage_bytes
+
+            def fail_after_stage(snapshot, raw, suffix, **kwargs):
+                real_stage_bytes(snapshot, raw, suffix, **kwargs)
+                raise OSError("injected after durable stage creation")
+
+            with mock.patch.object(
+                patch_runtime,
+                "_stage_bytes",
+                side_effect=fail_after_stage,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "before commit"):
+                    apply_runtime_patch(plan, backup_root=backup_root)
+
+            transaction_dir = next(path for path in backup_root.iterdir() if path.is_dir())
+            manifest = json.loads((transaction_dir / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["state"], "aborted_before_commit")
+            self.assertEqual(self._hashes(paths), before)
+            self.assertEqual(list(root.rglob("*.staged")), [])
+
+    def test_cleanup_failure_preserves_primary_error_and_is_recoverable(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = self._write_tree(root)
+            backup_root = root / "state" / "backups" / "zeroapi-router"
+            plan = plan_runtime_patch(
+                plugins=paths["plugins"],
+                run_agent=paths["run_agent"],
+                conversation_loop=paths["conversation_loop"],
+                turn_context=paths["turn_context"],
+                delegate_tool=paths["delegate_tool"],
+            )
+            paths["conversation_loop"].write_text(
+                paths["conversation_loop"].read_text(encoding="utf-8")
+                + "\n# concurrent writer\n",
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(
+                patch_runtime,
+                "_cleanup_transaction_stages",
+                side_effect=OSError("injected cleanup unlink failure"),
+            ):
+                with self.assertRaises(RuntimeError) as raised:
+                    apply_runtime_patch(plan, backup_root=backup_root)
+
+            self.assertIn("changed content", str(raised.exception))
+            self.assertIn("cleanup", str(raised.exception))
+            transaction_dir = next(path for path in backup_root.iterdir() if path.is_dir())
+            manifest_path = transaction_dir / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["state"], "cleanup_incomplete")
+            self.assertEqual(manifest["cleanup_after_state"], "aborted_before_commit")
+            self.assertTrue(list(root.rglob("*.staged")))
+
+            recovered = recover_incomplete_transactions(backup_root)
+
+            self.assertEqual(recovered, [transaction_dir])
+            self.assertEqual(list(root.rglob("*.staged")), [])
+            recovered_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(recovered_manifest["state"], "aborted_before_commit")
 
 
 if __name__ == "__main__":

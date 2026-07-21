@@ -25,6 +25,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+try:
+    from install import default_plugin_discovery_roots
+except ModuleNotFoundError:  # Package import during repository-level test runs.
+    from .install import default_plugin_discovery_roots
+
 
 PRE_MODEL_ROUTE_METHOD = r'''
     def _apply_pre_model_route_hook(
@@ -884,7 +889,14 @@ def _stage_bytes(
     os.close(descriptor)
     staged = Path(name)
     staged.unlink()
-    _write_bytes_durable(staged, raw, snapshot.mode, snapshot.uid, snapshot.gid)
+    try:
+        _write_bytes_durable(staged, raw, snapshot.mode, snapshot.uid, snapshot.gid)
+    except BaseException:
+        try:
+            staged.unlink()
+        except OSError:
+            pass
+        raise
     return staged
 
 
@@ -944,12 +956,13 @@ def _runtime_plugin_discovery_roots_for_run_agent(
 ) -> tuple[Path, ...]:
     configured = os.environ.get("HERMES_HOME")
     hermes_home = Path(configured).expanduser() if configured else Path.home() / ".hermes"
-    roots = {
-        run_agent.parent / "plugins",
-        hermes_home / "plugins",
-        Path.cwd() / ".hermes" / "plugins",
-    }
-    return tuple(sorted((path.resolve() for path in roots), key=lambda path: str(path)))
+    return tuple(
+        default_plugin_discovery_roots(
+            hermes_home=hermes_home,
+            hermes_root=run_agent.expanduser().resolve().parent,
+            project_root=Path.cwd(),
+        )
+    )
 
 
 def _runtime_plugin_discovery_roots(plan: RuntimePatchPlan) -> tuple[Path, ...]:
@@ -957,6 +970,17 @@ def _runtime_plugin_discovery_roots(plan: RuntimePatchPlan) -> tuple[Path, ...]:
         snapshot.path for snapshot in plan.snapshots if snapshot.label == "run_agent"
     )
     return _runtime_plugin_discovery_roots_for_run_agent(run_agent)
+
+
+def _merged_runtime_plugin_discovery_roots(
+    plan: RuntimePatchPlan,
+    explicit_roots: tuple[Path, ...] | None = None,
+) -> tuple[Path, ...]:
+    roots = {
+        path.expanduser().resolve()
+        for path in _runtime_plugin_discovery_roots(plan) + tuple(explicit_roots or ())
+    }
+    return tuple(sorted(roots, key=lambda path: str(path)))
 
 
 def _validate_runtime_backup_root(
@@ -975,6 +999,31 @@ def _validate_runtime_backup_root(
             )
 
 
+def _finish_failed_stage_cleanup(
+    transaction_dir: Path,
+    manifest: dict,
+    final_state: str,
+) -> Exception | None:
+    cleanup_error: Exception | None = None
+    try:
+        _cleanup_transaction_stages(transaction_dir, manifest)
+    except Exception as exc:
+        cleanup_error = exc
+        manifest["state"] = "cleanup_incomplete"
+        manifest["cleanup_after_state"] = final_state
+        manifest["cleanup_error"] = type(exc).__name__
+    else:
+        manifest["state"] = final_state
+        manifest.pop("cleanup_after_state", None)
+        manifest.pop("cleanup_error", None)
+    try:
+        _write_manifest(transaction_dir, manifest)
+    except Exception as exc:
+        if cleanup_error is None:
+            cleanup_error = exc
+    return cleanup_error
+
+
 def apply_runtime_patch(
     plan: RuntimePatchPlan,
     *,
@@ -989,7 +1038,7 @@ def apply_runtime_patch(
     root = (backup_root or _default_backup_root()).expanduser()
     _validate_runtime_backup_root(
         root,
-        plugin_discovery_roots or _runtime_plugin_discovery_roots(plan),
+        _merged_runtime_plugin_discovery_roots(plan, plugin_discovery_roots),
     )
     root.mkdir(parents=True, exist_ok=True)
     transaction_id = (
@@ -1063,16 +1112,23 @@ def apply_runtime_patch(
         return list(plan.changes)
     except Exception as commit_error:
         if not replaced:
-            manifest["state"] = "aborted_before_commit"
             manifest["error"] = type(commit_error).__name__
-            try:
-                _write_manifest(transaction_dir, manifest)
-            except Exception:
-                pass
+            cleanup_error = _finish_failed_stage_cleanup(
+                transaction_dir,
+                manifest,
+                "aborted_before_commit",
+            )
+            cleanup_suffix = (
+                f"; stage cleanup is incomplete: {cleanup_error}"
+                if cleanup_error is not None
+                else ""
+            )
             raise RuntimeError(
-                f"Runtime patch failed before commit; no targets were written: {commit_error}"
+                "Runtime patch failed before commit; no targets were written: "
+                f"{commit_error}{cleanup_suffix}"
             ) from commit_error
         rollback_error: Exception | None = None
+        cleanup_error: Exception | None = None
         manifest["state"] = "rolling_back"
         manifest["error"] = type(commit_error).__name__
         try:
@@ -1096,27 +1152,37 @@ def apply_runtime_patch(
             for snapshot in plan.snapshots:
                 if _sha256(snapshot.path.read_bytes()) != snapshot.digest:
                     raise RuntimeError(f"Rollback hash verification failed for {snapshot.label}.")
-            manifest["state"] = "rolled_back"
-            _write_manifest(transaction_dir, manifest)
         except Exception as exc:
             rollback_error = exc
             manifest["state"] = "dirty"
             manifest["rollback_error"] = type(exc).__name__
             try:
+                _cleanup_transaction_stages(transaction_dir, manifest)
+            except Exception as cleanup_exc:
+                cleanup_error = cleanup_exc
+                manifest["cleanup_error"] = type(cleanup_exc).__name__
+            try:
                 _write_manifest(transaction_dir, manifest)
             except Exception:
                 pass
+        else:
+            cleanup_error = _finish_failed_stage_cleanup(
+                transaction_dir,
+                manifest,
+                "rolled_back",
+            )
         if rollback_error is not None:
             raise RuntimeError(
                 f"Runtime patch failed and rollback is incomplete: {rollback_error}"
             ) from commit_error
-        raise RuntimeError(f"Runtime patch failed and was rolled back: {commit_error}") from commit_error
-    finally:
-        for staged in staged_paths.values():
-            try:
-                staged.unlink()
-            except FileNotFoundError:
-                pass
+        cleanup_suffix = (
+            f"; stage cleanup is incomplete: {cleanup_error}"
+            if cleanup_error is not None
+            else ""
+        )
+        raise RuntimeError(
+            f"Runtime patch failed and was rolled back: {commit_error}{cleanup_suffix}"
+        ) from commit_error
 
 
 def rollback_runtime_transaction(
@@ -1274,6 +1340,19 @@ def recover_incomplete_transactions(backup_root: Path) -> list[Path]:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             raise RuntimeError(f"Unreadable runtime recovery journal: {transaction_dir}") from exc
+        if manifest.get("state") == "cleanup_incomplete":
+            final_state = manifest.get("cleanup_after_state")
+            if final_state not in {"aborted_before_commit", "rolled_back"}:
+                raise RuntimeError(
+                    f"Invalid runtime cleanup recovery state: {transaction_dir}"
+                )
+            _cleanup_transaction_stages(transaction_dir, manifest)
+            manifest["state"] = final_state
+            manifest.pop("cleanup_after_state", None)
+            manifest.pop("cleanup_error", None)
+            _write_manifest(transaction_dir, manifest)
+            recovered.append(transaction_dir)
+            continue
         if manifest.get("state") not in incomplete_states:
             continue
         rollback_runtime_transaction(transaction_dir)
@@ -1319,10 +1398,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         run_agent = args.run_agent or _auto_path("run_agent", "run_agent.py")
         backup_root = args.backup_root or _default_backup_root()
-        discovery_roots = (
-            tuple(path.expanduser().resolve() for path in args.plugin_discovery_root)
-            if args.plugin_discovery_root
-            else _runtime_plugin_discovery_roots_for_run_agent(run_agent)
+        default_roots = _runtime_plugin_discovery_roots_for_run_agent(run_agent)
+        discovery_roots = tuple(
+            sorted(
+                {
+                    path.expanduser().resolve()
+                    for path in default_roots + tuple(args.plugin_discovery_root)
+                },
+                key=lambda path: str(path),
+            )
         )
         _validate_runtime_backup_root(backup_root, discovery_roots)
         if not args.dry_run:

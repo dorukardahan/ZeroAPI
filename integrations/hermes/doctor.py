@@ -308,6 +308,274 @@ def _constant_truth(node: ast.AST) -> bool | None:
         return None
 
 
+@dataclass
+class _ControlFlow:
+    normal: set[int]
+    breaks: set[int]
+    continues: set[int]
+    returns: set[int]
+    raises: set[int]
+
+    @classmethod
+    def continuing(cls, states: set[int]) -> "_ControlFlow":
+        return cls(set(states), set(), set(), set(), set())
+
+    def merge(self, other: "_ControlFlow") -> None:
+        self.normal.update(other.normal)
+        self.breaks.update(other.breaks)
+        self.continues.update(other.continues)
+        self.returns.update(other.returns)
+        self.raises.update(other.raises)
+
+
+class _RoutePromptFlowAnalyzer:
+    """Conservatively prove one route call on every reachable prompt path."""
+
+    def __init__(self, receiver: str) -> None:
+        self.receiver = receiver
+        self.prompt_counts: set[int] = set()
+        self.prompt_lines: set[int] = set()
+
+    @staticmethod
+    def _cap(states: set[int]) -> set[int]:
+        return {min(state, 2) for state in states}
+
+    def _is_route_call(self, node: ast.Call) -> bool:
+        return bool(
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "_apply_pre_model_route_hook"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == self.receiver
+        )
+
+    @staticmethod
+    def _is_prompt_call(node: ast.Call) -> bool:
+        return _call_name(node) in {
+            "_build_system_prompt",
+            "restore_or_build_system_prompt",
+            "_restore_or_build_system_prompt",
+        }
+
+    def _record_prompt(self, node: ast.AST, states: set[int]) -> None:
+        self.prompt_counts.update(states)
+        self.prompt_lines.add(getattr(node, "lineno", 0))
+
+    def _expression(self, node: ast.AST | None, states: set[int]) -> set[int]:
+        if node is None or not states:
+            return set(states)
+        if isinstance(node, ast.Lambda):
+            return set(states)
+        if isinstance(node, ast.BoolOp):
+            active = set(states)
+            completed: set[int] = set()
+            is_and = isinstance(node.op, ast.And)
+            for value in node.values:
+                evaluated = self._expression(value, active)
+                truth = _constant_truth(value)
+                if (is_and and truth is False) or (not is_and and truth is True):
+                    completed.update(evaluated)
+                    active.clear()
+                    break
+                if truth is None:
+                    completed.update(evaluated)
+                active = evaluated
+            return self._cap(completed | active)
+        if isinstance(node, ast.IfExp):
+            tested = self._expression(node.test, states)
+            truth = _constant_truth(node.test)
+            if truth is True:
+                return self._expression(node.body, tested)
+            if truth is False:
+                return self._expression(node.orelse, tested)
+            return self._cap(
+                self._expression(node.body, tested)
+                | self._expression(node.orelse, tested)
+            )
+        if isinstance(node, ast.Call):
+            evaluated = self._expression(node.func, states)
+            for argument in node.args:
+                evaluated = self._expression(argument, evaluated)
+            for keyword in node.keywords:
+                evaluated = self._expression(keyword.value, evaluated)
+            if self._is_prompt_call(node):
+                self._record_prompt(node, evaluated)
+            if self._is_route_call(node):
+                evaluated = self._cap({state + 1 for state in evaluated})
+            return evaluated
+        if isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+            once = set(states)
+            for child in ast.iter_child_nodes(node):
+                if isinstance(child, ast.expr):
+                    once = self._expression(child, once)
+            twice = set(once)
+            for child in ast.iter_child_nodes(node):
+                if isinstance(child, ast.expr):
+                    twice = self._expression(child, twice)
+            return self._cap(set(states) | once | twice)
+        evaluated = set(states)
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.expr):
+                evaluated = self._expression(child, evaluated)
+        return self._cap(evaluated)
+
+    def _block(self, statements: list[ast.stmt], states: set[int]) -> _ControlFlow:
+        result = _ControlFlow.continuing(states)
+        for statement in statements:
+            if not result.normal:
+                break
+            current = self._statement(statement, result.normal)
+            result.normal = current.normal
+            result.breaks.update(current.breaks)
+            result.continues.update(current.continues)
+            result.returns.update(current.returns)
+            result.raises.update(current.raises)
+        return result
+
+    def _loop(
+        self,
+        statement: ast.While | ast.For | ast.AsyncFor,
+        states: set[int],
+    ) -> _ControlFlow:
+        if isinstance(statement, ast.While):
+            truth = _constant_truth(statement.test)
+            if truth is False:
+                tested = self._expression(statement.test, states)
+                return self._block(statement.orelse, tested)
+
+            def evaluate_head(head: set[int]) -> set[int]:
+                if _contains_attribute(statement.test, "_cached_system_prompt"):
+                    self._record_prompt(statement.test, head)
+                return self._expression(statement.test, head)
+
+            head_states = set(states)
+            condition_exits: set[int] = set()
+        else:
+            iter_states = self._expression(statement.iter, states)
+
+            def evaluate_head(head: set[int]) -> set[int]:
+                return set(head)
+
+            head_states = set(iter_states)
+            condition_exits = set(iter_states)
+            truth = None
+
+        break_exits: set[int] = set()
+        returns: set[int] = set()
+        raises: set[int] = set()
+        pending = set(head_states)
+        seen: set[int] = set()
+        while pending - seen:
+            current = pending - seen
+            seen.update(current)
+            evaluated = evaluate_head(current)
+            if truth is not True:
+                condition_exits.update(evaluated)
+            body_flow = self._block(statement.body, evaluated)
+            break_exits.update(body_flow.breaks)
+            returns.update(body_flow.returns)
+            raises.update(body_flow.raises)
+            pending.update(body_flow.normal | body_flow.continues)
+
+        orelse_flow = self._block(statement.orelse, condition_exits)
+        normal = break_exits | orelse_flow.normal
+        return _ControlFlow(
+            normal,
+            set(orelse_flow.breaks),
+            set(orelse_flow.continues),
+            returns | orelse_flow.returns,
+            raises | orelse_flow.raises,
+        )
+
+    def _apply_finally(self, flow: _ControlFlow, statements: list[ast.stmt]) -> _ControlFlow:
+        if not statements:
+            return flow
+        result = _ControlFlow.continuing(set())
+        for kind in ("normal", "breaks", "continues", "returns", "raises"):
+            states = getattr(flow, kind)
+            if not states:
+                continue
+            final_flow = self._block(statements, states)
+            getattr(result, kind).update(final_flow.normal)
+            result.breaks.update(final_flow.breaks)
+            result.continues.update(final_flow.continues)
+            result.returns.update(final_flow.returns)
+            result.raises.update(final_flow.raises)
+        return result
+
+    def _try(self, statement: ast.Try | ast.TryStar, states: set[int]) -> _ControlFlow:
+        body_flow = self._block(statement.body, states)
+        normal_flow = self._block(statement.orelse, body_flow.normal)
+        combined = _ControlFlow(
+            set(normal_flow.normal),
+            body_flow.breaks | normal_flow.breaks,
+            body_flow.continues | normal_flow.continues,
+            body_flow.returns | normal_flow.returns,
+            set(normal_flow.raises),
+        )
+        handler_inputs = set(states) | body_flow.raises
+        for handler in statement.handlers:
+            combined.merge(self._block(handler.body, handler_inputs))
+        if not statement.handlers:
+            combined.raises.update(body_flow.raises)
+        return self._apply_finally(combined, statement.finalbody)
+
+    def _statement(self, statement: ast.stmt, states: set[int]) -> _ControlFlow:
+        if isinstance(statement, ast.If):
+            if _contains_attribute(statement.test, "_cached_system_prompt"):
+                self._record_prompt(statement.test, states)
+            tested = self._expression(statement.test, states)
+            truth = _constant_truth(statement.test)
+            if truth is True:
+                return self._block(statement.body, tested)
+            if truth is False:
+                return self._block(statement.orelse, tested)
+            body_flow = self._block(statement.body, tested)
+            else_flow = self._block(statement.orelse, tested)
+            body_flow.merge(else_flow)
+            return body_flow
+        if isinstance(statement, (ast.While, ast.For, ast.AsyncFor)):
+            return self._loop(statement, states)
+        if isinstance(statement, (ast.Try, ast.TryStar)):
+            return self._try(statement, states)
+        if isinstance(statement, (ast.With, ast.AsyncWith)):
+            evaluated = set(states)
+            for item in statement.items:
+                evaluated = self._expression(item.context_expr, evaluated)
+            return self._block(statement.body, evaluated)
+        if isinstance(statement, ast.Match):
+            matched = self._expression(statement.subject, states)
+            result = _ControlFlow.continuing(set(matched))
+            for case in statement.cases:
+                guarded = self._expression(case.guard, matched)
+                result.merge(self._block(case.body, guarded))
+            return result
+        if isinstance(statement, ast.Return):
+            evaluated = self._expression(statement.value, states)
+            return _ControlFlow(set(), set(), set(), evaluated, set())
+        if isinstance(statement, ast.Raise):
+            evaluated = self._expression(statement.exc, states)
+            evaluated = self._expression(statement.cause, evaluated)
+            return _ControlFlow(set(), set(), set(), set(), evaluated)
+        if isinstance(statement, ast.Break):
+            return _ControlFlow(set(), set(states), set(), set(), set())
+        if isinstance(statement, ast.Continue):
+            return _ControlFlow(set(), set(), set(states), set(), set())
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return _ControlFlow.continuing(states)
+
+        evaluated = set(states)
+        for child in ast.iter_child_nodes(statement):
+            if isinstance(child, ast.expr):
+                evaluated = self._expression(child, evaluated)
+        return _ControlFlow.continuing(evaluated)
+
+    def analyze(self, function) -> bool:
+        if function is None:
+            return False
+        self._block(function.body, {0})
+        return bool(self.prompt_counts) and self.prompt_counts == {1}
+
+
 def _block_definitely_terminates(statements: list[ast.stmt]) -> bool:
     return any(_statement_definitely_terminates(statement) for statement in statements)
 
@@ -502,6 +770,13 @@ def _runtime_proof(
     if len(route_calls) != 1:
         return RuntimeProof(False, message="The live turn owner must call pre_model_route exactly once.")
 
+    route_flow = _RoutePromptFlowAnalyzer(owner_receiver)
+    if not route_flow.analyze(owner_function):
+        return RuntimeProof(
+            False,
+            message="pre_model_route must execute exactly once on every reachable system-prompt path.",
+        )
+
     run_forward_calls = _calls_named(run_owner, "run_conversation")
     conversation_turn_calls = _calls_named(conversation_owner, "build_turn_context")
     if layout != "legacy-monolith" and not run_forward_calls:
@@ -512,7 +787,7 @@ def _runtime_proof(
         return RuntimeProof(False, message="conversation_loop and turn_context ownership is ambiguous.")
 
     route_line = route_calls[0].lineno
-    prompt_line = _prompt_boundary_line(owner_function)
+    prompt_line = min(route_flow.prompt_lines) if route_flow.prompt_lines else None
     if prompt_line is None or route_line >= prompt_line:
         return RuntimeProof(False, message="pre_model_route is not called before the system-prompt boundary.")
     prompt_refresh = _flag_guard_present(

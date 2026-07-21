@@ -477,6 +477,110 @@ class AIAgent:
 
         self.assertIn("FAIL", levels(checks))
 
+    def test_fails_when_route_call_is_short_circuited_by_false(self):
+        run_agent = RUN_AGENT_PATCHED.replace(
+            '''        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+            '''        False and self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+        )
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=run_agent,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+
+    def test_fails_when_route_call_is_only_conditionally_executed(self):
+        run_agent = RUN_AGENT_PATCHED.replace(
+            '''        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+            '''        if should_route:
+            self._apply_pre_model_route_hook(
+                original_user_message,
+                messages,
+                is_first_turn=(not bool(conversation_history)),
+            )
+''',
+        )
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=run_agent,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+
+    def test_fails_when_route_call_follows_returning_try_finally(self):
+        run_agent = RUN_AGENT_PATCHED.replace(
+            '''        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+            '''        try:
+            return None
+        finally:
+            pass
+        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+        )
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=run_agent,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+
+    def test_fails_when_only_inner_loop_breaks_a_nonterminating_outer_loop(self):
+        run_agent = RUN_AGENT_PATCHED.replace(
+            '''        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+            '''        while True:
+            while should_wait:
+                break
+        self._apply_pre_model_route_hook(
+            original_user_message,
+            messages,
+            is_first_turn=(not bool(conversation_history)),
+        )
+''',
+        )
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=run_agent,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+
     def test_fails_when_route_call_exists_only_inside_uncalled_lambda(self):
         run_agent = RUN_AGENT_PATCHED.replace(
             '''        self._apply_pre_model_route_hook(
