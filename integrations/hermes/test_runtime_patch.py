@@ -1075,6 +1075,22 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
                     delegate_tool=paths["delegate_tool"],
                 )
 
+    def test_snapshot_absolutization_preserves_symlink_parent_traversal(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nested = root / "physical" / "nested"
+            nested.mkdir(parents=True)
+            (root / "physical" / "target.py").write_text("PHYSICAL\n", encoding="utf-8")
+            (root / "target.py").write_text("LEXICAL\n", encoding="utf-8")
+            logical = root / "logical"
+            logical.symlink_to(nested, target_is_directory=True)
+            requested = logical / ".." / "target.py"
+
+            snapshot = patch_runtime._snapshot_source("target", requested)
+
+            self.assertEqual(snapshot.source, "PHYSICAL\n")
+            self.assertEqual(snapshot.path, requested)
+
     def test_committed_transaction_can_restore_every_original_byte(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1096,6 +1112,45 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
             self.assertEqual(self._hashes(paths), before)
             manifest = json.loads((transaction_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["state"], "rollback_committed")
+
+    def test_relative_explicit_paths_create_rollback_safe_absolute_journal(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = self._write_tree(root)
+            before = self._hashes(paths)
+            backup_root = root / "state" / "backups" / "zeroapi-router"
+            previous_cwd = Path.cwd()
+            try:
+                os.chdir(root)
+                relative_paths = {
+                    label: path.relative_to(root)
+                    for label, path in paths.items()
+                }
+                plan = plan_runtime_patch(
+                    plugins=relative_paths["plugins"],
+                    run_agent=relative_paths["run_agent"],
+                    conversation_loop=relative_paths["conversation_loop"],
+                    turn_context=relative_paths["turn_context"],
+                    delegate_tool=relative_paths["delegate_tool"],
+                )
+                apply_runtime_patch(plan, backup_root=backup_root)
+                transaction_dir = next(
+                    path for path in backup_root.iterdir() if path.is_dir()
+                )
+                os.chdir(previous_cwd)
+
+                rollback_runtime_transaction(transaction_dir)
+
+                manifest = json.loads(
+                    (transaction_dir / "manifest.json").read_text(encoding="utf-8")
+                )
+                self.assertTrue(
+                    all(Path(target["path"]).is_absolute() for target in manifest["targets"])
+                )
+                self.assertEqual(manifest["state"], "rollback_committed")
+                self.assertEqual(self._hashes(paths), before)
+            finally:
+                os.chdir(previous_cwd)
 
     def test_next_invocation_recovers_interrupted_committing_journal(self):
         with TemporaryDirectory() as tmp:

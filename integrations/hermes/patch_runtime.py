@@ -704,6 +704,8 @@ def _sha256(raw: bytes) -> str:
 
 def _snapshot_source(label: str, path: Path) -> SourceSnapshot:
     path = path.expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
     if path.is_symlink():
         raise ValueError(f"Refusing symlink runtime target for {label}: {path}")
     try:
