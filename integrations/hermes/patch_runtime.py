@@ -544,13 +544,7 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
     changes: list[str] = []
     text = source
     marker = "# ZeroAPI compatibility: route before prompt restoration."
-    if marker in text:
-        return text, changes
-
     anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
-    if anchor not in text:
-        raise ValueError("Could not find turn_context system-prompt anchor for pre_model_route call.")
-
     route_block = '''    # ZeroAPI compatibility: route before prompt restoration.
     agent._apply_pre_model_route_hook(
         original_user_message,
@@ -575,6 +569,33 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
             pass
 
 '''
+
+    if marker in text:
+        start = text.find(f"    {marker}")
+        end = text.find(anchor, start)
+        if start == -1 or end == -1:
+            raise ValueError("Could not locate existing v0.19 pre_model_route turn block.")
+        existing_block = text[start:end]
+        required_contract = (
+            "agent._apply_pre_model_route_hook(",
+            'getattr(agent, "_pre_model_route_switched_this_turn", False)',
+            "agent._cached_system_prompt = None",
+            "from agent.auxiliary_client import set_runtime_main",
+            'base_url=getattr(agent, "base_url", "") or ""',
+            'api_key=getattr(agent, "api_key", "") or ""',
+            'api_mode=getattr(agent, "api_mode", "") or ""',
+            'auth_mode=getattr(agent, "auth_mode", "") or ""',
+        )
+        if all(token in existing_block for token in required_contract):
+            return text, changes
+        text = text[:start] + route_block + text[end:]
+        changes.append("upgraded v0.19 pre_model_route turn block")
+        changes.append("resynchronized auxiliary runtime after route switch")
+        return text, changes
+
+    if anchor not in text:
+        raise ValueError("Could not find turn_context system-prompt anchor for pre_model_route call.")
+
     text = text.replace(anchor, route_block + anchor, 1)
     changes.append("inserted pre_model_route call before system prompt")
     changes.append("resynchronized auxiliary runtime after route switch")

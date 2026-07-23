@@ -458,6 +458,46 @@ VALID_HOOKS = {
         self.assertIn("from agent.auxiliary_client import set_runtime_main", patched)
         self.assertIn("agent._cached_system_prompt = None", patched)
 
+    def test_v019_turn_context_upgrades_legacy_marker_only_block(self):
+        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+        legacy_block = '''    # ZeroAPI compatibility: route before prompt restoration.
+    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+
+'''
+        legacy = UPSTREAM_V019_TURN_CONTEXT.replace(
+            anchor,
+            legacy_block + anchor,
+            1,
+        )
+
+        upgraded, changes = patch_turn_context_source(legacy)
+
+        self.assertIn("upgraded v0.19 pre_model_route turn block", changes)
+        self.assertIn("agent._cached_system_prompt = None", upgraded)
+        self.assertIn("from agent.auxiliary_client import set_runtime_main", upgraded)
+        self.assertIn('auth_mode=getattr(agent, "auth_mode", "") or ""', upgraded)
+        upgraded_again, second_changes = patch_turn_context_source(upgraded)
+        self.assertEqual(second_changes, [])
+        self.assertEqual(upgraded_again, upgraded)
+
+        with TemporaryDirectory() as tmp:
+            paths = HermesRuntimeTransactionTest()._write_tree(Path(tmp))
+            paths["turn_context"].write_text(legacy, encoding="utf-8")
+            plan = plan_runtime_patch(
+                plugins=paths["plugins"],
+                run_agent=paths["run_agent"],
+                conversation_loop=paths["conversation_loop"],
+                turn_context=paths["turn_context"],
+                delegate_tool=paths["delegate_tool"],
+            )
+
+        turn_entry = next(entry for entry in plan.entries if entry.label == "turn_context")
+        self.assertIn("upgraded v0.19 pre_model_route turn block", turn_entry.changes)
+
     def test_v019_plan_skips_stored_prompt_restore_after_route_switch(self):
         with TemporaryDirectory() as tmp:
             paths = HermesRuntimeTransactionTest()._write_tree(Path(tmp))
