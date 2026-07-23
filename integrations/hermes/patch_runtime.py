@@ -51,9 +51,17 @@ PRE_MODEL_ROUTE_METHOD = r'''
                 invoke_hook as _invoke_hook,
             )
             _discover_plugins()
+
+            def _zeroapi_content_has_image_parts(content):
+                return isinstance(content, list) and any(
+                    isinstance(part, dict)
+                    and part.get("type") in {"image_url", "input_image"}
+                    for part in content
+                )
+
             _zeroapi_has_images = any(
                 isinstance(message, dict)
-                and self._content_has_image_parts(message.get("content"))
+                and _zeroapi_content_has_image_parts(message.get("content"))
                 for message in (conversation_history or [])
             )
             _route_results = _invoke_hook(
@@ -406,6 +414,19 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
             if not changed:
                 raise ValueError("Could not patch existing pre_model_route image detection.")
             changes.append("added image attachment detection to pre_model_route")
+
+        legacy_image_detection = '''            _zeroapi_has_images = any(\n                isinstance(message, dict)\n                and self._content_has_image_parts(message.get("content"))\n                for message in (conversation_history or [])\n            )\n'''
+        if legacy_image_detection in text:
+            local_image_detection = '''            def _zeroapi_content_has_image_parts(content):\n                return isinstance(content, list) and any(\n                    isinstance(part, dict)\n                    and part.get("type") in {"image_url", "input_image"}\n                    for part in content\n                )\n\n            _zeroapi_has_images = any(\n                isinstance(message, dict)\n                and _zeroapi_content_has_image_parts(message.get("content"))\n                for message in (conversation_history or [])\n            )\n'''
+            text, changed = _replace_once(
+                text,
+                legacy_image_detection,
+                local_image_detection,
+                "self-contained image attachment detection",
+            )
+            if not changed:
+                raise ValueError("Could not upgrade pre_model_route image detection.")
+            changes.append("made pre_model_route image detection self-contained")
 
         method = text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
         if "gateway_session_key=getattr(self, \"_gateway_session_key\"" not in method:

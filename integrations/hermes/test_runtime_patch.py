@@ -3,6 +3,8 @@ import hashlib
 import json
 import os
 import stat
+import sys
+import types
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -346,6 +348,85 @@ VALID_HOOKS = {
         self.assertIn("inserted _apply_pre_model_route_hook", changes)
         self.assertIn("def _apply_pre_model_route_hook", patched)
         self.assertIn("discover_plugins as _discover_plugins", patched)
+
+    def test_route_hook_does_not_require_optional_host_image_helper(self):
+        patched, _ = patch_run_agent_source(UPSTREAM_MODULAR_RUN_AGENT)
+        namespace = {}
+        exec(compile(patched, "run_agent.py", "exec"), namespace)
+
+        calls = []
+        plugins = types.ModuleType("hermes_cli.plugins")
+        plugins.__dict__["discover_plugins"] = lambda: calls.append(("discover", {}))
+
+        def invoke_hook(name, **kwargs):
+            calls.append((name, kwargs))
+            return []
+
+        plugins.__dict__["invoke_hook"] = invoke_hook
+        hermes_cli = types.ModuleType("hermes_cli")
+        hermes_cli.__path__ = []
+
+        agent = namespace["AIAgent"]()
+        agent.session_id = "session-1"
+        agent.model = "model-1"
+        agent.provider = "provider-1"
+
+        with mock.patch.dict(
+            sys.modules,
+            {"hermes_cli": hermes_cli, "hermes_cli.plugins": plugins},
+        ):
+            agent._apply_pre_model_route_hook(
+                "plain text",
+                [{"role": "user", "content": "plain text"}],
+                True,
+            )
+
+        route_calls = [item for item in calls if item[0] == "pre_model_route"]
+        self.assertEqual(len(route_calls), 1)
+        self.assertFalse(route_calls[0][1]["has_images"])
+        self.assertFalse(hasattr(agent, "_content_has_image_parts"))
+
+        calls.clear()
+        with mock.patch.dict(
+            sys.modules,
+            {"hermes_cli": hermes_cli, "hermes_cli.plugins": plugins},
+        ):
+            agent._apply_pre_model_route_hook(
+                "image turn",
+                [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "inspect"},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": "data:image/png;base64,AA=="},
+                            },
+                        ],
+                    }
+                ],
+                False,
+            )
+
+        route_calls = [item for item in calls if item[0] == "pre_model_route"]
+        self.assertEqual(len(route_calls), 1)
+        self.assertTrue(route_calls[0][1]["has_images"])
+
+    def test_existing_route_hook_upgrades_optional_host_image_helper_dependency(self):
+        current, _ = patch_run_agent_source(UPSTREAM_MODULAR_RUN_AGENT)
+        local_image_detection = '''            def _zeroapi_content_has_image_parts(content):\n                return isinstance(content, list) and any(\n                    isinstance(part, dict)\n                    and part.get("type") in {"image_url", "input_image"}\n                    for part in content\n                )\n\n            _zeroapi_has_images = any(\n                isinstance(message, dict)\n                and _zeroapi_content_has_image_parts(message.get("content"))\n                for message in (conversation_history or [])\n            )\n'''
+        legacy_image_detection = '''            _zeroapi_has_images = any(\n                isinstance(message, dict)\n                and self._content_has_image_parts(message.get("content"))\n                for message in (conversation_history or [])\n            )\n'''
+        legacy = current.replace(local_image_detection, legacy_image_detection, 1)
+        self.assertNotEqual(legacy, current)
+
+        upgraded, changes = patch_run_agent_source(legacy)
+
+        self.assertIn("made pre_model_route image detection self-contained", changes)
+        self.assertIn(local_image_detection, upgraded)
+        self.assertNotIn(legacy_image_detection, upgraded)
+        upgraded_again, second_changes = patch_run_agent_source(upgraded)
+        self.assertEqual(second_changes, [])
+        self.assertEqual(upgraded_again, upgraded)
 
     def test_patches_modular_conversation_loop_runtime_contract(self):
         patched, changes = patch_conversation_loop_source(UPSTREAM_MODULAR_CONVERSATION_LOOP)
