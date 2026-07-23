@@ -24,6 +24,11 @@ import sys
 from pathlib import Path
 
 try:
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover - doctor will fail closed with guidance
+    yaml = None
+
+try:
     from install import (
         PLUGIN_NAME,
         _manifest_name,
@@ -45,6 +50,28 @@ except ModuleNotFoundError:  # Package import during repository-level test runs.
 class Check:
     level: str
     message: str
+
+
+def analyze_plugin_enablement(config_path: Path) -> list[Check]:
+    """Fail closed unless the active Hermes config enables the ZeroAPI plugin."""
+    config_path = config_path.expanduser()
+    if yaml is None:
+        return [Check("FAIL", "PyYAML is required to verify plugins.enabled.")]
+    try:
+        payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError):
+        return [Check("FAIL", "Could not read a valid Hermes config to verify plugins.enabled.")]
+    if not isinstance(payload, dict):
+        return [Check("FAIL", "Hermes config must be a mapping to verify plugins.enabled.")]
+    plugins = payload.get("plugins")
+    if not isinstance(plugins, dict):
+        return [Check("FAIL", "Hermes config must declare a plugins mapping with plugins.enabled.")]
+    enabled = plugins.get("enabled")
+    if not isinstance(enabled, list) or any(not isinstance(item, str) for item in enabled):
+        return [Check("FAIL", "Hermes plugins.enabled must be a list of plugin names.")]
+    if PLUGIN_NAME not in enabled:
+        return [Check("FAIL", "ZeroAPI plugin is not enabled in Hermes plugins.enabled.")]
+    return [Check("OK", "ZeroAPI plugin is enabled in Hermes plugins.enabled.")]
 
 
 def analyze_plugin_installation(plugin_root: Path, discovery_roots: list[Path]) -> list[Check]:
@@ -1147,6 +1174,12 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="Hermes plugin discovery root. May be repeated; defaults to bundled, user, and project roots.",
     )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Active Hermes config.yaml. Defaults to $HERMES_HOME/config.yaml.",
+    )
     args = parser.parse_args(argv)
 
     hermes_root = args.hermes_root.expanduser().resolve() if args.hermes_root else None
@@ -1210,6 +1243,15 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
     checks.extend(analyze_plugin_installation(plugin_root, discovery_roots))
+    hermes_home = Path(
+        os.environ.get("HERMES_HOME", Path.home() / ".hermes")
+    ).expanduser().resolve()
+    config_path = (
+        args.config.expanduser().resolve()
+        if args.config
+        else hermes_home / "config.yaml"
+    )
+    checks.extend(analyze_plugin_enablement(config_path))
 
     if plugins_path:
         print(f"INFO hermes_cli.plugins={plugins_path}")

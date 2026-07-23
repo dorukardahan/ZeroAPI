@@ -9,6 +9,7 @@ from unittest import mock
 from doctor import (
     _source_for_module,
     _valid_hooks_from_source,
+    analyze_plugin_enablement,
     analyze_plugin_installation,
     analyze_runtime_sources,
     main,
@@ -297,6 +298,32 @@ if False:
 '''
 
         self.assertEqual(_valid_hooks_from_source(source), set())
+
+    def test_plugin_enablement_is_fail_closed_and_accepts_only_enabled_name(self):
+        with TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.yaml"
+
+            self.assertIn("FAIL", levels(analyze_plugin_enablement(config)))
+
+            config.write_text("plugins:\n  enabled:\n    - another-plugin\n", encoding="utf-8")
+            disabled_checks = analyze_plugin_enablement(config)
+            self.assertIn("FAIL", levels(disabled_checks))
+            self.assertTrue(any("plugins.enabled" in message for message in messages(disabled_checks)))
+
+            config.write_text("plugins:\n  enabled:\n    - zeroapi-router\n", encoding="utf-8")
+            enabled_checks = analyze_plugin_enablement(config)
+            self.assertNotIn("FAIL", levels(enabled_checks))
+            self.assertTrue(any("enabled" in message for message in messages(enabled_checks)))
+
+    def test_plugin_enablement_rejects_malformed_enabled_shape(self):
+        with TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.yaml"
+            config.write_text("plugins:\n  enabled: zeroapi-router\n", encoding="utf-8")
+
+            checks = analyze_plugin_enablement(config)
+
+            self.assertIn("FAIL", levels(checks))
+            self.assertTrue(any("must be a list" in message for message in messages(checks)))
 
     def test_plugin_identity_passes_only_for_one_canonical_discovered_copy(self):
         with TemporaryDirectory() as tmp:
