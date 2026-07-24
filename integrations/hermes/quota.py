@@ -20,6 +20,16 @@ VALID_STATUSES = {
     "invalid_response",
     "unsupported",
 }
+VALID_WINDOW_KINDS = {
+    "tokens_limit",
+    "requests_limit",
+    "credits",
+    "messages",
+    "compute",
+    "time_limit",
+    "percent",
+}
+VALID_APPLICABILITY = {"inference", "mcp", "model"}
 
 
 def _is_number(value: Any) -> TypeGuard[int | float]:
@@ -192,8 +202,32 @@ def validate_snapshot(
 
     ids: set[str] = set()
     for window in windows:
-        _assert_valid_ratio(window["remainingRatio"])
+        if not isinstance(window, dict):
+            raise TypeError("window must be an object")
+        _assert_valid_ratio(window.get("remainingRatio"))
         window_id = _normalize_identifier(window.get("id"), "window id")
+        if window.get("kind") not in VALID_WINDOW_KINDS:
+            raise ValueError(f'unknown window kind "{window.get("kind")}"')
+        applies_to = window.get("appliesTo")
+        if applies_to not in VALID_APPLICABILITY:
+            raise ValueError(f'unknown appliesTo value "{applies_to}"')
+        model_ids = window.get("modelIds")
+        if not isinstance(model_ids, list):
+            raise TypeError("modelIds must be a list")
+        normalized_models = [_normalize_identifier(model_id, "modelId") for model_id in model_ids]
+        if len(set(normalized_models)) != len(normalized_models):
+            raise ValueError("modelIds must be unique")
+        if applies_to == "model" and not normalized_models:
+            raise ValueError("model-scoped window requires at least one modelId")
+        if applies_to != "model" and normalized_models:
+            raise ValueError("non-model window must not carry modelIds")
+        if "windowSeconds" in window:
+            seconds = window["windowSeconds"]
+            _assert_finite_number(seconds, "windowSeconds")
+            if seconds <= 0:
+                raise ValueError("windowSeconds must be positive")
+        if "resetAt" in window:
+            _normalize_timestamp(window["resetAt"], "resetAt")
         if window_id in ids:
             raise ValueError(f'duplicate window id "{window_id}"')
         ids.add(window_id)
@@ -266,6 +300,12 @@ def applicable_windows(snapshot: dict[str, Any] | None, model: str) -> list[dict
 
 
 def account_headroom(snapshot: dict[str, Any] | None, model: str) -> float | None:
+    if not snapshot or snapshot.get("status") != "fresh":
+        return None
+    try:
+        validate_snapshot(snapshot)
+    except (KeyError, TypeError, ValueError):
+        return None
     windows = applicable_windows(snapshot, model)
     if not windows:
         return None

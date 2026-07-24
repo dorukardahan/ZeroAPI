@@ -252,6 +252,14 @@ class TestQuotaPolicy(unittest.TestCase):
         snap = {"provider": "zai", "account": "zai#1", "status": "stale", "windows": [], "fetchedAt": "2026-07-24T17:00:00Z"}
         self.assertIsNone(compute_quota_factor(snap, "zai/glm-5.2"))
 
+    def test_malformed_fresh_returns_none(self):
+        snap = {
+            "provider": "zai", "account": "zai#1", "status": "fresh",
+            "windows": [{"id": "5h", "kind": "tokens_limit", "appliesTo": "inference", "modelIds": [], "remainingRatio": float("nan")}],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        }
+        self.assertIsNone(compute_quota_factor(snap, "zai/glm-5.2"))
+
     def test_depleted_returns_zero(self):
         snap = {
             "provider": "zai", "account": "zai#1", "status": "fresh",

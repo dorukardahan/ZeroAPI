@@ -39,6 +39,11 @@ describe("computeQuotaFactor", () => {
     expect(computeQuotaFactor(snapshot, "zai/glm-5.2")).toBeNull();
   });
 
+  it("fails open for a malformed fresh snapshot", () => {
+    const snapshot = snap("zai", "zai#1", "fresh", ["5h", Number.NaN]);
+    expect(computeQuotaFactor(snapshot, "zai/glm-5.2")).toBeNull();
+  });
+
   it("returns null for an unsupported snapshot", () => {
     const snapshot = snap("qwen-oauth", "qwen#1", "unsupported");
     expect(computeQuotaFactor(snapshot, "qwen-oauth/qwen3.5")).toBeNull();

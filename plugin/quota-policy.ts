@@ -17,6 +17,7 @@
  */
 
 import type { NormalizedQuotaSnapshot, NormalizedQuotaWindow } from "./quota-types.js";
+import { validateNormalizedSnapshot } from "./quota-normalize.js";
 
 /**
  * Select windows that apply to a specific candidate model.
@@ -43,6 +44,11 @@ export function accountHeadroom(
   model: string,
 ): number | null {
   if (!snapshot || snapshot.status !== "fresh") return null;
+  try {
+    validateNormalizedSnapshot(snapshot);
+  } catch {
+    return null;
+  }
   const windows = applicableWindows(snapshot, model);
   if (windows.length === 0) return null;
   return Math.min(...windows.map((w) => w.remainingRatio));

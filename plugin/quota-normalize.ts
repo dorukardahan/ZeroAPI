@@ -29,6 +29,18 @@ const VALID_STATUSES = new Set<QuotaSnapshotStatus>([
   "unsupported",
 ]);
 
+const VALID_WINDOW_KINDS = new Set<QuotaWindowKind>([
+  "tokens_limit",
+  "requests_limit",
+  "credits",
+  "messages",
+  "compute",
+  "time_limit",
+  "percent",
+]);
+
+const VALID_APPLICABILITY = new Set<QuotaAppliesTo>(["inference", "mcp", "model"]);
+
 function assertFiniteNumber(value: unknown, label: string): asserts value is number {
   if (typeof value !== "number") {
     if (typeof value === "boolean") throw new TypeError(`${label} must be numeric, got boolean`);
@@ -170,9 +182,32 @@ export function validateNormalizedSnapshot(
 
   const ids = new Set<string>();
   for (const window of snapshot.windows) {
+    const windowId = normalizeIdentifier(window.id, "window id");
     assertValidRatio(window.remainingRatio);
-    if (ids.has(window.id)) throw new ValueError(`duplicate window id "${window.id}"`);
-    ids.add(window.id);
+    if (!VALID_WINDOW_KINDS.has(window.kind)) {
+      throw new ValueError(`unknown window kind "${String(window.kind)}"`);
+    }
+    if (!VALID_APPLICABILITY.has(window.appliesTo)) {
+      throw new ValueError(`unknown appliesTo value "${String(window.appliesTo)}"`);
+    }
+    if (!Array.isArray(window.modelIds)) throw new TypeError("modelIds must be an array");
+    const modelIds = window.modelIds.map((modelId) => normalizeIdentifier(modelId, "modelId"));
+    if (new Set(modelIds).size !== modelIds.length) {
+      throw new ValueError("modelIds must be unique");
+    }
+    if (window.appliesTo === "model" && modelIds.length === 0) {
+      throw new ValueError("model-scoped window requires at least one modelId");
+    }
+    if (window.appliesTo !== "model" && modelIds.length > 0) {
+      throw new ValueError("non-model window must not carry modelIds");
+    }
+    if (window.windowSeconds !== undefined) {
+      assertFiniteNumber(window.windowSeconds, "windowSeconds");
+      if (window.windowSeconds <= 0) throw new ValueError("windowSeconds must be positive");
+    }
+    if (window.resetAt !== undefined) normalizeTimestamp(window.resetAt, "resetAt");
+    if (ids.has(windowId)) throw new ValueError(`duplicate window id "${windowId}"`);
+    ids.add(windowId);
   }
 }
 
