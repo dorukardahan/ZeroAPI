@@ -6,11 +6,9 @@
       "id": "openai-gpt56-routes",
       "provider": "openai-codex",
       "label": "OpenAI GPT-5.6 subscription routes",
-      "openclaw_model_ids": [],
-      "benchmark_slugs": [],
-      "route_model_ids": ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"],
-      "benchmark_proxy": "gpt-5.5",
-      "notes": "GPT-5.6 Sol, Terra, and Luna are routeable preview tiers but have no direct Artificial Analysis rows in the 2026-07-05 snapshot. Starter metrics explicitly proxy GPT-5.5."
+      "openclaw_model_ids": ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"],
+      "benchmark_slugs": ["gpt-5-6-sol", "gpt-5-6-terra", "gpt-5-6-luna"],
+      "notes": "GPT-5.6 Sol, Terra, and Luna have direct Artificial Analysis max-effort rows as of the 2026-07-24 snapshot."
     },
     {
       "id": "openai-gpt55-core",

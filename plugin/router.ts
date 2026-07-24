@@ -17,7 +17,7 @@ const MODIFIER_TARGET_CATEGORIES: Record<RoutingModifier, TaskCategory[]> = {
 };
 
 function normalizeBenchmarkValue(value: number | null | undefined): number | null {
-  if (value == null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
   if (value > 1) return value / 100;
   if (value < 0) return null;
   return value;
@@ -59,12 +59,14 @@ function getCategoryBenchmarkStrength(
   const hle = normalizeBenchmarkValue(benchmarks.hle);
   const lcr = normalizeBenchmarkValue(benchmarks.lcr);
   const tau2 = normalizeBenchmarkValue(benchmarks.tau2);
+  const tau3Banking = normalizeBenchmarkValue(benchmarks.tau3_banking);
   const ifbench = normalizeBenchmarkValue(benchmarks.ifbench);
   const math = normalizeBenchmarkValue(benchmarks.math);
   const aime25 = normalizeBenchmarkValue(benchmarks.aime_25);
 
   switch (category) {
     case "code":
+      if (terminalbench === null && scicode === null && coding === null) return 0;
       if (routingModifier === "coding-aware") {
         return weightedBlend([
           [terminalbench, 1.0],
@@ -80,6 +82,7 @@ function getCategoryBenchmarkStrength(
         [intelligence, 0.1],
       ]);
     case "research":
+      if (gpqa === null && hle === null && lcr === null) return 0;
       if (routingModifier === "research-aware") {
         return weightedBlend([
           [gpqa, 0.75],
@@ -96,11 +99,12 @@ function getCategoryBenchmarkStrength(
       ]);
     case "orchestration":
       return weightedBlend([
-        [tau2, 0.6],
-        [ifbench, 0.4],
-        [intelligence, 0.1],
+        [tau3Banking, 0.4],
+        [tau2, 0.4],
+        [ifbench, 0.2],
       ]);
     case "math":
+      if (math === null && aime25 === null) return 0;
       return weightedBlend([
         [math, 0.7],
         [aime25, 0.3],

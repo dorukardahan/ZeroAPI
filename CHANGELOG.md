@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+- Capture the Artificial Analysis `tau_banking` field as `tau3_banking`, and fail benchmark refreshes when a populated numeric AA evaluation would otherwise be silently dropped.
+
+### Changed
+- Map GPT-5.6 Sol/Terra/Luna to their direct AA max-effort rows, refresh source-owned benchmark metadata to the current methodology, include Tau-cubed Banking in orchestration ranking alongside Tau-squared Telecom and IFBench, and require category-specific evidence before code/research/math strength can influence the frontier.
+- Clarify and regression-test that generated `routing_rules.primary` values are benchmark-first candidate seeds; balanced subscription pressure may intentionally choose another benchmark-near provider to distribute work across configured plans.
+
 ## [3.9.3] - 2026-07-20
 
 ### Changed

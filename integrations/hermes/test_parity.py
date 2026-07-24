@@ -21,7 +21,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from router import ZeroAPIRouter, _disabled_provider_list, _provider_disabled, _resolve_capacity, load_config
+from router import (
+    ZeroAPIRouter,
+    _benchmark_strength,
+    _disabled_provider_list,
+    _provider_disabled,
+    _resolve_capacity,
+    load_config,
+)
 
 
 def _m(ctx, vision, tps, ttft, **bm):
@@ -75,6 +82,62 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
+    def test_generated_openai_glm_policy_spreads_code_and_research_to_glm(self):
+        config_path = Path(__file__).resolve().parents[2] / "examples" / "openai-glm.json"
+        router = ZeroAPIRouter(json.loads(config_path.read_text()))
+        for prompt in (
+            "refactor the auth module",
+            "research the differences between WAL modes",
+        ):
+            with self.subTest(prompt=prompt):
+                route = router.resolve(
+                    prompt, current_model="openai-codex/gpt-5.6-sol"
+                )
+                self.assertIsNotNone(route)
+                assert route is not None
+                self.assertEqual(route["provider"], "zai")
+                self.assertEqual(route["model"], "glm-5.2")
+                self.assertIsNone(router.resolve(prompt, current_model="zai/glm-5.2"))
+
+    def test_tau3_banking_changes_orchestration_strength(self):
+        banking_strong = _m(
+            1000,
+            False,
+            10,
+            1,
+            tau3_banking=0.9,
+            tau2=0.6,
+            ifbench=0.6,
+            intelligence=50,
+        )
+        telecom_only = _m(
+            1000,
+            False,
+            10,
+            1,
+            tau3_banking=0.1,
+            tau2=0.99,
+            ifbench=0.99,
+            intelligence=50,
+        )
+        boolean_metadata = _m(1000, False, 10, 1, tau3_banking=True)
+        self.assertGreater(
+            _benchmark_strength("orchestration", banking_strong, None),
+            _benchmark_strength("orchestration", telecom_only, None),
+        )
+        self.assertGreater(
+            _benchmark_strength("orchestration", banking_strong, None),
+            _benchmark_strength("orchestration", boolean_metadata, None),
+        )
+
+    def test_category_specific_math_evidence_is_required(self):
+        high_intelligence_no_math = _m(1000, False, 10, 1, intelligence=99)
+        math_evidence = _m(1000, False, 10, 1, intelligence=40, math=0.6)
+        self.assertGreater(
+            _benchmark_strength("math", math_evidence, None),
+            _benchmark_strength("math", high_intelligence_no_math, None),
+        )
+
     def _qwen_fixture(self, version_fields, disabled, legacy_structural, collision_order="alias-first"):
         qwen_model = "qwen/coder-model" if legacy_structural else "qwen-oauth/coder-model"
         profile = copy.deepcopy(version_fields.get("subscription_profile", {}))

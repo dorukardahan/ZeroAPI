@@ -179,6 +179,8 @@ The router uses two layers:
    - inside the frontier, higher configured-capacity providers sort earlier
    - outside the frontier, candidates stay in benchmark order
 
+This reordering is the workload-distribution mechanism, not a declaration that the pressure winner has the highest raw benchmark. For example, a high-capacity GLM plan may take benchmark-near routine code/research turns while a stronger GPT subscription remains available for larger quality gaps, unsupported capabilities, explicit modifiers, and categories where it remains the effective winner.
+
 The effective pressure signal is:
 
 - provider enabled
