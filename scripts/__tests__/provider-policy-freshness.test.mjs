@@ -14,6 +14,8 @@ function fixture({
   googleReadmeDate = "2026-07-10",
   anthropicStatusDate = "2026-06-15",
   googleStatusDate = "2026-07-10",
+  googleReadmeName = "Google",
+  googleStatusName = googleReadmeName,
   includeGoogleStatus = true,
   freshnessDays = "90",
 } = {}) {
@@ -21,10 +23,10 @@ function fixture({
   mkdirSync(join(root, "references"), { recursive: true });
   writeFileSync(
     join(root, "README.md"),
-    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n**Google (status reviewed ${googleReadmeDate}):** Not routeable.\n\n## Next\n`,
+    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n**${googleReadmeName} (status reviewed ${googleReadmeDate}):** Not routeable.\n\n## Next\n`,
   );
   const googleRow = includeGoogleStatus
-    ? `| Google | ${googleStatusDate} | Excluded |\n`
+    ? `| ${googleStatusName} | ${googleStatusDate} | Excluded |\n`
     : "";
   writeFileSync(
     join(root, "references", "provider-model-status.md"),
@@ -79,6 +81,22 @@ test("rejects future-dated provider policy reviews", () => {
     (result) => {
       assert.notEqual(result.status, 0);
       assert.match(result.stderr, /Google: review date 2026-08-01 is after as-of date 2026-07-24/);
+    },
+    "2026-07-24",
+  );
+});
+
+test("checks provider display names containing parentheses", () => {
+  withFixture(
+    {
+      googleReadmeName: "Z AI (GLM)",
+      googleStatusName: "Z AI (GLM)",
+      googleReadmeDate: "2026-01-01",
+      googleStatusDate: "2026-01-01",
+    },
+    (result) => {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Z AI \(GLM\): review date 2026-01-01 is stale/);
     },
     "2026-07-24",
   );

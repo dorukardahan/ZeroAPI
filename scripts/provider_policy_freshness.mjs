@@ -54,7 +54,7 @@ function parseReadmeProviders(readme, errors) {
 
   const providers = [];
   const seen = new Set();
-  const pattern = /^\*\*([^*(]+?)\s*\(([^)]*)\):\*\*/gm;
+  const pattern = /^\*\*(.+)\s+\(([^)]*)\):\*\*/gm;
   for (const match of section.matchAll(pattern)) {
     const provider = match[1].trim();
     const metadata = match[2].trim();
