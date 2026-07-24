@@ -54,19 +54,33 @@ function parseReadmeProviders(readme, errors) {
 
   const providers = [];
   const seen = new Set();
-  const pattern = /^\s*(?:[-*+]\s+)?\*\*(.+)\s+\(([^)]*)\)(?::\*\*|\*\*:)/;
+  const listPrefix = "(?:(?:[-*+]|\\d+[.)])\\s+)?";
+  const candidatePattern = new RegExp(`^\\s*${listPrefix}\\*\\*`);
+  const headingPattern = new RegExp(`^\\s*${listPrefix}\\*\\*(.+?)(?::\\*\\*|\\*\\*:)`);
   const candidateLines = section
     .split("\n")
-    .filter((line) => /\*\*.*status\s+reviewed/i.test(line));
+    .filter((line) => candidatePattern.test(line));
 
   for (const line of candidateLines) {
-    const match = line.match(pattern);
-    if (!match) {
+    const headingMatch = line.match(headingPattern);
+    if (!headingMatch) {
       errors.push("README: malformed provider exclusion line");
       continue;
     }
-    const provider = match[1].trim();
-    const metadata = match[2].trim();
+
+    const heading = headingMatch[1].trim();
+    const metadataMatch = heading.match(/^(.+)\s+\(([^)]*)\)$/);
+    if (!metadataMatch) {
+      if (/\bstatus\s+reviewed\b/i.test(heading)) {
+        errors.push("README: malformed provider exclusion line");
+      } else {
+        errors.push(`${heading}: missing README review metadata`);
+      }
+      continue;
+    }
+
+    const provider = metadataMatch[1].trim();
+    const metadata = metadataMatch[2].trim();
     if (seen.has(provider)) {
       errors.push(`${provider}: duplicate README provider exclusion`);
       continue;

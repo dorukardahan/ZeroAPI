@@ -19,6 +19,7 @@ function fixture({
   googleColonOutsideBold = false,
   googleBulleted = false,
   googleMalformed = false,
+  googleMissingReviewMetadata = false,
   includeGoogleStatus = true,
   extraStatusRows = "",
   freshnessDays = "90",
@@ -27,7 +28,7 @@ function fixture({
   mkdirSync(join(root, "references"), { recursive: true });
   writeFileSync(
     join(root, "README.md"),
-    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n${googleBulleted ? "- " : ""}${googleMalformed ? `**${googleReadmeName} status reviewed ${googleReadmeDate}:**` : `**${googleReadmeName} (status reviewed ${googleReadmeDate})${googleColonOutsideBold ? "**:" : ":**"}`} Not routeable.\n\n## Next\n`,
+    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n${googleBulleted ? "- " : ""}${googleMissingReviewMetadata ? `**${googleReadmeName}:**` : googleMalformed ? `**${googleReadmeName} status reviewed ${googleReadmeDate}:**` : `**${googleReadmeName} (status reviewed ${googleReadmeDate})${googleColonOutsideBold ? "**:" : ":**"}`} Not routeable.\n\n## Next\n`,
   );
   const googleRow = includeGoogleStatus
     ? `| ${googleStatusName} | ${googleStatusDate} | Excluded |\n`
@@ -130,6 +131,13 @@ test("fails closed on an unparseable dated provider exclusion", () => {
   withFixture({ googleMalformed: true }, (result) => {
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /README: malformed provider exclusion line/);
+  });
+});
+
+test("requires review metadata on every README provider exclusion", () => {
+  withFixture({ googleMissingReviewMetadata: true }, (result) => {
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Google: missing README review metadata/);
   });
 });
 
