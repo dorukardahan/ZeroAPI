@@ -43,6 +43,14 @@ BENCHMARK_MAP = {
     "math_500": "math_500",
     "aime": "aime",
 }
+CANONICAL_BENCHMARK_CATEGORIES = {
+    "terminalbench": {
+        "key": "terminalbench_v2_1",
+        "fallback_key": "terminalbench_hard",
+        "scale": "0-1",
+        "description": "Agentic terminal tasks (TerminalBench v2.1, falling back to Hard for older snapshots)",
+    },
+}
 def resolve_benchmark(evaluations: Dict[str, Any], source_spec: Any) -> Optional[float]:
     """Resolve a benchmark value from AA evaluations, supporting fallback chains.
 
@@ -488,9 +496,20 @@ def read_existing_benchmark_categories(
     """
     source = output_path if output_path.exists() else default_path
     try:
-        return json.loads(source.read_text()).get("benchmark_categories")
+        categories = json.loads(source.read_text()).get("benchmark_categories")
     except FileNotFoundError:
         return None
+
+    # Normalize the terminalbench category so that snapshots created before
+    # the v2.1 migration don't publish v2.1 scores under stale "Hard" metadata.
+    if categories and isinstance(categories, dict):
+        canonical_tb = CANONICAL_BENCHMARK_CATEGORIES.get("terminalbench")
+        existing_tb = categories.get("terminalbench")
+        if canonical_tb and isinstance(existing_tb, dict):
+            if existing_tb.get("key") != canonical_tb.get("key"):
+                categories["terminalbench"] = dict(canonical_tb)
+
+    return categories
 
 
 def main() -> None:
