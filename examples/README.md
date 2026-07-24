@@ -136,6 +136,10 @@ ZeroAPI classifies each task into one of six categories based on keywords in the
 
 High-risk keywords (`deploy`, `delete`, `drop`, `production`, `credentials`, etc.) are diagnostic-only. They do not block or downgrade routing; category, capability, subscription, and external-model policy continue to decide the route.
 
+## Rule seed vs effective route
+
+`routing_rules.<category>.primary` is the benchmark-first seed, not a hard promise that this model always wins. Balanced routing first keeps candidates inside a benchmark-quality frontier, then uses declared subscription pressure to spread eligible work across the user's configured plans. In `openai-glm.json`, GPT-5.6 Sol remains the code/research benchmark seed, while the declared OpenAI Plus + Z.AI Max mix makes GLM-5.2 the effective balanced winner for benchmark-near code and research turns. Use the simulator or explain output to inspect the final weighted order.
+
 ## Multi-account note
 
 If you have multiple subscriptions under the same provider, prefer `subscription_inventory` over squeezing them into one `subscription_profile` tier. ZeroAPI uses inventory both for provider headroom scoring and for `authProfileOverride` steering when the winning account declares an `authProfile`. Current stable OpenClaw releases still do not merge that hook field directly, so ZeroAPI uses its best-effort session-store sync when the session already exists, and otherwise keeps using `auth.order`, cooldowns, and session stickiness.

@@ -7,7 +7,7 @@
 
 ### Changed
 - Map GPT-5.6 Sol/Terra/Luna to their direct AA max-effort rows, refresh source-owned benchmark metadata to the current methodology, include Tau-cubed Banking in orchestration ranking alongside Tau-squared Telecom and IFBench, and require category-specific evidence before code/research/math strength can influence the frontier.
-- Cap balanced code/research frontier drops at 6% so static high-tier subscription pressure cannot displace a materially stronger specialist benchmark leader.
+- Clarify and regression-test that generated `routing_rules.primary` values are benchmark-first candidate seeds; balanced subscription pressure may intentionally choose another benchmark-near provider to distribute work across configured plans.
 
 ## [3.9.3] - 2026-07-20
 

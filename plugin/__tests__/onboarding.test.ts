@@ -37,7 +37,7 @@ describe("buildStarterConfig", () => {
         config.subscription_inventory,
         undefined,
         config.routing_mode,
-      )[0]).toBe("openai/gpt-5.6-sol");
+      )[0]).toBe("zai/glm-5.2");
     }
     expect(config.subscription_profile?.global).toEqual({
       "openai-codex": { enabled: true, tierId: "plus" },

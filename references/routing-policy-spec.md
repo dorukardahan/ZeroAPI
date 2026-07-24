@@ -33,6 +33,8 @@ Balanced routing uses these inputs:
 - optional `subscription_inventory`
 - provider catalog metadata (`routingWeight`, `benchmarkRoutingBias`)
 
+`routing_rules.primary` is the benchmark-first seed of a candidate pool, not a hard final route. In balanced mode, a benchmark-near candidate with stronger declared subscription headroom may become the effective winner after frontier and pressure ordering. This is intentional: ZeroAPI should preserve meaningful quality leads without exhausting one subscription while other configured capacity sits idle.
+
 ## Decision pipeline
 
 ### 1. Early skip and stay gates
@@ -130,15 +132,9 @@ For each candidate:
 - `providerBias` comes from the public subscription catalog
 - `pressureScore = tierWeight * providerBias`
 
-Allowed benchmark drop starts with:
+Allowed benchmark drop:
 
-`baseDrop = min(0.16, 0.05 + max(0, tierWeight - 1) * 0.018 + max(0, providerBias - 1) * 0.07)`
-
-For `code` and `research`, balanced routing caps this at `0.06` before any matching modifier adjustment:
-
-`allowedDrop = min(baseDrop, 0.06)`
-
-Other categories use `baseDrop`. A matching `coding-aware` or `research-aware` modifier then tightens its category's allowed drop by `0.025`, with a `0.03` floor.
+`min(0.16, 0.05 + max(0, tierWeight - 1) * 0.018 + max(0, providerBias - 1) * 0.07)`
 
 A candidate is inside the frontier when:
 
