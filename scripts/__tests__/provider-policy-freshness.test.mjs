@@ -17,6 +17,7 @@ function fixture({
   googleReadmeName = "Google",
   googleStatusName = googleReadmeName,
   includeGoogleStatus = true,
+  extraStatusRows = "",
   freshnessDays = "90",
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-provider-policy-"));
@@ -30,7 +31,7 @@ function fixture({
     : "";
   writeFileSync(
     join(root, "references", "provider-model-status.md"),
-    `# Provider status\n\n## Provider policy review dates\n\nPolicy review freshness interval: ${freshnessDays} days.\n\n| Provider | Last reviewed | Status |\n|---|---|---|\n| Anthropic | ${anthropicStatusDate} | Excluded |\n${googleRow}`,
+    `# Provider status\n\n## Provider policy review dates\n\nPolicy review freshness interval: ${freshnessDays} days.\n\n| Provider | Last reviewed | Status |\n|---|---|---|\n| Anthropic | ${anthropicStatusDate} | Excluded |\n${googleRow}${extraStatusRows}`,
   );
   return root;
 }
@@ -100,6 +101,24 @@ test("checks provider display names containing parentheses", () => {
     },
     "2026-07-24",
   );
+});
+
+test("validates every authoritative status row, including providers absent from README", () => {
+  const cases = [
+    ["2026-01-01", /Z AI \(GLM\): review date 2026-01-01 is stale/],
+    ["2026-08-01", /Z AI \(GLM\): review date 2026-08-01 is after as-of date 2026-07-24/],
+    ["January 1, 2026", /Z AI \(GLM\): malformed review date January 1, 2026/],
+  ];
+  for (const [date, expected] of cases) {
+    withFixture(
+      { extraStatusRows: `| Z AI (GLM) | ${date} | Excluded |\n` },
+      (result) => {
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, expected);
+      },
+      "2026-07-24",
+    );
+  }
 });
 
 test("rejects a provider that is missing from the status reference", () => {

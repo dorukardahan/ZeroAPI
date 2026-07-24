@@ -117,23 +117,15 @@ export function checkProviderPolicyFreshness({ readme, status, asOf }) {
 
   const providers = parseReadmeProviders(readme, errors);
   const { freshnessDays, rows } = parseStatusReference(status, errors);
+  const validStatusRows = new Set();
 
-  for (const { provider, date: readmeDate } of providers) {
-    if (!rows.has(provider)) {
-      errors.push(`${provider}: missing provider policy review row`);
-      continue;
-    }
-
-    const statusDate = rows.get(provider);
+  for (const [provider, statusDate] of rows) {
     const parsedStatusDate = parseIsoDate(statusDate);
     if (!parsedStatusDate) {
       errors.push(`${provider}: malformed review date ${statusDate || "(empty)"}`);
       continue;
     }
-
-    if (readmeDate && readmeDate !== statusDate) {
-      errors.push(`${provider}: README date ${readmeDate} does not match status date ${statusDate}`);
-    }
+    validStatusRows.add(provider);
 
     if (freshnessDays !== null) {
       const ageDays = Math.floor((asOfDate.getTime() - parsedStatusDate.getTime()) / DAY_MS);
@@ -142,6 +134,18 @@ export function checkProviderPolicyFreshness({ readme, status, asOf }) {
       } else if (ageDays > freshnessDays) {
         errors.push(`${provider}: review date ${statusDate} is stale (${ageDays} days; limit ${freshnessDays})`);
       }
+    }
+  }
+
+  for (const { provider, date: readmeDate } of providers) {
+    if (!rows.has(provider)) {
+      errors.push(`${provider}: missing provider policy review row`);
+      continue;
+    }
+
+    const statusDate = rows.get(provider);
+    if (readmeDate && validStatusRows.has(provider) && readmeDate !== statusDate) {
+      errors.push(`${provider}: README date ${readmeDate} does not match status date ${statusDate}`);
     }
   }
 
