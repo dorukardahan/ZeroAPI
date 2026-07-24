@@ -137,7 +137,9 @@ export function checkProviderPolicyFreshness({ readme, status, asOf }) {
 
     if (freshnessDays !== null) {
       const ageDays = Math.floor((asOfDate.getTime() - parsedStatusDate.getTime()) / DAY_MS);
-      if (ageDays > freshnessDays) {
+      if (ageDays < 0) {
+        errors.push(`${provider}: review date ${statusDate} is after as-of date ${asOf}`);
+      } else if (ageDays > freshnessDays) {
         errors.push(`${provider}: review date ${statusDate} is stale (${ageDays} days; limit ${freshnessDays})`);
       }
     }

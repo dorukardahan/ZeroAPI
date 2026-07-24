@@ -40,10 +40,10 @@ function run(root, asOf = "2026-07-24") {
   });
 }
 
-function withFixture(options, assertion) {
+function withFixture(options, assertion, asOf = "2026-07-24") {
   const root = fixture(options);
   try {
-    assertion(run(root), root);
+    assertion(run(root, asOf), root);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -71,6 +71,17 @@ test("rejects stale provider policy review dates", () => {
     assert.match(stale.stderr, /Anthropic: review date 2026-06-15 is stale/);
     assert.match(stale.stderr, /Google: review date 2026-07-10 is stale/);
   });
+});
+
+test("rejects future-dated provider policy reviews", () => {
+  withFixture(
+    { googleReadmeDate: "2026-08-01", googleStatusDate: "2026-08-01" },
+    (result) => {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Google: review date 2026-08-01 is after as-of date 2026-07-24/);
+    },
+    "2026-07-24",
+  );
 });
 
 test("rejects a provider that is missing from the status reference", () => {
