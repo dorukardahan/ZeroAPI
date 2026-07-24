@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any
+from typing import Any, TypeGuard
 
 SECRET_FIELD_PATTERNS = (
     "token", "secret", "cookie", "password", "credential",
@@ -23,6 +23,14 @@ SECRET_FIELD_PATTERNS = (
 def _is_secret_field(key: str) -> bool:
     lower = key.lower()
     return any(p in lower for p in SECRET_FIELD_PATTERNS)
+
+
+def _is_number(value: Any) -> TypeGuard[int | float]:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(value)
+    )
 
 
 def _assert_valid_ratio(value: float) -> None:
@@ -51,6 +59,8 @@ def _normalize_percentage(value: float) -> float | None:
 
 
 def _map_window_kind(raw_kind: str) -> str:
+    if not isinstance(raw_kind, str) or not raw_kind.strip():
+        raise TypeError("raw_kind must be a non-empty string")
     upper = raw_kind.upper()
     if "TOKEN" in upper:
         return "tokens_limit"
@@ -93,7 +103,7 @@ def normalize_window(
         used_pct = _normalize_percentage(percentage_used)
         if used_pct is not None:
             ratio = max(0.0, 1.0 - used_pct)
-    elif used is not None and limit is not None and limit > 0 and math.isfinite(limit):
+    elif _is_number(used) and _is_number(limit) and limit > 0:
         ratio = max(0.0, 1.0 - used / limit)
 
     if ratio is None:
@@ -180,14 +190,14 @@ def _parse_zai_windows(raw: Any) -> list[dict[str, Any]] | None:
         reset_at = limit.get("next_reset_time")
         ratio: float | None = None
 
-        if isinstance(limit.get("percentage"), (int, float)):
+        if _is_number(limit.get("percentage")):
             ratio = _normalize_percentage(limit["percentage"])
 
         if ratio is None and isinstance(limit.get("usage"), dict):
             usage = limit["usage"]
-            used = usage.get("current_value", usage.get("used", 0))
+            used = usage.get("current_value", usage.get("used"))
             limit_total = usage.get("number")
-            if isinstance(limit_total, (int, float)) and limit_total > 0:
+            if _is_number(used) and _is_number(limit_total) and limit_total > 0:
                 ratio = max(0.0, 1.0 - used / limit_total)
 
         if ratio is None:
@@ -216,11 +226,11 @@ def _parse_codex_windows(raw: Any) -> list[dict[str, Any]] | None:
     for limit in limits:
         if not isinstance(limit, dict):
             continue
-        if not isinstance(limit.get("used_percent"), (int, float)):
+        if not _is_number(limit.get("used_percent")):
             continue
         raw_kind = limit.get("label", "PRIMARY")
         window_seconds = limit.get("window_minutes")
-        if isinstance(window_seconds, (int, float)):
+        if _is_number(window_seconds):
             window_seconds = window_seconds * 60
         else:
             window_seconds = None
@@ -239,7 +249,7 @@ def _parse_xai_windows(raw: Any) -> list[dict[str, Any]] | None:
     if not isinstance(raw, dict):
         return None
     rp = raw.get("remaining_percent")
-    if not isinstance(rp, (int, float)):
+    if not _is_number(rp):
         return None
     ratio = _normalize_percentage(rp)
     if ratio is None:
@@ -262,12 +272,15 @@ def _parse_kimi_windows(raw: Any) -> list[dict[str, Any]] | None:
         reset_at = usage.get("reset_at")
         ratio: float | None = None
 
-        if isinstance(usage.get("percentage"), (int, float)):
+        if _is_number(usage.get("percentage")):
             ratio = _normalize_percentage(usage["percentage"])
-        if ratio is None and isinstance(usage.get("remaining"), (int, float)) and isinstance(usage.get("total"), (int, float)) and usage["total"] > 0:
-            ratio = usage["remaining"] / usage["total"]
-        if ratio is None and isinstance(usage.get("used"), (int, float)) and isinstance(usage.get("total"), (int, float)) and usage["total"] > 0:
-            ratio = max(0.0, 1.0 - usage["used"] / usage["total"])
+        remaining = usage.get("remaining")
+        total = usage.get("total")
+        used = usage.get("used")
+        if ratio is None and _is_number(remaining) and _is_number(total) and total > 0:
+            ratio = remaining / total
+        if ratio is None and _is_number(used) and _is_number(total) and total > 0:
+            ratio = max(0.0, 1.0 - used / total)
         if ratio is None:
             continue
         try:
@@ -286,12 +299,15 @@ def _parse_minimax_windows(raw: Any) -> list[dict[str, Any]] | None:
         return None
     ratio: float | None = None
 
-    if isinstance(remains.get("percentage"), (int, float)):
+    if _is_number(remains.get("percentage")):
         ratio = _normalize_percentage(remains["percentage"])
-    if ratio is None and isinstance(remains.get("remaining"), (int, float)) and isinstance(remains.get("total"), (int, float)) and remains["total"] > 0:
-        ratio = remains["remaining"] / remains["total"]
-    if ratio is None and isinstance(remains.get("used"), (int, float)) and isinstance(remains.get("total"), (int, float)) and remains["total"] > 0:
-        ratio = max(0.0, 1.0 - remains["used"] / remains["total"])
+    remaining = remains.get("remaining")
+    total = remains.get("total")
+    used = remains.get("used")
+    if ratio is None and _is_number(remaining) and _is_number(total) and total > 0:
+        ratio = remaining / total
+    if ratio is None and _is_number(used) and _is_number(total) and total > 0:
+        ratio = max(0.0, 1.0 - used / total)
     if ratio is None:
         return None
     return [normalize_window(
@@ -309,15 +325,23 @@ def normalize_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     windows: list[dict[str, Any]] | None = None
     status = "fresh"
 
-    windows = _parse_zai_windows(raw)
-    if windows is None:
-        windows = _parse_codex_windows(raw)
-    if windows is None:
-        windows = _parse_xai_windows(raw)
-    if windows is None:
-        windows = _parse_kimi_windows(raw)
-    if windows is None:
-        windows = _parse_minimax_windows(raw)
+    parsers = {
+        "zai": _parse_zai_windows,
+        "openai": _parse_codex_windows,
+        "openai-codex": _parse_codex_windows,
+        "xai": _parse_xai_windows,
+        "xai-oauth": _parse_xai_windows,
+        "kimi": _parse_kimi_windows,
+        "moonshot": _parse_kimi_windows,
+        "minimax": _parse_minimax_windows,
+        "minimax-portal": _parse_minimax_windows,
+    }
+    parser = parsers.get(str(provider).strip().lower())
+    if parser is not None:
+        try:
+            windows = parser(raw)
+        except (AttributeError, TypeError, ValueError):
+            windows = None
 
     if windows is None or len(windows) == 0:
         status = "unsupported"

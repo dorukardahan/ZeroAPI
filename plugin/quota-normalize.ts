@@ -68,14 +68,17 @@ function mapWindowKind(rawKind: string): QuotaWindowKind {
   if (upper.includes("REQUEST") || upper.includes("RPM")) return "requests_limit";
   if (upper.includes("CREDIT")) return "credits";
   if (upper.includes("MESSAGE")) return "messages";
-  if (upper.includes("COMPUTE") || upper.includes("TIME")) return "compute";
   if (upper.includes("TIME_LIMIT")) return "time_limit";
+  if (upper.includes("COMPUTE") || upper.includes("TIME")) return "compute";
   if (upper.includes("PERCENT") || upper === "USAGE") return "percent";
   return "tokens_limit";
 }
 
 /** Normalize a single quota window. */
 export function normalizeQuotaWindow(input: NormalizeWindowInput): NormalizedQuotaWindow {
+  if (typeof input.rawKind !== "string" || input.rawKind.trim().length === 0) {
+    throw new TypeError("rawKind must be a non-empty string");
+  }
   const kind = mapWindowKind(input.rawKind);
 
   let remainingRatio: number | null = null;
@@ -364,9 +367,33 @@ function parseMiniMaxWindows(raw: unknown): NormalizedQuotaWindow[] | null {
   ];
 }
 
+function parserForProvider(
+  provider: string,
+): ((raw: unknown) => NormalizedQuotaWindow[] | null) | null {
+  switch (provider.trim().toLowerCase()) {
+    case "zai":
+      return parseZaiWindows;
+    case "openai":
+    case "openai-codex":
+      return parseCodexWindows;
+    case "xai":
+    case "xai-oauth":
+      return parseXaiWindows;
+    case "kimi":
+    case "moonshot":
+      return parseKimiWindows;
+    case "minimax":
+    case "minimax-portal":
+      return parseMiniMaxWindows;
+    default:
+      return null;
+  }
+}
+
 /**
  * Provider-specific raw payload normalizer.
- * Dispatches to the right parser, strips secret fields from the output.
+ * Dispatches only by the declared provider ID; it never guesses a provider
+ * from payload shape. The output contains no raw fields or credentials.
  */
 export function normalizeSnapshot(payload: ProviderQuotaPayload): NormalizedQuotaSnapshot {
   const { provider, account, raw, fetchedAt } = payload;
@@ -374,21 +401,12 @@ export function normalizeSnapshot(payload: ProviderQuotaPayload): NormalizedQuot
   let windows: NormalizedQuotaWindow[] | null = null;
   let status: QuotaSnapshotStatus = "fresh";
 
-  // Try provider-specific parsers in order.
-  const parsers: Array<(raw: unknown) => NormalizedQuotaWindow[] | null> = [
-    parseZaiWindows,
-    parseCodexWindows,
-    parseXaiWindows,
-    parseKimiWindows,
-    parseMiniMaxWindows,
-  ];
-
-  for (const parse of parsers) {
+  const parser = parserForProvider(provider);
+  if (parser) {
     try {
-      windows = parse(raw);
-      if (windows !== null) break;
+      windows = parser(raw);
     } catch {
-      continue;
+      windows = null;
     }
   }
 

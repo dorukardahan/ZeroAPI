@@ -98,8 +98,8 @@ describe("router with live quota snapshots", () => {
       },
     };
     const quotaSnapshots = new Map<string, NormalizedQuotaSnapshot>([
-      ["openai", snap("openai", "openai#1", ["5h", 0.02])],
-      ["zai", snap("zai", "zai#1", ["1w", 0.90])],
+      ["openai#1", snap("openai", "openai#1", ["5h", 0.02])],
+      ["zai#1", snap("zai", "zai#1", ["1w", 0.90])],
     ]);
 
     const ranked = rankSubscriptionWeightedCandidates(
@@ -114,8 +114,8 @@ describe("router with live quota snapshots", () => {
 
   it("preserves benchmark-first routing for coding-aware code category even under quota pressure", () => {
     const quotaSnapshots = new Map<string, NormalizedQuotaSnapshot>([
-      ["openai", snap("openai", "openai#1", ["5h", 0.02])],
-      ["zai", snap("zai", "zai#1", ["1w", 0.90])],
+      ["openai#1", snap("openai", "openai#1", ["5h", 0.02])],
+      ["zai#1", snap("zai", "zai#1", ["1w", 0.90])],
     ]);
 
     const codeRules: Record<string, RoutingRule> = {
@@ -140,9 +140,93 @@ describe("router with live quota snapshots", () => {
     }
   });
 
+  it("removes fully depleted candidates before benchmark frontier ranking", () => {
+    const quotaSnapshots = new Map<string, NormalizedQuotaSnapshot>([
+      ["openai#1", snap("openai", "openai#1", ["5h", 0])],
+      ["zai#1", snap("zai", "zai#1", ["1w", 0.90])],
+    ]);
+    const codeRules: Record<string, RoutingRule> = {
+      code: {
+        primary: "openai/gpt-5.6-sol",
+        fallbacks: ["zai/glm-5.2"],
+      },
+    };
+
+    const ranked = rankSubscriptionWeightedCandidates(
+      "code", models, codeRules, profile, inventory, undefined, "balanced",
+      "coding-aware", quotaSnapshots,
+    );
+
+    expect(ranked.map((item) => item.candidate)).not.toContain("openai/gpt-5.6-sol");
+    expect(ranked[0]?.candidate).toBe("zai/glm-5.2");
+  });
+
+  it("selects a healthy secondary account when the static preferred account is depleted", () => {
+    const multiAccountInventory: SubscriptionInventory = {
+      version: "1",
+      accounts: {
+        "openai#1": {
+          provider: "openai",
+          enabled: true,
+          authProfile: "openai-profile-1",
+          tierId: "plus",
+        },
+        "openai#2": {
+          provider: "openai",
+          enabled: true,
+          authProfile: "openai-profile-2",
+          tierId: "plus",
+        },
+      },
+    };
+    const quotaSnapshots = new Map<string, NormalizedQuotaSnapshot>([
+      ["openai#1", snap("openai", "openai#1", ["5h", 0])],
+      ["openai#2", snap("openai", "openai#2", ["5h", 0.80])],
+    ]);
+    const openaiOnlyModels = {
+      "openai/gpt-5.6-sol": models["openai/gpt-5.6-sol"],
+    };
+    const openaiOnlyRules: Record<string, RoutingRule> = {
+      default: { primary: "openai/gpt-5.6-sol", fallbacks: [] },
+    };
+
+    const ranked = rankSubscriptionWeightedCandidates(
+      "default",
+      openaiOnlyModels,
+      openaiOnlyRules,
+      profile,
+      multiAccountInventory,
+      undefined,
+      "balanced",
+      undefined,
+      quotaSnapshots,
+    );
+
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0].selectedAccountId).toBe("openai#2");
+    expect(ranked[0].selectedAuthProfile).toBe("openai-profile-2");
+    expect(ranked[0].quotaFactor).toBeCloseTo(Math.sqrt(0.80), 4);
+  });
+
+  it("ignores a snapshot whose map key does not match snapshot.account", () => {
+    const mismatched = new Map<string, NormalizedQuotaSnapshot>([
+      ["openai#1", snap("openai", "openai#other", ["5h", 0])],
+    ]);
+    const noQuota = rankSubscriptionWeightedCandidates(
+      "default", models, rules, profile, inventory, undefined, "balanced",
+    );
+    const ranked = rankSubscriptionWeightedCandidates(
+      "default", models, rules, profile, inventory, undefined, "balanced",
+      undefined, mismatched,
+    );
+
+    expect(ranked[0]?.candidate).toBe(noQuota[0]?.candidate);
+    expect(ranked.find((item) => item.candidate === "openai/gpt-5.6-sol")?.quotaFactor).toBeNull();
+  });
+
   it("treats stale quota as no-quota (static pressure only)", () => {
     const staleSnapshots = new Map<string, NormalizedQuotaSnapshot>([
-      ["openai", { ...snap("openai", "openai#1", ["5h", 0.02]), status: "stale" }],
+      ["openai#1", { ...snap("openai", "openai#1", ["5h", 0.02]), status: "stale" }],
     ]);
 
     const ranked = rankSubscriptionWeightedCandidates(

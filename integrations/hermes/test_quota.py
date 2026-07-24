@@ -21,6 +21,11 @@ class TestNormalizeWindow(unittest.TestCase):
         self.assertAlmostEqual(w["remainingRatio"], 0.9888)
         self.assertEqual(w["appliesTo"], "inference")
 
+    def test_classifies_time_limit_before_generic_time(self):
+        w = normalize_window("TIME_LIMIT", remaining_ratio=0.75, applies_to="mcp")
+        self.assertEqual(w["kind"], "time_limit")
+        self.assertEqual(w["appliesTo"], "mcp")
+
     def test_derives_ratio_from_usage_limit(self):
         w = normalize_window("PRIMARY", used=400, limit=800)
         self.assertAlmostEqual(w["remainingRatio"], 0.5)
@@ -122,6 +127,51 @@ class TestNormalizeSnapshot(unittest.TestCase):
         snap = normalize_snapshot({
             "provider": "qwen-oauth", "account": "qwen#1",
             "raw": {},
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "unsupported")
+
+    def test_provider_dispatch_does_not_guess_by_shape(self):
+        snap = normalize_snapshot({
+            "provider": "qwen-oauth", "account": "qwen#1",
+            "raw": {"remains": {"percentage": 90, "plan_type": "NOT_MINIMAX"}},
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "unsupported")
+        self.assertEqual(snap["windows"], [])
+
+    def test_malformed_kind_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "raw": {"limits": [{"type": 1, "percentage": 0.5}]},
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "unsupported")
+        self.assertEqual(snap["windows"], [])
+
+    def test_rejects_boolean_zai_counters(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "raw": {"limits": [{
+                "type": "TOKENS_LIMIT",
+                "usage": {"used": False, "number": True},
+            }]},
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "unsupported")
+
+    def test_rejects_boolean_kimi_counters(self):
+        snap = normalize_snapshot({
+            "provider": "moonshot", "account": "kimi#1",
+            "raw": {"usages": [{"type": "TOKENS", "remaining": False, "total": True}]},
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "unsupported")
+
+    def test_rejects_boolean_minimax_counters(self):
+        snap = normalize_snapshot({
+            "provider": "minimax-portal", "account": "minimax#1",
+            "raw": {"remains": {"remaining": False, "total": True}},
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         self.assertEqual(snap["status"], "unsupported")

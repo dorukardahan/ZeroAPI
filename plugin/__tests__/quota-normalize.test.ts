@@ -21,6 +21,16 @@ describe("normalizeQuotaWindow", () => {
     expect(window.id).toBe("TOKENS_LIMIT");
   });
 
+  it("classifies TIME_LIMIT before generic TIME kinds", () => {
+    const window = normalizeQuotaWindow({
+      rawKind: "TIME_LIMIT",
+      remainingRatio: 0.75,
+      appliesTo: "mcp",
+    });
+    expect(window.kind).toBe("time_limit");
+    expect(window.appliesTo).toBe("mcp");
+  });
+
   it("derives remaining ratio from usage/limit counters", () => {
     const window = normalizeQuotaWindow({
       rawKind: "PRIMARY",
@@ -284,6 +294,32 @@ describe("normalizeSnapshot", () => {
     const snapshot = normalizeSnapshot(payload);
     expect(snapshot.status).toBe("unsupported");
     expect(snapshot.windows).toHaveLength(0);
+  });
+
+  it("dispatches by provider instead of guessing from payload shape", () => {
+    const snapshot = normalizeSnapshot({
+      provider: "qwen-oauth",
+      account: "qwen#1",
+      raw: {
+        remains: { percentage: 90, plan_type: "NOT_MINIMAX" },
+      },
+      fetchedAt: "2026-07-24T17:33:47Z",
+    });
+    expect(snapshot.status).toBe("unsupported");
+    expect(snapshot.windows).toEqual([]);
+  });
+
+  it("fails closed on a malformed provider window kind", () => {
+    const snapshot = normalizeSnapshot({
+      provider: "zai",
+      account: "zai#1",
+      raw: {
+        limits: [{ type: 1, percentage: 0.5 }],
+      },
+      fetchedAt: "2026-07-24T17:33:47Z",
+    });
+    expect(snapshot.status).toBe("unsupported");
+    expect(snapshot.windows).toEqual([]);
   });
 
   it("strips raw payload identity fields from the normalized snapshot", () => {

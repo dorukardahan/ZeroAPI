@@ -1,4 +1,4 @@
-import { getProviderCatalogEntry } from "./subscriptions.js";
+import { getCanonicalOpenClawProviderId, getProviderCatalogEntry } from "./subscriptions.js";
 import type {
   ModelCapabilities,
   RoutingModifier,
@@ -7,7 +7,11 @@ import type {
   SubscriptionInventory,
   TaskCategory,
 } from "./types.js";
-import { resolveProviderCapacity } from "./inventory.js";
+import {
+  resolveProviderAccountCapacities,
+  resolveProviderCapacity,
+  type ResolvedProviderCapacity,
+} from "./inventory.js";
 import type { SubscriptionProfile } from "./profile.js";
 import type { NormalizedQuotaSnapshot } from "./quota-types.js";
 import { computeQuotaFactor } from "./quota-policy.js";
@@ -198,6 +202,94 @@ function getModifierAccountBonus(params: {
  * pressure, and whether the candidate cleared the benchmark frontier) without changing
  * any routing decision. See references/explainability-contract.md.
  */
+type QuotaAwareProviderCapacity = {
+  routingWeight: number;
+  quotaFactor: number | null;
+  selectedAccountId: string | null;
+  selectedAuthProfile: string | null;
+  fullyDepleted: boolean;
+};
+
+function snapshotMatchesAccount(
+  snapshot: NormalizedQuotaSnapshot | undefined,
+  accountId: string,
+  providerId: string,
+): snapshot is NormalizedQuotaSnapshot {
+  if (!snapshot || snapshot.account !== accountId) return false;
+  return getCanonicalOpenClawProviderId(snapshot.provider)
+    === getCanonicalOpenClawProviderId(providerId);
+}
+
+function resolveQuotaAwareProviderCapacity(params: {
+  resolved: ResolvedProviderCapacity | null;
+  inventory: SubscriptionInventory | undefined;
+  providerId: string;
+  category: TaskCategory;
+  model: string;
+  quotaSnapshots: ReadonlyMap<string, NormalizedQuotaSnapshot> | undefined;
+}): QuotaAwareProviderCapacity {
+  const { resolved, inventory, providerId, category, model, quotaSnapshots } = params;
+  const staticWeight = resolved?.routingWeight ?? 0;
+  const staticResult: QuotaAwareProviderCapacity = {
+    routingWeight: staticWeight,
+    quotaFactor: null,
+    selectedAccountId: resolved?.preferredAccountId ?? null,
+    selectedAuthProfile: resolved?.preferredAuthProfile ?? null,
+    fullyDepleted: false,
+  };
+
+  // Legacy profile-only capacity has no opaque account scope. Applying a
+  // provider-level snapshot would be ambiguous, so fail open to static weight.
+  if (!resolved || resolved.source !== "inventory" || !quotaSnapshots) {
+    return staticResult;
+  }
+
+  const accounts = resolveProviderAccountCapacities({ inventory, providerId, category });
+  if (accounts.length === 0) return staticResult;
+
+  const evaluated = accounts.map((account) => {
+    const snapshot = quotaSnapshots.get(account.accountId);
+    const quotaFactor = snapshotMatchesAccount(snapshot, account.accountId, providerId)
+      ? computeQuotaFactor(snapshot, model)
+      : null;
+    return {
+      ...account,
+      quotaFactor,
+      liveWeight: account.routingWeight * (quotaFactor ?? 1),
+    };
+  });
+
+  const eligible = evaluated
+    .filter((account) => account.quotaFactor !== 0)
+    .sort((a, b) => {
+      if (b.liveWeight !== a.liveWeight) return b.liveWeight - a.liveWeight;
+      return a.accountId.localeCompare(b.accountId);
+    });
+
+  if (eligible.length === 0) {
+    return {
+      routingWeight: 0,
+      quotaFactor: 0,
+      selectedAccountId: null,
+      selectedAuthProfile: null,
+      fullyDepleted: true,
+    };
+  }
+
+  const selected = eligible[0];
+  const redundancyBonus = Math.min(1, 0.25 * Math.max(0, eligible.length - 1));
+  const liveRoutingWeight = selected.liveWeight + redundancyBonus;
+
+  return {
+    routingWeight: liveRoutingWeight,
+    quotaFactor: selected.quotaFactor,
+    selectedAccountId: selected.accountId,
+    selectedAuthProfile: selected.authProfile,
+    fullyDepleted: false,
+  };
+}
+
+/** Ranked model candidate with optional account-scoped quota diagnostics. */
 export type RankedCandidate = {
   candidate: string;
   benchmarkStrength: number;
@@ -206,6 +298,8 @@ export type RankedCandidate = {
   withinFrontier: boolean;
   originalIndex: number;
   quotaFactor?: number | null;
+  selectedAccountId?: string | null;
+  selectedAuthProfile?: string | null;
 };
 
 export function rankSubscriptionWeightedCandidates(
@@ -243,23 +337,23 @@ export function rankSubscriptionWeightedCandidates(
         availableModels[candidate],
         isModifierRelevant(routingModifier, category) ? routingModifier : undefined,
       );
+      const quotaCapacity = resolveQuotaAwareProviderCapacity({
+        resolved,
+        inventory,
+        providerId,
+        category,
+        model: candidate,
+        quotaSnapshots,
+      });
       const modifierAccountBonus = getModifierAccountBonus({
         routingModifier,
         category,
         inventory,
-        preferredAccountId: resolved?.preferredAccountId,
+        preferredAccountId: quotaCapacity.selectedAccountId,
       });
       const speedPriority = getSpeedPriority(availableModels[candidate]);
-
-      // Live quota factor: sqrt(min(applicable remaining ratios)).
-      // When no snapshot is available or snapshot is stale/unsupported,
-      // factor is null → quota does not modulate routing (static pressure only).
-      // When factor is 0 (depleted), the candidate's effective pressure is 0.
-      const quotaSnapshot = quotaSnapshots?.get(providerId) ?? null;
-      const quotaFactor = quotaSnapshots
-        ? computeQuotaFactor(quotaSnapshot, candidate)
-        : null;
       const basePressureScore = tierWeight * providerBias;
+      const livePressureScore = quotaCapacity.routingWeight * providerBias;
 
       return {
         candidate,
@@ -268,15 +362,15 @@ export function rankSubscriptionWeightedCandidates(
         providerBias,
         benchmarkStrength,
         pressureScore: basePressureScore,
-        effectivePressureScore:
-          (quotaFactor === null
-            ? basePressureScore
-            : basePressureScore * quotaFactor) + modifierAccountBonus,
+        effectivePressureScore: livePressureScore + modifierAccountBonus,
         speedPriority,
-        quotaFactor,
+        quotaFactor: quotaCapacity.quotaFactor,
+        selectedAccountId: quotaCapacity.selectedAccountId,
+        selectedAuthProfile: quotaCapacity.selectedAuthProfile,
+        fullyDepleted: quotaCapacity.fullyDepleted,
       };
     })
-    .filter((item) => item.pressureScore > 0);
+    .filter((item) => item.pressureScore > 0 && !item.fullyDepleted);
 
   if (candidates.length === 0) return [];
 
@@ -376,6 +470,9 @@ export function rankSubscriptionWeightedCandidates(
     effectivePressureScore: item.effectivePressureScore,
     withinFrontier: item.withinFrontier,
     originalIndex: item.originalIndex,
+    quotaFactor: item.quotaFactor,
+    selectedAccountId: item.selectedAccountId,
+    selectedAuthProfile: item.selectedAuthProfile,
   }));
 }
 
