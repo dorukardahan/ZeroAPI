@@ -837,3 +837,37 @@ test("offline reannotation remaps the committed snapshot without an API key", ()
   assert.equal(families["openai-gpt56-routes"].benchmark_proxy, "gpt-5.5");
   assert.equal(families["qwen-portal-routes"].provider, "qwen-oauth");
 });
+
+test("refresh_benchmarks terminalbench prefers v2_1 then falls back to hard", () => {
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+resolve = module.resolve_benchmark
+
+# Both present: v2_1 wins
+assert resolve({"terminalbench_v2_1": 0.85, "terminalbench_hard": 0.72}, ("terminalbench_v2_1", "terminalbench_hard")) == 0.85
+
+# Only v2_1 present
+assert resolve({"terminalbench_v2_1": 0.85}, ("terminalbench_v2_1", "terminalbench_hard")) == 0.85
+
+# Only hard present (old snapshot)
+assert resolve({"terminalbench_hard": 0.72}, ("terminalbench_v2_1", "terminalbench_hard")) == 0.72
+
+# Neither present
+assert resolve({}, ("terminalbench_v2_1", "terminalbench_hard")) is None
+
+# Non-tuple still works (backward compat)
+assert resolve({"gpqa": 0.935}, "gpqa") == 0.935
+
+# BENCHMARK_MAP has tuple for terminalbench
+assert isinstance(module.BENCHMARK_MAP["terminalbench"], tuple)
+assert "terminalbench_v2_1" in module.BENCHMARK_MAP["terminalbench"]
+`);
+});

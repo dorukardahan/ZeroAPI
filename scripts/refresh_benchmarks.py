@@ -31,7 +31,7 @@ BENCHMARK_MAP = {
     "coding": "artificial_analysis_coding_index",
     "math": "artificial_analysis_math_index",
     "tau2": "tau2",
-    "terminalbench": "terminalbench_hard",
+    "terminalbench": ("terminalbench_v2_1", "terminalbench_hard"),
     "ifbench": "ifbench",
     "gpqa": "gpqa",
     "lcr": "lcr",
@@ -43,6 +43,31 @@ BENCHMARK_MAP = {
     "math_500": "math_500",
     "aime": "aime",
 }
+CANONICAL_BENCHMARK_CATEGORIES = {
+    "terminalbench": {
+        "key": "terminalbench_v2_1",
+        "fallback_key": "terminalbench_hard",
+        "scale": "0-1",
+        "description": "Agentic terminal tasks (TerminalBench v2.1, falling back to Hard for older snapshots)",
+    },
+}
+def resolve_benchmark(evaluations: Dict[str, Any], source_spec: Any) -> Optional[float]:
+    """Resolve a benchmark value from AA evaluations, supporting fallback chains.
+
+    ``source_spec`` is normally a single AA field name string. For
+    ``terminalbench`` it is a ``(preferred, fallback)`` tuple so that
+    ``terminalbench_v2_1`` is preferred when available and falls back to
+    ``terminalbench_hard`` for older snapshots.
+    """
+    if isinstance(source_spec, tuple):
+        for key in source_spec:
+            value = normalize_optional_number(evaluations.get(key))
+            if value is not None:
+                return value
+        return None
+    return normalize_optional_number(evaluations.get(source_spec))
+
+
 EXCLUDED_SLUG_PATTERNS = ("realtime",)
 
 
@@ -390,8 +415,8 @@ def transform_models(
                     "family_id": policy_family.get("family_id"),
                 },
                 "benchmarks": {
-                    output_key: normalize_optional_number(evaluations.get(source_key))
-                    for output_key, source_key in BENCHMARK_MAP.items()
+                    output_key: resolve_benchmark(evaluations, source_keys)
+                    for output_key, source_keys in BENCHMARK_MAP.items()
                 },
             }
         )
@@ -471,9 +496,20 @@ def read_existing_benchmark_categories(
     """
     source = output_path if output_path.exists() else default_path
     try:
-        return json.loads(source.read_text()).get("benchmark_categories")
+        categories = json.loads(source.read_text()).get("benchmark_categories")
     except FileNotFoundError:
         return None
+
+    # Normalize the terminalbench category so that snapshots created before
+    # the v2.1 migration don't publish v2.1 scores under stale "Hard" metadata.
+    if categories and isinstance(categories, dict):
+        canonical_tb = CANONICAL_BENCHMARK_CATEGORIES.get("terminalbench")
+        existing_tb = categories.get("terminalbench")
+        if canonical_tb and isinstance(existing_tb, dict):
+            if existing_tb.get("key") != canonical_tb.get("key"):
+                categories["terminalbench"] = dict(canonical_tb)
+
+    return categories
 
 
 def main() -> None:
