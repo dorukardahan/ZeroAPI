@@ -640,7 +640,7 @@ def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = N
 
 
 def _normalize_benchmark(value: Any) -> float | None:
-    if not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
     if value < 0:
         return None

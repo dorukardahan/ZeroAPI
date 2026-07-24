@@ -103,9 +103,14 @@ class HermesParityTest(unittest.TestCase):
             ifbench=0.99,
             intelligence=50,
         )
+        boolean_metadata = _m(1000, False, 10, 1, tau3_banking=True)
         self.assertGreater(
             _benchmark_strength("orchestration", banking_strong, None),
             _benchmark_strength("orchestration", telecom_only, None),
+        )
+        self.assertGreater(
+            _benchmark_strength("orchestration", banking_strong, None),
+            _benchmark_strength("orchestration", boolean_metadata, None),
         )
 
     def test_category_specific_math_evidence_is_required(self):

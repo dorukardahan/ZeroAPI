@@ -146,9 +146,19 @@ describe("router weighting", () => {
         ttft_seconds: 1,
         benchmarks: { tau3_banking: 0.1, tau2: 0.99, ifbench: 0.99, intelligence: 50 },
       },
+      "zai/boolean-metadata": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 10,
+        ttft_seconds: 1,
+        benchmarks: { tau3_banking: true as unknown as number },
+      },
     };
     const agenticRules: Record<string, RoutingRule> = {
-      orchestration: { primary: "zai/telecom-only", fallbacks: ["zai/banking-strong"] },
+      orchestration: {
+        primary: "zai/boolean-metadata",
+        fallbacks: ["zai/telecom-only", "zai/banking-strong"],
+      },
     };
     const zaiProfile: SubscriptionProfile = {
       version: "1.1.0",

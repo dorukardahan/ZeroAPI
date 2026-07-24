@@ -17,7 +17,7 @@ const MODIFIER_TARGET_CATEGORIES: Record<RoutingModifier, TaskCategory[]> = {
 };
 
 function normalizeBenchmarkValue(value: number | null | undefined): number | null {
-  if (value == null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
   if (value > 1) return value / 100;
   if (value < 0) return null;
   return value;
