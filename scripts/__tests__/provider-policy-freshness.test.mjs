@@ -16,6 +16,7 @@ function fixture({
   googleStatusDate = "2026-07-10",
   googleReadmeName = "Google",
   googleStatusName = googleReadmeName,
+  googleColonOutsideBold = false,
   includeGoogleStatus = true,
   extraStatusRows = "",
   freshnessDays = "90",
@@ -24,7 +25,7 @@ function fixture({
   mkdirSync(join(root, "references"), { recursive: true });
   writeFileSync(
     join(root, "README.md"),
-    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n**${googleReadmeName} (status reviewed ${googleReadmeDate}):** Not routeable.\n\n## Next\n`,
+    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n**${googleReadmeName} (status reviewed ${googleReadmeDate})${googleColonOutsideBold ? "**:" : ":**"} Not routeable.\n\n## Next\n`,
   );
   const googleRow = includeGoogleStatus
     ? `| ${googleStatusName} | ${googleStatusDate} | Excluded |\n`
@@ -100,6 +101,16 @@ test("checks provider display names containing parentheses", () => {
       assert.match(result.stderr, /Z AI \(GLM\): review date 2026-01-01 is stale/);
     },
     "2026-07-24",
+  );
+});
+
+test("checks README exclusions with the colon outside the bold span", () => {
+  withFixture(
+    { googleColonOutsideBold: true, googleReadmeDate: "2026-07-09" },
+    (result) => {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Google: README date 2026-07-09 does not match status date 2026-07-10/);
+    },
   );
 });
 
