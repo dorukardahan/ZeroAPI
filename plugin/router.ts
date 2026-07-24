@@ -9,6 +9,8 @@ import type {
 } from "./types.js";
 import { resolveProviderCapacity } from "./inventory.js";
 import type { SubscriptionProfile } from "./profile.js";
+import type { NormalizedQuotaSnapshot } from "./quota-types.js";
+import { computeQuotaFactor } from "./quota-policy.js";
 
 const MODIFIER_TARGET_CATEGORIES: Record<RoutingModifier, TaskCategory[]> = {
   "coding-aware": ["code"],
@@ -203,6 +205,7 @@ export type RankedCandidate = {
   effectivePressureScore: number;
   withinFrontier: boolean;
   originalIndex: number;
+  quotaFactor?: number | null;
 };
 
 export function rankSubscriptionWeightedCandidates(
@@ -214,6 +217,7 @@ export function rankSubscriptionWeightedCandidates(
   agentId: string | undefined,
   routingMode: RoutingMode = "balanced",
   routingModifier?: RoutingModifier,
+  quotaSnapshots?: ReadonlyMap<string, NormalizedQuotaSnapshot>,
 ): RankedCandidate[] {
   if (routingMode !== "balanced") return [];
 
@@ -247,15 +251,29 @@ export function rankSubscriptionWeightedCandidates(
       });
       const speedPriority = getSpeedPriority(availableModels[candidate]);
 
+      // Live quota factor: sqrt(min(applicable remaining ratios)).
+      // When no snapshot is available or snapshot is stale/unsupported,
+      // factor is null → quota does not modulate routing (static pressure only).
+      // When factor is 0 (depleted), the candidate's effective pressure is 0.
+      const quotaSnapshot = quotaSnapshots?.get(providerId) ?? null;
+      const quotaFactor = quotaSnapshots
+        ? computeQuotaFactor(quotaSnapshot, candidate)
+        : null;
+      const basePressureScore = tierWeight * providerBias;
+
       return {
         candidate,
         originalIndex: index,
         tierWeight,
         providerBias,
         benchmarkStrength,
-        pressureScore: tierWeight * providerBias,
-        effectivePressureScore: (tierWeight * providerBias) + modifierAccountBonus,
+        pressureScore: basePressureScore,
+        effectivePressureScore:
+          (quotaFactor === null
+            ? basePressureScore
+            : basePressureScore * quotaFactor) + modifierAccountBonus,
         speedPriority,
+        quotaFactor,
       };
     })
     .filter((item) => item.pressureScore > 0);
@@ -370,6 +388,7 @@ export function getSubscriptionWeightedCandidates(
   agentId: string | undefined,
   routingMode: RoutingMode = "balanced",
   routingModifier?: RoutingModifier,
+  quotaSnapshots?: ReadonlyMap<string, NormalizedQuotaSnapshot>,
 ): string[] {
   return rankSubscriptionWeightedCandidates(
     category,
@@ -380,6 +399,7 @@ export function getSubscriptionWeightedCandidates(
     agentId,
     routingMode,
     routingModifier,
+    quotaSnapshots,
   ).map((item) => item.candidate);
 }
 
@@ -391,6 +411,7 @@ export function rankSubscriptionWeightedCandidatesFromPool(
   agentId: string | undefined,
   routingMode: RoutingMode = "balanced",
   routingModifier?: RoutingModifier,
+  quotaSnapshots?: ReadonlyMap<string, NormalizedQuotaSnapshot>,
 ): RankedCandidate[] {
   const candidates = Object.keys(availableModels);
   if (candidates.length === 0) return [];
@@ -412,6 +433,7 @@ export function rankSubscriptionWeightedCandidatesFromPool(
     agentId,
     routingMode,
     routingModifier,
+    quotaSnapshots,
   );
 }
 
@@ -423,6 +445,7 @@ export function getSubscriptionWeightedCandidatesFromPool(
   agentId: string | undefined,
   routingMode: RoutingMode = "balanced",
   routingModifier?: RoutingModifier,
+  quotaSnapshots?: ReadonlyMap<string, NormalizedQuotaSnapshot>,
 ): string[] {
   return rankSubscriptionWeightedCandidatesFromPool(
     category,
@@ -432,5 +455,6 @@ export function getSubscriptionWeightedCandidatesFromPool(
     agentId,
     routingMode,
     routingModifier,
+    quotaSnapshots,
   ).map((item) => item.candidate);
 }
