@@ -57,22 +57,26 @@ export type NormalizedQuotaSnapshot = {
 };
 
 /**
- * Raw provider payload input — what a provider adapter produces.
- * Contains the raw response plus identity; the normalizer strips secrets.
+ * Token-free host adapter payload.
+ *
+ * Hermes/OpenClaw own provider HTTP/RPC parsing and credential lifecycle.
+ * ZeroAPI receives only these provider-neutral quantitative windows.
  */
 export type ProviderQuotaPayload = {
   provider: string;
   account: string;
-  /** Raw provider response or pre-parsed object. */
-  raw: unknown;
+  status?: QuotaSnapshotStatus;
+  windows: NormalizeWindowInput[];
   fetchedAt: string;
 };
 
 /**
- * Input parameters for a single window normalization call.
+ * Input parameters for a single host-normalized window.
  * Either remainingRatio or (used + limit) must be provided.
  */
 export type NormalizeWindowInput = {
+  /** Non-secret semantic ID; defaults to rawKind. */
+  id?: string;
   rawKind: string;
   windowSeconds?: number;
   resetAt?: string;

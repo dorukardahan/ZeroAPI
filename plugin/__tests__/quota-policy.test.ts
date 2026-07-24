@@ -129,8 +129,8 @@ describe("computeLivePressure", () => {
 describe("selectAccountByQuota", () => {
   it("selects the account with higher live pressure", () => {
     const accounts = [
-      { provider: "openai", account: "openai#1", staticPressure: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "fresh", ["5h", 0.10]) },
-      { provider: "openai", account: "openai#2", staticPressure: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#2", "fresh", ["5h", 0.80]) },
+      { provider: "openai", account: "openai#1", tierWeight: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "fresh", ["5h", 0.10]) },
+      { provider: "openai", account: "openai#2", tierWeight: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#2", "fresh", ["5h", 0.80]) },
     ];
     const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
     expect(selected?.account).toBe("openai#2");
@@ -138,22 +138,22 @@ describe("selectAccountByQuota", () => {
 
   it("returns null when all accounts are stale", () => {
     const accounts = [
-      { provider: "openai", account: "openai#1", staticPressure: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "stale", ["5h", 1.0]) },
+      { provider: "openai", account: "openai#1", tierWeight: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "stale", ["5h", 1.0]) },
     ];
     expect(selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol")).toBeNull();
   });
 
   it("returns null when all accounts are depleted", () => {
     const accounts = [
-      { provider: "zai", account: "zai#1", staticPressure: 5.0, providerBias: 1.25, snapshot: snap("zai", "zai#1", "fresh", ["5h", 0.0]) },
+      { provider: "zai", account: "zai#1", tierWeight: 5.0, providerBias: 1.25, snapshot: snap("zai", "zai#1", "fresh", ["5h", 0.0]) },
     ];
     expect(selectAccountByQuota(accounts, "zai", "zai/glm-5.2")).toBeNull();
   });
 
   it("filters by provider", () => {
     const accounts = [
-      { provider: "zai", account: "zai#1", staticPressure: 5.0, providerBias: 1.25, snapshot: snap("zai", "zai#1", "fresh", ["5h", 0.9]) },
-      { provider: "openai", account: "openai#1", staticPressure: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "fresh", ["5h", 0.9]) },
+      { provider: "zai", account: "zai#1", tierWeight: 5.0, providerBias: 1.25, snapshot: snap("zai", "zai#1", "fresh", ["5h", 0.9]) },
+      { provider: "openai", account: "openai#1", tierWeight: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "fresh", ["5h", 0.9]) },
     ];
     const selected = selectAccountByQuota(accounts, "zai", "zai/glm-5.2");
     expect(selected?.account).toBe("zai#1");

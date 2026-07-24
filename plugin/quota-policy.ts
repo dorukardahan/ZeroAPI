@@ -66,26 +66,24 @@ export function computeQuotaFactor(
 export type QuotaAwareAccount = {
   provider: string;
   account: string;
-  /** Declared static pressure (tierWeight * providerBias). */
-  staticPressure: number;
+  tierWeight: number;
   providerBias: number;
   snapshot: NormalizedQuotaSnapshot | null;
 };
 
 /**
  * Compute live pressure for a candidate model.
- * Returns null if quota factor cannot be computed (stale/unsupported).
- * Returns 0 if account is depleted.
+ * staticPressure = tierWeight * providerBias; livePressure adds quotaFactor.
  */
 export function computeLivePressure(
-  staticPressure: number,
+  tierWeight: number,
   providerBias: number,
   snapshot: NormalizedQuotaSnapshot | null,
   model: string,
 ): number | null {
   const factor = computeQuotaFactor(snapshot, model);
   if (factor === null) return null;
-  return staticPressure * providerBias * factor;
+  return tierWeight * providerBias * factor;
 }
 
 /**
@@ -99,15 +97,15 @@ export function selectAccountByQuota(
 ): QuotaAwareAccount | null {
   const eligible = accounts.filter((a) => {
     if (a.provider !== provider) return false;
-    const pressure = computeLivePressure(a.staticPressure, a.providerBias, a.snapshot, model);
+    const pressure = computeLivePressure(a.tierWeight, a.providerBias, a.snapshot, model);
     return pressure !== null && pressure > 0;
   });
 
   if (eligible.length === 0) return null;
 
   return eligible.reduce((best, current) => {
-    const bestPressure = computeLivePressure(best.staticPressure, best.providerBias, best.snapshot, model) ?? 0;
-    const currentPressure = computeLivePressure(current.staticPressure, current.providerBias, current.snapshot, model) ?? 0;
+    const bestPressure = computeLivePressure(best.tierWeight, best.providerBias, best.snapshot, model) ?? 0;
+    const currentPressure = computeLivePressure(current.tierWeight, current.providerBias, current.snapshot, model) ?? 0;
     if (currentPressure > bestPressure) return current;
     if (currentPressure === bestPressure && current.account < best.account) return current;
     return best;

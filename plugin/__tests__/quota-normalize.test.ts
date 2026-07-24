@@ -42,6 +42,16 @@ describe("normalizeQuotaWindow", () => {
     expect(window.remainingRatio).toBeCloseTo(0.5);
   });
 
+  it("rejects boolean usage counters", () => {
+    expect(() =>
+      normalizeQuotaWindow({
+        rawKind: "PRIMARY",
+        used: false as unknown as number,
+        limit: true as unknown as number,
+      }),
+    ).toThrow();
+  });
+
   it("rejects NaN remainingRatio", () => {
     expect(() =>
       normalizeQuotaWindow({
@@ -201,6 +211,12 @@ describe("validateNormalizedSnapshot", () => {
       ),
     ).not.toThrow();
   });
+
+  it("rejects an invalid fetchedAt timestamp", () => {
+    expect(() =>
+      validateNormalizedSnapshot({ ...validSnapshot, fetchedAt: "not-a-date" }),
+    ).toThrow();
+  });
 });
 
 describe("normalizeSnapshot", () => {
@@ -208,26 +224,24 @@ describe("normalizeSnapshot", () => {
     const payload: ProviderQuotaPayload = {
       provider: "zai",
       account: "zai#1",
-      raw: {
-        limits: [
-          {
-            limit_id: "5_hour",
-            type: "TOKENS_LIMIT",
-            time_window: "5h",
-            usage: { used: 100, number: 10000, current_value: 100 },
-            percentage: 0.9888,
-            next_reset_time: "2026-07-24T20:23:52Z",
-          },
-          {
-            limit_id: "weekly",
-            type: "TOKENS_LIMIT",
-            time_window: "1w",
-            usage: { used: 1400, number: 10000, current_value: 1400 },
-            percentage: 0.86,
-            next_reset_time: "2026-07-26T20:23:52Z",
-          },
-        ],
-      },
+      windows: [
+        {
+          id: "5_hour",
+          rawKind: "TOKENS_LIMIT",
+          windowSeconds: 5 * 3600,
+          used: 112,
+          limit: 10000,
+          resetAt: "2026-07-24T20:23:52Z",
+        },
+        {
+          id: "weekly",
+          rawKind: "TOKENS_LIMIT",
+          windowSeconds: 7 * 24 * 3600,
+          used: 1400,
+          limit: 10000,
+          resetAt: "2026-07-26T20:23:52Z",
+        },
+      ],
       fetchedAt: "2026-07-24T17:33:47Z",
     };
     const snapshot = normalizeSnapshot(payload);
@@ -244,22 +258,20 @@ describe("normalizeSnapshot", () => {
     const payload: ProviderQuotaPayload = {
       provider: "openai-codex",
       account: "openai#1",
-      raw: {
-        rate_limits: [
-          {
-            label: "primary",
-            window_minutes: 300,
-            used_percent: 47,
-            reset_seconds: 9000,
-          },
-          {
-            label: "secondary",
-            window_minutes: 10080,
-            used_percent: 12,
-            reset_seconds: 360000,
-          },
-        ],
-      },
+      windows: [
+        {
+          id: "primary",
+          rawKind: "TOKENS_LIMIT",
+          windowSeconds: 300 * 60,
+          percentageUsed: 47,
+        },
+        {
+          id: "secondary",
+          rawKind: "TOKENS_LIMIT",
+          windowSeconds: 10080 * 60,
+          percentageUsed: 12,
+        },
+      ],
       fetchedAt: "2026-07-24T17:33:47Z",
     };
     const snapshot = normalizeSnapshot(payload);
@@ -274,9 +286,13 @@ describe("normalizeSnapshot", () => {
     const payload: ProviderQuotaPayload = {
       provider: "xai",
       account: "xai#1",
-      raw: {
-        remaining_percent: 100,
-      },
+      windows: [
+        {
+          id: "billing",
+          rawKind: "BILLING",
+          percentageRemaining: 100,
+        },
+      ],
       fetchedAt: "2026-07-24T17:33:47Z",
     };
     const snapshot = normalizeSnapshot(payload);
@@ -288,7 +304,7 @@ describe("normalizeSnapshot", () => {
     const payload: ProviderQuotaPayload = {
       provider: "qwen-oauth",
       account: "qwen#1",
-      raw: {},
+      windows: [],
       fetchedAt: "2026-07-24T17:33:47Z",
     };
     const snapshot = normalizeSnapshot(payload);
@@ -296,53 +312,68 @@ describe("normalizeSnapshot", () => {
     expect(snapshot.windows).toHaveLength(0);
   });
 
-  it("dispatches by provider instead of guessing from payload shape", () => {
-    const snapshot = normalizeSnapshot({
+  it("ignores extra provider-raw fields outside the token-free contract", () => {
+    const payload = {
       provider: "qwen-oauth",
       account: "qwen#1",
-      raw: {
-        remains: { percentage: 90, plan_type: "NOT_MINIMAX" },
-      },
+      windows: [],
       fetchedAt: "2026-07-24T17:33:47Z",
-    });
+      raw: { remains: { percentage: 90, plan_type: "NOT_MINIMAX" } },
+    } as ProviderQuotaPayload & { raw: unknown };
+    const snapshot = normalizeSnapshot(payload);
     expect(snapshot.status).toBe("unsupported");
-    expect(snapshot.windows).toEqual([]);
+    expect(JSON.stringify(snapshot)).not.toContain("NOT_MINIMAX");
   });
 
-  it("fails closed on a malformed provider window kind", () => {
+  it("fails closed on a malformed host-normalized window kind", () => {
     const snapshot = normalizeSnapshot({
       provider: "zai",
       account: "zai#1",
-      raw: {
-        limits: [{ type: 1, percentage: 0.5 }],
-      },
+      windows: [
+        {
+          id: "bad",
+          rawKind: 1 as unknown as string,
+          remainingRatio: 0.5,
+        },
+      ],
       fetchedAt: "2026-07-24T17:33:47Z",
     });
-    expect(snapshot.status).toBe("unsupported");
+    expect(snapshot.status).toBe("invalid_response");
     expect(snapshot.windows).toEqual([]);
   });
 
-  it("strips raw payload identity fields from the normalized snapshot", () => {
-    const payload: ProviderQuotaPayload = {
+  it("fails closed on duplicate semantic window IDs", () => {
+    const snapshot = normalizeSnapshot({
       provider: "zai",
       account: "zai#1",
-      raw: {
-        limits: [
-          {
-            limit_id: "5h",
-            type: "TOKENS_LIMIT",
-            percentage: 0.9888,
-            next_reset_time: "2026-07-24T20:23:52Z",
-          },
-        ],
-        account_email: "secret@example.com",
-        access_token: "sk-secret-token",
-      },
+      windows: [
+        { id: "weekly", rawKind: "TOKENS_LIMIT", remainingRatio: 0.8 },
+        { id: "weekly", rawKind: "TOKENS_LIMIT", remainingRatio: 0.7 },
+      ],
       fetchedAt: "2026-07-24T17:33:47Z",
-    };
+    });
+    expect(snapshot.status).toBe("invalid_response");
+    expect(snapshot.windows).toEqual([]);
+  });
+
+  it("copies only allowlisted fields into the normalized snapshot", () => {
+    const payload = {
+      provider: "zai",
+      account: "zai#1",
+      windows: [
+        {
+          id: "5h",
+          rawKind: "TOKENS_LIMIT",
+          percentageRemaining: 98.88,
+        },
+      ],
+      fetchedAt: "2026-07-24T17:33:47Z",
+      account_email: "secret@example.com",
+      access_token: "test-only-secret-placeholder",
+    } as ProviderQuotaPayload & { account_email: string; access_token: string };
     const snapshot = normalizeSnapshot(payload);
     expect(JSON.stringify(snapshot)).not.toContain("secret@example.com");
-    expect(JSON.stringify(snapshot)).not.toContain("sk-secret-token");
+    expect(JSON.stringify(snapshot)).not.toContain("test-only-secret-placeholder");
     expect(JSON.stringify(snapshot)).not.toContain("account_email");
     expect(JSON.stringify(snapshot)).not.toContain("access_token");
   });

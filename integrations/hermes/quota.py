@@ -1,28 +1,25 @@
-"""Pure-Python ZeroAPI live quota normalization and policy.
+"""Pure-Python ZeroAPI quota normalization and pressure policy.
 
-Mirrors plugin/quota-normalize.ts and plugin/quota-policy.ts so the Hermes
-Python adapter can apply the same live depletion factor as the OpenClaw
-plugin without calling Node or external APIs.
-
-This module is pure data transformation: no credentials, no network access.
+Provider HTTP/RPC parsing and credentials remain host-owned. This module
+accepts only token-free, provider-neutral quantitative windows and mirrors
+plugin/quota-normalize.ts + plugin/quota-policy.ts.
 """
 
 from __future__ import annotations
 
 import math
-import re
+from datetime import datetime
 from typing import Any, TypeGuard
 
-SECRET_FIELD_PATTERNS = (
-    "token", "secret", "cookie", "password", "credential",
-    "api_key", "apikey", "access", "refresh", "bearer", "session",
-    "email", "authorization",
-)
-
-
-def _is_secret_field(key: str) -> bool:
-    lower = key.lower()
-    return any(p in lower for p in SECRET_FIELD_PATTERNS)
+VALID_STATUSES = {
+    "fresh",
+    "stale",
+    "auth_expired",
+    "rate_limited",
+    "network_error",
+    "invalid_response",
+    "unsupported",
+}
 
 
 def _is_number(value: Any) -> TypeGuard[int | float]:
@@ -33,34 +30,55 @@ def _is_number(value: Any) -> TypeGuard[int | float]:
     )
 
 
-def _assert_valid_ratio(value: float) -> None:
+def _assert_finite_number(value: Any, label: str) -> None:
     if isinstance(value, bool):
-        raise TypeError("remainingRatio must be numeric, got boolean")
+        raise TypeError(f"{label} must be numeric, got boolean")
     if not isinstance(value, (int, float)):
-        raise TypeError("remainingRatio must be numeric")
+        raise TypeError(f"{label} must be numeric")
     if math.isnan(value):
-        raise ValueError("remainingRatio must not be NaN")
+        raise ValueError(f"{label} must not be NaN")
     if math.isinf(value):
-        raise ValueError("remainingRatio must be finite")
+        raise ValueError(f"{label} must be finite")
+
+
+def _assert_valid_ratio(value: Any) -> None:
+    _assert_finite_number(value, "remainingRatio")
     if value < 0 or value > 1:
         raise ValueError("remainingRatio must be in [0, 1]")
 
 
-def _normalize_percentage(value: float) -> float | None:
-    if isinstance(value, bool):
-        return None
-    if not isinstance(value, (int, float)) or math.isnan(value) or math.isinf(value):
-        return None
-    if value > 1:
-        return value / 100
+def _normalize_percentage(value: Any, label: str) -> float:
+    _assert_finite_number(value, label)
     if value < 0:
-        return None
-    return float(value)
+        raise ValueError(f"{label} must be non-negative")
+    ratio = value / 100 if value > 1 else float(value)
+    _assert_valid_ratio(ratio)
+    return ratio
+
+
+def _normalize_identifier(value: Any, label: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{label} must be a string")
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label} must be non-empty")
+    if len(normalized) > 256:
+        raise ValueError(f"{label} is too long")
+    if any(ord(char) < 32 or ord(char) == 127 for char in normalized):
+        raise ValueError(f"{label} contains control characters")
+    return normalized
+
+
+def _normalize_timestamp(value: Any, label: str) -> str:
+    normalized = _normalize_identifier(value, label)
+    try:
+        datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an ISO-8601 timestamp") from exc
+    return normalized
 
 
 def _map_window_kind(raw_kind: str) -> str:
-    if not isinstance(raw_kind, str) or not raw_kind.strip():
-        raise TypeError("raw_kind must be a non-empty string")
     upper = raw_kind.upper()
     if "TOKEN" in upper:
         return "tokens_limit"
@@ -72,14 +90,17 @@ def _map_window_kind(raw_kind: str) -> str:
         return "messages"
     if "TIME_LIMIT" in upper:
         return "time_limit"
-    if "PERCENT" in upper or upper == "USAGE":
+    if "COMPUTE" in upper or "TIME" in upper:
+        return "compute"
+    if "PERCENT" in upper or upper in {"USAGE", "BILLING"}:
         return "percent"
     return "tokens_limit"
 
 
 def normalize_window(
-    raw_kind: str,
+    raw_kind: Any,
     *,
+    id: str | None = None,
     remaining_ratio: float | None = None,
     used: float | None = None,
     limit: float | None = None,
@@ -90,45 +111,58 @@ def normalize_window(
     window_seconds: float | None = None,
     reset_at: str | None = None,
 ) -> dict[str, Any]:
-    kind = _map_window_kind(raw_kind)
-    ratio: float | None = None
+    normalized_kind = _normalize_identifier(raw_kind, "raw_kind")
+    window_id = _normalize_identifier(id if id is not None else normalized_kind, "window id")
+    kind = _map_window_kind(normalized_kind)
 
     if remaining_ratio is not None:
-        if isinstance(remaining_ratio, bool):
-            raise TypeError("remainingRatio must be numeric, got boolean")
+        _assert_valid_ratio(remaining_ratio)
         ratio = float(remaining_ratio)
     elif percentage_remaining is not None:
-        ratio = _normalize_percentage(percentage_remaining)
+        ratio = _normalize_percentage(percentage_remaining, "percentage_remaining")
     elif percentage_used is not None:
-        used_pct = _normalize_percentage(percentage_used)
-        if used_pct is not None:
-            ratio = max(0.0, 1.0 - used_pct)
-    elif _is_number(used) and _is_number(limit) and limit > 0:
+        ratio = max(0.0, 1.0 - _normalize_percentage(percentage_used, "percentage_used"))
+    elif used is not None and limit is not None:
+        _assert_finite_number(used, "used")
+        _assert_finite_number(limit, "limit")
+        if used < 0:
+            raise ValueError("used must be non-negative")
+        if limit <= 0:
+            raise ValueError("limit must be positive")
         ratio = max(0.0, 1.0 - used / limit)
+        _assert_valid_ratio(ratio)
+    else:
+        raise ValueError(f"cannot derive remainingRatio for window '{window_id}'")
 
-    if ratio is None:
-        raise ValueError(f"cannot derive remainingRatio for window kind '{raw_kind}'")
+    if applies_to not in {"inference", "mcp", "model"}:
+        raise ValueError(f"unknown applies_to value '{applies_to}'")
 
-    _assert_valid_ratio(ratio)
-
-    mids = model_ids or []
-    if applies_to == "model" and len(mids) == 0:
+    mids = [_normalize_identifier(model_id, "modelId") for model_id in (model_ids or [])]
+    if len(set(mids)) != len(mids):
+        raise ValueError("modelIds must be unique")
+    if applies_to == "model" and not mids:
         raise ValueError("model-scoped window requires at least one modelId")
-    if applies_to != "model" and len(mids) > 0:
+    if applies_to != "model" and mids:
         raise ValueError("non-model window must not carry modelIds")
 
-    window: dict[str, Any] = {
-        "id": raw_kind,
+    normalized_seconds: float | None = None
+    if window_seconds is not None:
+        _assert_finite_number(window_seconds, "windowSeconds")
+        if window_seconds <= 0:
+            raise ValueError("windowSeconds must be positive")
+        normalized_seconds = float(window_seconds)
+
+    normalized_reset = None if reset_at is None else _normalize_timestamp(reset_at, "resetAt")
+
+    return {
+        "id": window_id,
         "kind": kind,
         "appliesTo": applies_to,
         "modelIds": mids,
         "remainingRatio": ratio,
+        **({"windowSeconds": normalized_seconds} if normalized_seconds is not None else {}),
+        **({"resetAt": normalized_reset} if normalized_reset is not None else {}),
     }
-    if window_seconds is not None:
-        window["windowSeconds"] = window_seconds
-    if reset_at is not None:
-        window["resetAt"] = reset_at
-    return window
 
 
 def validate_snapshot(
@@ -136,216 +170,75 @@ def validate_snapshot(
     expected_provider: str | None = None,
     diagnostics_only: bool = False,
 ) -> None:
-    provider = snapshot.get("provider")
-    account = snapshot.get("account")
-    if not provider or not account:
-        raise ValueError("snapshot provider and account are required")
+    provider = _normalize_identifier(snapshot.get("provider"), "snapshot provider")
+    _normalize_identifier(snapshot.get("account"), "snapshot account")
+    _normalize_timestamp(snapshot.get("fetchedAt"), "fetchedAt")
+
+    status = snapshot.get("status")
+    if status not in VALID_STATUSES:
+        raise ValueError(f"unknown snapshot status '{status}'")
     if expected_provider is not None and provider != expected_provider:
         raise ValueError(
             f'snapshot provider "{provider}" does not match expected "{expected_provider}"'
         )
-    status = snapshot.get("status", "fresh")
     if not diagnostics_only and status != "fresh":
         raise ValueError(f'routing snapshot must be fresh, got "{status}"')
-    if status == "fresh":
-        windows = snapshot.get("windows", [])
-        if len(windows) == 0:
-            raise ValueError("fresh snapshot requires at least one window")
-        for w in windows:
-            _assert_valid_ratio(w["remainingRatio"])
+
+    windows = snapshot.get("windows")
+    if not isinstance(windows, list):
+        raise TypeError("snapshot windows must be a list")
+    if status == "fresh" and not windows:
+        raise ValueError("fresh snapshot requires at least one window")
+
+    ids: set[str] = set()
+    for window in windows:
+        _assert_valid_ratio(window["remainingRatio"])
+        window_id = _normalize_identifier(window.get("id"), "window id")
+        if window_id in ids:
+            raise ValueError(f'duplicate window id "{window_id}"')
+        ids.add(window_id)
 
 
-def _parse_time_window_seconds(tw: str | None) -> float | None:
-    if not tw:
-        return None
-    match = re.match(r"^(\d+(?:\.\d+)?)\s*(m|h|d|w)$", tw)
-    if not match:
-        return None
-    value = float(match.group(1))
-    unit = match.group(2)
-    if unit == "m":
-        return value * 60
-    if unit == "h":
-        return value * 3600
-    if unit == "d":
-        return value * 86400
-    if unit == "w":
-        return value * 604800
-    return None
-
-
-def _parse_zai_windows(raw: Any) -> list[dict[str, Any]] | None:
-    if not isinstance(raw, dict):
-        return None
-    limits = raw.get("limits")
-    if not isinstance(limits, list):
-        return None
-
-    windows: list[dict[str, Any]] = []
-    for limit in limits:
-        if not isinstance(limit, dict):
-            continue
-        raw_kind = limit.get("type", limit.get("limit_id", "UNKNOWN"))
-        window_seconds = _parse_time_window_seconds(limit.get("time_window"))
-        reset_at = limit.get("next_reset_time")
-        ratio: float | None = None
-
-        if _is_number(limit.get("percentage")):
-            ratio = _normalize_percentage(limit["percentage"])
-
-        if ratio is None and isinstance(limit.get("usage"), dict):
-            usage = limit["usage"]
-            used = usage.get("current_value", usage.get("used"))
-            limit_total = usage.get("number")
-            if _is_number(used) and _is_number(limit_total) and limit_total > 0:
-                ratio = max(0.0, 1.0 - used / limit_total)
-
-        if ratio is None:
-            continue
-
-        applies_to = "mcp" if "TIME_LIMIT" in str(raw_kind).upper() else "inference"
-        try:
-            windows.append(normalize_window(
-                raw_kind, remaining_ratio=ratio,
-                applies_to=applies_to, window_seconds=window_seconds, reset_at=reset_at,
-            ))
-        except (ValueError, TypeError):
-            continue
-
-    return windows if windows else None
-
-
-def _parse_codex_windows(raw: Any) -> list[dict[str, Any]] | None:
-    if not isinstance(raw, dict):
-        return None
-    limits = raw.get("rate_limits")
-    if not isinstance(limits, list):
-        return None
-
-    windows: list[dict[str, Any]] = []
-    for limit in limits:
-        if not isinstance(limit, dict):
-            continue
-        if not _is_number(limit.get("used_percent")):
-            continue
-        raw_kind = limit.get("label", "PRIMARY")
-        window_seconds = limit.get("window_minutes")
-        if _is_number(window_seconds):
-            window_seconds = window_seconds * 60
-        else:
-            window_seconds = None
-        try:
-            windows.append(normalize_window(
-                raw_kind, percentage_used=limit["used_percent"],
-                window_seconds=window_seconds,
-            ))
-        except (ValueError, TypeError):
-            continue
-
-    return windows if windows else None
-
-
-def _parse_xai_windows(raw: Any) -> list[dict[str, Any]] | None:
-    if not isinstance(raw, dict):
-        return None
-    rp = raw.get("remaining_percent")
-    if not _is_number(rp):
-        return None
-    ratio = _normalize_percentage(rp)
-    if ratio is None:
-        return None
-    return [normalize_window("BILLING", remaining_ratio=ratio)]
-
-
-def _parse_kimi_windows(raw: Any) -> list[dict[str, Any]] | None:
-    if not isinstance(raw, dict):
-        return None
-    usages = raw.get("usages")
-    if not isinstance(usages, list):
-        return None
-
-    windows: list[dict[str, Any]] = []
-    for usage in usages:
-        if not isinstance(usage, dict):
-            continue
-        raw_kind = usage.get("limit_id", usage.get("type", "UNKNOWN"))
-        reset_at = usage.get("reset_at")
-        ratio: float | None = None
-
-        if _is_number(usage.get("percentage")):
-            ratio = _normalize_percentage(usage["percentage"])
-        remaining = usage.get("remaining")
-        total = usage.get("total")
-        used = usage.get("used")
-        if ratio is None and _is_number(remaining) and _is_number(total) and total > 0:
-            ratio = remaining / total
-        if ratio is None and _is_number(used) and _is_number(total) and total > 0:
-            ratio = max(0.0, 1.0 - used / total)
-        if ratio is None:
-            continue
-        try:
-            windows.append(normalize_window(raw_kind, remaining_ratio=ratio, reset_at=reset_at))
-        except (ValueError, TypeError):
-            continue
-
-    return windows if windows else None
-
-
-def _parse_minimax_windows(raw: Any) -> list[dict[str, Any]] | None:
-    if not isinstance(raw, dict):
-        return None
-    remains = raw.get("remains", raw)
-    if not isinstance(remains, dict):
-        return None
-    ratio: float | None = None
-
-    if _is_number(remains.get("percentage")):
-        ratio = _normalize_percentage(remains["percentage"])
-    remaining = remains.get("remaining")
-    total = remains.get("total")
-    used = remains.get("used")
-    if ratio is None and _is_number(remaining) and _is_number(total) and total > 0:
-        ratio = remaining / total
-    if ratio is None and _is_number(used) and _is_number(total) and total > 0:
-        ratio = max(0.0, 1.0 - used / total)
-    if ratio is None:
-        return None
-    return [normalize_window(
-        remains.get("plan_type", "CODING_PLAN"),
-        remaining_ratio=ratio, reset_at=remains.get("reset_at"),
-    )]
+def _input_window(item: Any) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        raise TypeError("window must be an object")
+    return normalize_window(
+        item.get("rawKind"),
+        id=item.get("id"),
+        remaining_ratio=item.get("remainingRatio"),
+        used=item.get("used"),
+        limit=item.get("limit"),
+        percentage_remaining=item.get("percentageRemaining"),
+        percentage_used=item.get("percentageUsed"),
+        applies_to=item.get("appliesTo", "inference"),
+        model_ids=item.get("modelIds"),
+        window_seconds=item.get("windowSeconds"),
+        reset_at=item.get("resetAt"),
+    )
 
 
 def normalize_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
-    provider = payload["provider"]
-    account = payload["account"]
-    raw = payload.get("raw", {})
-    fetched_at = payload.get("fetchedAt", "")
+    provider = _normalize_identifier(payload.get("provider"), "provider")
+    account = _normalize_identifier(payload.get("account"), "account")
+    fetched_at = _normalize_timestamp(payload.get("fetchedAt"), "fetchedAt")
+    requested_status = payload.get("status", "fresh")
+    status = requested_status if requested_status in VALID_STATUSES else "invalid_response"
 
-    windows: list[dict[str, Any]] | None = None
-    status = "fresh"
-
-    parsers = {
-        "zai": _parse_zai_windows,
-        "openai": _parse_codex_windows,
-        "openai-codex": _parse_codex_windows,
-        "xai": _parse_xai_windows,
-        "xai-oauth": _parse_xai_windows,
-        "kimi": _parse_kimi_windows,
-        "moonshot": _parse_kimi_windows,
-        "minimax": _parse_minimax_windows,
-        "minimax-portal": _parse_minimax_windows,
-    }
-    parser = parsers.get(str(provider).strip().lower())
-    if parser is not None:
-        try:
-            windows = parser(raw)
-        except (AttributeError, TypeError, ValueError):
-            windows = None
-
-    if windows is None or len(windows) == 0:
-        status = "unsupported"
+    windows: list[dict[str, Any]] = []
+    try:
+        raw_windows = payload.get("windows")
+        if not isinstance(raw_windows, list):
+            raise TypeError("windows must be a list")
+        windows = [_input_window(item) for item in raw_windows]
+        ids = {window["id"] for window in windows}
+        if len(ids) != len(windows):
+            raise ValueError("window IDs must be unique")
+    except (KeyError, TypeError, ValueError):
         windows = []
+        status = "invalid_response"
+
+    if status == "fresh" and not windows:
+        status = "unsupported"
 
     snapshot = {
         "provider": provider,
@@ -358,17 +251,17 @@ def normalize_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     return snapshot
 
 
-# ── Policy ──
+# ── Routing policy ──────────────────────────────────────────────────────────
 
 def applicable_windows(snapshot: dict[str, Any] | None, model: str) -> list[dict[str, Any]]:
     if not snapshot or snapshot.get("status") != "fresh":
         return []
     result = []
-    for w in snapshot.get("windows", []):
-        if w["appliesTo"] == "inference":
-            result.append(w)
-        elif w["appliesTo"] == "model" and model in w.get("modelIds", []):
-            result.append(w)
+    for window in snapshot.get("windows", []):
+        if window["appliesTo"] == "inference":
+            result.append(window)
+        elif window["appliesTo"] == "model" and model in window.get("modelIds", []):
+            result.append(window)
     return result
 
 
@@ -376,7 +269,7 @@ def account_headroom(snapshot: dict[str, Any] | None, model: str) -> float | Non
     windows = applicable_windows(snapshot, model)
     if not windows:
         return None
-    return min(w["remainingRatio"] for w in windows)
+    return min(window["remainingRatio"] for window in windows)
 
 
 def compute_quota_factor(snapshot: dict[str, Any] | None, model: str) -> float | None:
@@ -387,7 +280,7 @@ def compute_quota_factor(snapshot: dict[str, Any] | None, model: str) -> float |
 
 
 def compute_live_pressure(
-    static_pressure: float,
+    tier_weight: float,
     provider_bias: float,
     snapshot: dict[str, Any] | None,
     model: str,
@@ -395,4 +288,4 @@ def compute_live_pressure(
     factor = compute_quota_factor(snapshot, model)
     if factor is None:
         return None
-    return static_pressure * provider_bias * factor
+    return tier_weight * provider_bias * factor

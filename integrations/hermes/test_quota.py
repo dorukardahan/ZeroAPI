@@ -86,16 +86,28 @@ class TestValidateSnapshot(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_snapshot(self._valid(), expected_provider="openai")
 
+    def test_rejects_invalid_timestamp(self):
+        with self.assertRaises(ValueError):
+            validate_snapshot({**self._valid(), "fetchedAt": "not-a-date"})
+
 
 class TestNormalizeSnapshot(unittest.TestCase):
 
     def test_zai_payload(self):
         snap = normalize_snapshot({
             "provider": "zai", "account": "zai#1",
-            "raw": {"limits": [
-                {"type": "TOKENS_LIMIT", "percentage": 0.9888, "next_reset_time": "2026-07-24T20:23:52Z"},
-                {"type": "TOKENS_LIMIT", "percentage": 0.86, "next_reset_time": "2026-07-26T20:23:52Z"},
-            ]},
+            "windows": [
+                {
+                    "id": "5h", "rawKind": "TOKENS_LIMIT",
+                    "used": 112, "limit": 10000,
+                    "resetAt": "2026-07-24T20:23:52Z",
+                },
+                {
+                    "id": "weekly", "rawKind": "TOKENS_LIMIT",
+                    "used": 1400, "limit": 10000,
+                    "resetAt": "2026-07-26T20:23:52Z",
+                },
+            ],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         self.assertEqual(snap["status"], "fresh")
@@ -105,10 +117,16 @@ class TestNormalizeSnapshot(unittest.TestCase):
     def test_codex_payload(self):
         snap = normalize_snapshot({
             "provider": "openai-codex", "account": "openai#1",
-            "raw": {"rate_limits": [
-                {"label": "primary", "window_minutes": 300, "used_percent": 47},
-                {"label": "secondary", "window_minutes": 10080, "used_percent": 12},
-            ]},
+            "windows": [
+                {
+                    "id": "primary", "rawKind": "TOKENS_LIMIT",
+                    "windowSeconds": 300 * 60, "percentageUsed": 47,
+                },
+                {
+                    "id": "secondary", "rawKind": "TOKENS_LIMIT",
+                    "windowSeconds": 10080 * 60, "percentageUsed": 12,
+                },
+            ],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         self.assertEqual(len(snap["windows"]), 2)
@@ -117,7 +135,12 @@ class TestNormalizeSnapshot(unittest.TestCase):
     def test_xai_payload(self):
         snap = normalize_snapshot({
             "provider": "xai", "account": "xai#1",
-            "raw": {"remaining_percent": 100},
+            "windows": [
+                {
+                    "id": "billing", "rawKind": "BILLING",
+                    "percentageRemaining": 100,
+                },
+            ],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         self.assertEqual(len(snap["windows"]), 1)
@@ -126,70 +149,90 @@ class TestNormalizeSnapshot(unittest.TestCase):
     def test_unsupported_payload(self):
         snap = normalize_snapshot({
             "provider": "qwen-oauth", "account": "qwen#1",
-            "raw": {},
+            "windows": [],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         self.assertEqual(snap["status"], "unsupported")
 
-    def test_provider_dispatch_does_not_guess_by_shape(self):
+    def test_raw_shaped_fields_are_ignored(self):
         snap = normalize_snapshot({
             "provider": "qwen-oauth", "account": "qwen#1",
+            "windows": [],
             "raw": {"remains": {"percentage": 90, "plan_type": "NOT_MINIMAX"}},
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         self.assertEqual(snap["status"], "unsupported")
-        self.assertEqual(snap["windows"], [])
+        self.assertNotIn("raw", snap)
 
     def test_malformed_kind_fails_closed(self):
         snap = normalize_snapshot({
             "provider": "zai", "account": "zai#1",
-            "raw": {"limits": [{"type": 1, "percentage": 0.5}]},
+            "windows": [{"id": "bad", "rawKind": 1, "remainingRatio": 0.5}],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
-        self.assertEqual(snap["status"], "unsupported")
+        self.assertEqual(snap["status"], "invalid_response")
         self.assertEqual(snap["windows"], [])
 
     def test_rejects_boolean_zai_counters(self):
         snap = normalize_snapshot({
             "provider": "zai", "account": "zai#1",
-            "raw": {"limits": [{
-                "type": "TOKENS_LIMIT",
-                "usage": {"used": False, "number": True},
-            }]},
+            "windows": [{
+                "id": "5h", "rawKind": "TOKENS_LIMIT",
+                "used": False, "limit": True,
+            }],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
-        self.assertEqual(snap["status"], "unsupported")
+        self.assertEqual(snap["status"], "invalid_response")
 
     def test_rejects_boolean_kimi_counters(self):
         snap = normalize_snapshot({
             "provider": "moonshot", "account": "kimi#1",
-            "raw": {"usages": [{"type": "TOKENS", "remaining": False, "total": True}]},
+            "windows": [{
+                "id": "weekly", "rawKind": "TOKENS_LIMIT",
+                "used": False, "limit": True,
+            }],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
-        self.assertEqual(snap["status"], "unsupported")
+        self.assertEqual(snap["status"], "invalid_response")
 
     def test_rejects_boolean_minimax_counters(self):
         snap = normalize_snapshot({
             "provider": "minimax-portal", "account": "minimax#1",
-            "raw": {"remains": {"remaining": False, "total": True}},
+            "windows": [{
+                "id": "coding", "rawKind": "TOKENS_LIMIT",
+                "used": False, "limit": True,
+            }],
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
-        self.assertEqual(snap["status"], "unsupported")
+        self.assertEqual(snap["status"], "invalid_response")
 
     def test_strips_secret_fields(self):
         snap = normalize_snapshot({
             "provider": "zai", "account": "zai#1",
-            "raw": {
-                "limits": [{"type": "T", "percentage": 0.9888}],
-                "account_email": "secret@example.com",
-                "access_token": "sk-secret",
-            },
+            "windows": [{
+                "id": "5h", "rawKind": "TOKENS_LIMIT",
+                "percentageRemaining": 98.88,
+            }],
+            "account_email": "secret@example.com",
+            "access_token": "test-only-secret-placeholder",
             "fetchedAt": "2026-07-24T17:00:00Z",
         })
         import json
         serialized = json.dumps(snap)
         self.assertNotIn("secret@example.com", serialized)
-        self.assertNotIn("sk-secret", serialized)
+        self.assertNotIn("test-only-secret-placeholder", serialized)
+
+    def test_duplicate_window_ids_fail_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [
+                {"id": "weekly", "rawKind": "TOKENS_LIMIT", "remainingRatio": 0.8},
+                {"id": "weekly", "rawKind": "TOKENS_LIMIT", "remainingRatio": 0.7},
+            ],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+        self.assertEqual(snap["windows"], [])
 
 
 class TestQuotaPolicy(unittest.TestCase):
