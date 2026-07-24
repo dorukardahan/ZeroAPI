@@ -894,6 +894,8 @@ def _allowed_by_subscriptions(config: Config, model_key: str, agent_id: str | No
 
 def _allowed_drop(tier_weight: float, provider_bias: float, category: TaskCategory, modifier: str | None) -> float:
     base = min(0.16, 0.05 + (max(0.0, tier_weight - 1) * 0.018) + (max(0.0, provider_bias - 1) * 0.07))
+    if category in {"code", "research"}:
+        base = min(base, 0.06)
     if modifier == "coding-aware" and category == "code":
         return max(0.03, base - 0.025)
     if modifier == "research-aware" and category == "research":

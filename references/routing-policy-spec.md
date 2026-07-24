@@ -130,9 +130,15 @@ For each candidate:
 - `providerBias` comes from the public subscription catalog
 - `pressureScore = tierWeight * providerBias`
 
-Allowed benchmark drop:
+Allowed benchmark drop starts with:
 
-`min(0.16, 0.05 + max(0, tierWeight - 1) * 0.018 + max(0, providerBias - 1) * 0.07)`
+`baseDrop = min(0.16, 0.05 + max(0, tierWeight - 1) * 0.018 + max(0, providerBias - 1) * 0.07)`
+
+For `code` and `research`, balanced routing caps this at `0.06` before any matching modifier adjustment:
+
+`allowedDrop = min(baseDrop, 0.06)`
+
+Other categories use `baseDrop`. A matching `coding-aware` or `research-aware` modifier then tightens its category's allowed drop by `0.025`, with a `0.03` floor.
 
 A candidate is inside the frontier when:
 

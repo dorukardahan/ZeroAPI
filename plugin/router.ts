@@ -131,10 +131,14 @@ function getAllowedBenchmarkDrop(
   category: TaskCategory,
   routingModifier?: RoutingModifier,
 ): number {
-  const base = Math.min(
+  let base = Math.min(
     0.16,
     0.05 + (Math.max(0, tierWeight - 1) * 0.018) + (Math.max(0, providerBias - 1) * 0.07),
   );
+
+  if (category === "code" || category === "research") {
+    base = Math.min(base, 0.06);
+  }
 
   if (routingModifier === "coding-aware" && category === "code") {
     return Math.max(0.03, base - 0.025);

@@ -326,7 +326,7 @@ describe("router weighting", () => {
         benchmarks: {
           intelligence: 52,
           coding: 57,
-          terminalbench: 0.56,
+          terminalbench: 0.565,
           scicode: 0.54,
         },
       },

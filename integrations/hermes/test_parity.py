@@ -48,7 +48,7 @@ ZAI_TIE = _m(200000, False, 62, 0.9, **TIE)
 MINIMAX_TIE = _m(200000, False, 60, 0.9, **TIE)
 
 # Regression fixtures (R1/R2/R3) — found by the adversarial parity-breaker, not the
-# original 6 scenarios. Tuned so zai stays inside the research frontier for R2.
+# original 6 scenarios. R2 locally tunes its research signal to the active frontier.
 R_ZAI = _m(200000, False, 62, 0.9, intelligence=51, coding=43, terminalbench=0.43, scicode=0.40,
            tau2=0.977, ifbench=0.76, gpqa=0.87, hle=0.28, lcr=0.40, math=0.60, aime_25=0.50)
 R_OPENAI = _m(272000, False, 72, 1.5, intelligence=57, coding=57, terminalbench=0.58, scicode=0.50,
@@ -82,6 +82,18 @@ PROFILE_ALL = {"version": "1.0.0", "global": {
 
 
 class HermesParityTest(unittest.TestCase):
+    def test_generated_openai_glm_policy_preserves_sol_for_code_and_research(self):
+        config_path = Path(__file__).resolve().parents[2] / "examples" / "openai-glm.json"
+        router = ZeroAPIRouter(json.loads(config_path.read_text()))
+        for prompt in (
+            "refactor the auth module",
+            "research the differences between WAL modes",
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertIsNone(
+                    router.resolve(prompt, current_model="openai-codex/gpt-5.6-sol")
+                )
+
     def test_tau3_banking_changes_orchestration_strength(self):
         banking_strong = _m(
             1000,
@@ -584,8 +596,10 @@ process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unc
     def test_R2_cross_pair_modifier_uses_default_sort(self):
         # coding-aware modifier on a RESEARCH prompt is a cross-pair: it must use the default
         # pressure-first sort (TS), not the strength-first coding/research sort.
+        r_zai_near_research = copy.deepcopy(R_ZAI)
+        r_zai_near_research["benchmarks"]["gpqa"] = 0.935
         cfg = _base(
-            {"zai/glm-5.1": R_ZAI, "openai-codex/gpt-5.4": R_OPENAI, "moonshot/kimi-k2.5": R_KIMI},
+            {"zai/glm-5.1": r_zai_near_research, "openai-codex/gpt-5.4": R_OPENAI, "moonshot/kimi-k2.5": R_KIMI},
             {"research": {"primary": "zai/glm-5.1", "fallbacks": ["openai-codex/gpt-5.4"]},
              "default": {"primary": "zai/glm-5.1", "fallbacks": []}},
             routing_modifier="coding-aware",

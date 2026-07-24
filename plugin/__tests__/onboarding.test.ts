@@ -6,6 +6,7 @@ import {
   getStarterTierChoices,
   summarizeStarterConfig,
 } from "../onboarding.js";
+import { getSubscriptionWeightedCandidates } from "../router.js";
 
 describe("buildStarterConfig", () => {
   it("builds the mixed OpenAI + GLM starter pool without OpenAI mini", () => {
@@ -27,6 +28,17 @@ describe("buildStarterConfig", () => {
     ]);
     expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
     expect(config.routing_rules.orchestration.primary).toBe("zai/glm-5.2");
+    for (const category of ["code", "research"] as const) {
+      expect(getSubscriptionWeightedCandidates(
+        category,
+        config.models,
+        config.routing_rules,
+        config.subscription_profile,
+        config.subscription_inventory,
+        undefined,
+        config.routing_mode,
+      )[0]).toBe("openai/gpt-5.6-sol");
+    }
     expect(config.subscription_profile?.global).toEqual({
       "openai-codex": { enabled: true, tierId: "plus" },
       "zai": { enabled: true, tierId: "max" },
