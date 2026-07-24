@@ -31,9 +31,10 @@
       "description": "Multi-step tool orchestration (TAU-bench v2 Telecom)"
     },
     "terminalbench": {
-      "key": "terminalbench_hard",
-      "scale": "0-1",
-      "description": "Agentic terminal tasks (44 hard tasks)"
+        "key": "terminalbench_v2_1",
+        "fallback_key": "terminalbench_hard",
+        "scale": "0-1",
+        "description": "Agentic terminal tasks (TerminalBench v2.1, falling back to Hard for older snapshots)"
     },
     "ifbench": {
       "key": "ifbench",
