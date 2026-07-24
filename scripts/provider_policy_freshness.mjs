@@ -54,8 +54,17 @@ function parseReadmeProviders(readme, errors) {
 
   const providers = [];
   const seen = new Set();
-  const pattern = /^\*\*(.+)\s+\(([^)]*)\)(?::\*\*|\*\*:)/gm;
-  for (const match of section.matchAll(pattern)) {
+  const pattern = /^\s*(?:[-*+]\s+)?\*\*(.+)\s+\(([^)]*)\)(?::\*\*|\*\*:)/;
+  const candidateLines = section
+    .split("\n")
+    .filter((line) => /\*\*.*status\s+reviewed/i.test(line));
+
+  for (const line of candidateLines) {
+    const match = line.match(pattern);
+    if (!match) {
+      errors.push("README: malformed provider exclusion line");
+      continue;
+    }
     const provider = match[1].trim();
     const metadata = match[2].trim();
     if (seen.has(provider)) {

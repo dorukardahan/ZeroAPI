@@ -17,6 +17,8 @@ function fixture({
   googleReadmeName = "Google",
   googleStatusName = googleReadmeName,
   googleColonOutsideBold = false,
+  googleBulleted = false,
+  googleMalformed = false,
   includeGoogleStatus = true,
   extraStatusRows = "",
   freshnessDays = "90",
@@ -25,7 +27,7 @@ function fixture({
   mkdirSync(join(root, "references"), { recursive: true });
   writeFileSync(
     join(root, "README.md"),
-    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n**${googleReadmeName} (status reviewed ${googleReadmeDate})${googleColonOutsideBold ? "**:" : ":**"} Not routeable.\n\n## Next\n`,
+    `# Fixture\n\n## Provider Exclusions\n\n**Anthropic (status reviewed ${anthropicReadmeDate}):** Not auto-enabled.\n\n${googleBulleted ? "- " : ""}${googleMalformed ? `**${googleReadmeName} status reviewed ${googleReadmeDate}:**` : `**${googleReadmeName} (status reviewed ${googleReadmeDate})${googleColonOutsideBold ? "**:" : ":**"}`} Not routeable.\n\n## Next\n`,
   );
   const googleRow = includeGoogleStatus
     ? `| ${googleStatusName} | ${googleStatusDate} | Excluded |\n`
@@ -112,6 +114,23 @@ test("checks README exclusions with the colon outside the bold span", () => {
       assert.match(result.stderr, /Google: README date 2026-07-09 does not match status date 2026-07-10/);
     },
   );
+});
+
+test("checks README exclusions formatted as Markdown list items", () => {
+  withFixture(
+    { googleBulleted: true, googleReadmeDate: "2026-07-09" },
+    (result) => {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Google: README date 2026-07-09 does not match status date 2026-07-10/);
+    },
+  );
+});
+
+test("fails closed on an unparseable dated provider exclusion", () => {
+  withFixture({ googleMalformed: true }, (result) => {
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /README: malformed provider exclusion line/);
+  });
 });
 
 test("validates every authoritative status row, including providers absent from README", () => {
