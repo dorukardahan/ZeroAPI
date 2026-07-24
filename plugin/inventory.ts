@@ -17,12 +17,6 @@ export type ResolvedProviderCapacity = {
   preferredAuthProfile: string | null;
 };
 
-export type ResolvedProviderAccountCapacity = {
-  accountId: string;
-  authProfile: string | null;
-  routingWeight: number;
-};
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -154,19 +148,6 @@ function resolveInventoryAccounts(params: {
       authProfile,
     })),
   };
-}
-
-export function resolveProviderAccountCapacities(params: {
-  inventory: SubscriptionInventory | undefined;
-  providerId: string;
-  category?: TaskCategory;
-}): ResolvedProviderAccountCapacity[] {
-  const accounts = resolveInventoryAccounts(params);
-  return accounts.scoringAccounts.map((account) => ({
-    accountId: account.accountId,
-    authProfile: account.authProfile,
-    routingWeight: account.weight,
-  }));
 }
 
 function pickPreferredInventoryAccount(

@@ -57,8 +57,8 @@ function assertValidRatio(value: unknown): asserts value is number {
 
 function normalizePercentage(value: unknown, label: string): number {
   assertFiniteNumber(value, label);
-  if (value < 0) throw new ValueError(`${label} must be non-negative`);
-  const ratio = value > 1 ? value / 100 : value;
+  if (value < 0 || value > 100) throw new ValueError(`${label} must be in [0, 100]`);
+  const ratio = value / 100;
   assertValidRatio(ratio);
   return ratio;
 }

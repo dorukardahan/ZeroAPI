@@ -86,9 +86,9 @@ export type NormalizeWindowInput = {
   used?: number;
   /** Total limit, when provider reports usage/limit. */
   limit?: number;
-  /** Percentage remaining, when provider reports percent (0..1 or 0..100). */
+  /** Remaining percentage on the explicit 0-100 scale. */
   percentageRemaining?: number;
-  /** Percentage used (0..1 or 0..100). */
+  /** Consumed percentage on the explicit 0-100 scale. */
   percentageUsed?: number;
   appliesTo?: QuotaAppliesTo;
   modelIds?: string[];

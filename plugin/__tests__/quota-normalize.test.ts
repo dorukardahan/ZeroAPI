@@ -52,6 +52,13 @@ describe("normalizeQuotaWindow", () => {
     ).toThrow();
   });
 
+  it("treats percentage fields as 0-100 values, including exactly one percent", () => {
+    expect(normalizeQuotaWindow({ rawKind: "PRIMARY", percentageUsed: 1 }).remainingRatio)
+      .toBeCloseTo(0.99);
+    expect(normalizeQuotaWindow({ rawKind: "PRIMARY", percentageRemaining: 1 }).remainingRatio)
+      .toBeCloseTo(0.01);
+  });
+
   it("rejects NaN remainingRatio", () => {
     expect(() =>
       normalizeQuotaWindow({

@@ -42,6 +42,12 @@ class TestNormalizeWindow(unittest.TestCase):
         with self.assertRaises(TypeError):
             normalize_window("X", remaining_ratio=True)
 
+    def test_percentage_fields_use_zero_to_one_hundred_scale(self):
+        used = normalize_window("PRIMARY", percentage_used=1)
+        remaining = normalize_window("PRIMARY", percentage_remaining=1)
+        self.assertAlmostEqual(used["remainingRatio"], 0.99)
+        self.assertAlmostEqual(remaining["remainingRatio"], 0.01)
+
     def test_rejects_over_one(self):
         with self.assertRaises(ValueError):
             normalize_window("X", remaining_ratio=1.01)

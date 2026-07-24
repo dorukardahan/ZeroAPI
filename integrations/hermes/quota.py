@@ -59,9 +59,9 @@ def _assert_valid_ratio(value: Any) -> None:
 
 def _normalize_percentage(value: Any, label: str) -> float:
     _assert_finite_number(value, label)
-    if value < 0:
-        raise ValueError(f"{label} must be non-negative")
-    ratio = value / 100 if value > 1 else float(value)
+    if value < 0 or value > 100:
+        raise ValueError(f"{label} must be in [0, 100]")
+    ratio = value / 100
     _assert_valid_ratio(ratio)
     return ratio
 
