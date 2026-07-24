@@ -2,6 +2,19 @@
 
 Benchmark evidence and runtime availability are separate. A direct Artificial Analysis (AA) row does not prove that a subscription provider can route the model; a routeable model may also need an explicit proxy until AA publishes a matching row.
 
+## Provider policy review dates
+
+Policy review freshness interval: 90 days.
+
+| Provider | Last reviewed | Status |
+|---|---|---|
+| Anthropic | 2026-06-15 | Excluded pending a tested canonical subscription runtime path |
+| Google | 2026-07-10 | Excluded because current access does not provide a routeable subscription provider |
+
+These ISO dates are authoritative for the matching exclusions in the top-level README. Run `node scripts/provider_policy_freshness.mjs` from the repository root to detect missing, malformed, stale, or mismatched claims. The checker is read-only and does not enable or disable providers.
+
+## Current provider and model status
+
 | Provider/model | Benchmark evidence | Subscription route status |
 |---|---|---|
 | OpenAI `gpt-5.6-sol`, `-terra`, `-luna` | No direct row; explicit GPT-5.5 proxy | Routeable through canonical `openai/*` with the Codex runtime when the account catalog exposes the preview. Sol is the fresh starter; Terra/Luna are fallbacks. |

@@ -28,13 +28,15 @@ For the written product contract behind the current router, see [`references/rou
 - **Subscription-aware** — uses your declared provider tiers, account priorities, and intended-use hints without reading private live quota data
 - **Data-driven tuning** — built-in eval script analyzes routing logs and suggests config improvements
 - **Zero runtime cost** — keyword classification under 1ms, no LLM call, no external API
-- **Cross-provider fallback** — every category has fallbacks spanning multiple providers
+- **Cross-provider fallback** — bundled policies include cross-provider candidates when at least two configured subscription providers remain eligible
 
 ## Provider Exclusions
 
-**Anthropic (status updated June 15, 2026):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
+[`references/provider-model-status.md`](references/provider-model-status.md) is authoritative for provider-policy review dates and the freshness interval. Run `node scripts/provider_policy_freshness.mjs` to detect missing, malformed, stale, or README-mismatched dates; the checker never changes provider configuration.
 
-**Google (status checked July 10, 2026):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
+**Anthropic (status reviewed 2026-06-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
+
+**Google (status reviewed 2026-07-10):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
 
 ZeroAPI routes exclusively across subscription or account-quota providers: OpenAI, Kimi, Z AI (GLM), MiniMax, Qwen Portal, and xAI Grok OAuth / SuperGrok.
 
@@ -53,6 +55,8 @@ The plugin fires before eligible messages via OpenClaw's `before_model_resolve` 
 5. **Benchmark fallback order** — outside the frontier, fall back in benchmark strength order
 
 The default policy mode is `balanced`. That means ZeroAPI will not blindly force the raw benchmark winner on every turn. It only lets declared subscription/account capacity reorder candidates when they stay close enough to the category leader. This is the intended default for users who have uneven subscription limits across providers.
+
+Cross-provider fallback requires at least two configured and eligible subscription providers after capability and subscription filtering. With one eligible candidate, that candidate is the only possible selection (or ZeroAPI returns no override when it is already current). With no eligible candidate, both the OpenClaw plugin and Hermes adapter return no routing override and preserve the current runtime-selected model. ZeroAPI never activates an unconfigured or usage-billed provider to manufacture a fallback.
 
 Important: “Rate limit” did not correspond to an implemented capability-filter signal and has been removed from the stage description. [`plugin/filter.ts`](plugin/filter.ts) can reject configured models only for request size versus context window, required vision support, the `fast`-task TTFT ceiling, or an explicit caller-supplied provider exclusion; the live routing path in [`plugin/decision.ts`](plugin/decision.ts) supplies only the first three inputs. [`plugin/router.ts`](plugin/router.ts) then ranks that already-filtered candidate set and does not read provider responses or cooldown state. Therefore the capability filter has no runtime-local cooldown or live-availability input. ZeroAPI does **not** inspect provider dashboards, live remaining quota, billing counters, or private usage telemetry. In v1, “headroom” means a static policy signal derived from configured tier, `usagePriority`, `intendedUse`, and account count.
 
@@ -87,7 +91,7 @@ Grok has two different surfaces. Current OpenClaw SuperGrok auth uses `openclaw 
 
 ## Task Categories
 
-The plugin matches keywords in each message to one of six routing categories. No match stays on the default model.
+The plugin matches keywords in each message to one of six routing categories. An unmatched message produces no routing override and preserves the current runtime-selected model; it does not reset the turn to a configured global default.
 
 | Category | Primary Benchmark | Routing Signals | Example Prompts |
 |----------|------------------|-----------------|-----------------|
