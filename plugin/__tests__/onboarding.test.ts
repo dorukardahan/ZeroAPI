@@ -48,6 +48,11 @@ describe("buildStarterConfig", () => {
     expect(config.models["openai/gpt-5.6-sol"]?.context_window).toBe(372000);
     expect(config.models["openai/gpt-5.6-terra"]?.context_window).toBe(372000);
     expect(config.models["openai/gpt-5.6-luna"]?.context_window).toBe(372000);
+    expect(config.models["openai/gpt-5.6-sol"]?.speed_tps).toBe(61.573);
+    expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.terminalbench).toBe(0.88);
+    expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.tau3_banking).toBe(0.33);
+    expect(config.models["openai/gpt-5.6-terra"]?.benchmarks.terminalbench).toBe(0.88);
+    expect(config.models["openai/gpt-5.6-luna"]?.benchmarks.terminalbench).toBe(0.809);
     expect(config.fast_ttft_max_seconds).toBe(8);
   });
 

@@ -76,14 +76,14 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 
 | Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
 |----------|------------|--------------|---------|-----------------|--------|
-| OpenAI | `openai-codex` subscription (`openai/*` models) | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.6 Sol, Terra, Luna (GPT-5.5 benchmark proxy) |
+| OpenAI | `openai-codex` subscription (`openai/*` models) | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.6 Sol, Terra, Luna (direct AA max-effort rows) |
 | Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.7 Code, K2.6 general default |
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.2, GLM-5.1 |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M3, M2.7 fallback |
 | Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token (legacy migration surface) | n/a | n/a | qwen3.5-plus; re-onboard with a current token; no Portal Qwen 3.7 claim |
 | xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | SuperGrok | varies | varies | Grok 4.5, Build 0.1, Grok 4.3 fallback |
 
-OpenAI auth uses `openclaw models auth login --provider openai`; the resulting ChatGPT subscription pool routes the current `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, and `openai/gpt-5.6-luna` model refs. ZeroAPI uses the explicit GPT-5.5 benchmark proxy without presenting GPT-5.5 as the fresh starter.
+OpenAI auth uses `openclaw models auth login --provider openai`; the resulting ChatGPT subscription pool routes the current `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, and `openai/gpt-5.6-luna` model refs. ZeroAPI maps those routes to their direct Artificial Analysis max-effort rows.
 
 Vision capability is tracked per model in `zeroapi-config.json`. Starter configs only mark models as vision-capable when the OpenClaw runtime route is known to accept images. Provider-specific VLM/API models such as `zai/glm-5v-turbo` or custom Qwen VL routes should be added only when the user has explicit access and runtime metadata confirms image input.
 
@@ -97,7 +97,7 @@ The plugin matches keywords in each message to one of six routing categories. An
 |----------|------------------|-----------------|-----------------|
 | **Code** | `0.85*terminalbench + 0.15*scicode` | implement, function, class, refactor, fix, test, debug, PR, diff, migration | "Refactor this auth module", "Write unit tests for..." |
 | **Research** | `gpqa`, `hle` | research, analyze, explain, compare, paper, evidence, investigate | "Compare these two papers", "Explain the mechanism of..." |
-| **Orchestration** | `0.6*tau2 + 0.4*ifbench` | orchestrate, coordinate, pipeline, workflow, sequence, parallel | "Set up a fan-out pipeline", "Coordinate these 3 agents" |
+| **Orchestration** | `0.40*tau3_banking + 0.40*tau2 + 0.20*ifbench` | orchestrate, coordinate, pipeline, workflow, sequence, parallel | "Set up a fan-out pipeline", "Coordinate these 3 agents" |
 | **Math** | `math`, `aime_25` | calculate, solve, equation, proof, integral, probability, optimize | "Solve this integral", "Prove that..." |
 | **Fast** | speed (t/s), configured TTFT ceiling | quick, simple, format, convert, translate, rename, one-liner | "Rename these files", "Format this JSON" |
 | **Default** | `intelligence` | (no match) | Any task not matching above |
@@ -416,7 +416,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). `benchmarks.json` (fetched 2026-07-05) and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 and Grok 4.5 use explicit proxies rather than invented direct rows. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). `benchmarks.json` (fetched 2026-07-24) and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 uses direct AA max-effort rows; Grok 4.5 retains an explicit proxy instead of an invented direct row. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 The benchmark snapshot intentionally stays broader than the routeable starter pool. Direct rows, explicit proxies, and subscription routeability are listed separately in the provider/model status reference; do not infer one from another.
 

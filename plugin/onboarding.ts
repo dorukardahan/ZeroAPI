@@ -70,9 +70,6 @@ const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
-  "openai/gpt-5.6-sol": "openai-codex/gpt-5.5",
-  "openai/gpt-5.6-terra": "openai-codex/gpt-5.5",
-  "openai/gpt-5.6-luna": "openai-codex/gpt-5.5",
   "qwen-oauth/qwen3.5-plus": "qwen/qwen3.6-plus",
   "xai/grok-4.5": "xai-oauth/grok-4.3",
   "xai-oauth/grok-4.5": "xai-oauth/grok-4.3",
@@ -215,12 +212,14 @@ function getCategoryBenchmarkStrength(category: TaskCategory, caps: ModelCapabil
   const hle = normalizeBenchmarkValue(benchmarks.hle);
   const lcr = normalizeBenchmarkValue(benchmarks.lcr);
   const tau2 = normalizeBenchmarkValue(benchmarks.tau2);
+  const tau3Banking = normalizeBenchmarkValue(benchmarks.tau3_banking);
   const ifbench = normalizeBenchmarkValue(benchmarks.ifbench);
   const math = normalizeBenchmarkValue(benchmarks.math);
   const aime25 = normalizeBenchmarkValue(benchmarks.aime_25);
 
   switch (category) {
     case "code":
+      if (terminalbench === null && scicode === null && coding === null) return 0;
       return weightedBlend([
         [terminalbench, 0.85],
         [scicode, 0.15],
@@ -228,6 +227,7 @@ function getCategoryBenchmarkStrength(category: TaskCategory, caps: ModelCapabil
         [intelligence, 0.1],
       ]);
     case "research":
+      if (gpqa === null && hle === null && lcr === null) return 0;
       return weightedBlend([
         [gpqa, 0.6],
         [hle, 0.25],
@@ -236,11 +236,12 @@ function getCategoryBenchmarkStrength(category: TaskCategory, caps: ModelCapabil
       ]);
     case "orchestration":
       return weightedBlend([
-        [tau2, 0.6],
-        [ifbench, 0.4],
-        [intelligence, 0.1],
+        [tau3Banking, 0.4],
+        [tau2, 0.4],
+        [ifbench, 0.2],
       ]);
     case "math":
+      if (math === null && aime25 === null) return 0;
       return weightedBlend([
         [math, 0.7],
         [aime25, 0.3],
@@ -277,9 +278,13 @@ function findStarterBenchmarkRecord(snapshot: BenchmarkSnapshot, modelKey: strin
   const slashIndex = modelKey.indexOf("/");
   const providerId = modelKey.slice(0, slashIndex);
   const modelId = modelKey.slice(slashIndex + 1);
+  const catalogProviderId = getProviderCatalogEntry(providerId)?.openclawProviderId;
+  const benchmarkProviderIds = new Set(
+    [providerId, catalogProviderId].filter((value): value is string => Boolean(value)),
+  );
 
   return snapshot.models.find((item) =>
-    item.openclaw_provider === providerId && item.openclaw_model === modelId,
+    benchmarkProviderIds.has(item.openclaw_provider) && item.openclaw_model === modelId,
   );
 }
 

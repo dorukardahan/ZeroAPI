@@ -1,4 +1,4 @@
-# Provider and model status — 2026-07-10
+# Provider and model status — 2026-07-24
 
 Benchmark evidence and runtime availability are separate. A direct Artificial Analysis (AA) row does not prove that a subscription provider can route the model; a routeable model may also need an explicit proxy until AA publishes a matching row.
 
@@ -17,7 +17,7 @@ These ISO dates are authoritative for the matching exclusions in the top-level R
 
 | Provider/model | Benchmark evidence | Subscription route status |
 |---|---|---|
-| OpenAI `gpt-5.6-sol`, `-terra`, `-luna` | No direct row; explicit GPT-5.5 proxy | Routeable through canonical `openai/*` with the Codex runtime when the account catalog exposes the preview. Sol is the fresh starter; Terra/Luna are fallbacks. |
+| OpenAI `gpt-5.6-sol`, `-terra`, `-luna` | Direct `gpt-5-6-sol`, `gpt-5-6-terra`, and `gpt-5-6-luna` max-effort rows | Routeable through canonical `openai/*` with the Codex runtime when the account catalog exposes the preview. Sol is the fresh starter; Terra/Luna are fallbacks. |
 | Z.AI `glm-5.2` | Direct `glm-5-2` row | Routeable as `zai/glm-5.2`; Coding Plan default. |
 | Moonshot `kimi-k2.7-code` | Direct `kimi-k2-7-code` row | Routeable and code-focused. `kimi-k2.6` remains the general/default route. |
 | MiniMax `MiniMax-M3` | Direct `minimax-m3` row | Routeable as `minimax-portal/MiniMax-M3`; M2.7 remains a fallback. |

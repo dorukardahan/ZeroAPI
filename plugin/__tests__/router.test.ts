@@ -130,6 +130,76 @@ describe("router weighting", () => {
     expect(candidates).toContain("openai-codex/gpt-5.4");
   });
 
+  it("uses tau3 banking to distinguish knowledge-heavy orchestration from telecom-only strength", () => {
+    const agenticModels: Record<string, ModelCapabilities> = {
+      "zai/banking-strong": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 10,
+        ttft_seconds: 1,
+        benchmarks: { tau3_banking: 0.9, tau2: 0.6, ifbench: 0.6, intelligence: 50 },
+      },
+      "zai/telecom-only": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 10,
+        ttft_seconds: 1,
+        benchmarks: { tau3_banking: 0.1, tau2: 0.99, ifbench: 0.99, intelligence: 50 },
+      },
+    };
+    const agenticRules: Record<string, RoutingRule> = {
+      orchestration: { primary: "zai/telecom-only", fallbacks: ["zai/banking-strong"] },
+    };
+    const zaiProfile: SubscriptionProfile = {
+      version: "1.1.0",
+      global: { zai: { enabled: true, tierId: "max" } },
+    };
+
+    expect(getSubscriptionWeightedCandidates(
+      "orchestration",
+      agenticModels,
+      agenticRules,
+      zaiProfile,
+      undefined,
+      undefined,
+    )[0]).toBe("zai/banking-strong");
+  });
+
+  it("requires category-specific math evidence instead of treating intelligence as math", () => {
+    const mathModels: Record<string, ModelCapabilities> = {
+      "zai/high-intelligence-no-math": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 10,
+        ttft_seconds: 1,
+        benchmarks: { intelligence: 99 },
+      },
+      "zai/math-evidence": {
+        context_window: 1000,
+        supports_vision: false,
+        speed_tps: 10,
+        ttft_seconds: 1,
+        benchmarks: { intelligence: 40, math: 0.6 },
+      },
+    };
+    const mathRules: Record<string, RoutingRule> = {
+      math: { primary: "zai/high-intelligence-no-math", fallbacks: ["zai/math-evidence"] },
+    };
+    const zaiProfile: SubscriptionProfile = {
+      version: "1.1.0",
+      global: { zai: { enabled: true, tierId: "max" } },
+    };
+
+    expect(getSubscriptionWeightedCandidates(
+      "math",
+      mathModels,
+      mathRules,
+      zaiProfile,
+      undefined,
+      undefined,
+    )[0]).toBe("zai/math-evidence");
+  });
+
   it("lets low-latency models win fast tasks when they remain in the configured pool", () => {
     const candidates = getSubscriptionWeightedCandidates("fast", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("zai/glm-5.1");

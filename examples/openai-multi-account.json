@@ -1,7 +1,7 @@
 {
   "version": "3.9.3",
-  "generated": "2026-07-05T00:00:00.000Z",
-  "benchmarks_date": "2026-07-05",
+  "generated": "2026-07-24T00:00:00.000Z",
+  "benchmarks_date": "2026-07-24",
   "subscription_catalog_version": "1.1.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -34,52 +34,53 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 91.869,
-      "ttft_seconds": 29.368,
+      "speed_tps": 61.573,
+      "ttft_seconds": 91.32,
       "benchmarks": {
-        "intelligence": 54.8,
-        "coding": 74.9,
-        "tau2": 0.939,
-        "terminalbench": 0.606,
-        "ifbench": 0.759,
-        "gpqa": 0.935,
-        "lcr": 0.743,
-        "hle": 0.443,
+        "intelligence": 58.9,
+        "coding": 77.4,
+        "tau2": 0.851,
+        "tau3_banking": 0.33,
+        "terminalbench": 0.88,
+        "ifbench": 0.727,
+        "gpqa": 0.941,
+        "lcr": 0.737,
+        "hle": 0.472,
         "scicode": 0.561
       }
     },
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 91.869,
-      "ttft_seconds": 29.368,
+      "speed_tps": 122.303,
+      "ttft_seconds": 118.567,
       "benchmarks": {
-        "intelligence": 54.8,
-        "coding": 74.9,
-        "tau2": 0.939,
-        "terminalbench": 0.606,
-        "ifbench": 0.759,
-        "gpqa": 0.935,
-        "lcr": 0.743,
-        "hle": 0.443,
-        "scicode": 0.561
+        "intelligence": 55,
+        "coding": 76.7,
+        "tau2": 0.863,
+        "tau3_banking": 0.318,
+        "terminalbench": 0.88,
+        "ifbench": 0.712,
+        "gpqa": 0.925,
+        "lcr": 0.74,
+        "hle": 0.418,
+        "scicode": 0.539
       }
     },
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 91.869,
-      "ttft_seconds": 29.368,
+      "speed_tps": 170.242,
+      "ttft_seconds": 88.017,
       "benchmarks": {
-        "intelligence": 54.8,
-        "coding": 74.9,
-        "tau2": 0.939,
-        "terminalbench": 0.606,
-        "ifbench": 0.759,
-        "gpqa": 0.935,
-        "lcr": 0.743,
-        "hle": 0.443,
-        "scicode": 0.561
+        "intelligence": 51.2,
+        "coding": 71.4,
+        "tau3_banking": 0.272,
+        "terminalbench": 0.809,
+        "gpqa": 0.911,
+        "lcr": 0.74,
+        "hle": 0.372,
+        "scicode": 0.525
       }
     }
   },
@@ -113,10 +114,10 @@
       ]
     },
     "fast": {
-      "primary": "openai/gpt-5.6-sol",
+      "primary": "openai/gpt-5.6-luna",
       "fallbacks": [
-        "openai/gpt-5.6-terra",
-        "openai/gpt-5.6-luna"
+        "openai/gpt-5.6-sol",
+        "openai/gpt-5.6-terra"
       ]
     },
     "default": {

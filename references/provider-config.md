@@ -48,11 +48,11 @@ grep -Rni "ZeroAPI Router" /tmp/openclaw /root/.openclaw/logs 2>/dev/null | tail
 
 ## Providers
 
-Current starter mapping (2026-07-10):
+Current starter mapping (2026-07-24):
 
 | Subscription provider | Fresh models | Benchmark evidence |
 |---|---|---|
-| OpenAI Codex | `openai/gpt-5.6-sol`, Terra, Luna | explicit GPT-5.5 proxy; no direct GPT-5.6 claim |
+| OpenAI Codex | `openai/gpt-5.6-sol`, Terra, Luna | direct AA max-effort rows |
 | Moonshot | `kimi-k2.7-code`, `kimi-k2.6` | direct rows; K2.6 is general/default |
 | Z.AI | `glm-5.2`, `glm-5.1` | direct rows |
 | MiniMax Portal | `MiniMax-M3`, `MiniMax-M2.7` | direct rows |
@@ -77,7 +77,7 @@ openclaw models auth login --provider openai
 
 | Model ID | Notes |
 |----------|-------|
-| `gpt-5.5` | Former OpenClaw default; retained for legacy configs and as the GPT-5.6 benchmark proxy |
+| `gpt-5.5` | Former OpenClaw default; retained for legacy configs with its direct benchmark row |
 | `gpt-5.5-pro` | Forward-compatible Pro-tier model; use GPT-5.5 benchmark proxy until AA publishes a separate row |
 | `gpt-5.4` | Previous flagship - high TTFT, not suitable for fast tasks |
 | `gpt-5.4-mini` | Fast fallback |

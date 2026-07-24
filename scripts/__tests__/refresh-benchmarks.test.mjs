@@ -91,17 +91,19 @@ spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-# When the --output target exists, its benchmark_categories must be the source
-# (not the hardcoded repo snapshot).
+# Custom category extensions survive, while source-owned AA metadata is
+# canonicalized to the current schema.
 output_path = work_dir / "custom.json"
 output_path.write_text(json.dumps({"benchmark_categories": {"marker": "from-output"}}), encoding="utf-8")
-assert module.read_existing_benchmark_categories(output_path) == {"marker": "from-output"}
+categories = module.read_existing_benchmark_categories(output_path)
+assert categories["marker"] == "from-output"
+assert categories["terminalbench"]["key"] == "terminalbench_v2_1"
+assert categories["tau3_banking"]["key"] == "tau_banking"
 
-# When neither the --output target nor the default exists, degrade to None
-# instead of raising FileNotFoundError (first run to a brand-new path).
+# A first run to a brand-new path still receives the canonical schema.
 missing_output = work_dir / "does-not-exist.json"
 missing_default = work_dir / "no-default.json"
-assert module.read_existing_benchmark_categories(missing_output, missing_default) is None
+assert module.read_existing_benchmark_categories(missing_output, missing_default) == module.CANONICAL_BENCHMARK_CATEGORIES
 `, [root]);
 });
 
@@ -823,6 +825,9 @@ test("offline reannotation remaps the committed snapshot without an API key", ()
   const mapped = Object.fromEntries(snapshot.models.map((model) => [model.slug, model.openclaw_model]));
   const providers = Object.fromEntries(snapshot.models.map((model) => [model.slug, model.openclaw_provider]));
   assert.equal(mapped["glm-5-2"], "glm-5.2");
+  assert.equal(mapped["gpt-5-6-sol"], "gpt-5.6-sol");
+  assert.equal(mapped["gpt-5-6-terra"], "gpt-5.6-terra");
+  assert.equal(mapped["gpt-5-6-luna"], "gpt-5.6-luna");
   assert.equal(mapped["kimi-k2-7-code"], "kimi-k2.7-code");
   assert.equal(mapped["minimax-m3"], "MiniMax-M3");
   assert.equal(mapped["qwen3-7-plus"], "qwen3.7-plus");
@@ -831,10 +836,13 @@ test("offline reannotation remaps the committed snapshot without an API key", ()
   assert.equal(mapped["grok-build-0-1-06-16"], "grok-build-0.1");
   assert.equal(providers["grok-build-0-1-06-16"], "xai-oauth");
   const families = Object.fromEntries(snapshot.policy_families.families.map((family) => [family.id, family]));
-  assert.deepEqual(families["openai-gpt56-routes"].route_model_ids, [
+  assert.deepEqual(families["openai-gpt56-routes"].openclaw_model_ids, [
     "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna",
   ]);
-  assert.equal(families["openai-gpt56-routes"].benchmark_proxy, "gpt-5.5");
+  assert.deepEqual(families["openai-gpt56-routes"].benchmark_slugs, [
+    "gpt-5-6-sol", "gpt-5-6-terra", "gpt-5-6-luna",
+  ]);
+  assert.equal(families["openai-gpt56-routes"].benchmark_proxy, undefined);
   assert.equal(families["qwen-portal-routes"].provider, "qwen-oauth");
 });
 
@@ -869,5 +877,36 @@ assert resolve({"gpqa": 0.935}, "gpqa") == 0.935
 # BENCHMARK_MAP has tuple for terminalbench
 assert isinstance(module.BENCHMARK_MAP["terminalbench"], tuple)
 assert "terminalbench_v2_1" in module.BENCHMARK_MAP["terminalbench"]
+`);
+});
+
+test("refresh_benchmarks maps every known AA evaluation and rejects silent schema drift", () => {
+  runPython(`
+import importlib.util
+import pathlib
+import sys
+
+script_path = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", script_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+assert module.BENCHMARK_MAP["tau3_banking"] == "tau_banking"
+assert module.CANONICAL_BENCHMARK_CATEGORIES["tau3_banking"]["key"] == "tau_banking"
+
+known = set()
+for source in module.BENCHMARK_MAP.values():
+    known.update(source if isinstance(source, tuple) else [source])
+module.validate_evaluation_schema([{"evaluations": {key: 0.5 for key in known}}])
+module.validate_evaluation_schema([{"evaluations": {"has_reasoning": True, "is_preview": False}}])
+assert module.normalize_optional_number(True) is None
+assert module.resolve_benchmark({"tau_banking": True}, "tau_banking") is None
+
+try:
+    module.validate_evaluation_schema([{"evaluations": {"new_agentic_score": 0.5}}])
+except SystemExit as exc:
+    assert "new_agentic_score" in str(exc)
+else:
+    raise AssertionError("unknown numeric AA evaluations must fail closed")
 `);
 });
