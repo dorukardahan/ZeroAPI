@@ -93,8 +93,14 @@ class TestValidateSnapshot(unittest.TestCase):
             validate_snapshot(self._valid(), expected_provider="openai")
 
     def test_rejects_invalid_timestamp(self):
-        with self.assertRaises(ValueError):
-            validate_snapshot({**self._valid(), "fetchedAt": "not-a-date"})
+        for fetched_at in (
+            "1",
+            "07/24/2026",
+            "2026-07-24T17:00:00",
+            "2026-02-30T00:00:00Z",
+        ):
+            with self.subTest(fetched_at=fetched_at), self.assertRaises(ValueError):
+                validate_snapshot({**self._valid(), "fetchedAt": fetched_at})
 
 
 class TestNormalizeSnapshot(unittest.TestCase):

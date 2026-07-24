@@ -219,10 +219,15 @@ describe("validateNormalizedSnapshot", () => {
     ).not.toThrow();
   });
 
-  it("rejects an invalid fetchedAt timestamp", () => {
-    expect(() =>
-      validateNormalizedSnapshot({ ...validSnapshot, fetchedAt: "not-a-date" }),
-    ).toThrow();
+  it("rejects non-ISO, timezone-free, and impossible timestamps", () => {
+    for (const fetchedAt of [
+      "1",
+      "07/24/2026",
+      "2026-07-24T17:00:00",
+      "2026-02-30T00:00:00Z",
+    ]) {
+      expect(() => validateNormalizedSnapshot({ ...validSnapshot, fetchedAt })).toThrow();
+    }
   });
 });
 

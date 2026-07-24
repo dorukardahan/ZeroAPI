@@ -8,6 +8,7 @@ plugin/quota-normalize.ts + plugin/quota-policy.ts.
 from __future__ import annotations
 
 import math
+import re
 from datetime import datetime
 from typing import Any, TypeGuard
 
@@ -30,6 +31,9 @@ VALID_WINDOW_KINDS = {
     "percent",
 }
 VALID_APPLICABILITY = {"inference", "mcp", "model"}
+TIMESTAMP_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$"
+)
 
 
 def _is_number(value: Any) -> TypeGuard[int | float]:
@@ -81,10 +85,12 @@ def _normalize_identifier(value: Any, label: str) -> str:
 
 def _normalize_timestamp(value: Any, label: str) -> str:
     normalized = _normalize_identifier(value, label)
+    if TIMESTAMP_RE.fullmatch(normalized) is None:
+        raise ValueError(f"{label} must be an ISO-8601 timestamp with timezone")
     try:
         datetime.fromisoformat(normalized.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ValueError(f"{label} must be an ISO-8601 timestamp") from exc
+        raise ValueError(f"{label} must contain a valid calendar date and time") from exc
     return normalized
 
 
