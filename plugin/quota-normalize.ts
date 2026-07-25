@@ -139,12 +139,15 @@ export function normalizeQuotaWindow(input: NormalizeWindowInput): NormalizedQuo
     throw new ValueError(`cannot derive remainingRatio for window "${id}"`);
   }
 
+  if (input.appliesTo === null) {
+    throw new ValueError("appliesTo must not be null");
+  }
   const appliesTo: QuotaAppliesTo = input.appliesTo ?? "inference";
   if (appliesTo !== "inference" && appliesTo !== "mcp" && appliesTo !== "model") {
     throw new ValueError(`unknown appliesTo value "${String(appliesTo)}"`);
   }
 
-  const modelIdsInput = input.modelIds ?? [];
+  const modelIdsInput = input.modelIds === undefined ? [] : input.modelIds;
   if (!Array.isArray(modelIdsInput)) {
     throw new TypeError("modelIds must be an array");
   }
@@ -244,7 +247,7 @@ export function normalizeSnapshot(payload: ProviderQuotaPayload): NormalizedQuot
   const provider = normalizeIdentifier(payload.provider, "provider");
   const account = normalizeIdentifier(payload.account, "account");
   const fetchedAt = normalizeTimestamp(payload.fetchedAt, "fetchedAt");
-  const requestedStatus = payload.status ?? "fresh";
+  const requestedStatus = payload.status === undefined ? "fresh" : payload.status;
   const status = typeof requestedStatus === "string" && VALID_STATUSES.has(requestedStatus as QuotaSnapshotStatus)
     ? requestedStatus
     : "invalid_response";

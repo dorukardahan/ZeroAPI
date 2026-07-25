@@ -389,4 +389,33 @@ describe("normalizeSnapshot", () => {
     expect(JSON.stringify(snapshot)).not.toContain("account_email");
     expect(JSON.stringify(snapshot)).not.toContain("access_token");
   });
+
+  it("rejects explicit null status instead of defaulting to fresh", () => {
+    const snapshot = normalizeSnapshot({
+      provider: "zai",
+      account: "zai#1",
+      status: null as unknown as undefined,
+      windows: [{ id: "w", rawKind: "TOKENS_LIMIT", remainingRatio: 0.5 }],
+      fetchedAt: "2026-07-24T17:33:47Z",
+    });
+    expect(snapshot.status).toBe("invalid_response");
+  });
+
+  it("rejects explicit null appliesTo instead of widening to inference", () => {
+    const snapshot = normalizeSnapshot({
+      provider: "zai",
+      account: "zai#1",
+      windows: [
+        {
+          id: "w",
+          rawKind: "TOKENS_LIMIT",
+          remainingRatio: 0.5,
+          appliesTo: null as unknown as undefined,
+        },
+      ],
+      fetchedAt: "2026-07-24T17:33:47Z",
+    });
+    expect(snapshot.status).toBe("invalid_response");
+    expect(snapshot.windows).toEqual([]);
+  });
 });
