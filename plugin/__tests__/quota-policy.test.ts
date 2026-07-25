@@ -141,11 +141,12 @@ describe("selectAccountByQuota", () => {
     expect(selected?.account).toBe("openai#2");
   });
 
-  it("returns null when all accounts are stale", () => {
+  it("returns an account via static fallback when all accounts are stale", () => {
     const accounts = [
       { provider: "openai", account: "openai#1", tierWeight: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "stale", ["5h", 1.0]) },
     ];
-    expect(selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol")).toBeNull();
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    expect(selected?.account).toBe("openai#1");
   });
 
   it("returns null when all accounts are depleted", () => {
@@ -153,6 +154,33 @@ describe("selectAccountByQuota", () => {
       { provider: "zai", account: "zai#1", tierWeight: 5.0, providerBias: 1.25, snapshot: snap("zai", "zai#1", "fresh", ["5h", 0.0]) },
     ];
     expect(selectAccountByQuota(accounts, "zai", "zai/glm-5.2")).toBeNull();
+  });
+
+  it("falls open to static pressure when quota is stale", () => {
+    const accounts = [
+      { provider: "openai", account: "openai#1", tierWeight: 1.0, providerBias: 1.0, snapshot: snap("openai", "openai#1", "stale", ["5h", 1.0]) },
+      { provider: "openai", account: "openai#2", tierWeight: 3.0, providerBias: 2.0, snapshot: snap("openai", "openai#2", "stale", ["5h", 1.0]) },
+    ];
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    expect(selected?.account).toBe("openai#2");
+  });
+
+  it("falls open to static pressure when snapshot is null", () => {
+    const accounts = [
+      { provider: "openai", account: "openai#1", tierWeight: 5.0, providerBias: 2.0, snapshot: null },
+    ];
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    expect(selected?.account).toBe("openai#1");
+  });
+
+  it("prefers live-constrained account only when it still beats static fallback", () => {
+    const accounts = [
+      { provider: "openai", account: "openai#1", tierWeight: 1.0, providerBias: 1.0, snapshot: null },
+      { provider: "openai", account: "openai#2", tierWeight: 5.0, providerBias: 2.0, snapshot: snap("openai", "openai#2", "fresh", ["5h", 0.1]) },
+    ];
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    // static=1.0 vs live=5*2*sqrt(0.1)=3.16 → live wins
+    expect(selected?.account).toBe("openai#2");
   });
 
   it("filters by provider", () => {

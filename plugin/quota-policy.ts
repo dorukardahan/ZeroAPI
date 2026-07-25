@@ -94,9 +94,13 @@ export function computeLivePressure(
 
 /**
  * Select the best account for a provider and model.
- * Returns null if no account has a usable live pressure.
+ * Returns null if no account has a usable pressure.
  * Rejects snapshots whose provider or account do not match the candidate,
  * guarding against mis-keyed or swapped snapshots during host integration.
+ *
+ * Fail-open: when live quota is unavailable (stale/absent/unsupported),
+ * the account falls back to static pressure (tierWeight * providerBias).
+ * Only accounts with a confirmed depleted quota (live pressure = 0) are excluded.
  */
 export function selectAccountByQuota(
   accounts: QuotaAwareAccount[],
@@ -108,15 +112,20 @@ export function selectAccountByQuota(
     if (a.snapshot && (a.snapshot.provider !== a.provider || a.snapshot.account !== a.account)) {
       return false;
     }
-    const pressure = computeLivePressure(a.tierWeight, a.providerBias, a.snapshot, model);
-    return pressure !== null && pressure > 0;
+    const live = computeLivePressure(a.tierWeight, a.providerBias, a.snapshot, model);
+    // null = quota unavailable → fail open to static pressure
+    // 0 = confirmed depleted → exclude
+    if (live === 0) return false;
+    return true;
   });
 
   if (eligible.length === 0) return null;
 
   return eligible.reduce((best, current) => {
-    const bestPressure = computeLivePressure(best.tierWeight, best.providerBias, best.snapshot, model) ?? 0;
-    const currentPressure = computeLivePressure(current.tierWeight, current.providerBias, current.snapshot, model) ?? 0;
+    const bestPressure = computeLivePressure(best.tierWeight, best.providerBias, best.snapshot, model)
+      ?? (best.tierWeight * best.providerBias);
+    const currentPressure = computeLivePressure(current.tierWeight, current.providerBias, current.snapshot, model)
+      ?? (current.tierWeight * current.providerBias);
     if (currentPressure > bestPressure) return current;
     if (currentPressure === bestPressure && current.account < best.account) return current;
     return best;
