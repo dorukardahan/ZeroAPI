@@ -122,6 +122,19 @@ export function normalizeQuotaWindow(input: NormalizeWindowInput): NormalizedQuo
   const id = normalizeIdentifier(input.id ?? rawKind, "window id");
   const kind = mapWindowKind(rawKind);
 
+  // Validate every supplied meter field before selecting one, matching
+  // the Python _input_window null-rejection contract. A present-but-null
+  // meter must fail closed rather than being silently skipped.
+  const meterFields = [
+    "remainingRatio", "used", "limit",
+    "percentageRemaining", "percentageUsed", "windowSeconds", "resetAt",
+  ] as const;
+  for (const field of meterFields) {
+    if ((input as Record<string, unknown>)[field] === null) {
+      throw new TypeError(`${field} must not be null`);
+    }
+  }
+
   let remainingRatio: number;
   if (input.explicitZeroUsage === true) {
     remainingRatio = 1.0;

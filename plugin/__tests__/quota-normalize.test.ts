@@ -465,4 +465,22 @@ describe("normalizeSnapshot", () => {
     });
     expect(window.remainingRatio).toBeCloseTo(0.5);
   });
+
+  it("rejects null in any supplied meter field even when a valid meter exists", () => {
+    expect(() =>
+      normalizeQuotaWindow({
+        rawKind: "TOKENS_LIMIT",
+        remainingRatio: 0.5,
+        used: null as unknown as number,
+        limit: 100,
+      }),
+    ).toThrow();
+    expect(() =>
+      normalizeQuotaWindow({
+        rawKind: "TOKENS_LIMIT",
+        percentageUsed: 10,
+        percentageRemaining: null as unknown as number,
+      }),
+    ).toThrow();
+  });
 });
