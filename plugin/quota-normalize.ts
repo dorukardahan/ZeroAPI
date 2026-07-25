@@ -116,11 +116,16 @@ function mapWindowKind(rawKind: string): QuotaWindowKind {
 /** Normalize one token-free host adapter window. */
 export function normalizeQuotaWindow(input: NormalizeWindowInput): NormalizedQuotaWindow {
   const rawKind = normalizeIdentifier(input.rawKind, "rawKind");
+  if (input.id === null) {
+    throw new TypeError("window id must not be null");
+  }
   const id = normalizeIdentifier(input.id ?? rawKind, "window id");
   const kind = mapWindowKind(rawKind);
 
   let remainingRatio: number;
-  if (input.remainingRatio !== undefined) {
+  if (input.explicitZeroUsage === true) {
+    remainingRatio = 0;
+  } else if (input.remainingRatio !== undefined) {
     assertValidRatio(input.remainingRatio);
     remainingRatio = input.remainingRatio;
   } else if (input.percentageRemaining !== undefined) {

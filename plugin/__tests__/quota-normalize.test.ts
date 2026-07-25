@@ -438,4 +438,31 @@ describe("normalizeSnapshot", () => {
       }),
     ).toThrow();
   });
+
+  it("rejects explicit null window id", () => {
+    expect(() =>
+      normalizeQuotaWindow({
+        rawKind: "TOKENS_LIMIT",
+        id: null as unknown as undefined,
+        remainingRatio: 0.5,
+      }),
+    ).toThrow();
+  });
+
+  it("honors explicitZeroUsage marker as depleted (ratio=0)", () => {
+    const window = normalizeQuotaWindow({
+      rawKind: "TOKENS_LIMIT",
+      explicitZeroUsage: true,
+    });
+    expect(window.remainingRatio).toBe(0);
+  });
+
+  it("does not treat explicitZeroUsage=false as zero", () => {
+    const window = normalizeQuotaWindow({
+      rawKind: "TOKENS_LIMIT",
+      explicitZeroUsage: false,
+      remainingRatio: 0.5,
+    });
+    expect(window.remainingRatio).toBeCloseTo(0.5);
+  });
 });
