@@ -129,12 +129,15 @@ def normalize_window(
     model_ids: list[str] | None = None,
     window_seconds: float | None = None,
     reset_at: str | None = None,
+    explicit_zero_usage: bool = False,
 ) -> dict[str, Any]:
     normalized_kind = _normalize_identifier(raw_kind, "raw_kind")
     window_id = _normalize_identifier(id if id is not None else normalized_kind, "window id")
     kind = _map_window_kind(normalized_kind)
 
-    if remaining_ratio is not None:
+    if explicit_zero_usage is True:
+        ratio = 1.0
+    elif remaining_ratio is not None:
         _assert_valid_ratio(remaining_ratio)
         ratio = float(remaining_ratio)
     elif percentage_remaining is not None:
@@ -268,6 +271,7 @@ def _input_window(item: Any) -> dict[str, Any]:
         model_ids=item.get("modelIds"),
         window_seconds=item.get("windowSeconds"),
         reset_at=item.get("resetAt"),
+        explicit_zero_usage=item.get("explicitZeroUsage", False),
     )
 
 

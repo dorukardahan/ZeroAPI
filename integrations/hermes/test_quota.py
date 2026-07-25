@@ -342,6 +342,19 @@ class TestNormalizeSnapshot(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_snapshot(snap)
 
+    def test_explicit_zero_usage_means_full_quota(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": "TOKENS_LIMIT",
+                "explicitZeroUsage": True,
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "fresh")
+        self.assertEqual(len(snap["windows"]), 1)
+        self.assertAlmostEqual(snap["windows"][0]["remainingRatio"], 1.0)
+
 
 class TestQuotaPolicy(unittest.TestCase):
 
