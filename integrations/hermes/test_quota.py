@@ -246,6 +246,70 @@ class TestNormalizeSnapshot(unittest.TestCase):
         self.assertEqual(snap["status"], "invalid_response")
         self.assertEqual(snap["windows"], [])
 
+    def test_unhashable_status_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "status": ["fresh"],
+            "windows": [{"id": "w", "rawKind": "TOKENS_LIMIT", "remainingRatio": 0.5}],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+
+    def test_dict_status_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "status": {"evil": True},
+            "windows": [{"id": "w", "rawKind": "TOKENS_LIMIT", "remainingRatio": 0.5}],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+
+    def test_oversized_integer_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": "TOKENS_LIMIT",
+                "remainingRatio": 10 ** 10000,
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+        self.assertEqual(snap["windows"], [])
+
+    def test_oversized_integer_in_used_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": "TOKENS_LIMIT",
+                "used": 10 ** 10000, "limit": 10 ** 10001,
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+
+    def test_non_list_model_ids_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": "TOKENS_LIMIT",
+                "remainingRatio": 0.5, "modelIds": {"fake-model": True},
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+        self.assertEqual(snap["windows"], [])
+
+    def test_false_model_ids_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": "TOKENS_LIMIT",
+                "remainingRatio": 0.5, "appliesTo": "model", "modelIds": False,
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+
 
 class TestQuotaPolicy(unittest.TestCase):
 

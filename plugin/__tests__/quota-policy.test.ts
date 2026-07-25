@@ -163,4 +163,27 @@ describe("selectAccountByQuota", () => {
     const selected = selectAccountByQuota(accounts, "zai", "zai/glm-5.2");
     expect(selected?.account).toBe("zai#1");
   });
+
+  it("rejects a mismatched snapshot from another account", () => {
+    const healthyOther: NormalizedQuotaSnapshot = {
+      provider: "openai",
+      account: "openai#1",
+      status: "fresh",
+      windows: [{ id: "5h", kind: "tokens_limit", appliesTo: "inference", modelIds: [], remainingRatio: 0.99 }],
+      fetchedAt: "2026-07-24T17:00:00Z",
+    };
+    const accounts = [
+      { provider: "openai", account: "openai#2", tierWeight: 2.1, providerBias: 0.7, snapshot: healthyOther },
+    ];
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    expect(selected).toBeNull();
+  });
+
+  it("accepts a matched snapshot and scores normally", () => {
+    const accounts = [
+      { provider: "openai", account: "openai#1", tierWeight: 2.1, providerBias: 0.7, snapshot: snap("openai", "openai#1", "fresh", ["5h", 0.80]) },
+    ];
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    expect(selected?.account).toBe("openai#1");
+  });
 });

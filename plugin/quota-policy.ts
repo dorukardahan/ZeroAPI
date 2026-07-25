@@ -95,6 +95,8 @@ export function computeLivePressure(
 /**
  * Select the best account for a provider and model.
  * Returns null if no account has a usable live pressure.
+ * Rejects snapshots whose provider or account do not match the candidate,
+ * guarding against mis-keyed or swapped snapshots during host integration.
  */
 export function selectAccountByQuota(
   accounts: QuotaAwareAccount[],
@@ -103,6 +105,9 @@ export function selectAccountByQuota(
 ): QuotaAwareAccount | null {
   const eligible = accounts.filter((a) => {
     if (a.provider !== provider) return false;
+    if (a.snapshot && (a.snapshot.provider !== a.provider || a.snapshot.account !== a.account)) {
+      return false;
+    }
     const pressure = computeLivePressure(a.tierWeight, a.providerBias, a.snapshot, model);
     return pressure !== null && pressure > 0;
   });

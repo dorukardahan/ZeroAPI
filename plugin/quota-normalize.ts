@@ -144,7 +144,11 @@ export function normalizeQuotaWindow(input: NormalizeWindowInput): NormalizedQuo
     throw new ValueError(`unknown appliesTo value "${String(appliesTo)}"`);
   }
 
-  const modelIds = (input.modelIds ?? []).map((modelId) => normalizeIdentifier(modelId, "modelId"));
+  const modelIdsInput = input.modelIds ?? [];
+  if (!Array.isArray(modelIdsInput)) {
+    throw new TypeError("modelIds must be an array");
+  }
+  const modelIds = modelIdsInput.map((modelId) => normalizeIdentifier(modelId, "modelId"));
   if (new Set(modelIds).size !== modelIds.length) {
     throw new ValueError("modelIds must be unique");
   }
@@ -241,7 +245,9 @@ export function normalizeSnapshot(payload: ProviderQuotaPayload): NormalizedQuot
   const account = normalizeIdentifier(payload.account, "account");
   const fetchedAt = normalizeTimestamp(payload.fetchedAt, "fetchedAt");
   const requestedStatus = payload.status ?? "fresh";
-  const status = VALID_STATUSES.has(requestedStatus) ? requestedStatus : "invalid_response";
+  const status = typeof requestedStatus === "string" && VALID_STATUSES.has(requestedStatus as QuotaSnapshotStatus)
+    ? requestedStatus
+    : "invalid_response";
 
   let windows: NormalizedQuotaWindow[] = [];
   let normalizedStatus: QuotaSnapshotStatus = status;

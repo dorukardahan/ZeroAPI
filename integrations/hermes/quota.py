@@ -49,10 +49,13 @@ def _assert_finite_number(value: Any, label: str) -> None:
         raise TypeError(f"{label} must be numeric, got boolean")
     if not isinstance(value, (int, float)):
         raise TypeError(f"{label} must be numeric")
-    if math.isnan(value):
-        raise ValueError(f"{label} must not be NaN")
-    if math.isinf(value):
-        raise ValueError(f"{label} must be finite")
+    try:
+        if math.isnan(value):
+            raise ValueError(f"{label} must not be NaN")
+        if math.isinf(value):
+            raise ValueError(f"{label} must be finite")
+    except OverflowError:
+        raise ValueError(f"{label} is too large to represent as a finite number")
 
 
 def _assert_valid_ratio(value: Any) -> None:
@@ -153,6 +156,8 @@ def normalize_window(
     if applies_to not in {"inference", "mcp", "model"}:
         raise ValueError(f"unknown applies_to value '{applies_to}'")
 
+    if model_ids is not None and not isinstance(model_ids, list):
+        raise TypeError("modelIds must be a list")
     mids = [_normalize_identifier(model_id, "modelId") for model_id in (model_ids or [])]
     if len(set(mids)) != len(mids):
         raise ValueError("modelIds must be unique")
@@ -262,7 +267,11 @@ def normalize_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     account = _normalize_identifier(payload.get("account"), "account")
     fetched_at = _normalize_timestamp(payload.get("fetchedAt"), "fetchedAt")
     requested_status = payload.get("status", "fresh")
-    status = requested_status if requested_status in VALID_STATUSES else "invalid_response"
+    status = (
+        requested_status
+        if isinstance(requested_status, str) and requested_status in VALID_STATUSES
+        else "invalid_response"
+    )
 
     windows: list[dict[str, Any]] = []
     try:
@@ -273,7 +282,7 @@ def normalize_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
         ids = {window["id"] for window in windows}
         if len(ids) != len(windows):
             raise ValueError("window IDs must be unique")
-    except (KeyError, TypeError, ValueError):
+    except (KeyError, TypeError, ValueError, OverflowError):
         windows = []
         status = "invalid_response"
 
