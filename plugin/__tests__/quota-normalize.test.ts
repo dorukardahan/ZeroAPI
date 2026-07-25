@@ -449,12 +449,12 @@ describe("normalizeSnapshot", () => {
     ).toThrow();
   });
 
-  it("honors explicitZeroUsage marker as depleted (ratio=0)", () => {
+  it("honors explicitZeroUsage marker as fully available (ratio=1)", () => {
     const window = normalizeQuotaWindow({
       rawKind: "TOKENS_LIMIT",
       explicitZeroUsage: true,
     });
-    expect(window.remainingRatio).toBe(0);
+    expect(window.remainingRatio).toBe(1);
   });
 
   it("does not treat explicitZeroUsage=false as zero", () => {

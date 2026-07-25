@@ -124,7 +124,7 @@ export function normalizeQuotaWindow(input: NormalizeWindowInput): NormalizedQuo
 
   let remainingRatio: number;
   if (input.explicitZeroUsage === true) {
-    remainingRatio = 0;
+    remainingRatio = 1.0;
   } else if (input.remainingRatio !== undefined) {
     assertValidRatio(input.remainingRatio);
     remainingRatio = input.remainingRatio;
