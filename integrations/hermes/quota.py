@@ -226,6 +226,8 @@ def validate_snapshot(
         if not isinstance(model_ids, list):
             raise TypeError("modelIds must be a list")
         normalized_models = [_normalize_identifier(model_id, "modelId") for model_id in model_ids]
+        if any(nm != mid for nm, mid in zip(normalized_models, model_ids)):
+            raise ValueError("modelIds must be pre-canonicalized")
         if len(set(normalized_models)) != len(normalized_models):
             raise ValueError("modelIds must be unique")
         if applies_to == "model" and not normalized_models:
@@ -247,6 +249,13 @@ def validate_snapshot(
 def _input_window(item: Any) -> dict[str, Any]:
     if not isinstance(item, dict):
         raise TypeError("window must be an object")
+    for key in (
+        "rawKind", "id", "remainingRatio", "used", "limit",
+        "percentageRemaining", "percentageUsed", "appliesTo",
+        "modelIds", "windowSeconds", "resetAt",
+    ):
+        if key in item and item[key] is None:
+            raise TypeError(f"{key} must not be null")
     return normalize_window(
         item.get("rawKind"),
         id=item.get("id"),

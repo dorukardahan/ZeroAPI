@@ -310,6 +310,38 @@ class TestNormalizeSnapshot(unittest.TestCase):
         })
         self.assertEqual(snap["status"], "invalid_response")
 
+    def test_null_remaining_ratio_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": "TOKENS_LIMIT",
+                "remainingRatio": None, "used": 0, "limit": 100,
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+
+    def test_null_field_in_window_fails_closed(self):
+        snap = normalize_snapshot({
+            "provider": "zai", "account": "zai#1",
+            "windows": [{
+                "id": "w", "rawKind": None,
+                "remainingRatio": 0.5,
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        })
+        self.assertEqual(snap["status"], "invalid_response")
+
+    def test_whitespace_model_id_in_validate_rejected(self):
+        from quota import validate_snapshot
+        snap = {
+            "provider": "zai", "account": "zai#1", "status": "fresh",
+            "windows": [{"id": "w", "kind": "tokens_limit", "appliesTo": "model", "modelIds": [" openai/gpt-5.6-sol "], "remainingRatio": 0.5}],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        }
+        with self.assertRaises(ValueError):
+            validate_snapshot(snap)
+
 
 class TestQuotaPolicy(unittest.TestCase):
 

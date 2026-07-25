@@ -218,7 +218,13 @@ export function validateNormalizedSnapshot(
       throw new ValueError(`unknown appliesTo value "${String(window.appliesTo)}"`);
     }
     if (!Array.isArray(window.modelIds)) throw new TypeError("modelIds must be an array");
-    const modelIds = window.modelIds.map((modelId) => normalizeIdentifier(modelId, "modelId"));
+    const modelIds = window.modelIds.map((modelId) => {
+      const trimmed = normalizeIdentifier(modelId, "modelId");
+      if (trimmed !== modelId) {
+        throw new ValueError("modelIds must be pre-canonicalized");
+      }
+      return trimmed;
+    });
     if (new Set(modelIds).size !== modelIds.length) {
       throw new ValueError("modelIds must be unique");
     }

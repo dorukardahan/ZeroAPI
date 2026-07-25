@@ -418,4 +418,24 @@ describe("normalizeSnapshot", () => {
     expect(snapshot.status).toBe("invalid_response");
     expect(snapshot.windows).toEqual([]);
   });
+
+  it("rejects whitespace-padded model IDs in validateNormalizedSnapshot", () => {
+    expect(() =>
+      validateNormalizedSnapshot({
+        provider: "zai",
+        account: "zai#1",
+        status: "fresh",
+        windows: [
+          {
+            id: "w",
+            kind: "tokens_limit",
+            appliesTo: "model",
+            modelIds: [" openai/gpt-5.6-sol "],
+            remainingRatio: 0.5,
+          } as any,
+        ],
+        fetchedAt: "2026-07-24T17:33:47Z",
+      }),
+    ).toThrow();
+  });
 });
