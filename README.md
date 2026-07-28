@@ -76,12 +76,14 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 
 | Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
 |----------|------------|--------------|---------|-----------------|--------|
-| OpenAI | `openai-codex` subscription (`openai/*` models) | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.6 Sol, Terra, Luna (direct AA max-effort rows) |
+| OpenAI | `openai-codex` subscription (`openai/*` model refs) | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.6 Sol, Terra, Luna (direct AA max-effort rows) |
 | Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.7 Code, K2.6 general default |
 | Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.2, GLM-5.1 |
 | MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M3, M2.7 fallback |
 | Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token (legacy migration surface) | n/a | n/a | qwen3.5-plus; re-onboard with a current token; no Portal Qwen 3.7 claim |
 | xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | SuperGrok | varies | varies | Grok 4.5, Build 0.1, Grok 4.3 fallback |
+
+Model namespaces such as `openai/*`, `kimi/*`, or `zai/*` are routing references only. They do not by themselves establish subscription eligibility. A route is subscription-backed only when the corresponding account surface is actually configured and authorized in OpenClaw (for example, a signed-in ChatGPT Plus/Pro account for `openai/*`). Eligibility comes from the configured account surface, not from a model reference alone.
 
 OpenAI auth uses `openclaw models auth login --provider openai`; the resulting ChatGPT subscription pool routes the current `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, and `openai/gpt-5.6-luna` model refs. ZeroAPI maps those routes to their direct Artificial Analysis max-effort rows.
 
