@@ -27,7 +27,7 @@ For the written product contract behind the current router, see [`references/rou
 - **Benchmark-aware** — routes using [direct Artificial Analysis benchmark rows selected by the current policy and documented proxies for routes without a direct mapping](references/benchmarks.md); a proxy remains in use until a matching direct row is reviewed and mapped
 - **Subscription-aware** — uses your declared provider tiers, account priorities, and intended-use hints without reading private live quota data
 - **Data-driven tuning** — built-in eval script analyzes routing logs and suggests config improvements
-- **Zero runtime cost** — keyword classification under 1ms, no LLM call, no external API
+- **No per-route API cost** — classification runs locally (keyword/regex + config lookups) with no LLM call and no external API request; the host runtime's provider/model switch still has its own normal overhead
 - **Cross-provider fallback** — bundled policies include cross-provider candidates when at least two configured subscription providers remain eligible
 
 ## Provider Exclusions
