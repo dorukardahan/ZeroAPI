@@ -4,11 +4,34 @@ The committed snapshot was fetched on 2026-07-24 and contains 224 Artificial Ana
 
 A benchmark row is evidence, not a subscription route. The exact route/proxy matrix is maintained in [provider-model-status.md](provider-model-status.md).
 
+## Score schema coverage
+
+The 2026-07-24 AA API payload exposes 17 populated evaluation keys. ZeroAPI publishes all of them as 16 normalized score fields because `terminalbench_v2_1` and legacy `terminalbench_hard` intentionally collapse into one `terminalbench` field. A refresh fails closed if AA adds another populated numeric evaluation without an explicit mapping.
+
+| Normalized score | Non-null rows (of 224) |
+|---|---:|
+| `intelligence` | 221 |
+| `coding` | 83 |
+| `math` | 99 |
+| `tau2` | 177 |
+| `tau3_banking` | 78 |
+| `terminalbench` | 186 |
+| `ifbench` | 181 |
+| `gpqa` | 212 |
+| `lcr` | 174 |
+| `hle` | 210 |
+| `scicode` | 209 |
+| `livecodebench` | 116 |
+| `mmlu_pro` | 117 |
+| `aime_25` | 99 |
+| `math_500` | 66 |
+| `aime` | 61 |
+
 ## Current policy evidence
 
 | Model or route | Evidence used | Route meaning |
 |---|---|---|
-| GPT-5.6 Sol / Terra / Luna | GPT-5.5 explicit proxy | Route-aware preview IDs; there is no direct GPT-5.6 AA claim. |
+| GPT-5.6 Sol / Terra / Luna | direct `gpt-5-6-sol`, `gpt-5-6-terra`, and `gpt-5-6-luna` max-effort rows | Route-aware subscription IDs use direct AA evidence as of the 2026-07-24 snapshot. |
 | `zai/glm-5.2` | direct `glm-5-2` row | Current Z.AI starter. |
 | `moonshot/kimi-k2.7-code` | direct `kimi-k2-7-code` row | Code-focused. K2.6 remains general/default. |
 | `minimax-portal/MiniMax-M3` | direct `minimax-m3` row | Current MiniMax starter. |

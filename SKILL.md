@@ -97,7 +97,7 @@ ZeroAPI classifies each eligible message into one of six categories, then picks 
 |----------|---------------|-----------|------------------|
 | Code | `coding_index` (reweighted) | `terminalbench` | implement, function, class, refactor, fix, test, debug, diff |
 | Research | `gpqa`, `hle` | `lcr`, `scicode` | research, analyze, explain, compare, investigate |
-| Orchestration | `0.6*tau2 + 0.4*ifbench` | — | orchestrate, coordinate, pipeline, workflow, parallel |
+| Orchestration | `0.40*tau3_banking + 0.40*tau2 + 0.20*ifbench` | — | orchestrate, coordinate, pipeline, workflow, parallel |
 | Math | `math_index` | `aime_25` | calculate, solve, proof, optimize, formula |
 | Fast | speed + TTFT hard filter | — | quick, simple, format, convert, rename, one-liner |
 | Default | intelligence index | — | no keyword match |
@@ -197,7 +197,7 @@ Conversation rules for this step:
 
 Practical subscription mapping:
 
-- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks; all use an explicit GPT-5.5 benchmark proxy until direct rows exist
+- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks; direct Artificial Analysis max-effort rows back all three routes
 - Kimi -> K2.7 Code for code and K2.6 for general/default
 - Z AI -> GLM-5.2, retaining GLM-5.1 compatibility
 - MiniMax -> MiniMax-M3 with M2.7 fallback

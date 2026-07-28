@@ -33,6 +33,8 @@ Balanced routing uses these inputs:
 - optional `subscription_inventory`
 - provider catalog metadata (`routingWeight`, `benchmarkRoutingBias`)
 
+`routing_rules.primary` is the benchmark-first seed of a candidate pool, not a hard final route. In balanced mode, a benchmark-near candidate with stronger declared subscription headroom may become the effective winner after frontier and pressure ordering. This is intentional: ZeroAPI should preserve meaningful quality leads without exhausting one subscription while other configured capacity sits idle.
+
 ## Decision pipeline
 
 ### 1. Early skip and stay gates
@@ -98,11 +100,17 @@ Balanced mode computes a benchmark strength per candidate.
 
 #### Orchestration
 
-`0.60 * tau2 + 0.40 * ifbench + 0.10 * intelligence`
+`0.40 * tau3_banking + 0.40 * tau2 + 0.20 * ifbench`
+
+`tau3_banking` measures knowledge-grounded, multi-step banking tool workflows; `tau2` measures dual-control telecom troubleshooting and coordination. The complementary agentic benchmarks are weighted equally, while IFBench is a supporting instruction-following signal. Generic intelligence is excluded because the current AA composite already includes overlapping agentic evaluations. Missing benchmark values are omitted and the remaining weights are renormalized.
 
 #### Math
 
 `0.70 * math + 0.30 * aime_25 + 0.10 * intelligence`
+
+### Category-specific evidence gate
+
+Code requires at least one of `terminalbench`, `scicode`, or `coding`; research requires at least one of `gpqa`, `hle`, or `lcr`; math requires at least one of `math` or `aime_25`. Without category-specific evidence, benchmark strength is `0` and generic intelligence alone cannot create a specialist benchmark leader.
 
 #### Fast
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import json
 import os
 import shutil
@@ -31,6 +32,7 @@ BENCHMARK_MAP = {
     "coding": "artificial_analysis_coding_index",
     "math": "artificial_analysis_math_index",
     "tau2": "tau2",
+    "tau3_banking": "tau_banking",
     "terminalbench": ("terminalbench_v2_1", "terminalbench_hard"),
     "ifbench": "ifbench",
     "gpqa": "gpqa",
@@ -44,13 +46,121 @@ BENCHMARK_MAP = {
     "aime": "aime",
 }
 CANONICAL_BENCHMARK_CATEGORIES = {
+    "intelligence": {
+        "key": "artificial_analysis_intelligence_index",
+        "scale": "0-100",
+        "description": "Artificial Analysis Intelligence Index v4.1 composite (9 evaluations; see methodology)",
+    },
+    "coding": {
+        "key": "artificial_analysis_coding_index",
+        "scale": "0-100",
+        "description": "Artificial Analysis coding composite (current methodology)",
+    },
+    "math": {
+        "key": "artificial_analysis_math_index",
+        "scale": "0-100",
+        "description": "Artificial Analysis math composite (current methodology)",
+    },
+    "tau2": {
+        "key": "tau2",
+        "scale": "0-1",
+        "description": "Tau-squared Bench Telecom dual-control troubleshooting and coordination",
+    },
+    "tau3_banking": {
+        "key": "tau_banking",
+        "scale": "0-1",
+        "description": "Tau-cubed Banking knowledge-grounded multi-step tool workflows",
+    },
     "terminalbench": {
         "key": "terminalbench_v2_1",
         "fallback_key": "terminalbench_hard",
         "scale": "0-1",
-        "description": "Agentic terminal tasks (TerminalBench v2.1, falling back to Hard for older snapshots)",
+        "description": "Agentic terminal tasks (Terminal-Bench v2.1, falling back to Hard for older rows)",
+    },
+    "ifbench": {
+        "key": "ifbench",
+        "scale": "0-1",
+        "description": "Instruction-following generalization on verifiable constraints",
+    },
+    "gpqa": {
+        "key": "gpqa",
+        "scale": "0-1",
+        "description": "GPQA Diamond graduate-level scientific reasoning",
+    },
+    "lcr": {
+        "key": "lcr",
+        "scale": "0-1",
+        "description": "Artificial Analysis long-context reasoning",
+    },
+    "hle": {
+        "key": "hle",
+        "scale": "0-1",
+        "description": "Humanity's Last Exam frontier knowledge and reasoning",
+    },
+    "scicode": {
+        "key": "scicode",
+        "scale": "0-1",
+        "description": "Scientific coding across multiple disciplines",
+    },
+    "livecodebench": {
+        "key": "livecodebench",
+        "scale": "0-1",
+        "description": "Contamination-resistant competitive programming",
+    },
+    "mmlu_pro": {
+        "key": "mmlu_pro",
+        "scale": "0-1",
+        "description": "MMLU-Pro graduate-level knowledge and reasoning",
+    },
+    "aime_25": {
+        "key": "aime_25",
+        "scale": "0-1",
+        "description": "AIME 2025 olympiad-level mathematics",
+    },
+    "math_500": {
+        "key": "math_500",
+        "scale": "0-1",
+        "description": "MATH-500 competition mathematics",
+    },
+    "aime": {
+        "key": "aime",
+        "scale": "0-1",
+        "description": "Original AIME benchmark",
     },
 }
+
+
+def benchmark_source_keys() -> set[str]:
+    keys: set[str] = set()
+    for source_spec in BENCHMARK_MAP.values():
+        keys.update(source_spec if isinstance(source_spec, tuple) else (source_spec,))
+    return keys
+
+
+def validate_evaluation_schema(items: Iterable[Dict[str, Any]]) -> None:
+    """Fail when AA publishes a populated score field ZeroAPI would silently drop."""
+    observed: set[str] = set()
+    for item in items:
+        for key, value in (item.get("evaluations") or {}).items():
+            if not isinstance(value, bool) and isinstance(value, (int, float)) and value > 0:
+                observed.add(key)
+
+    unknown = sorted(observed - benchmark_source_keys())
+    if unknown:
+        raise SystemExit(
+            "Artificial Analysis evaluation schema contains unmapped numeric fields: "
+            + ", ".join(unknown)
+        )
+
+
+def canonicalize_benchmark_categories(categories: Any) -> Dict[str, Any]:
+    """Preserve custom extensions while refreshing source-owned AA metadata."""
+    result = deepcopy(categories) if isinstance(categories, dict) else {}
+    for key, metadata in CANONICAL_BENCHMARK_CATEGORIES.items():
+        result[key] = deepcopy(metadata)
+    return result
+
+
 def resolve_benchmark(evaluations: Dict[str, Any], source_spec: Any) -> Optional[float]:
     """Resolve a benchmark value from AA evaluations, supporting fallback chains.
 
@@ -337,7 +447,7 @@ def fetch_data(api_key: str) -> Dict[str, Any]:
 
 
 def normalize_optional_number(value: Any) -> Optional[float]:
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     if isinstance(value, (int, float)) and value > 0:
         return round(float(value), 3)
@@ -473,6 +583,9 @@ def reannotate_snapshot(
         }
     snapshot["version"] = snapshot_version or load_snapshot_version()
     snapshot["note"] = "Routeability and benchmark evidence are separate. Anthropic, Google, and API-only horizon providers are not auto-routed; see references/provider-model-status.md."
+    snapshot["benchmark_categories"] = canonicalize_benchmark_categories(
+        snapshot.get("benchmark_categories")
+    )
     snapshot["policy_families"] = {
         "version": policy_families.get("version"),
         "description": policy_families.get("description"),
@@ -486,30 +599,20 @@ def reannotate_snapshot(
 def read_existing_benchmark_categories(
     output_path: Path,
     default_path: Path = DEFAULT_OUTPUT,
-) -> Any:
-    """Source the round-tripped ``benchmark_categories`` block.
+) -> Dict[str, Any]:
+    """Load custom category extensions and overlay the canonical AA schema.
 
     Prefer the file actually being refreshed (``--output``) so a custom target is
-    both the source and the destination; fall back to the canonical repo snapshot,
-    and degrade to ``None`` when neither file exists (e.g. a first run writing to a
-    brand-new ``--output`` path) instead of raising ``FileNotFoundError``.
+    both the source and the destination; fall back to the canonical repo snapshot.
+    A first run with neither file still receives the complete canonical schema.
     """
     source = output_path if output_path.exists() else default_path
     try:
         categories = json.loads(source.read_text()).get("benchmark_categories")
     except FileNotFoundError:
-        return None
+        categories = None
 
-    # Normalize the terminalbench category so that snapshots created before
-    # the v2.1 migration don't publish v2.1 scores under stale "Hard" metadata.
-    if categories and isinstance(categories, dict):
-        canonical_tb = CANONICAL_BENCHMARK_CATEGORIES.get("terminalbench")
-        existing_tb = categories.get("terminalbench")
-        if canonical_tb and isinstance(existing_tb, dict):
-            if existing_tb.get("key") != canonical_tb.get("key"):
-                categories["terminalbench"] = dict(canonical_tb)
-
-    return categories
+    return canonicalize_benchmark_categories(categories)
 
 
 def main() -> None:
@@ -534,6 +637,7 @@ def main() -> None:
 
     api_key = read_key(args)
     response = fetch_data(api_key)
+    validate_evaluation_schema(response.get("data") or [])
     prompt_options = response.get("prompt_options") or {}
     models = transform_models(response.get("data") or [], policy_slug_map)
 

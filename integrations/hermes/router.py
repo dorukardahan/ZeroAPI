@@ -640,7 +640,7 @@ def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = N
 
 
 def _normalize_benchmark(value: Any) -> float | None:
-    if not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
     if value < 0:
         return None
@@ -676,21 +676,28 @@ def _benchmark_strength(category: TaskCategory, caps: Config, modifier: str | No
     hle = metric("hle")
     lcr = metric("lcr")
     tau2 = metric("tau2")
+    tau3_banking = metric("tau3_banking")
     ifbench = metric("ifbench")
     math_score = metric("math")
     aime25 = metric("aime_25")
 
     if category == "code":
+        if terminalbench is None and scicode is None and coding is None:
+            return 0.0
         if modifier == "coding-aware":
             return _weighted_blend([(terminalbench, 1.0), (scicode, 0.2), (coding, 0.55), (intelligence, 0.05)])
         return _weighted_blend([(terminalbench, 0.85), (scicode, 0.15), (coding, 0.35), (intelligence, 0.1)])
     if category == "research":
+        if gpqa is None and hle is None and lcr is None:
+            return 0.0
         if modifier == "research-aware":
             return _weighted_blend([(gpqa, 0.75), (hle, 0.35), (lcr, 0.25), (intelligence, 0.05)])
         return _weighted_blend([(gpqa, 0.6), (hle, 0.25), (lcr, 0.15), (intelligence, 0.1)])
     if category == "orchestration":
-        return _weighted_blend([(tau2, 0.6), (ifbench, 0.4), (intelligence, 0.1)])
+        return _weighted_blend([(tau3_banking, 0.4), (tau2, 0.4), (ifbench, 0.2)])
     if category == "math":
+        if math_score is None and aime25 is None:
+            return 0.0
         return _weighted_blend([(math_score, 0.7), (aime25, 0.3), (intelligence, 0.1)])
     if category == "fast":
         speed = caps.get("speed_tps")
