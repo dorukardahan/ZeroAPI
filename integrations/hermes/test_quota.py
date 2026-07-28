@@ -421,6 +421,25 @@ class TestQuotaPolicy(unittest.TestCase):
         result = compute_live_pressure(5.0, 1.25, snap, "zai/glm-5.2")
         self.assertAlmostEqual(result, 5.0 * 1.25 * math.sqrt(0.86), places=4)
 
+    def test_unavailable_signals_return_none_for_static_fallback(self):
+        stale = {
+            "provider": "zai", "account": "zai#1", "status": "stale",
+            "windows": [], "fetchedAt": "2026-07-24T17:00:00Z",
+        }
+        malformed = {
+            "provider": "zai", "account": "zai#1", "status": "fresh",
+            "windows": [{
+                "id": "1w", "kind": "tokens_limit", "appliesTo": "inference",
+                "modelIds": [], "remainingRatio": float("nan"),
+            }],
+            "fetchedAt": "2026-07-24T17:00:00Z",
+        }
+        for label, snapshot in (("absent", None), ("stale", stale), ("malformed", malformed)):
+            with self.subTest(signal=label):
+                self.assertIsNone(
+                    compute_live_pressure(5.0, 1.25, snapshot, "zai/glm-5.2")
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
