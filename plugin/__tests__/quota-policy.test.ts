@@ -173,6 +173,15 @@ describe("selectAccountByQuota", () => {
     expect(selected?.account).toBe("openai#1");
   });
 
+  it("falls open to static pressure when a fresh snapshot is malformed", () => {
+    const accounts = [
+      { provider: "openai", account: "openai#1", tierWeight: 1.0, providerBias: 1.0, snapshot: null },
+      { provider: "openai", account: "openai#2", tierWeight: 3.0, providerBias: 2.0, snapshot: snap("openai", "openai#2", "fresh", ["5h", Number.NaN]) },
+    ];
+    const selected = selectAccountByQuota(accounts, "openai", "openai/gpt-5.6-sol");
+    expect(selected?.account).toBe("openai#2");
+  });
+
   it("prefers live-constrained account only when it still beats static fallback", () => {
     const accounts = [
       { provider: "openai", account: "openai#1", tierWeight: 1.0, providerBias: 1.0, snapshot: null },

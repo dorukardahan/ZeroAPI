@@ -178,6 +178,14 @@ The adapter also mirrors the important OpenClaw routing gates:
 - high-risk keyword matches are diagnostic only and do not block routing
 - external current models are left alone unless `external_model_policy` is `allow`
 
+## Quota Signals and Adapter Difference
+
+The full quota-signal provenance, privacy, normalization, and fallback contract is in [`references/routing-policy-spec.md`](../../references/routing-policy-spec.md#runtime-quota-signal-contract).
+
+Hermes does not collect quota data for ZeroAPI. The adapter makes no provider-dashboard or quota-endpoint request, and `pre_model_route` has no quota-snapshot input. The shared policy file contains static subscription/account hints only. `quota.py` is a token-free normalization and pressure-math substrate for a future host integration; it does not log or persist snapshots, and `router.py` does not import or call it.
+
+At the quota-module boundary, absent, non-`fresh` (including stale), malformed, and model-inapplicable observations return no live pressure, which means a caller must retain static pressure. Fresh valid observations use the same minimum-window and square-root factor as the TypeScript module. The adapter differs after that point: it has no quota-aware account-selector helper, so even confirmed depletion is not applied by the current Hermes router. All shipped Hermes routes therefore use configured tier, `usagePriority`, `intendedUse`, and account-count pressure exactly as they do when no runtime signal exists.
+
 For emergency provider shutdowns, use either config or env:
 
 ```json

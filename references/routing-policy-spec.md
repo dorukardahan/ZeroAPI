@@ -8,7 +8,7 @@ This document describes what ZeroAPI means by balanced routing today. It is a pr
 
 - preserve benchmark leadership when the quality gap is meaningful
 - allow declared subscription/account capacity to reorder only benchmark-near candidates
-- define "headroom" as static configured tier/account capacity, not live remaining quota
+- define current router "headroom" as static configured tier/account capacity and keep optional runtime quota signals explicitly separate
 - keep manual user/runtime choices above automatic routing
 - make same-provider multi-account routing deterministic enough to explain
 
@@ -21,7 +21,7 @@ This document describes what ZeroAPI means by balanced routing today. It is a pr
 
 ## Inputs
 
-Balanced routing uses these inputs:
+The shipped balanced router hot paths use these inputs:
 
 - prompt text
 - optional `agentId`
@@ -34,6 +34,45 @@ Balanced routing uses these inputs:
 - provider catalog metadata (`routingWeight`, `benchmarkRoutingBias`)
 
 `routing_rules.primary` is the benchmark-first seed of a candidate pool, not a hard final route. In balanced mode, a benchmark-near candidate with stronger declared subscription headroom may become the effective winner after frontier and pressure ordering. This is intentional: ZeroAPI should preserve meaningful quality leads without exhausting one subscription while other configured capacity sits idle.
+
+## Runtime quota-signal contract
+
+### Activation and provenance
+
+Runtime quota signals are optional, caller-supplied observations. Provider HTTP/RPC parsing, authentication, credential refresh, and the decision that an observation is `fresh` or `stale` belong to the embedding host. A host may pass token-free, provider-neutral quantitative windows to `plugin/quota-normalize.ts` or `integrations/hermes/quota.py`; ZeroAPI does not poll provider dashboards, call quota endpoints, inspect provider responses, or derive quota from routing logs.
+
+The current OpenClaw path (`plugin/decision.ts` -> `plugin/router.ts`) and Hermes path (`integrations/hermes/router.py`) do not accept or import quota snapshots. No bundled collector feeds either router. Consequently, normal installations behave exactly like the absent-signal fallback and rank with static tier/account pressure only. The quota modules are a bounded integration substrate, not a claim that live quota collection or quota-aware hot-path routing is active.
+
+### Network, privacy, and persistence boundaries
+
+- ZeroAPI's quota normalization and policy modules perform no network I/O. A host integration is the only permitted signal supplier.
+- The host must remove credentials, tokens, cookies, account emails, raw provider responses, and other private fields before calling the normalizer. `account` is expected to be a non-secret opaque local identifier.
+- Normalization copies only the allowlisted snapshot fields: provider, opaque account ID, status, fetch time, and quantitative windows (semantic ID, kind, applicability, model IDs, remaining ratio, and optional duration/reset time). Unknown top-level and window fields are not copied into the normalized snapshot.
+- The quota modules contain no logging, file, config, database, or cache writes. They return in-memory values to their caller. ZeroAPI does not persist normalized snapshots or include their values in its routing/advisory logs. An embedding host remains responsible for its own logging and retention policy.
+
+Quota ratios and reset times can still reveal usage patterns even though they are token-free. Hosts should therefore treat normalized snapshots as private runtime data and keep them local.
+
+### Normalization and freshness
+
+Freshness is explicit provenance, not inferred from wall-clock age inside ZeroAPI. The host sets `status`; `fetchedAt` and `resetAt` are validated as timezone-qualified ISO-8601 timestamps, but the quota modules do not apply an age threshold. A host that cannot vouch for a current observation must mark it `stale` or another non-`fresh` status.
+
+A malformed quantitative window invalidates the whole observation: normalization emits `status: "invalid_response"` with no windows, so partial quota data is never used. A malformed provider/account/timestamp envelope is rejected at the normalization boundary and must be treated by the caller as an absent observation. A directly supplied malformed normalized snapshot also fails policy validation.
+
+### Fallback and pressure semantics
+
+When the TypeScript quota policy is explicitly invoked for an account/model:
+
+| Signal state | Policy result |
+| --- | --- |
+| absent (`null`) | quota is unavailable; use static `tierWeight * providerBias` |
+| `stale`, `unsupported`, `auth_expired`, `rate_limited`, `network_error`, or `invalid_response` | quota is unavailable; use static pressure |
+| malformed fresh snapshot or no inference/model-applicable window | quota is unavailable; use static pressure |
+| valid fresh snapshot | `headroom = min(remainingRatio)` across inference-wide and matching model windows; `quotaFactor = sqrt(headroom)` |
+| valid fresh snapshot with `headroom = 0` | confirmed depletion; exclude that account rather than falling back to static pressure |
+
+MCP/tool-only windows never affect inference routing. A quota factor can only reduce static pressure, never boost it above declared capacity. If live pressure is unavailable, `selectAccountByQuota` deterministically compares static pressure instead. A snapshot whose provider or account identity does not match the candidate is rejected rather than used as a static fallback for that candidate, preventing a swapped observation from steering the wrong account.
+
+The Python quota module implements the same normalization, applicable-window, headroom, quota-factor, and unavailable-signal behavior. It does not currently implement the TypeScript account-selector helper, and the Hermes router does not call it; confirmed depletion therefore has no effect on Hermes routing today. See the explicit [Hermes adapter difference](../integrations/hermes/README.md#quota-signals-and-adapter-difference).
 
 ## Decision pipeline
 
@@ -229,7 +268,7 @@ At minimum, a balanced explanation should be able to answer:
 ## Known limitations
 
 - prompt token estimation is approximate
-- no real usage-pressure or depletion signal exists yet
+- no host quota collector or quota-aware shipped router integration exists yet; the optional quota policy remains an unwired substrate
 - provider bias values are heuristic
 - modifiers are intentionally global-only in v1
 
