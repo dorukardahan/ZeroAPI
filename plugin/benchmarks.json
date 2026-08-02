@@ -2,7 +2,7 @@
   "version": "3.9.3",
   "source": "Artificial Analysis Data API v2",
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
-  "fetched": "2026-07-26",
+  "fetched": "2026-08-02",
   "methodology": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
   "note": "Routeability and benchmark evidence are separate. Anthropic, Google, and API-only horizon providers are not auto-routed; see references/provider-model-status.md.",
   "prompt_options": {
@@ -264,9 +264,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.6-sol",
       "release_date": "2026-07-09",
-      "speed_tps": 73.856,
-      "ttft_seconds": 86.493,
-      "ttfa_seconds": 86.493,
+      "speed_tps": 73.203,
+      "ttft_seconds": 67.474,
+      "ttfa_seconds": 67.474,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -303,9 +303,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 64.161,
-      "ttft_seconds": 31.0,
-      "ttfa_seconds": 31.0,
+      "speed_tps": 68.675,
+      "ttft_seconds": 21.661,
+      "ttfa_seconds": 21.661,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -342,9 +342,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 65.767,
-      "ttft_seconds": 11.263,
-      "ttfa_seconds": 11.263,
+      "speed_tps": 67.545,
+      "ttft_seconds": 9.614,
+      "ttfa_seconds": 9.614,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -381,13 +381,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.6-terra",
       "release_date": "2026-07-09",
-      "speed_tps": 128.044,
-      "ttft_seconds": 110.138,
-      "ttfa_seconds": 110.138,
+      "speed_tps": 123.037,
+      "ttft_seconds": 73.333,
+      "ttfa_seconds": 73.333,
       "pricing": {
-        "price_1m_blended_3_to_1": 5.625,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 15.0
+        "price_1m_blended_3_to_1": 4.5,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 12.0
       },
       "policy_family": {
         "included": true,
@@ -459,9 +459,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 60.007,
-      "ttft_seconds": 5.28,
-      "ttfa_seconds": 5.28,
+      "speed_tps": 65.141,
+      "ttft_seconds": 5.117,
+      "ttfa_seconds": 5.117,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -537,13 +537,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 119.972,
-      "ttft_seconds": 7.701,
-      "ttfa_seconds": 7.701,
+      "speed_tps": 102.884,
+      "ttft_seconds": 10.974,
+      "ttfa_seconds": 10.974,
       "pricing": {
-        "price_1m_blended_3_to_1": 5.625,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 15.0
+        "price_1m_blended_3_to_1": 4.5,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 12.0
       },
       "policy_family": {
         "included": false,
@@ -615,13 +615,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.6-luna",
       "release_date": "2026-07-09",
-      "speed_tps": 171.41,
-      "ttft_seconds": 86.827,
-      "ttfa_seconds": 86.827,
+      "speed_tps": 161.605,
+      "ttft_seconds": 70.866,
+      "ttfa_seconds": 70.866,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.25,
-        "price_1m_input_tokens": 1.0,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 0.45,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.2
       },
       "policy_family": {
         "included": true,
@@ -693,9 +693,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 69.322,
-      "ttft_seconds": 2.798,
-      "ttfa_seconds": 2.798,
+      "speed_tps": 65.168,
+      "ttft_seconds": 2.874,
+      "ttfa_seconds": 2.874,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -732,13 +732,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 161.229,
-      "ttft_seconds": 36.093,
-      "ttfa_seconds": 36.093,
+      "speed_tps": 164.519,
+      "ttft_seconds": 19.622,
+      "ttfa_seconds": 19.622,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.25,
-        "price_1m_input_tokens": 1.0,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 0.45,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.2
       },
       "policy_family": {
         "included": false,
@@ -771,13 +771,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 114.592,
-      "ttft_seconds": 2.437,
-      "ttfa_seconds": 2.437,
+      "speed_tps": 101.948,
+      "ttft_seconds": 2.592,
+      "ttfa_seconds": 2.592,
       "pricing": {
-        "price_1m_blended_3_to_1": 5.625,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 15.0
+        "price_1m_blended_3_to_1": 4.5,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 12.0
       },
       "policy_family": {
         "included": false,
@@ -810,13 +810,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 174.314,
-      "ttft_seconds": 6.215,
-      "ttfa_seconds": 6.215,
+      "speed_tps": 152.394,
+      "ttft_seconds": 9.785,
+      "ttfa_seconds": 9.785,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.25,
-        "price_1m_input_tokens": 1.0,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 0.45,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.2
       },
       "policy_family": {
         "included": false,
@@ -849,13 +849,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 116.007,
-      "ttft_seconds": 1.781,
-      "ttfa_seconds": 1.781,
+      "speed_tps": 106.328,
+      "ttft_seconds": 1.799,
+      "ttfa_seconds": 1.799,
       "pricing": {
-        "price_1m_blended_3_to_1": 5.625,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 15.0
+        "price_1m_blended_3_to_1": 4.5,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 12.0
       },
       "policy_family": {
         "included": false,
@@ -888,9 +888,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": "gpt-5.3-codex",
       "release_date": "2026-02-05",
-      "speed_tps": 125.792,
-      "ttft_seconds": 53.33,
-      "ttfa_seconds": 53.33,
+      "speed_tps": 120.318,
+      "ttft_seconds": 35.121,
+      "ttfa_seconds": 35.121,
       "pricing": {
         "price_1m_blended_3_to_1": 4.813,
         "price_1m_input_tokens": 1.75,
@@ -1005,9 +1005,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 71.049,
-      "ttft_seconds": 1.074,
-      "ttfa_seconds": 1.074,
+      "speed_tps": 62.304,
+      "ttft_seconds": 0.953,
+      "ttfa_seconds": 0.953,
       "pricing": {
         "price_1m_blended_3_to_1": 11.25,
         "price_1m_input_tokens": 5.0,
@@ -1044,13 +1044,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 111.175,
-      "ttft_seconds": 1.301,
-      "ttfa_seconds": 1.301,
+      "speed_tps": 110.06,
+      "ttft_seconds": 1.269,
+      "ttfa_seconds": 1.269,
       "pricing": {
-        "price_1m_blended_3_to_1": 5.625,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 15.0
+        "price_1m_blended_3_to_1": 4.5,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 12.0
       },
       "policy_family": {
         "included": false,
@@ -1239,13 +1239,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 167.278,
-      "ttft_seconds": 2.558,
-      "ttfa_seconds": 2.558,
+      "speed_tps": 157.851,
+      "ttft_seconds": 2.224,
+      "ttfa_seconds": 2.224,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.25,
-        "price_1m_input_tokens": 1.0,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 0.45,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.2
       },
       "policy_family": {
         "included": false,
@@ -1342,7 +1342,7 @@
         "hle": 0.265,
         "scicode": 0.433,
         "livecodebench": 0.868,
-        "mmlu_pro": 0.87,
+        "mmlu_pro": null,
         "aime_25": 0.94,
         "math_500": null,
         "aime": null
@@ -1459,7 +1459,7 @@
         "hle": 0.265,
         "scicode": 0.429,
         "livecodebench": 0.846,
-        "mmlu_pro": 0.871,
+        "mmlu_pro": null,
         "aime_25": 0.943,
         "math_500": 0.994,
         "aime": 0.957
@@ -1512,13 +1512,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 118.747,
-      "ttft_seconds": 0.676,
-      "ttfa_seconds": 0.676,
+      "speed_tps": 103.718,
+      "ttft_seconds": 0.706,
+      "ttfa_seconds": 0.706,
       "pricing": {
-        "price_1m_blended_3_to_1": 5.625,
-        "price_1m_input_tokens": 2.5,
-        "price_1m_output_tokens": 15.0
+        "price_1m_blended_3_to_1": 4.5,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 12.0
       },
       "policy_family": {
         "included": false,
@@ -1576,7 +1576,7 @@
         "hle": 0.235,
         "scicode": 0.411,
         "livecodebench": 0.703,
-        "mmlu_pro": 0.867,
+        "mmlu_pro": null,
         "aime_25": 0.917,
         "math_500": 0.991,
         "aime": 0.917
@@ -1629,13 +1629,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 162.669,
-      "ttft_seconds": 1.275,
-      "ttfa_seconds": 1.275,
+      "speed_tps": 151.344,
+      "ttft_seconds": 1.544,
+      "ttfa_seconds": 1.544,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.25,
-        "price_1m_input_tokens": 1.0,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 0.45,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.2
       },
       "policy_family": {
         "included": false,
@@ -1732,7 +1732,7 @@
         "hle": 0.184,
         "scicode": 0.391,
         "livecodebench": 0.763,
-        "mmlu_pro": 0.86,
+        "mmlu_pro": null,
         "aime_25": 0.83,
         "math_500": 0.987,
         "aime": 0.83
@@ -1771,7 +1771,7 @@
         "hle": 0.146,
         "scicode": 0.41,
         "livecodebench": 0.692,
-        "mmlu_pro": 0.828,
+        "mmlu_pro": null,
         "aime_25": 0.85,
         "math_500": null,
         "aime": null
@@ -1824,9 +1824,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-04-16",
-      "speed_tps": 149.277,
-      "ttft_seconds": 7.348,
-      "ttfa_seconds": 7.348,
+      "speed_tps": 134.681,
+      "ttft_seconds": 5.588,
+      "ttfa_seconds": 5.588,
       "pricing": {
         "price_1m_blended_3_to_1": 3.5,
         "price_1m_input_tokens": 2.0,
@@ -2019,13 +2019,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2026-07-09",
-      "speed_tps": 162.916,
-      "ttft_seconds": 0.609,
-      "ttfa_seconds": 0.609,
+      "speed_tps": 158.145,
+      "ttft_seconds": 0.815,
+      "ttfa_seconds": 0.815,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.25,
-        "price_1m_input_tokens": 1.0,
-        "price_1m_output_tokens": 6.0
+        "price_1m_blended_3_to_1": 0.45,
+        "price_1m_input_tokens": 0.2,
+        "price_1m_output_tokens": 1.2
       },
       "policy_family": {
         "included": false,
@@ -2083,7 +2083,7 @@
         "hle": 0.073,
         "scicode": 0.404,
         "livecodebench": 0.669,
-        "mmlu_pro": 0.814,
+        "mmlu_pro": null,
         "aime_25": 0.51,
         "math_500": null,
         "aime": null
@@ -2161,7 +2161,7 @@
         "hle": 0.197,
         "scicode": 0.392,
         "livecodebench": 0.838,
-        "mmlu_pro": 0.837,
+        "mmlu_pro": null,
         "aime_25": 0.907,
         "math_500": null,
         "aime": null
@@ -2175,9 +2175,9 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 275.718,
-      "ttft_seconds": 0.52,
-      "ttfa_seconds": 7.774,
+      "speed_tps": 215.054,
+      "ttft_seconds": 0.541,
+      "ttfa_seconds": 9.841,
       "pricing": {
         "price_1m_blended_3_to_1": 0.262,
         "price_1m_input_tokens": 0.15,
@@ -2395,7 +2395,7 @@
         "hle": 0.076,
         "scicode": 0.338,
         "livecodebench": 0.763,
-        "mmlu_pro": 0.772,
+        "mmlu_pro": null,
         "aime_25": 0.783,
         "math_500": null,
         "aime": null
@@ -2551,7 +2551,7 @@
         "hle": 0.054,
         "scicode": 0.388,
         "livecodebench": 0.558,
-        "mmlu_pro": 0.806,
+        "mmlu_pro": null,
         "aime_25": 0.317,
         "math_500": 0.861,
         "aime": 0.367
@@ -2686,9 +2686,9 @@
       "ttft_seconds": null,
       "ttfa_seconds": null,
       "pricing": {
-        "price_1m_blended_3_to_1": 3.438,
-        "price_1m_input_tokens": 1.25,
-        "price_1m_output_tokens": 10.0
+        "price_1m_blended_3_to_1": null,
+        "price_1m_input_tokens": null,
+        "price_1m_output_tokens": null
       },
       "policy_family": {
         "included": false,
@@ -2707,7 +2707,7 @@
         "hle": 0.058,
         "scicode": 0.378,
         "livecodebench": 0.543,
-        "mmlu_pro": 0.82,
+        "mmlu_pro": null,
         "aime_25": 0.483,
         "math_500": null,
         "aime": null
@@ -2721,13 +2721,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 323.727,
-      "ttft_seconds": 0.577,
-      "ttfa_seconds": 6.755,
+      "speed_tps": 250.457,
+      "ttft_seconds": 0.543,
+      "ttfa_seconds": 8.529,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.262,
+        "price_1m_blended_3_to_1": 0.261,
         "price_1m_input_tokens": 0.15,
-        "price_1m_output_tokens": 0.6
+        "price_1m_output_tokens": 0.595
       },
       "policy_family": {
         "included": false,
@@ -2760,12 +2760,12 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 242.744,
-      "ttft_seconds": 0.44,
-      "ttfa_seconds": 8.679,
+      "speed_tps": 190.475,
+      "ttft_seconds": 0.578,
+      "ttfa_seconds": 11.078,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.095,
-        "price_1m_input_tokens": 0.06,
+        "price_1m_blended_3_to_1": 0.103,
+        "price_1m_input_tokens": 0.07,
         "price_1m_output_tokens": 0.2
       },
       "policy_family": {
@@ -2785,7 +2785,7 @@
         "hle": 0.098,
         "scicode": 0.344,
         "livecodebench": 0.777,
-        "mmlu_pro": 0.748,
+        "mmlu_pro": null,
         "aime_25": 0.893,
         "math_500": null,
         "aime": null
@@ -2863,7 +2863,7 @@
         "hle": 0.05,
         "scicode": 0.369,
         "livecodebench": 0.545,
-        "mmlu_pro": 0.775,
+        "mmlu_pro": null,
         "aime_25": 0.467,
         "math_500": null,
         "aime": null
@@ -2877,13 +2877,13 @@
       "openclaw_provider": "openai-codex",
       "openclaw_model": null,
       "release_date": "2025-08-05",
-      "speed_tps": 273.041,
-      "ttft_seconds": 0.46,
-      "ttfa_seconds": 7.785,
+      "speed_tps": 190.739,
+      "ttft_seconds": 0.618,
+      "ttfa_seconds": 11.103,
       "pricing": {
-        "price_1m_blended_3_to_1": 0.103,
+        "price_1m_blended_3_to_1": 0.109,
         "price_1m_input_tokens": 0.07,
-        "price_1m_output_tokens": 0.2
+        "price_1m_output_tokens": 0.225
       },
       "policy_family": {
         "included": false,
@@ -3253,7 +3253,7 @@
         "hle": 0.041,
         "scicode": 0.291,
         "livecodebench": 0.47,
-        "mmlu_pro": 0.556,
+        "mmlu_pro": null,
         "aime_25": 0.273,
         "math_500": null,
         "aime": null
@@ -3533,16 +3533,16 @@
       }
     },
     {
-      "name": "Kimi K3",
+      "name": "Kimi K3 (max)",
       "slug": "kimi-k3",
       "id": "f7d2fc3e-1f7b-405f-818c-07952a4af78f",
       "creator": "Kimi",
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2026-07-16",
-      "speed_tps": 33.073,
-      "ttft_seconds": 102.958,
-      "ttfa_seconds": 163.432,
+      "speed_tps": 33.035,
+      "ttft_seconds": 5.097,
+      "ttfa_seconds": 65.639,
       "pricing": {
         "price_1m_blended_3_to_1": 6.0,
         "price_1m_input_tokens": 3.0,
@@ -3564,6 +3564,45 @@
         "lcr": 0.747,
         "hle": 0.443,
         "scicode": 0.587,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "Kimi K3 (low)",
+      "slug": "kimi-k3-low",
+      "id": "512d17ef-13d2-4f65-bf9b-154b0dec7e8d",
+      "creator": "Kimi",
+      "openclaw_provider": "moonshot",
+      "openclaw_model": null,
+      "release_date": "2026-07-16",
+      "speed_tps": 30.795,
+      "ttft_seconds": 3.479,
+      "ttfa_seconds": 68.424,
+      "pricing": {
+        "price_1m_blended_3_to_1": 6.0,
+        "price_1m_input_tokens": 3.0,
+        "price_1m_output_tokens": 15.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 46.6,
+        "coding": 72.0,
+        "math": null,
+        "tau2": null,
+        "tau3_banking": 0.34,
+        "terminalbench": 0.824,
+        "ifbench": null,
+        "gpqa": 0.842,
+        "lcr": 0.693,
+        "hle": 0.24,
+        "scicode": 0.512,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,
@@ -3618,9 +3657,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": "kimi-k2.7-code",
       "release_date": "2026-06-12",
-      "speed_tps": 44.558,
-      "ttft_seconds": 1.277,
-      "ttfa_seconds": 51.301,
+      "speed_tps": 39.167,
+      "ttft_seconds": 1.206,
+      "ttfa_seconds": 58.117,
       "pricing": {
         "price_1m_blended_3_to_1": 1.712,
         "price_1m_input_tokens": 0.95,
@@ -3696,9 +3735,9 @@
       "openclaw_provider": "moonshot",
       "openclaw_model": null,
       "release_date": "2026-04-20",
-      "speed_tps": 28.782,
-      "ttft_seconds": 1.451,
-      "ttfa_seconds": 1.451,
+      "speed_tps": 39.871,
+      "ttft_seconds": 1.173,
+      "ttfa_seconds": 1.173,
       "pricing": {
         "price_1m_blended_3_to_1": 1.712,
         "price_1m_input_tokens": 0.95,
@@ -3877,7 +3916,7 @@
         "hle": 0.07,
         "scicode": 0.345,
         "livecodebench": 0.556,
-        "mmlu_pro": 0.824,
+        "mmlu_pro": null,
         "aime_25": 0.57,
         "math_500": 0.971,
         "aime": 0.693
@@ -3930,9 +3969,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": "glm-5.2",
       "release_date": "2026-06-16",
-      "speed_tps": 156.68,
-      "ttft_seconds": 0.906,
-      "ttfa_seconds": 13.671,
+      "speed_tps": 141.759,
+      "ttft_seconds": 0.948,
+      "ttfa_seconds": 15.057,
       "pricing": {
         "price_1m_blended_3_to_1": 2.15,
         "price_1m_input_tokens": 1.4,
@@ -3973,8 +4012,8 @@
       "ttft_seconds": null,
       "ttfa_seconds": null,
       "pricing": {
-        "price_1m_blended_3_to_1": 2.143,
-        "price_1m_input_tokens": 1.39,
+        "price_1m_blended_3_to_1": 2.135,
+        "price_1m_input_tokens": 1.38,
         "price_1m_output_tokens": 4.4
       },
       "policy_family": {
@@ -4164,9 +4203,9 @@
       "openclaw_provider": "zai",
       "openclaw_model": null,
       "release_date": "2026-06-16",
-      "speed_tps": 85.679,
-      "ttft_seconds": 1.86,
-      "ttfa_seconds": 1.86,
+      "speed_tps": 123.132,
+      "ttft_seconds": 1.595,
+      "ttfa_seconds": 1.595,
       "pricing": {
         "price_1m_blended_3_to_1": 2.076,
         "price_1m_input_tokens": 1.351,
@@ -4228,7 +4267,7 @@
         "hle": 0.251,
         "scicode": 0.451,
         "livecodebench": 0.894,
-        "mmlu_pro": 0.856,
+        "mmlu_pro": null,
         "aime_25": 0.95,
         "math_500": null,
         "aime": null
@@ -4540,7 +4579,7 @@
         "hle": 0.068,
         "scicode": 0.306,
         "livecodebench": 0.684,
-        "mmlu_pro": 0.815,
+        "mmlu_pro": null,
         "aime_25": 0.807,
         "math_500": 0.965,
         "aime": 0.673
@@ -4710,9 +4749,9 @@
       "openclaw_provider": "minimax-portal",
       "openclaw_model": "MiniMax-M3",
       "release_date": "2026-06-01",
-      "speed_tps": 86.628,
-      "ttft_seconds": 1.186,
-      "ttfa_seconds": 24.273,
+      "speed_tps": 89.19,
+      "ttft_seconds": 1.839,
+      "ttfa_seconds": 24.263,
       "pricing": {
         "price_1m_blended_3_to_1": 0.525,
         "price_1m_input_tokens": 0.3,
@@ -4969,7 +5008,7 @@
         "hle": 0.075,
         "scicode": 0.378,
         "livecodebench": 0.657,
-        "mmlu_pro": 0.808,
+        "mmlu_pro": null,
         "aime_25": 0.137,
         "math_500": 0.972,
         "aime": 0.813
@@ -4983,9 +5022,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": "qwen3.7-max",
       "release_date": "2026-05-19",
-      "speed_tps": 199.573,
-      "ttft_seconds": 1.603,
-      "ttfa_seconds": 13.674,
+      "speed_tps": 198.26,
+      "ttft_seconds": 1.561,
+      "ttfa_seconds": 13.712,
       "pricing": {
         "price_1m_blended_3_to_1": 3.75,
         "price_1m_input_tokens": 2.5,
@@ -5061,9 +5100,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": "qwen3.6-plus",
       "release_date": "2026-04-02",
-      "speed_tps": 52.634,
-      "ttft_seconds": 1.638,
-      "ttfa_seconds": 107.083,
+      "speed_tps": 55.411,
+      "ttft_seconds": 1.551,
+      "ttfa_seconds": 101.713,
       "pricing": {
         "price_1m_blended_3_to_1": 1.125,
         "price_1m_input_tokens": 0.5,
@@ -5100,9 +5139,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": "qwen3.7-plus",
       "release_date": "2026-06-01",
-      "speed_tps": 52.844,
-      "ttft_seconds": 1.725,
-      "ttfa_seconds": 39.572,
+      "speed_tps": 52.268,
+      "ttft_seconds": 1.709,
+      "ttfa_seconds": 39.973,
       "pricing": {
         "price_1m_blended_3_to_1": 0.7,
         "price_1m_input_tokens": 0.4,
@@ -5139,9 +5178,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-04-22",
-      "speed_tps": 58.427,
-      "ttft_seconds": 1.429,
-      "ttfa_seconds": 98.576,
+      "speed_tps": 56.213,
+      "ttft_seconds": 1.404,
+      "ttfa_seconds": 102.378,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -5217,9 +5256,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-02-16",
-      "speed_tps": 66.31,
-      "ttft_seconds": 1.553,
-      "ttfa_seconds": 49.6,
+      "speed_tps": 62.88,
+      "ttft_seconds": 1.569,
+      "ttfa_seconds": 52.237,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -5256,9 +5295,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 135.337,
-      "ttft_seconds": 1.001,
-      "ttfa_seconds": 15.779,
+      "speed_tps": 138.104,
+      "ttft_seconds": 0.989,
+      "ttfa_seconds": 15.471,
       "pricing": {
         "price_1m_blended_3_to_1": 1.1,
         "price_1m_input_tokens": 0.4,
@@ -5295,9 +5334,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-02-16",
-      "speed_tps": 64.103,
-      "ttft_seconds": 1.391,
-      "ttfa_seconds": 1.391,
+      "speed_tps": 60.117,
+      "ttft_seconds": 1.488,
+      "ttfa_seconds": 1.488,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -5373,9 +5412,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-04-16",
-      "speed_tps": 149.207,
-      "ttft_seconds": 1.185,
-      "ttfa_seconds": 37.343,
+      "speed_tps": 109.744,
+      "ttft_seconds": 1.323,
+      "ttfa_seconds": 50.482,
       "pricing": {
         "price_1m_blended_3_to_1": 0.557,
         "price_1m_input_tokens": 0.248,
@@ -5412,9 +5451,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-03-30",
-      "speed_tps": 52.406,
-      "ttft_seconds": 1.263,
-      "ttfa_seconds": 1.263,
+      "speed_tps": 51.599,
+      "ttft_seconds": 1.392,
+      "ttfa_seconds": 1.392,
       "pricing": {
         "price_1m_blended_3_to_1": 1.5,
         "price_1m_input_tokens": 0.4,
@@ -5451,9 +5490,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-04-22",
-      "speed_tps": 57.096,
-      "ttft_seconds": 1.441,
-      "ttfa_seconds": 1.441,
+      "speed_tps": 57.852,
+      "ttft_seconds": 1.43,
+      "ttfa_seconds": 1.43,
       "pricing": {
         "price_1m_blended_3_to_1": 1.35,
         "price_1m_input_tokens": 0.6,
@@ -5568,9 +5607,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 152.33,
-      "ttft_seconds": 1.014,
-      "ttfa_seconds": 1.014,
+      "speed_tps": 151.443,
+      "ttft_seconds": 1.004,
+      "ttfa_seconds": 1.004,
       "pricing": {
         "price_1m_blended_3_to_1": 1.1,
         "price_1m_input_tokens": 0.4,
@@ -5646,9 +5685,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-04-16",
-      "speed_tps": 158.085,
-      "ttft_seconds": 1.419,
-      "ttfa_seconds": 1.419,
+      "speed_tps": 114.585,
+      "ttft_seconds": 1.36,
+      "ttfa_seconds": 1.36,
       "pricing": {
         "price_1m_blended_3_to_1": 0.844,
         "price_1m_input_tokens": 0.375,
@@ -5685,9 +5724,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-02-24",
-      "speed_tps": 160.861,
-      "ttft_seconds": 1.161,
-      "ttfa_seconds": 1.161,
+      "speed_tps": 170.004,
+      "ttft_seconds": 1.075,
+      "ttfa_seconds": 1.075,
       "pricing": {
         "price_1m_blended_3_to_1": 0.688,
         "price_1m_input_tokens": 0.25,
@@ -5763,9 +5802,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 50.442,
-      "ttft_seconds": 1.217,
-      "ttfa_seconds": 40.867,
+      "speed_tps": 64.779,
+      "ttft_seconds": 1.1,
+      "ttfa_seconds": 31.975,
       "pricing": {
         "price_1m_blended_3_to_1": 0.151,
         "price_1m_input_tokens": 0.135,
@@ -5802,9 +5841,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-02-03",
-      "speed_tps": 123.806,
-      "ttft_seconds": 0.968,
-      "ttfa_seconds": 0.968,
+      "speed_tps": 126.312,
+      "ttft_seconds": 0.928,
+      "ttfa_seconds": 0.928,
       "pricing": {
         "price_1m_blended_3_to_1": 0.563,
         "price_1m_input_tokens": 0.35,
@@ -5919,9 +5958,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 29.741,
-      "ttft_seconds": 0.466,
-      "ttfa_seconds": 67.712,
+      "speed_tps": 29.212,
+      "ttft_seconds": 0.447,
+      "ttfa_seconds": 68.913,
       "pricing": {
         "price_1m_blended_3_to_1": 0.06,
         "price_1m_input_tokens": 0.03,
@@ -5938,15 +5977,15 @@
         "tau2": 0.921,
         "tau3_banking": 0.082,
         "terminalbench": 0.258,
-        "ifbench": 0.502,
-        "gpqa": 0.68,
+        "ifbench": 0.52,
+        "gpqa": 0.771,
         "lcr": 0.557,
         "hle": 0.078,
         "scicode": 0.161,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,
-        "math_500": 0.731,
+        "math_500": null,
         "aime": null
       }
     },
@@ -5983,7 +6022,7 @@
         "hle": 0.15,
         "scicode": 0.424,
         "livecodebench": 0.788,
-        "mmlu_pro": 0.843,
+        "mmlu_pro": null,
         "aime_25": 0.91,
         "math_500": 0.984,
         "aime": 0.94
@@ -6036,9 +6075,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-03-30",
-      "speed_tps": 226.363,
-      "ttft_seconds": 0.949,
-      "ttfa_seconds": 0.949,
+      "speed_tps": 241.982,
+      "ttft_seconds": 0.934,
+      "ttfa_seconds": 0.934,
       "pricing": {
         "price_1m_blended_3_to_1": 0.275,
         "price_1m_input_tokens": 0.1,
@@ -6100,7 +6139,7 @@
         "hle": 0.106,
         "scicode": 0.36,
         "livecodebench": 0.524,
-        "mmlu_pro": 0.828,
+        "mmlu_pro": null,
         "aime_25": 0.717,
         "math_500": 0.98,
         "aime": 0.717
@@ -6192,9 +6231,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2025-09-11",
-      "speed_tps": 182.107,
-      "ttft_seconds": 1.104,
-      "ttfa_seconds": 12.087,
+      "speed_tps": 202.374,
+      "ttft_seconds": 1.13,
+      "ttfa_seconds": 11.012,
       "pricing": {
         "price_1m_blended_3_to_1": 1.875,
         "price_1m_input_tokens": 0.5,
@@ -6217,7 +6256,7 @@
         "hle": 0.117,
         "scicode": 0.388,
         "livecodebench": 0.784,
-        "mmlu_pro": 0.824,
+        "mmlu_pro": null,
         "aime_25": 0.843,
         "math_500": null,
         "aime": null
@@ -6231,9 +6270,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2026-03-02",
-      "speed_tps": 23.941,
-      "ttft_seconds": 0.664,
-      "ttfa_seconds": 0.664,
+      "speed_tps": 19.868,
+      "ttft_seconds": 0.649,
+      "ttfa_seconds": 0.649,
       "pricing": {
         "price_1m_blended_3_to_1": 0.06,
         "price_1m_input_tokens": 0.03,
@@ -6295,7 +6334,7 @@
         "hle": 0.098,
         "scicode": 0.333,
         "livecodebench": 0.707,
-        "mmlu_pro": 0.805,
+        "mmlu_pro": null,
         "aime_25": 0.563,
         "math_500": 0.976,
         "aime": 0.907
@@ -6348,9 +6387,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2025-09-11",
-      "speed_tps": 190.669,
-      "ttft_seconds": 1.012,
-      "ttfa_seconds": 1.012,
+      "speed_tps": 186.478,
+      "ttft_seconds": 0.985,
+      "ttfa_seconds": 0.985,
       "pricing": {
         "price_1m_blended_3_to_1": 0.875,
         "price_1m_input_tokens": 0.5,
@@ -6568,7 +6607,7 @@
         "hle": 0.059,
         "scicode": 0.256,
         "livecodebench": 0.641,
-        "mmlu_pro": 0.743,
+        "mmlu_pro": null,
         "aime_25": 0.827,
         "math_500": null,
         "aime": null
@@ -6607,7 +6646,7 @@
         "hle": 0.083,
         "scicode": 0.354,
         "livecodebench": 0.546,
-        "mmlu_pro": 0.798,
+        "mmlu_pro": null,
         "aime_25": 0.73,
         "math_500": 0.961,
         "aime": 0.807
@@ -6763,7 +6802,7 @@
         "hle": 0.043,
         "scicode": 0.316,
         "livecodebench": 0.523,
-        "mmlu_pro": 0.774,
+        "mmlu_pro": null,
         "aime_25": 0.557,
         "math_500": 0.961,
         "aime": 0.763
@@ -6894,9 +6933,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2025-09-22",
-      "speed_tps": 107.897,
-      "ttft_seconds": 0.915,
-      "ttfa_seconds": 19.452,
+      "speed_tps": 107.214,
+      "ttft_seconds": 0.928,
+      "ttfa_seconds": 19.582,
       "pricing": {
         "price_1m_blended_3_to_1": 0.43,
         "price_1m_input_tokens": 0.25,
@@ -7192,7 +7231,7 @@
         "hle": 0.042,
         "scicode": 0.226,
         "livecodebench": 0.406,
-        "mmlu_pro": 0.743,
+        "mmlu_pro": null,
         "aime_25": 0.19,
         "math_500": 0.904,
         "aime": 0.747
@@ -7233,6 +7272,45 @@
         "livecodebench": 0.32,
         "mmlu_pro": 0.7,
         "aime_25": 0.257,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "Qwen3.5 2B (Reasoning)",
+      "slug": "qwen3-5-2b",
+      "id": "5d4acc80-7a88-4e84-bfe7-99071b84e6a4",
+      "creator": "Alibaba",
+      "openclaw_provider": "qwen",
+      "openclaw_model": null,
+      "release_date": "2026-03-02",
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "ttfa_seconds": null,
+      "pricing": {
+        "price_1m_blended_3_to_1": null,
+        "price_1m_input_tokens": null,
+        "price_1m_output_tokens": null
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 7.6,
+        "coding": 2.9,
+        "math": null,
+        "tau2": 0.69,
+        "tau3_banking": 0.025,
+        "terminalbench": 0.03,
+        "ifbench": 0.315,
+        "gpqa": 0.456,
+        "lcr": 0.237,
+        "hle": 0.021,
+        "scicode": 0.028,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
         "math_500": null,
         "aime": null
       }
@@ -7391,45 +7469,6 @@
         "aime_25": 0.58,
         "math_500": 0.871,
         "aime": 0.28
-      }
-    },
-    {
-      "name": "Qwen3.5 2B (Reasoning)",
-      "slug": "qwen3-5-2b",
-      "id": "5d4acc80-7a88-4e84-bfe7-99071b84e6a4",
-      "creator": "Alibaba",
-      "openclaw_provider": "qwen",
-      "openclaw_model": null,
-      "release_date": "2026-03-02",
-      "speed_tps": null,
-      "ttft_seconds": null,
-      "ttfa_seconds": null,
-      "pricing": {
-        "price_1m_blended_3_to_1": null,
-        "price_1m_input_tokens": null,
-        "price_1m_output_tokens": null
-      },
-      "policy_family": {
-        "included": false,
-        "family_id": null
-      },
-      "benchmarks": {
-        "intelligence": 6.9,
-        "coding": 2.9,
-        "math": null,
-        "tau2": 0.69,
-        "tau3_banking": 0.025,
-        "terminalbench": 0.03,
-        "ifbench": 0.304,
-        "gpqa": 0.325,
-        "lcr": 0.237,
-        "hle": 0.021,
-        "scicode": 0.028,
-        "livecodebench": null,
-        "mmlu_pro": null,
-        "aime_25": null,
-        "math_500": 0.43,
-        "aime": null
       }
     },
     {
@@ -7654,15 +7693,15 @@
         "tau2": 0.477,
         "tau3_banking": null,
         "terminalbench": null,
-        "ifbench": 0.209,
-        "gpqa": 0.12,
+        "ifbench": 0.215,
+        "gpqa": 0.111,
         "lcr": 0.053,
         "hle": 0.012,
         "scicode": null,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,
-        "math_500": 0.093,
+        "math_500": null,
         "aime": null
       }
     },
@@ -7713,9 +7752,9 @@
       "openclaw_provider": "qwen",
       "openclaw_model": null,
       "release_date": "2025-09-22",
-      "speed_tps": 107.958,
-      "ttft_seconds": 0.922,
-      "ttfa_seconds": 0.922,
+      "speed_tps": 108.266,
+      "ttft_seconds": 0.892,
+      "ttfa_seconds": 0.892,
       "pricing": {
         "price_1m_blended_3_to_1": 0.43,
         "price_1m_input_tokens": 0.25,
@@ -8142,9 +8181,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-07-08",
-      "speed_tps": 55.839,
-      "ttft_seconds": 12.627,
-      "ttfa_seconds": 12.627,
+      "speed_tps": 52.786,
+      "ttft_seconds": 9.672,
+      "ttfa_seconds": 9.672,
       "pricing": {
         "price_1m_blended_3_to_1": 3.0,
         "price_1m_input_tokens": 2.0,
@@ -8337,9 +8376,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-04-30",
-      "speed_tps": 100.8,
-      "ttft_seconds": 21.626,
-      "ttfa_seconds": 21.626,
+      "speed_tps": 129.946,
+      "ttft_seconds": 14.969,
+      "ttfa_seconds": 14.969,
       "pricing": {
         "price_1m_blended_3_to_1": 1.563,
         "price_1m_input_tokens": 1.25,
@@ -8376,9 +8415,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-04-30",
-      "speed_tps": 92.977,
-      "ttft_seconds": 8.883,
-      "ttfa_seconds": 8.883,
+      "speed_tps": 143.687,
+      "ttft_seconds": 4.782,
+      "ttfa_seconds": 4.782,
       "pricing": {
         "price_1m_blended_3_to_1": 1.563,
         "price_1m_input_tokens": 1.25,
@@ -8532,9 +8571,9 @@
       "openclaw_provider": "xai-oauth",
       "openclaw_model": null,
       "release_date": "2026-04-30",
-      "speed_tps": 96.112,
-      "ttft_seconds": 1.314,
-      "ttfa_seconds": 1.314,
+      "speed_tps": 132.89,
+      "ttft_seconds": 0.664,
+      "ttfa_seconds": 0.664,
       "pricing": {
         "price_1m_blended_3_to_1": 1.563,
         "price_1m_input_tokens": 1.25,
