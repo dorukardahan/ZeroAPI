@@ -511,14 +511,14 @@ def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
     changes: list[str] = []
     text = source
 
-    route_call_marker = "agent._apply_pre_model_route_hook(\n        original_user_message,"
+    route_call_marker = 'callable(getattr(agent, "_apply_pre_model_route_hook", None))'
     if route_call_marker not in text:
         anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
         if anchor not in text:
             raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
         text = text.replace(
             anchor,
-            '''    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
+            '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):\n        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None\n    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
             1,
         )
         changes.append("inserted pre_model_route call before system prompt")
@@ -546,6 +546,8 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
     marker = "# ZeroAPI compatibility: route before prompt restoration."
     anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
     route_block = '''    # ZeroAPI compatibility: route before prompt restoration.
+    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
+        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
     agent._apply_pre_model_route_hook(
         original_user_message,
         messages,
@@ -577,6 +579,8 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
             raise ValueError("Could not locate existing v0.19 pre_model_route turn block.")
         existing_block = text[start:end]
         required_contract = (
+            'if not callable(getattr(agent, "_apply_pre_model_route_hook", None))',
+            "agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None",
             "agent._apply_pre_model_route_hook(",
             'getattr(agent, "_pre_model_route_switched_this_turn", False)',
             "agent._cached_system_prompt = None",

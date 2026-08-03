@@ -434,9 +434,25 @@ VALID_HOOKS = {
         self.assertIn("inserted pre_model_route call before system prompt", changes)
         self.assertIn("guarded stored system_prompt reuse after route switch", changes)
         self.assertIn("guarded on_session_start on continuation prompt rebuild", changes)
+        self.assertIn('if not callable(getattr(agent, "_apply_pre_model_route_hook", None))', patched)
+        self.assertIn("agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None", patched)
         self.assertIn("agent._apply_pre_model_route_hook(\n        original_user_message,", patched)
         self.assertIn('not getattr(agent, "_pre_model_route_switched_this_turn", False)', patched)
         self.assertIn("if not conversation_history:", patched)
+
+    def test_modular_conversation_loop_patch_allows_minimal_fake_agent(self):
+        patched, _ = patch_conversation_loop_source(UPSTREAM_MODULAR_CONVERSATION_LOOP)
+        namespace = {
+            "logger": mock.Mock(),
+            "_summarize_user_message_for_log": lambda message: message,
+        }
+        exec(compile(patched, "conversation_loop.py", "exec"), namespace)
+        agent = types.SimpleNamespace(
+            quiet_mode=True,
+            _cached_system_prompt="cached",
+        )
+
+        namespace["run_conversation"](agent, "hello")
 
     def test_modular_conversation_loop_patch_is_idempotent(self):
         patched, changes = patch_conversation_loop_source(UPSTREAM_MODULAR_CONVERSATION_LOOP)
@@ -457,6 +473,30 @@ VALID_HOOKS = {
         self.assertLess(route_index, prompt_index)
         self.assertIn("from agent.auxiliary_client import set_runtime_main", patched)
         self.assertIn("agent._cached_system_prompt = None", patched)
+        self.assertIn('if not callable(getattr(agent, "_apply_pre_model_route_hook", None))', patched)
+        self.assertIn("agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None", patched)
+
+    def test_v019_turn_context_patch_allows_minimal_fake_agent(self):
+        patched, _ = patch_turn_context_source(UPSTREAM_V019_TURN_CONTEXT)
+        namespace = {}
+        exec(compile(patched, "turn_context.py", "exec"), namespace)
+        agent = types.SimpleNamespace(
+            quiet_mode=True,
+            _cached_system_prompt="cached",
+        )
+
+        result = namespace["build_turn_context"](
+            agent,
+            "hello",
+            None,
+            None,
+            None,
+            None,
+            None,
+            restore_or_build_system_prompt=lambda *_args, **_kwargs: None,
+        )
+
+        self.assertEqual(result[0], "hello")
 
     def test_v019_turn_context_upgrades_legacy_marker_only_block(self):
         anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
