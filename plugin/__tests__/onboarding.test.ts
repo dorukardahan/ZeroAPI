@@ -89,7 +89,7 @@ describe("buildStarterConfig", () => {
     expect(config.models["openai/gpt-5.6-terra"]?.context_window).toBe(372000);
     expect(config.models["openai/gpt-5.6-luna"]?.context_window).toBe(372000);
     // buildStarterConfig copies the committed direct GPT-5.6 Sol row, not the legacy proxy.
-    expect(config.models["openai/gpt-5.6-sol"]?.speed_tps).toBe(sol.speed_tps ?? undefined);
+    expect(config.models["openai/gpt-5.6-sol"]?.speed_tps).toBe(sol.speed_tps);
     expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.terminalbench).toBe(
       sol.benchmarks.terminalbench ?? undefined,
     );
