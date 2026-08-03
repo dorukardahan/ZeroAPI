@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildStarterConfig,
@@ -7,6 +8,30 @@ import {
   summarizeStarterConfig,
 } from "../onboarding.js";
 import { getSubscriptionWeightedCandidates } from "../router.js";
+
+type DirectBenchmarkRow = {
+  openclaw_provider: string;
+  openclaw_model: string;
+  speed_tps: number | null;
+  benchmarks: {
+    terminalbench: number | null;
+    tau3_banking: number | null;
+  };
+};
+
+const DIRECT_BENCHMARK_ROWS = (
+  JSON.parse(readFileSync(new URL("../benchmarks.json", import.meta.url), "utf8")) as {
+    models: DirectBenchmarkRow[];
+  }
+).models;
+
+function directOpenAiBenchmarkRow(model: string): DirectBenchmarkRow {
+  const row = DIRECT_BENCHMARK_ROWS.find(
+    (candidate) => candidate.openclaw_provider === "openai-codex" && candidate.openclaw_model === model,
+  );
+  if (!row) throw new Error(`Missing direct OpenAI benchmark row for ${model}`);
+  return row;
+}
 
 describe("buildStarterConfig", () => {
   it("builds the mixed OpenAI + GLM starter pool without OpenAI mini", () => {
@@ -50,6 +75,9 @@ describe("buildStarterConfig", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "openai-codex", tierId: "plus" }],
     });
+    const sol = directOpenAiBenchmarkRow("gpt-5.6-sol");
+    const terra = directOpenAiBenchmarkRow("gpt-5.6-terra");
+    const luna = directOpenAiBenchmarkRow("gpt-5.6-luna");
 
     expect(Object.keys(config.models)).toEqual([
       "openai/gpt-5.6-sol",
@@ -61,11 +89,19 @@ describe("buildStarterConfig", () => {
     expect(config.models["openai/gpt-5.6-terra"]?.context_window).toBe(372000);
     expect(config.models["openai/gpt-5.6-luna"]?.context_window).toBe(372000);
     // buildStarterConfig copies the committed direct GPT-5.6 Sol row, not the legacy proxy.
-    expect(config.models["openai/gpt-5.6-sol"]?.speed_tps).toBe(73.856);
-    expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.terminalbench).toBe(0.88);
-    expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.tau3_banking).toBe(0.33);
-    expect(config.models["openai/gpt-5.6-terra"]?.benchmarks.terminalbench).toBe(0.88);
-    expect(config.models["openai/gpt-5.6-luna"]?.benchmarks.terminalbench).toBe(0.809);
+    expect(config.models["openai/gpt-5.6-sol"]?.speed_tps).toBe(sol.speed_tps);
+    expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.terminalbench).toBe(
+      sol.benchmarks.terminalbench ?? undefined,
+    );
+    expect(config.models["openai/gpt-5.6-sol"]?.benchmarks.tau3_banking).toBe(
+      sol.benchmarks.tau3_banking ?? undefined,
+    );
+    expect(config.models["openai/gpt-5.6-terra"]?.benchmarks.terminalbench).toBe(
+      terra.benchmarks.terminalbench ?? undefined,
+    );
+    expect(config.models["openai/gpt-5.6-luna"]?.benchmarks.terminalbench).toBe(
+      luna.benchmarks.terminalbench ?? undefined,
+    );
     expect(config.fast_ttft_max_seconds).toBe(8);
   });
 
