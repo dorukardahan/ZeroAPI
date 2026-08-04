@@ -511,17 +511,33 @@ def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
     changes: list[str] = []
     text = source
 
-    route_call_marker = 'callable(getattr(agent, "_apply_pre_model_route_hook", None))'
-    if route_call_marker not in text:
-        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
-        if anchor not in text:
-            raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
-        text = text.replace(
-            anchor,
-            '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):\n        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None\n    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
-            1,
-        )
-        changes.append("inserted pre_model_route call before system prompt")
+    route_guard_marker = 'callable(getattr(agent, "_apply_pre_model_route_hook", None))'
+    legacy_route_block = '''    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+'''
+    if route_guard_marker not in text:
+        legacy_route_count = text.count(legacy_route_block)
+        if legacy_route_count > 1:
+            raise ValueError("Found multiple modular pre_model_route calls; refusing ambiguous upgrade.")
+        if legacy_route_count == 1:
+            guarded_route_block = '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
+        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
+''' + legacy_route_block
+            text = text.replace(legacy_route_block, guarded_route_block, 1)
+            changes.append("upgraded modular pre_model_route call guard")
+        else:
+            anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+            if anchor not in text:
+                raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
+            text = text.replace(
+                anchor,
+                '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):\n        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None\n    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
+                1,
+            )
+            changes.append("inserted pre_model_route call before system prompt")
 
     text, prompt_changes = _patch_conversation_prompt_restore_source(
         text,

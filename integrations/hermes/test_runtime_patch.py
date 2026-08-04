@@ -463,6 +463,33 @@ VALID_HOOKS = {
         self.assertEqual(second_changes, [])
         self.assertEqual(patched_again, patched)
 
+    def test_modular_conversation_loop_upgrades_legacy_direct_hook_without_duplication(self):
+        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+        legacy_block = '''    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+
+'''
+        legacy = UPSTREAM_MODULAR_CONVERSATION_LOOP.replace(
+            anchor,
+            legacy_block + anchor,
+            1,
+        )
+
+        upgraded, changes = patch_conversation_loop_source(legacy)
+
+        self.assertEqual(
+            upgraded.count("agent._apply_pre_model_route_hook(\n        original_user_message,"),
+            1,
+        )
+        self.assertIn("upgraded modular pre_model_route call guard", changes)
+        self.assertIn('if not callable(getattr(agent, "_apply_pre_model_route_hook", None))', upgraded)
+        upgraded_again, second_changes = patch_conversation_loop_source(upgraded)
+        self.assertEqual(second_changes, [])
+        self.assertEqual(upgraded_again, upgraded)
+
     def test_patches_v019_turn_context_before_prompt_build_and_resyncs_aux_runtime(self):
         patched, changes = patch_turn_context_source(UPSTREAM_V019_TURN_CONTEXT)
 
