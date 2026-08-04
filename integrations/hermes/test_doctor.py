@@ -124,7 +124,7 @@ class AIAgent:
 '''
 
 
-CONVERSATION_LOOP_PATCHED = '''
+CONVERSATION_LOOP_UNGUARDED = '''
 def run_conversation(agent, user_message, conversation_history):
     original_user_message = user_message
     messages = list(conversation_history or [])
@@ -146,6 +146,15 @@ def run_conversation(agent, user_message, conversation_history):
     if agent._cached_system_prompt is None:
         agent._cached_system_prompt = agent._build_system_prompt()
 '''
+
+CONVERSATION_LOOP_PATCHED = CONVERSATION_LOOP_UNGUARDED.replace(
+    "    agent._apply_pre_model_route_hook(\n",
+    '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
+        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
+    agent._apply_pre_model_route_hook(
+''',
+    1,
+)
 
 
 V019_CONVERSATION_LOOP_UNGUARDED = '''
@@ -175,7 +184,7 @@ V019_CONVERSATION_LOOP = V019_CONVERSATION_LOOP_UNGUARDED.replace(
 )
 
 
-TURN_CONTEXT_PATCHED = '''
+TURN_CONTEXT_UNGUARDED = '''
 def build_turn_context(agent, user_message, conversation_history):
     original_user_message = user_message
     messages = list(conversation_history or [])
@@ -191,6 +200,15 @@ def build_turn_context(agent, user_message, conversation_history):
     if agent._cached_system_prompt is None:
         agent._cached_system_prompt = agent._build_system_prompt()
 '''
+
+TURN_CONTEXT_PATCHED = TURN_CONTEXT_UNGUARDED.replace(
+    "    agent._apply_pre_model_route_hook(\n",
+    '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
+        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
+    agent._apply_pre_model_route_hook(
+''',
+    1,
+)
 
 
 DELEGATE_TOOL_NO_NORMALIZATION = '''
@@ -483,6 +501,25 @@ if False:
         )
 
         self.assertNotIn("FAIL", levels(checks))
+
+    def test_fails_when_modular_route_call_has_only_a_comment_spoofing_the_noop_guard(self):
+        spoofed = CONVERSATION_LOOP_UNGUARDED.replace(
+            "    agent._apply_pre_model_route_hook(\n",
+            '''    # callable(getattr(agent, "_apply_pre_model_route_hook", None))
+    agent._apply_pre_model_route_hook(
+''',
+            1,
+        )
+        checks = analyze_runtime_sources(
+            valid_hooks={"pre_model_route"},
+            plugins_source=PLUGINS_WITH_DISCOVERY,
+            run_agent_source=RUN_AGENT_MODULAR_PATCHED,
+            conversation_loop_source=spoofed,
+            delegate_tool_source=DELEGATE_TOOL_PATCHED,
+        )
+
+        self.assertIn("FAIL", levels(checks))
+        self.assertTrue(any("no-op guard" in message for message in messages(checks)))
 
     def test_passes_when_modular_turn_context_invokes_and_refreshes_prompt_cache(self):
         checks = analyze_runtime_sources(

@@ -511,18 +511,31 @@ def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
     changes: list[str] = []
     text = source
 
-    route_guard_marker = 'callable(getattr(agent, "_apply_pre_model_route_hook", None))'
+    try:
+        from doctor import _direct_route_call_contract
+    except ModuleNotFoundError:  # Package import during repository-level test runs.
+        from .doctor import _direct_route_call_contract
+
+    route_call_count, route_guarded = _direct_route_call_contract(
+        text,
+        "run_conversation",
+        "agent",
+    )
     legacy_route_block = '''    agent._apply_pre_model_route_hook(
         original_user_message,
         messages,
         is_first_turn=(not bool(conversation_history)),
     )
 '''
-    if route_guard_marker not in text:
-        legacy_route_count = text.count(legacy_route_block)
-        if legacy_route_count > 1:
+    if not route_guarded:
+        if route_call_count > 1:
             raise ValueError("Found multiple modular pre_model_route calls; refusing ambiguous upgrade.")
-        if legacy_route_count == 1:
+        if route_call_count == 1:
+            legacy_route_count = text.count(legacy_route_block)
+            if legacy_route_count != 1:
+                raise ValueError(
+                    "Found an unguarded modular pre_model_route call with an unsupported shape."
+                )
             guarded_route_block = '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
         agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
 ''' + legacy_route_block

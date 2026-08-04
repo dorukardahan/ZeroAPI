@@ -490,6 +490,41 @@ VALID_HOOKS = {
         self.assertEqual(second_changes, [])
         self.assertEqual(upgraded_again, upgraded)
 
+    def test_modular_conversation_loop_comment_cannot_spoof_route_guard(self):
+        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+        legacy_block = '''    # callable(getattr(agent, "_apply_pre_model_route_hook", None))
+    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+
+'''
+        spoofed = UPSTREAM_MODULAR_CONVERSATION_LOOP.replace(
+            anchor,
+            legacy_block + anchor,
+            1,
+        )
+
+        upgraded, changes = patch_conversation_loop_source(spoofed)
+
+        self.assertEqual(
+            upgraded.count("agent._apply_pre_model_route_hook(\n        original_user_message,"),
+            1,
+        )
+        self.assertIn("upgraded modular pre_model_route call guard", changes)
+        self.assertIn(
+            'if not callable(getattr(agent, "_apply_pre_model_route_hook", None))',
+            upgraded,
+        )
+        namespace = {
+            "logger": mock.Mock(),
+            "_summarize_user_message_for_log": lambda message: message,
+        }
+        exec(compile(upgraded, "conversation_loop.py", "exec"), namespace)
+        agent = types.SimpleNamespace(quiet_mode=True, _cached_system_prompt="cached")
+        namespace["run_conversation"](agent, "hello")
+
     def test_patches_v019_turn_context_before_prompt_build_and_resyncs_aux_runtime(self):
         patched, changes = patch_turn_context_source(UPSTREAM_V019_TURN_CONTEXT)
 
