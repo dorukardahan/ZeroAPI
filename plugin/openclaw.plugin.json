@@ -6,6 +6,10 @@
   "activation": {
     "onStartup": true
   },
+  "compat": {
+    "pluginApi": ">=2026.5.2",
+    "minGatewayVersion": "2026.5.2"
+  },
   "skills": [
     "./skills"
   ],

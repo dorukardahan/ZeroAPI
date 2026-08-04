@@ -176,6 +176,12 @@ export default definePluginEntry({
         if (syncResult.reason === "user_pinned_preserved") {
           runtimeAuthProfileOverride = null;
         }
+        if (syncResult.reason === "session_store_non_json_backend") {
+          runtimeAuthProfileOverride = null;
+          api.logger.warn(
+            `ZeroAPI auth-profile routing is disabled: OpenClaw session store is not JSON-backed (session.store in openclaw.json). Model routing is still active. See COMPATIBILITY.md.`
+          );
+        }
         if (
           syncResult.reason !== "already_current" &&
           syncResult.reason !== "no_auto_override_to_clear" &&

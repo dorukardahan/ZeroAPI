@@ -65,10 +65,12 @@ describe("version sync", () => {
     expect(packageJson.openclaw?.compat).toEqual({
       pluginApi: ">=2026.5.2",
       minGatewayVersion: "2026.5.2",
+      notes: "Model/provider routing is fully compatible. Auth-profile/account routing requires a JSON-backed session store; non-JSON backends (e.g. SQLite) are detected and disabled gracefully.",
     });
     expect(packageJson.openclaw?.build).toEqual({
       openclawVersion: "2026.5.2",
       pluginSdkVersion: "2026.5.2",
+      lastAuditedOpenClaw: "2026.7.1-2",
     });
   });
 });

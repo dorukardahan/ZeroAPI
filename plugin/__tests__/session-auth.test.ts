@@ -143,4 +143,79 @@ describe("syncSessionAuthProfileOverride", () => {
     expect(store["agent:ops:main"]?.authProfileOverride).toBe("zai:ops");
     expect(store["agent:ops:main"]?.authProfileOverrideSource).toBe("auto");
   });
+
+  it("skips gracefully when session.store is a SQLite URI", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    writeJson(join(openclawDir, "openclaw.json"), {
+      session: {
+        store: "sqlite:agents/main/sessions.db",
+      },
+    });
+    const storePath = join(openclawDir, "agents", "main", "sessions", "sessions.json");
+    writeJson(storePath, {
+      "agent:main:main": {
+        sessionId: "session-sqlite",
+        updatedAt: 1,
+      },
+    });
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("skipped");
+    expect(result.reason).toBe("session_store_non_json_backend");
+    expect(result.sessionKey).toBe("agent:main:main");
+
+    // Store should be untouched
+    const store = readJson<Record<string, Record<string, unknown>>>(storePath);
+    expect(store["agent:main:main"]?.authProfileOverride).toBeUndefined();
+  });
+
+  it("skips gracefully when session.store is a .db file path", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    writeJson(join(openclawDir, "openclaw.json"), {
+      session: {
+        store: "~/.openclaw/agents/main/sessions.db",
+      },
+    });
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("skipped");
+    expect(result.reason).toBe("session_store_non_json_backend");
+  });
+
+  it("skips gracefully when session.store is a postgres URI", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    writeJson(join(openclawDir, "openclaw.json"), {
+      session: {
+        store: "postgres:///openclaw/sessions",
+      },
+    });
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("skipped");
+    expect(result.reason).toBe("session_store_non_json_backend");
+  });
 });

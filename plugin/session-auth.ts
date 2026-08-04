@@ -74,10 +74,17 @@ function expandHomePrefix(value: string, homeDir: string): string {
   return value;
 }
 
-function resolveConfiguredStorePath(openclawDir: string, agentId: string): string | null {
+const SQLITE_OR_DB_RE = /^(sqlite[23]?:|postgres(?:ql)?:|mysql:|redis:|level:)/i;
+const SQLITE_FILE_EXT_RE = /\.(sqlite[23]?|db|duckdb|fdb)$/i;
+
+export function isNonJsonSessionBackend(configuredStore: string): boolean {
+  return SQLITE_OR_DB_RE.test(configuredStore) || SQLITE_FILE_EXT_RE.test(configuredStore);
+}
+
+function resolveConfiguredStorePath(openclawDir: string, agentId: string): { path: string | null; nonJsonBackend: boolean } {
   const configPath = join(openclawDir, "openclaw.json");
   if (!existsSync(configPath)) {
-    return null;
+    return { path: null, nonJsonBackend: false };
   }
 
   try {
@@ -86,21 +93,18 @@ function resolveConfiguredStorePath(openclawDir: string, agentId: string): strin
     };
     const configured = normalizeString(parsed?.session?.store);
     if (!configured) {
-      return null;
+      return { path: null, nonJsonBackend: false };
+    }
+
+    if (isNonJsonSessionBackend(configured)) {
+      return { path: null, nonJsonBackend: true };
     }
 
     const expanded = expandHomePrefix(configured.replaceAll("{agentId}", agentId), resolveHomeDir(openclawDir));
-    return resolve(openclawDir, expanded);
+    return { path: resolve(openclawDir, expanded), nonJsonBackend: false };
   } catch {
-    return null;
+    return { path: null, nonJsonBackend: false };
   }
-}
-
-function resolveSessionStorePath(openclawDir: string, agentId: string): string {
-  return (
-    resolveConfiguredStorePath(openclawDir, agentId) ??
-    join(openclawDir, "agents", agentId, "sessions", "sessions.json")
-  );
 }
 
 function readSessionStore(storePath: string): SessionStore | null {
@@ -139,7 +143,12 @@ export function syncSessionAuthProfileOverride(
   }
 
   const agentId = resolveAgentId({ agentId: params.agentId, sessionKey });
-  const storePath = resolveSessionStorePath(params.openclawDir, agentId);
+  const { path: resolvedPath, nonJsonBackend } = resolveConfiguredStorePath(params.openclawDir, agentId);
+  if (nonJsonBackend) {
+    return { action: "skipped", reason: "session_store_non_json_backend", sessionKey };
+  }
+
+  const storePath = resolvedPath ?? join(params.openclawDir, "agents", agentId, "sessions", "sessions.json");
   const store = readSessionStore(storePath);
   if (!store) {
     return { action: "skipped", reason: "session_store_unavailable", storePath, sessionKey };
