@@ -2,12 +2,22 @@
 
 ## [Unreleased]
 
+## [3.10.0] - 2026-08-04
+
 ### Added
+- Add a provider-neutral, token-free live quota normalization and applicability-aware pressure substrate for OpenClaw and Hermes. Runtime collection and routing activation remain explicitly deferred to host integrations.
 - Capture the Artificial Analysis `tau_banking` field as `tau3_banking`, and fail benchmark refreshes when a populated numeric AA evaluation would otherwise be silently dropped.
+- Add deterministic provider-policy freshness checks backed by the authoritative provider status reference.
 
 ### Changed
 - Map GPT-5.6 Sol/Terra/Luna to their direct AA max-effort rows, refresh source-owned benchmark metadata to the current methodology, include Tau-cubed Banking in orchestration ranking alongside Tau-squared Telecom and IFBench, and require category-specific evidence before code/research/math strength can influence the frontier.
 - Clarify and regression-test that generated `routing_rules.primary` values are benchmark-first candidate seeds; balanced subscription pressure may intentionally choose another benchmark-near provider to distribute work across configured plans.
+- Clarify runtime model-switch cost, account-surface subscription eligibility, quota-signal provenance, freshness and fail-open behavior without overstating currently active routing behavior.
+- Prefer TerminalBench v2.1 over the legacy hard split and keep onboarding metrics tied to the committed direct benchmark rows.
+
+### Fixed
+- Add transactional Hermes v0.19/v0.20 runtime patch support for the refactored turn-context owner, persisted prompt refresh, exact-once route execution, duplicate plugin rejection, and rollback-safe journals.
+- Make injected Hermes route hooks tolerate minimal or fake agent objects through a local no-op shim while preserving real callable hooks, exception propagation, direct-call doctor semantics, and idempotent upgrades from earlier patch shapes.
 
 ## [3.9.3] - 2026-07-20
 

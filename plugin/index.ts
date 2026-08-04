@@ -10,7 +10,7 @@ import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 import { readPreviousCategory, recordRouteCategory } from "./route-state.js";
 import type { TaskCategory } from "./types.js";
 
-const PLUGIN_VERSION = "3.9.3";
+const PLUGIN_VERSION = "3.10.0";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
