@@ -511,17 +511,46 @@ def patch_conversation_loop_source(source: str) -> tuple[str, list[str]]:
     changes: list[str] = []
     text = source
 
-    route_call_marker = "agent._apply_pre_model_route_hook(\n        original_user_message,"
-    if route_call_marker not in text:
-        anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
-        if anchor not in text:
-            raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
-        text = text.replace(
-            anchor,
-            '''    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
-            1,
-        )
-        changes.append("inserted pre_model_route call before system prompt")
+    try:
+        from doctor import _direct_route_call_contract
+    except ModuleNotFoundError:  # Package import during repository-level test runs.
+        from .doctor import _direct_route_call_contract
+
+    route_call_count, route_guarded = _direct_route_call_contract(
+        text,
+        "run_conversation",
+        "agent",
+    )
+    legacy_route_block = '''    agent._apply_pre_model_route_hook(
+        original_user_message,
+        messages,
+        is_first_turn=(not bool(conversation_history)),
+    )
+'''
+    if not route_guarded:
+        if route_call_count > 1:
+            raise ValueError("Found multiple modular pre_model_route calls; refusing ambiguous upgrade.")
+        if route_call_count == 1:
+            legacy_route_count = text.count(legacy_route_block)
+            if legacy_route_count != 1:
+                raise ValueError(
+                    "Found an unguarded modular pre_model_route call with an unsupported shape."
+                )
+            guarded_route_block = '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
+        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
+''' + legacy_route_block
+            text = text.replace(legacy_route_block, guarded_route_block, 1)
+            changes.append("upgraded modular pre_model_route call guard")
+        else:
+            anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
+            if anchor not in text:
+                raise ValueError("Could not find modular system-prompt anchor for pre_model_route call.")
+            text = text.replace(
+                anchor,
+                '''    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):\n        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None\n    agent._apply_pre_model_route_hook(\n        original_user_message,\n        messages,\n        is_first_turn=(not bool(conversation_history)),\n    )\n\n''' + anchor,
+                1,
+            )
+            changes.append("inserted pre_model_route call before system prompt")
 
     text, prompt_changes = _patch_conversation_prompt_restore_source(
         text,
@@ -546,6 +575,8 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
     marker = "# ZeroAPI compatibility: route before prompt restoration."
     anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
     route_block = '''    # ZeroAPI compatibility: route before prompt restoration.
+    if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
+        agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
     agent._apply_pre_model_route_hook(
         original_user_message,
         messages,
@@ -577,6 +608,8 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
             raise ValueError("Could not locate existing v0.19 pre_model_route turn block.")
         existing_block = text[start:end]
         required_contract = (
+            'if not callable(getattr(agent, "_apply_pre_model_route_hook", None))',
+            "agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None",
             "agent._apply_pre_model_route_hook(",
             'getattr(agent, "_pre_model_route_switched_this_turn", False)',
             "agent._cached_system_prompt = None",

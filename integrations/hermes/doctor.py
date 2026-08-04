@@ -659,6 +659,77 @@ def _calls_on_receiver(function, name: str, receiver: str) -> list[ast.Call]:
     ]
 
 
+def _is_noop_route_guard(statement: ast.stmt, receiver: str) -> bool:
+    if not isinstance(statement, ast.If) or statement.orelse or len(statement.body) != 1:
+        return False
+    test = statement.test
+    if not isinstance(test, ast.UnaryOp) or not isinstance(test.op, ast.Not):
+        return False
+    callable_call = test.operand
+    if (
+        not isinstance(callable_call, ast.Call)
+        or not isinstance(callable_call.func, ast.Name)
+        or callable_call.func.id != "callable"
+        or len(callable_call.args) != 1
+        or callable_call.keywords
+    ):
+        return False
+    getattr_call = callable_call.args[0]
+    if (
+        not isinstance(getattr_call, ast.Call)
+        or not isinstance(getattr_call.func, ast.Name)
+        or getattr_call.func.id != "getattr"
+        or len(getattr_call.args) != 3
+        or getattr_call.keywords
+        or not isinstance(getattr_call.args[0], ast.Name)
+        or getattr_call.args[0].id != receiver
+        or not isinstance(getattr_call.args[1], ast.Constant)
+        or getattr_call.args[1].value != "_apply_pre_model_route_hook"
+        or not isinstance(getattr_call.args[2], ast.Constant)
+        or getattr_call.args[2].value is not None
+    ):
+        return False
+    assignment = statement.body[0]
+    if not isinstance(assignment, ast.Assign) or len(assignment.targets) != 1:
+        return False
+    target = assignment.targets[0]
+    noop = assignment.value
+    return bool(
+        isinstance(target, ast.Attribute)
+        and target.attr == "_apply_pre_model_route_hook"
+        and isinstance(target.value, ast.Name)
+        and target.value.id == receiver
+        and isinstance(noop, ast.Lambda)
+        and noop.args.vararg is not None
+        and noop.args.kwarg is not None
+        and isinstance(noop.body, ast.Constant)
+        and noop.body.value is None
+    )
+
+
+def _route_call_has_direct_noop_guard(function, route_call: ast.Call, receiver: str) -> bool:
+    if function is None:
+        return False
+    for index, statement in enumerate(function.body):
+        if not isinstance(statement, ast.Expr) or statement.value is not route_call:
+            continue
+        return index > 0 and _is_noop_route_guard(function.body[index - 1], receiver)
+    return False
+
+
+def _direct_route_call_contract(
+    source: str,
+    function_name: str,
+    receiver: str,
+) -> tuple[int, bool]:
+    function = _module_function(_parse_source(source), function_name)
+    calls = _calls_on_receiver(function, "_apply_pre_model_route_hook", receiver)
+    return len(calls), bool(
+        len(calls) == 1
+        and _route_call_has_direct_noop_guard(function, calls[0], receiver)
+    )
+
+
 def _string_argument(call: ast.Call, value: str) -> bool:
     return bool(
         call.args
@@ -798,6 +869,15 @@ def _runtime_proof(
     layout, owner_name, owner_function, owner_receiver, route_calls = owners[0]
     if len(route_calls) != 1:
         return RuntimeProof(False, message="The live turn owner must call pre_model_route exactly once.")
+    if layout != "legacy-monolith" and not _route_call_has_direct_noop_guard(
+        owner_function,
+        route_calls[0],
+        owner_receiver,
+    ):
+        return RuntimeProof(
+            False,
+            message="The modular pre_model_route call must have a direct minimal-agent no-op guard.",
+        )
 
     route_flow = _RoutePromptFlowAnalyzer(owner_receiver)
     if not route_flow.analyze(owner_function):
