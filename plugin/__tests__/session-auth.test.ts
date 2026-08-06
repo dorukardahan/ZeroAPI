@@ -143,4 +143,101 @@ describe("syncSessionAuthProfileOverride", () => {
     expect(store["agent:ops:main"]?.authProfileOverride).toBe("zai:ops");
     expect(store["agent:ops:main"]?.authProfileOverrideSource).toBe("auto");
   });
+
+  it("skips the default SQLite backend when session.store is absent and a stale JSON store remains", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    const legacyJsonPath = join(openclawDir, "agents", "main", "sessions", "sessions.json");
+    writeJson(legacyJsonPath, {
+      "agent:main:main": {
+        sessionId: "stale-session",
+        updatedAt: 1,
+      },
+    });
+    // Simulate the canonical OpenClaw 2026.7.x SQLite database
+    const sqlitePath = join(openclawDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+    mkdirSync(dirname(sqlitePath), { recursive: true });
+    writeFileSync(sqlitePath, "SQLite format 3\u0000", "latin1");
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("skipped");
+    expect(result.reason).toBe("session_store_non_json_backend");
+
+    // The stale JSON file must NOT have been written to
+    const store = readJson<Record<string, Record<string, unknown>>>(legacyJsonPath);
+    expect(store["agent:main:main"]?.authProfileOverride).toBeUndefined();
+  });
+
+  it("skips auth-profile routing when session.store is an explicit SQLite URI", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    writeJson(join(openclawDir, "openclaw.json"), {
+      session: {
+        store: "sqlite:./sessions.db",
+      },
+    });
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("skipped");
+    expect(result.reason).toBe("session_store_non_json_backend");
+  });
+
+  it("skips auth-profile routing when session.store is a .sqlite file path", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    writeJson(join(openclawDir, "openclaw.json"), {
+      session: {
+        store: "~/.openclaw/sessions.sqlite3",
+      },
+    });
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("skipped");
+    expect(result.reason).toBe("session_store_non_json_backend");
+  });
+
+  it("still routes auth-profile overrides when no SQLite backend or non-JSON store exists", () => {
+    const home = mkdtempSync(join(tmpdir(), "zeroapi-session-auth-"));
+    tempDirs.push(home);
+
+    const openclawDir = join(home, ".openclaw");
+    const storePath = join(openclawDir, "agents", "main", "sessions", "sessions.json");
+    writeJson(storePath, {
+      "agent:main:main": {
+        sessionId: "session-ok",
+        updatedAt: 1,
+      },
+    });
+    // No SQLite database, no configured store — default JSON path should work
+
+    const result = syncSessionAuthProfileOverride({
+      openclawDir,
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai:work",
+    });
+
+    expect(result.action).toBe("updated");
+    expect(result.reason).toBe("set_auto_override");
+  });
 });
