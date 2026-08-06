@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+env:
+  OPENCLAW_COMPAT_VERSION: '2026.7.1-2'
+  OPENCLAW_COMPAT_INTEGRITY: 'sha512-ycF3yPcbjN6bUPeaUx6Mh6vze1hQWoD3CT/wWcmD7a8xaHHHRUaAlaq+lFxMHf1ssEgODVAwjlzYqp2twkYZ7g=='
+  HERMES_COMPAT_REF: 'v2026.8.3'
+  HERMES_COMPAT_SHA: '3c27eb6234bf91b8ceee9e9071591b31e9b148cb'
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -27,3 +36,90 @@ jobs:
       - run: python -m pip install -r integrations/hermes/requirements-test.txt
       - run: npm ci
       - run: npm run audit:ci
+      - run: npm test
+
+  openclaw-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Install exact OpenClaw package
+        run: |
+          actual_integrity="$(npm view "openclaw@${OPENCLAW_COMPAT_VERSION}" dist.integrity)"
+          test "$actual_integrity" = "$OPENCLAW_COMPAT_INTEGRITY"
+          npm install --no-save --package-lock=false "openclaw@${OPENCLAW_COMPAT_VERSION}"
+      - name: Typecheck adapter and public SDK contract witness
+        run: npx tsc --project tsconfig.openclaw-compat.json
+      - name: Stage ClawHub plugin artifact
+        run: node scripts/stage_clawhub_plugin.mjs /tmp/zeroapi-staged
+      - name: Prepare isolated OpenClaw state
+        run: |
+          mkdir -p /tmp/zeroapi-staged/node_modules /tmp/zeroapi-openclaw-state
+          ln -s "$GITHUB_WORKSPACE/node_modules/openclaw" /tmp/zeroapi-staged/node_modules/openclaw
+          cp scripts/__fixtures__/openclaw/zeroapi-config.json /tmp/zeroapi-openclaw-state/zeroapi-config.json
+          node -e 'require("node:fs").writeFileSync("/tmp/zeroapi-openclaw-state/openclaw.json", JSON.stringify({plugins:{allow:["zeroapi-router"],load:{paths:["/tmp/zeroapi-staged"]},entries:{"zeroapi-router":{enabled:true,hooks:{allowConversationAccess:true}}}}}, null, 2) + "\n")'
+      - name: Runtime inspect exact OpenClaw host
+        run: |
+          expected_version="$(node -p 'require("./plugin/package.json").version')"
+          OPENCLAW_STATE_DIR=/tmp/zeroapi-openclaw-state \
+          OPENCLAW_CONFIG_PATH=/tmp/zeroapi-openclaw-state/openclaw.json \
+          node node_modules/openclaw/openclaw.mjs plugins inspect zeroapi-router --runtime --json \
+            > /tmp/zeroapi-openclaw-inspect.json
+          jq -e --arg version "$expected_version" \
+            '(.plugin.id == "zeroapi-router") and (.plugin.status == "loaded") and (.plugin.version == $version) and (.plugin.imported == true) and (.plugin.activated == true) and (.diagnostics | length == 0)' \
+            /tmp/zeroapi-openclaw-inspect.json
+      - name: Exercise typed hooks against exact OpenClaw SDK
+        run: |
+          OPENCLAW_STATE_DIR=/tmp/zeroapi-openclaw-state \
+          OPENCLAW_CONFIG_PATH=/tmp/zeroapi-openclaw-state/openclaw.json \
+          node scripts/openclaw_compat_smoke.mjs /tmp/zeroapi-staged
+
+  hermes-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r integrations/hermes/requirements-test.txt
+      - name: Fetch exact Hermes source
+        run: |
+          git clone --depth 1 --branch "$HERMES_COMPAT_REF" --single-branch \
+            https://github.com/NousResearch/hermes-agent.git /tmp/hermes-exact
+          test "$(git -C /tmp/hermes-exact rev-parse HEAD)" = "$HERMES_COMPAT_SHA"
+      - name: Prepare isolated Hermes plugin profile
+        run: |
+          mkdir -p /tmp/hermes-home/plugins
+          cp -R integrations/hermes /tmp/hermes-home/plugins/zeroapi-router
+          python -c 'from pathlib import Path; Path("/tmp/hermes-home/config.yaml").write_text("plugins:\n  enabled:\n    - zeroapi-router\n", encoding="utf-8")'
+      - name: Patch exact Hermes runtime transactionally and prove idempotency
+        run: |
+          PATCH_ARGS=(
+            --plugins /tmp/hermes-exact/hermes_cli/plugins.py
+            --run-agent /tmp/hermes-exact/run_agent.py
+            --conversation-loop /tmp/hermes-exact/agent/conversation_loop.py
+            --turn-context /tmp/hermes-exact/agent/turn_context.py
+            --delegate-tool /tmp/hermes-exact/tools/delegate_tool.py
+            --backup-root /tmp/hermes-home/backups/zeroapi-router
+            --plugin-discovery-root /tmp/hermes-home/plugins
+          )
+          python integrations/hermes/patch_runtime.py "${PATCH_ARGS[@]}" --dry-run
+          python integrations/hermes/patch_runtime.py "${PATCH_ARGS[@]}"
+          second_output="$(python integrations/hermes/patch_runtime.py "${PATCH_ARGS[@]}")"
+          printf '%s\n' "$second_output"
+          grep -F 'already has the ZeroAPI runtime compatibility patch' <<<"$second_output"
+      - name: Run ZeroAPI doctor against exact patched Hermes source
+        env:
+          HERMES_HOME: /tmp/hermes-home
+          ZEROAPI_CONFIG_PATH: ${{ github.workspace }}/scripts/__fixtures__/openclaw/zeroapi-config.json
+        run: |
+          python /tmp/hermes-home/plugins/zeroapi-router/doctor.py \
+            --hermes-root /tmp/hermes-exact \
+            --plugin-root /tmp/hermes-home/plugins/zeroapi-router \
+            --plugin-discovery-root /tmp/hermes-home/plugins \
+            --config /tmp/hermes-home/config.yaml
