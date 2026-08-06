@@ -43,10 +43,16 @@ ZeroAPI routes exclusively across subscription or account-quota providers: OpenA
 ## How It Works
 
 ```
-Message → Plugin (before_model_resolve) → Classify task → Filter capable models → Select best → Model processes message
+Message
+  ├─ OpenClaw plugin (`before_model_resolve`) ─┐
+  └─ Hermes adapter (`pre_model_route`) ───────┤
+                                               ▼
+Classify task → Filter capable models → Select best → Host runtime processes message
 ```
 
-The plugin fires before eligible messages via OpenClaw's `before_model_resolve` hook. It runs a lightweight five-stage decision:
+ZeroAPI has adapter-specific entry points that converge on the shared policy stages below. The OpenClaw plugin receives eligible messages through `before_model_resolve`, while the experimental [Hermes adapter](integrations/hermes/README.md) enters through `pre_model_route`. Each host runtime remains responsible for applying the selected model and managing its own session behavior; the shared stages do not imply identical host integration.
+
+From either entry point, ZeroAPI runs a lightweight five-stage decision:
 
 1. **Capability filter** — eliminate models that cannot fit the request based on configured metadata (context window, vision support, and, for `fast` tasks, the TTFT ceiling) plus any explicit caller-supplied provider exclusions
 2. **Subscription filter** — eliminate models not allowed by the user's legacy profile or preferred account inventory
