@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "openclaw/plugin-sdk/plugin-entry": [
+        "node_modules/openclaw/dist/plugin-sdk/plugin-entry.d.ts"
+      ],
+      "openclaw/plugin-sdk/types": [
+        "node_modules/openclaw/dist/plugin-sdk/types.d.ts"
+      ]
+    },
+    "types": ["node"],
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/openclaw/node_modules/@types"
+    ]
+  },
+  "include": [
+    "plugin/**/*.ts",
+    "scripts/openclaw_sdk_contract_witness.ts"
+  ],
+  "exclude": [
+    "plugin/__tests__/**"
+  ]
+}

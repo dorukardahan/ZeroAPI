@@ -2,7 +2,22 @@
 
 ## [Unreleased]
 
-## [3.10.0] - 2026-08-04
+## [3.10.2] - 2026-08-07
+
+### Fixed
+- Detect the canonical per-agent SQLite session backend (`agents/<id>/agent/openclaw-agent.sqlite`) introduced in OpenClaw 2026.7.x by file-header magic bytes, preventing silent writes to stale JSON session files when no `session.store` is configured.
+- Detect explicit non-JSON `session.store` values (SQLite URI scheme, `.sqlite`/`.db`/`.duckdb` extensions) and skip auth-profile routing gracefully with a diagnostic warning instead of silently no-oping.
+- Add `session_store_non_json_backend` skip reason to the routing event log so operators can see exactly when auth-profile routing is disabled due to backend incompatibility.
+
+### Added
+- Add exact-tag pinned CI regression jobs for Hermes `v2026.8.3` and OpenClaw `2026.7.1-2`: typecheck adapter against the real SDK contract, stage + inspect plugin artifact via the exact OpenClaw host, exercise typed hooks at runtime, and run the Hermes runtime patch + doctor + idempotency check against the pinned Hermes tag.
+- Add `scripts/openclaw_compat_smoke.mjs` runtime smoke test and `scripts/openclaw_sdk_contract_witness.ts` compile-only TypeScript witness for CI-side compatibility verification.
+
+### Changed
+- Extend `plugin/package.json` `openclaw.compat.notes` to document the SQLite default backend detection behavior and the OpenClaw 2026.7.x compatibility scope.
+- Add `openclaw.build.lastAuditedOpenClaw` field tracking the exact audited OpenClaw version (`2026.7.1-2`).
+
+## [3.10.1] - 2026-08-04
 
 ### Added
 - Add a provider-neutral, token-free live quota normalization and applicability-aware pressure substrate for OpenClaw and Hermes. Runtime collection and routing activation remain explicitly deferred to host integrations.
