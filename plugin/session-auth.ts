@@ -1,5 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 type SessionEntry = {
@@ -66,6 +75,59 @@ function resolveHomeDir(openclawDir: string): string {
   return dirname(resolve(openclawDir));
 }
 
+const SQLITE_FILE_HEADER = "SQLite format 3\u0000";
+
+/**
+ * Detect the canonical per-agent SQLite backend introduced in OpenClaw 2026.7.x.
+ *
+ * When `session.store` is absent from openclaw.json, OpenClaw 2026.7.x creates
+ * a per-agent SQLite database at `agents/<id>/agent/openclaw-agent.sqlite`.
+ * The legacy fallback to `agents/<id>/sessions/sessions.json` is now dead, but
+ * a stale JSON file from a pre-SQLite version may still exist and look writable.
+ * Without this check, ZeroAPI would silently write auth-profile overrides into
+ * a dead JSON file while the live store is SQLite — a silent no-op.
+ *
+ * Detection is by the 16-byte SQLite file header, not file extension alone.
+ */
+function hasCanonicalSqliteSessionBackend(openclawDir: string, agentId: string): boolean {
+  const databasePath = join(openclawDir, "agents", agentId, "agent", "openclaw-agent.sqlite");
+  let fd: number | undefined;
+  try {
+    fd = openSync(databasePath, "r");
+    const header = Buffer.alloc(16);
+    const bytesRead = readSync(fd, header, 0, 16, 0);
+    return bytesRead === 16 && header.toString("latin1") === SQLITE_FILE_HEADER;
+  } catch {
+    return false;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        closeSync(fd);
+      } catch {
+        // already closed
+      }
+    }
+  }
+}
+
+/**
+ * Detect non-JSON session backends configured explicitly via `session.store`.
+ * Returns the reason string for the skip result, or null when the store path
+ * is JSON-compatible.
+ */
+function detectNonJsonConfiguredStore(configured: string): string | null {
+  const lower = configured.toLowerCase();
+  // URI-style: sqlite:, sqlite2:, sqlite3:, postgres:, mysql:, redis:, level:
+  if (/^(sqlite[23]?:|postgres(?:ql)?:|mysql:|redis:|level:)/i.test(lower)) {
+    return "session_store_non_json_backend";
+  }
+  // File extension: .sqlite, .sqlite2, .sqlite3, .db, .duckdb, .fdb
+  if (/\.(sqlite[23]?|db|duckdb|fdb)$/i.test(lower)) {
+    return "session_store_non_json_backend";
+  }
+  return null;
+}
+
 function expandHomePrefix(value: string, homeDir: string): string {
   if (value === "~") return homeDir;
   if (value.startsWith("~/")) {
@@ -74,10 +136,14 @@ function expandHomePrefix(value: string, homeDir: string): string {
   return value;
 }
 
-function resolveConfiguredStorePath(openclawDir: string, agentId: string): string | null {
+function resolveConfiguredStorePath(openclawDir: string, agentId: string): { path: string | null; nonJsonBackend: boolean } {
+  if (hasCanonicalSqliteSessionBackend(openclawDir, agentId)) {
+    return { path: null, nonJsonBackend: true };
+  }
+
   const configPath = join(openclawDir, "openclaw.json");
   if (!existsSync(configPath)) {
-    return null;
+    return { path: null, nonJsonBackend: false };
   }
 
   try {
@@ -86,21 +152,33 @@ function resolveConfiguredStorePath(openclawDir: string, agentId: string): strin
     };
     const configured = normalizeString(parsed?.session?.store);
     if (!configured) {
-      return null;
+      return { path: null, nonJsonBackend: false };
+    }
+
+    if (detectNonJsonConfiguredStore(configured)) {
+      return { path: null, nonJsonBackend: true };
     }
 
     const expanded = expandHomePrefix(configured.replaceAll("{agentId}", agentId), resolveHomeDir(openclawDir));
-    return resolve(openclawDir, expanded);
+    return { path: resolve(openclawDir, expanded), nonJsonBackend: false };
   } catch {
-    return null;
+    return { path: null, nonJsonBackend: false };
   }
 }
 
 function resolveSessionStorePath(openclawDir: string, agentId: string): string {
   return (
-    resolveConfiguredStorePath(openclawDir, agentId) ??
+    resolveConfiguredStorePath(openclawDir, agentId).path ??
     join(openclawDir, "agents", agentId, "sessions", "sessions.json")
   );
+}
+
+/**
+ * Check whether the configured session backend is non-JSON (e.g. SQLite),
+ * which means auth-profile routing must be disabled gracefully.
+ */
+function isNonJsonSessionBackend(openclawDir: string, agentId: string): boolean {
+  return resolveConfiguredStorePath(openclawDir, agentId).nonJsonBackend;
 }
 
 function readSessionStore(storePath: string): SessionStore | null {
@@ -139,6 +217,9 @@ export function syncSessionAuthProfileOverride(
   }
 
   const agentId = resolveAgentId({ agentId: params.agentId, sessionKey });
+  if (isNonJsonSessionBackend(params.openclawDir, agentId)) {
+    return { action: "skipped", reason: "session_store_non_json_backend", sessionKey };
+  }
   const storePath = resolveSessionStorePath(params.openclawDir, agentId);
   const store = readSessionStore(storePath);
   if (!store) {
