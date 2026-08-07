@@ -33,6 +33,14 @@ function directOpenAiBenchmarkRow(model: string): DirectBenchmarkRow {
   return row;
 }
 
+function directZaiBenchmarkRow(model: string): DirectBenchmarkRow {
+  const row = DIRECT_BENCHMARK_ROWS.find(
+    (candidate) => candidate.openclaw_provider === "zai" && candidate.openclaw_model === model,
+  );
+  if (!row) throw new Error(`Missing direct Z.AI benchmark row for ${model}`);
+  return row;
+}
+
 describe("buildStarterConfig", () => {
   it("builds the mixed OpenAI + GLM starter pool without OpenAI mini", () => {
     const config = buildStarterConfig({
@@ -53,6 +61,23 @@ describe("buildStarterConfig", () => {
     ]);
     expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
     expect(config.routing_rules.orchestration.primary).toBe("zai/glm-5.2");
+    const glm52 = directZaiBenchmarkRow("glm-5.2");
+    const glm51 = directZaiBenchmarkRow("glm-5.1");
+    expect(config.models["zai/glm-5.2"]?.benchmarks.tau3_banking).toBe(
+      glm52.benchmarks.tau3_banking ?? undefined,
+    );
+    expect(config.models["zai/glm-5.1"]?.benchmarks.tau3_banking).toBe(
+      glm51.benchmarks.tau3_banking ?? undefined,
+    );
+    expect(getSubscriptionWeightedCandidates(
+      "orchestration",
+      config.models,
+      config.routing_rules,
+      config.subscription_profile,
+      config.subscription_inventory,
+      undefined,
+      config.routing_mode,
+    )[0]).toBe("zai/glm-5.2");
     for (const category of ["code", "research"] as const) {
       expect(getSubscriptionWeightedCandidates(
         category,
