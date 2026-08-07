@@ -2,7 +2,7 @@
   "name": "zeroapi-workspace",
   "version": "3.10.2",
   "private": true,
-  "description": "Benchmark-driven model routing for OpenClaw",
+  "description": "Subscription-aware, benchmark-informed routing policy for the OpenClaw plugin and experimental Hermes Agent adapter",
   "type": "module",
   "workspaces": [
     "plugin"
