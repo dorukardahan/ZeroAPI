@@ -8,6 +8,16 @@ import { tmpdir } from "node:os";
 const repoRoot = new URL("../..", import.meta.url);
 const scriptPath = new URL("../refresh_benchmarks.py", import.meta.url);
 
+test("refresh benchmark workflow regenerates and commits starter examples", () => {
+  const workflow = readFileSync(new URL("../../.github/workflows/refresh-benchmarks.yml", import.meta.url), "utf8");
+
+  assert.match(workflow, /actions\/setup-node@[0-9a-f]{40}/);
+  assert.match(workflow, /npm ci/);
+  assert.match(workflow, /npm exec -- tsx scripts\/refresh_examples\.ts/);
+  assert.match(workflow, /git diff --quiet -- benchmarks\.json plugin\/benchmarks\.json examples\/\*\.json/);
+  assert.match(workflow, /git add benchmarks\.json plugin\/benchmarks\.json examples\/\*\.json/);
+});
+
 function runPython(code, args = []) {
   const result = spawnSync("python3", ["-c", code, scriptPath.pathname, ...args], {
     cwd: repoRoot,
