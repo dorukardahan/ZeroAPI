@@ -1,4 +1,5 @@
 import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { patchSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import type {
   PluginHookBeforeModelResolveResult,
   PluginHookMessageSendingResult,
@@ -15,6 +16,15 @@ const unsupportedAuthResult: PluginHookBeforeModelResolveResult = {
 };
 
 const validMessageResult: PluginHookMessageSendingResult = { content: "ok" };
+const sessionPatchWitness = patchSessionEntry({
+  agentId: "main",
+  preserveActivity: true,
+  sessionKey: "agent:main:main",
+  update: (entry) => ({
+    authProfileOverride: entry.authProfileOverride ?? "openai-codex:default",
+    authProfileOverrideSource: "auto",
+  }),
+});
 const entry = definePluginEntry({
   id: "zeroapi-contract-witness",
   name: "ZeroAPI contract witness",
@@ -25,4 +35,5 @@ const entry = definePluginEntry({
   },
 });
 void entry;
+void sessionPatchWitness;
 void unsupportedAuthResult;

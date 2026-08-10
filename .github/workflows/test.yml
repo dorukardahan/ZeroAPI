@@ -10,8 +10,6 @@ permissions:
   contents: read
 
 env:
-  OPENCLAW_COMPAT_VERSION: '2026.7.1-2'
-  OPENCLAW_COMPAT_INTEGRITY: 'sha512-ycF3yPcbjN6bUPeaUx6Mh6vze1hQWoD3CT/wWcmD7a8xaHHHRUaAlaq+lFxMHf1ssEgODVAwjlzYqp2twkYZ7g=='
   HERMES_COMPAT_REF: 'v2026.8.3'
   HERMES_COMPAT_SHA: '3c27eb6234bf91b8ceee9e9071591b31e9b148cb'
 
@@ -39,8 +37,30 @@ jobs:
       - run: npm test
 
   openclaw-compat:
+    name: openclaw-compat (${{ matrix.label }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The minimum host gets a runtime fallback witness, v2026.7.1-2 is the
+          # typed target-stable contract, and the prerelease proves SQLite.
+          - version: '2026.5.2'
+            integrity: 'sha512-Jz00jdV/yE0/RfAln0tVlEq1hX9DIZdc7NRZVQRpt98XINduqoua9uOc1Ty4GeYlg5c746Lhl5ZCe6A4rsOmng=='
+            label: min-json
+            layout: json
+            typecheck: false
+          - version: '2026.7.1-2'
+            integrity: 'sha512-ycF3yPcbjN6bUPeaUx6Mh6vze1hQWoD3CT/wWcmD7a8xaHHHRUaAlaq+lFxMHf1ssEgODVAwjlzYqp2twkYZ7g=='
+            label: stable-json
+            layout: json
+            typecheck: true
+          - version: '2026.8.1-beta.1'
+            integrity: 'sha512-ugsMNhvfDMQYZa4EpHk+2Y6IdMYRCoe9BiwJVv9ZFFKPeYcgypbMmLvPG1XvMdanixZU+oZb/knLGAoHGREc9Q=='
+            label: sqlite-beta
+            layout: sqlite
+            typecheck: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -49,10 +69,11 @@ jobs:
       - run: npm ci
       - name: Install exact OpenClaw package
         run: |
-          actual_integrity="$(npm view "openclaw@${OPENCLAW_COMPAT_VERSION}" dist.integrity)"
-          test "$actual_integrity" = "$OPENCLAW_COMPAT_INTEGRITY"
-          npm install --no-save --package-lock=false "openclaw@${OPENCLAW_COMPAT_VERSION}"
+          actual_integrity="$(npm view "openclaw@${{ matrix.version }}" dist.integrity)"
+          test "$actual_integrity" = "${{ matrix.integrity }}"
+          npm install --no-save --package-lock=false "openclaw@${{ matrix.version }}"
       - name: Typecheck adapter and public SDK contract witness
+        if: matrix.typecheck
         run: npx tsc --project tsconfig.openclaw-compat.json
       - name: Stage ClawHub plugin artifact
         run: node scripts/stage_clawhub_plugin.mjs /tmp/zeroapi-staged
@@ -76,7 +97,7 @@ jobs:
         run: |
           OPENCLAW_STATE_DIR=/tmp/zeroapi-openclaw-state \
           OPENCLAW_CONFIG_PATH=/tmp/zeroapi-openclaw-state/openclaw.json \
-          node scripts/openclaw_compat_smoke.mjs /tmp/zeroapi-staged
+          node scripts/openclaw_compat_smoke.mjs /tmp/zeroapi-staged "${{ matrix.layout }}"
 
   hermes-compat:
     runs-on: ubuntu-latest

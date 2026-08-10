@@ -1,16 +1,21 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import * as sessionStoreRuntime from "openclaw/plugin-sdk/session-store-runtime";
 import { loadConfig, getConfigLoadStatus } from "./config.js";
 import { resolveRoutingDecision } from "./decision.js";
 import { existsSync, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
-import { syncSessionAuthProfileOverride } from "./session-auth.js";
+import {
+  createSessionEntryPatcher,
+  syncSessionAuthProfileOverride,
+  type HostSessionStoreRuntime,
+} from "./session-auth.js";
 import { startSubscriptionAdvisoryMonitor } from "./subscription-advisory.js";
 import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 import { readPreviousCategory, recordRouteCategory } from "./route-state.js";
 import type { TaskCategory } from "./types.js";
 
-const PLUGIN_VERSION = "3.10.2";
+const PLUGIN_VERSION = "3.10.3";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
@@ -69,6 +74,16 @@ export default definePluginEntry({
 
   register(api) {
     const openclawDir = resolveOpenClawDir();
+    const hostConfig = (api as typeof api & {
+      config?: { session?: { store?: unknown } };
+    }).config;
+    const configuredSessionStore = typeof hostConfig?.session?.store === "string"
+      ? hostConfig.session.store
+      : undefined;
+    const patchSessionEntry = createSessionEntryPatcher(
+      sessionStoreRuntime as unknown as HostSessionStoreRuntime,
+      configuredSessionStore,
+    );
 
     const config = loadConfig(openclawDir);
     initLogger(openclawDir);
@@ -127,7 +142,7 @@ export default definePluginEntry({
       logRoutingEvent({ category: "system", reason: `runtime_config_check_failed:${message}` });
     }
 
-    api.on("before_model_resolve", (event, ctx) => {
+    api.on("before_model_resolve", async (event, ctx) => {
       const currentModel = ctx.modelId
         ? `${ctx.modelProviderId}/${ctx.modelId}`
         : config.default_model;
@@ -161,11 +176,11 @@ export default definePluginEntry({
         resolution.action === "route" ||
         (resolution.action === "stay" && resolution.reason.includes("no_switch_needed"));
       if (shouldSyncSessionAuth) {
-        const syncResult = syncSessionAuthProfileOverride({
-          openclawDir,
+        const syncResult = await syncSessionAuthProfileOverride({
           agentId: ctx.agentId,
           sessionKey: "sessionKey" in ctx ? ctx.sessionKey : undefined,
           authProfileOverride: resolution.authProfileOverride,
+          patchSessionEntry,
         });
         if (syncResult.action === "blocked") {
           runtimeAuthProfileOverride = null;
@@ -175,6 +190,12 @@ export default definePluginEntry({
         }
         if (syncResult.reason === "user_pinned_preserved") {
           runtimeAuthProfileOverride = null;
+        }
+        if (syncResult.reason === "session_store_update_failed") {
+          runtimeAuthProfileOverride = null;
+          api.logger.warn(
+            "ZeroAPI could not persist the auth-profile override through OpenClaw's session API; model routing remains active."
+          );
         }
         if (
           syncResult.reason !== "already_current" &&

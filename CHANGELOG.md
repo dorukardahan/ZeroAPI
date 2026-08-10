@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [3.10.3] - 2026-08-10
+
+### Fixed
+
+- Persist OpenClaw account/profile overrides through the public storage-neutral session API instead of inferring the active backend from `openclaw-agent.sqlite`; this keeps `v2026.7.1-2` JSON sessions working when its auth database is present and follows newer SQLite session storage without touching stale JSON.
+- Use OpenClaw's official `auto` ownership marker for generated auth-profile overrides while continuing to recognize and clean up legacy `zeroapi` markers; user-pinned overrides remain untouched.
+
+### Changed
+
+- Make the ClawHub post-publish install smoke fail closed unless the exact release reports a clean scan, and remove the deprecated `--dangerously-force-unsafe-install` flag.
+
+### Tests
+
+- Exercise account routing against the exact `2026.5.2` legacy public session API, exact `2026.7.1-2` JSON storage, and exact `2026.8.1-beta.1` SQLite storage, including the stable auth-database regression and stale-JSON protection.
+
 ## [3.10.2] - 2026-08-07
 
 ### Fixed
