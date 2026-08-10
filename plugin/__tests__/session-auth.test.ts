@@ -282,6 +282,8 @@ describe("syncSessionAuthProfileOverride", () => {
         sessionId: "session-auto",
         authProfileOverride: "openai-codex:work",
         authProfileOverrideSource: "auto",
+        authProfileOverrideCompactionCount: 0,
+        compactionCount: 0,
       },
     };
 
@@ -381,5 +383,67 @@ describe("syncSessionAuthProfileOverride", () => {
 
     expect(result.reason).toBe("session_entry_missing");
     expect(readFileSync(transcriptPath, "utf8")).toBe(before);
+  });
+
+  it("persists authProfileOverrideCompactionCount when setting an override", async () => {
+    const entries: Record<string, SessionEntry> = {
+      "agent:main:main": {
+        sessionId: "session-compaction",
+        compactionCount: 3,
+      },
+    };
+
+    const result = await syncSessionAuthProfileOverride({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai-codex:work",
+      patchSessionEntry: createMemoryPatcher(entries),
+    });
+
+    expect(result.action).toBe("updated");
+    expect(entries["agent:main:main"]?.authProfileOverrideCompactionCount).toBe(3);
+  });
+
+  it("updates the compaction marker when compactionCount advances", async () => {
+    const entries: Record<string, SessionEntry> = {
+      "agent:main:main": {
+        sessionId: "session-advanced-compaction",
+        authProfileOverride: "openai-codex:work",
+        authProfileOverrideSource: "auto",
+        authProfileOverrideCompactionCount: 2,
+        compactionCount: 5,
+      },
+    };
+
+    const result = await syncSessionAuthProfileOverride({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      authProfileOverride: "openai-codex:work",
+      patchSessionEntry: createMemoryPatcher(entries),
+    });
+
+    expect(result.action).toBe("updated");
+    expect(entries["agent:main:main"]?.authProfileOverrideCompactionCount).toBe(5);
+  });
+
+  it("removes the compaction marker when clearing an auto override", async () => {
+    const entries: Record<string, SessionEntry> = {
+      "agent:main:main": {
+        sessionId: "session-clear-compaction",
+        authProfileOverride: "openai-codex:old",
+        authProfileOverrideSource: "zeroapi",
+        authProfileOverrideCompactionCount: 2,
+        compactionCount: 2,
+      },
+    };
+
+    await syncSessionAuthProfileOverride({
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      authProfileOverride: null,
+      patchSessionEntry: createMemoryPatcher(entries),
+    });
+
+    expect(entries["agent:main:main"]).not.toHaveProperty("authProfileOverrideCompactionCount");
   });
 });

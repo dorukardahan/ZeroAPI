@@ -1,6 +1,8 @@
 export type SessionEntry = {
   authProfileOverride?: string;
   authProfileOverrideSource?: string;
+  authProfileOverrideCompactionCount?: number;
+  compactionCount?: number;
   [key: string]: unknown;
 };
 
@@ -70,6 +72,13 @@ function normalizeString(value: unknown): string | null {
 
 function isAutoManagedSource(value: string | null): boolean {
   return value === "auto" || value === "zeroapi";
+}
+
+function normalizeNumber(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return value;
 }
 
 /**
@@ -145,13 +154,29 @@ export async function syncSessionAuthProfileOverride(
             return null;
           }
           if (currentProfile === targetProfile && currentSource === "auto") {
-            outcome = { action: "noop", reason: "already_current", sessionKey };
-            return null;
+            const currentCompaction = normalizeNumber(
+              entry.authProfileOverrideCompactionCount,
+            );
+            const sessionCompaction = normalizeNumber(entry.compactionCount) ?? 0;
+            if (currentCompaction === sessionCompaction) {
+              outcome = { action: "noop", reason: "already_current", sessionKey };
+              return null;
+            }
+            outcome = { action: "updated", reason: "updated", sessionKey };
+            return {
+              authProfileOverride: targetProfile,
+              authProfileOverrideSource: "auto",
+              authProfileOverrideCompactionCount: sessionCompaction,
+            };
           }
           outcome = { action: "updated", reason: "updated", sessionKey };
           return {
             authProfileOverride: targetProfile,
             authProfileOverrideSource: "auto",
+            authProfileOverrideCompactionCount:
+              typeof entry.compactionCount === "number"
+                ? entry.compactionCount
+                : 0,
           };
         }
 
@@ -168,6 +193,7 @@ export async function syncSessionAuthProfileOverride(
         return {
           authProfileOverride: undefined,
           authProfileOverrideSource: undefined,
+          authProfileOverrideCompactionCount: undefined,
         };
       },
     });
