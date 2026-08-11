@@ -3,6 +3,18 @@
   "generated": "2026-05-30T00:00:00Z",
   "benchmarks_date": "2026-05-30",
   "subscription_catalog_version": "1.0.0",
+  "subscription_inventory": {
+    "version": "1.1.0",
+    "accounts": {
+      "openai-ci": {
+        "provider": "openai-codex",
+        "tierId": "pro",
+        "authProfile": "openai-codex:ci",
+        "usagePriority": 1,
+        "intendedUse": ["code"]
+      }
+    }
+  },
   "routing_mode": "balanced",
   "routing_modifier": "coding-aware",
   "default_model": "zai/glm-5.1",

@@ -77,4 +77,15 @@ assert(
   "root and plugin benchmark snapshots must be byte-identical",
 );
 
+const clawHubWorkflow = readText(join(repoRoot, ".github", "workflows", "publish-clawhub-plugin.yml"));
+assert(
+  !clawHubWorkflow.includes("--dangerously-force-unsafe-install"),
+  "ClawHub install smoke must not use the deprecated dangerous-force flag",
+);
+assert(
+  clawHubWorkflow.includes('scanStatus !== "clean"') &&
+    clawHubWorkflow.includes("refusing automated risk acknowledgement"),
+  "ClawHub install smoke must fail closed unless the exact release scan is clean",
+);
+
 console.log(`ZeroAPI release preflight ok for ${version}`);

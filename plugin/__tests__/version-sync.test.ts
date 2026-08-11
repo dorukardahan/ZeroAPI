@@ -72,7 +72,7 @@ describe("version sync", () => {
     expect(packageJson.openclaw?.build).toEqual({
       openclawVersion: "2026.5.2",
       pluginSdkVersion: "2026.5.2",
-      lastAuditedOpenClaw: "2026.7.1-2",
+      lastAuditedOpenClaw: "2026.8.1-beta.1",
     });
   });
 });

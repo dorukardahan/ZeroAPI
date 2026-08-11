@@ -1,5 +1,5 @@
 name: zeroapi-router
-version: 3.10.2
+version: 3.10.3
 description: Benchmark-aware model routing for Hermes Agent using ZeroAPI policy config
 provides_hooks:
   - pre_model_route

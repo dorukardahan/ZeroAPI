@@ -7,6 +7,10 @@ vi.mock("openclaw/plugin-sdk/plugin-entry", () => ({
   definePluginEntry: (entry: unknown) => entry,
 }));
 
+vi.mock("openclaw/plugin-sdk/session-store-runtime", () => ({
+  patchSessionEntry: vi.fn(async () => null),
+}));
+
 const startSubscriptionAdvisoryMonitor = vi.fn(() => ({ stop: vi.fn() }));
 const maybePrefixChannelAdvisory = vi.fn(() => null);
 
@@ -187,6 +191,7 @@ describe("plugin entry registration", () => {
       logRoutingEvent: vi.fn(),
     }));
     vi.doMock("../session-auth.js", () => ({
+      createSessionEntryPatcher: (runtime: { patchSessionEntry: unknown }) => runtime.patchSessionEntry,
       syncSessionAuthProfileOverride: () => ({
         action: "blocked",
         reason: "user_pinned_override",
@@ -210,7 +215,7 @@ describe("plugin entry registration", () => {
       const handler = on.mock.calls[0]?.[1];
       expect(typeof handler).toBe("function");
 
-      const result = handler(
+      const result = await handler(
         { prompt: "coordinate a workflow across 3 services" },
         {
           agentId: "main",
@@ -383,6 +388,7 @@ describe("plugin entry registration", () => {
       logRoutingEvent: vi.fn(),
     }));
     vi.doMock("../session-auth.js", () => ({
+      createSessionEntryPatcher: (runtime: { patchSessionEntry: unknown }) => runtime.patchSessionEntry,
       syncSessionAuthProfileOverride: () => ({
         action: "noop",
         reason: "already_current",
@@ -406,7 +412,7 @@ describe("plugin entry registration", () => {
       const handler = on.mock.calls[0]?.[1];
       expect(typeof handler).toBe("function");
 
-      handler(
+      await handler(
         { prompt: "implement the provider adapter" },
         {
           agentId: "main",
@@ -415,7 +421,7 @@ describe("plugin entry registration", () => {
           sessionKey: "agent:main:signal:dm:u1",
         },
       );
-      handler(
+      await handler(
         { prompt: "devam et" },
         {
           agentId: "main",

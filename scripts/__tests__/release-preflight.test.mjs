@@ -25,6 +25,7 @@ const PREFLIGHT_INPUTS = [
   "plugin/README.md",
   "scripts/stage_clawhub_plugin.mjs",
   "scripts/refresh_benchmarks.py",
+  ".github/workflows/publish-clawhub-plugin.yml",
   "benchmarks.json",
   "plugin/benchmarks.json",
   "examples/openai-only.json",
