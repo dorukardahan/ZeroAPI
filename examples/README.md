@@ -1,6 +1,14 @@
 # ZeroAPI v3 Configuration Examples
 
-Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` policy snapshot — copy it to `~/.openclaw/zeroapi-config.json`.
+Pick the example that matches your provider subscriptions. Each file is a ready-to-use `zeroapi-config.json` policy snapshot. OpenClaw users can copy it to `~/.openclaw/zeroapi-config.json`.
+
+The same example files can seed the [Hermes adapter](../integrations/hermes/README.md). Hermes discovers the policy in this order:
+
+1. the path set by `ZEROAPI_CONFIG_PATH`, when present;
+2. `~/.hermes/zeroapi-config.json`;
+3. `~/.openclaw/zeroapi-config.json` as a fallback.
+
+The shared policy file does not replace either host's provider, credential, or model configuration. Hermes still owns those runtime settings, just as OpenClaw keeps its runtime settings in `~/.openclaw/openclaw.json`.
 
 If you are using OpenClaw from Slack, Telegram, WhatsApp, Matrix, Discord, or another chat channel, start with:
 
