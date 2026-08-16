@@ -1,7 +1,7 @@
 {
   "version": "3.10.3",
-  "generated": "2026-08-09T00:00:00.000Z",
-  "benchmarks_date": "2026-08-09",
+  "generated": "2026-08-16T00:00:00.000Z",
+  "benchmarks_date": "2026-08-16",
   "subscription_catalog_version": "1.1.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -39,8 +39,8 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 67.047,
-      "ttft_seconds": 80.785,
+      "speed_tps": 61.457,
+      "ttft_seconds": 99.508,
       "benchmarks": {
         "intelligence": 60.9,
         "coding": 77.4,
@@ -57,8 +57,8 @@
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 116.294,
-      "ttft_seconds": 92.804,
+      "speed_tps": 101.953,
+      "ttft_seconds": 127.5,
       "benchmarks": {
         "intelligence": 56.6,
         "coding": 76.7,
@@ -75,8 +75,8 @@
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 160.749,
-      "ttft_seconds": 57.441,
+      "speed_tps": 160.282,
+      "ttft_seconds": 71.668,
       "benchmarks": {
         "intelligence": 52.3,
         "coding": 71.4,
@@ -91,8 +91,8 @@
     "zai/glm-5.2": {
       "context_window": 1000000,
       "supports_vision": false,
-      "speed_tps": 107.396,
-      "ttft_seconds": 0.999,
+      "speed_tps": 115.402,
+      "ttft_seconds": 0.906,
       "benchmarks": {
         "intelligence": 52.6,
         "coding": 68.8,
@@ -127,8 +127,8 @@
     "moonshot/kimi-k2.7-code": {
       "context_window": 262144,
       "supports_vision": true,
-      "speed_tps": 38.38,
-      "ttft_seconds": 1.265,
+      "speed_tps": 36.44,
+      "ttft_seconds": 1.268,
       "benchmarks": {
         "intelligence": 43,
         "coding": 60.8,
@@ -163,8 +163,8 @@
     "minimax-portal/MiniMax-M3": {
       "context_window": 1000000,
       "supports_vision": true,
-      "speed_tps": 97.95,
-      "ttft_seconds": 1.065,
+      "speed_tps": 97.268,
+      "ttft_seconds": 1.194,
       "benchmarks": {
         "intelligence": 45.4,
         "coding": 58.6,
@@ -199,8 +199,8 @@
     "qwen-oauth/qwen3.5-plus": {
       "context_window": 1000000,
       "supports_vision": true,
-      "speed_tps": 55.376,
-      "ttft_seconds": 1.285,
+      "speed_tps": null,
+      "ttft_seconds": null,
       "benchmarks": {
         "intelligence": 40.5,
         "coding": 54.5,
@@ -340,7 +340,6 @@
       "primary": "zai/glm-5.2",
       "fallbacks": [
         "minimax-portal/MiniMax-M3",
-        "qwen-oauth/qwen3.5-plus",
         "moonshot/kimi-k2.7-code",
         "openai/gpt-5.6-luna",
         "openai/gpt-5.6-sol",
@@ -348,6 +347,7 @@
         "zai/glm-5.1",
         "moonshot/kimi-k2.6",
         "minimax-portal/MiniMax-M2.7",
+        "qwen-oauth/qwen3.5-plus",
         "xai/grok-4.5",
         "xai/grok-build-0.1",
         "xai/grok-4.3"
