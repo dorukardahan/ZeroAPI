@@ -6,6 +6,8 @@
 
 - Stop treating a bare `review` keyword as automatic research routing. Software/PR/security-review collocates now score as `code`; literature collocates stay on `research`; an ambiguous lone `review` no longer steers the model switcher.
 
+## [3.10.3] - 2026-08-10
+
 ### Fixed
 
 - Persist OpenClaw account/profile overrides through the public storage-neutral session API instead of inferring the active backend from `openclaw-agent.sqlite`; this keeps `v2026.7.1-2` JSON sessions working when its auth database is present and follows newer SQLite session storage without touching stale JSON.
