@@ -91,6 +91,99 @@ const DEFAULT_RISK_LEVELS: Record<TaskCategory, RiskLevel> = {
   default: "low",
 };
 
+// Bare "review" is overloaded: code/PR/security review vs literature review.
+// Count it only when the surrounding prompt disambiguates; never let a lone
+// "review" steal a turn into the research lane.
+const CODE_REVIEW_CONTEXT = [
+  "pr",
+  "pull request",
+  "pull-request",
+  "code review",
+  "codex",
+  "github",
+  "gitlab",
+  "merge",
+  "commit",
+  "branch",
+  "diff",
+  "patch",
+  "ci",
+  "issue",
+  "thread",
+  "inline",
+  "unresolved",
+  "blocker",
+  "head",
+  "lint",
+  "regression",
+  "test",
+  "security review",
+  "release review",
+  "exact-head",
+  "exact head",
+];
+
+const RESEARCH_REVIEW_CONTEXT = [
+  "literature",
+  "paper",
+  "papers",
+  "study",
+  "studies",
+  "evidence",
+  "survey",
+  "journal",
+  "academic",
+  "peer-reviewed",
+  "peer reviewed",
+  "meta-analysis",
+  "meta analysis",
+  "research",
+  "analyze",
+  "investigate",
+  "compare",
+  "explain",
+];
+
+function hasAnyWholeKeyword(lower: string, keywords: string[]): boolean {
+  return keywords.some((keyword) => buildKeywordRegex(keyword).test(lower));
+}
+
+/**
+ * Decide whether a matched "review" token should score as code, research, or
+ * neither. Returns the category that should receive the match count, or null
+ * when the token is too ambiguous to vote.
+ */
+export function resolveReviewKeywordCategory(lower: string): TaskCategory | null {
+  const codeContext = hasAnyWholeKeyword(lower, CODE_REVIEW_CONTEXT);
+  const researchContext = hasAnyWholeKeyword(lower, RESEARCH_REVIEW_CONTEXT);
+  if (codeContext && !researchContext) return "code";
+  if (researchContext && !codeContext) return "research";
+  if (codeContext && researchContext) {
+    // Mixed prompts like "review this PR after researching the API" lean code:
+    // the durable action is software work, not literature synthesis.
+    return "code";
+  }
+  return null;
+}
+
+function scoreKeywordMatch(
+  category: string,
+  keyword: string,
+  lower: string,
+): { score: number; attributedCategory: string } | null {
+  const regex = buildKeywordRegex(keyword, "g");
+  const matches = lower.match(regex);
+  if (!matches?.length) return null;
+
+  if (keyword.toLowerCase() === "review") {
+    const resolved = resolveReviewKeywordCategory(lower);
+    if (!resolved) return null;
+    return { score: matches.length, attributedCategory: resolved };
+  }
+
+  return { score: matches.length, attributedCategory: category };
+}
+
 export function classifyTask(
   prompt: string,
   keywords: Record<string, string[]>,
@@ -110,24 +203,28 @@ export function classifyTask(
   let bestCategory: TaskCategory = "default";
   let bestReason = "no_match";
   let bestScore = 0;
+  const scores = new Map<string, { score: number; firstKeyword: string }>();
 
   for (const [category, kws] of Object.entries(keywords)) {
-    let categoryScore = 0;
-    let firstKeyword = "";
-
     for (const kw of kws) {
-      const regex = buildKeywordRegex(kw, "g");
-      const matches = lower.match(regex);
-      if (matches?.length) {
-        categoryScore += matches.length;
-        if (!firstKeyword) firstKeyword = kw;
+      const match = scoreKeywordMatch(category, kw, lower);
+      if (!match) continue;
+      const bucket = scores.get(match.attributedCategory) ?? { score: 0, firstKeyword: "" };
+      bucket.score += match.score;
+      if (!bucket.firstKeyword) {
+        bucket.firstKeyword = kw.toLowerCase() === "review"
+          ? `review→${match.attributedCategory}`
+          : kw;
       }
+      scores.set(match.attributedCategory, bucket);
     }
+  }
 
-    if (categoryScore > bestScore) {
-      bestScore = categoryScore;
+  for (const [category, bucket] of scores.entries()) {
+    if (bucket.score > bestScore) {
+      bestScore = bucket.score;
       bestCategory = category as TaskCategory;
-      bestReason = firstKeyword ? `keyword:${firstKeyword}` : "no_match";
+      bestReason = bucket.firstKeyword ? `keyword:${bucket.firstKeyword}` : "no_match";
     }
   }
 

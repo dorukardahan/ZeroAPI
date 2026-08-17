@@ -10,10 +10,12 @@ from router import (
     HERMES_PROVIDER_MAP,
     ZeroAPIRouter,
     _allowed_by_subscriptions,
+    _classify,
     _hermes_provider,
     _resolve_capacity,
     _valid_config,
     load_config,
+    resolve_review_keyword_category,
 )
 
 
@@ -54,7 +56,8 @@ CONFIG = {
     },
     "workspace_hints": {},
     "keywords": {
-        "code": ["implement", "refactor", "fix", "debug"],
+        "code": ["implement", "refactor", "fix", "debug", "pr", "diff", "test"],
+        "research": ["research", "analyze", "investigate", "review", "paper", "evidence"],
         "orchestration": ["coordinate", "workflow"],
         "fast": ["quick", "format"],
     },
@@ -80,6 +83,42 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         self.assertEqual(route["provider"], "zai")
         self.assertEqual(route["model"], "glm-5.1")
         self.assertIn("zeroapi:orchestration", route["reason"])
+
+    def test_bare_review_does_not_route_to_research(self):
+        category, reason, _risk = _classify(CONFIG, "please review this carefully")
+        self.assertEqual(category, "default")
+        self.assertEqual(reason, "no_match")
+        route = ZeroAPIRouter(CONFIG).resolve(
+            "please review this carefully",
+            current_model="openai-codex/gpt-5.4",
+        )
+        self.assertIsNone(route)
+
+    def test_software_review_language_routes_to_code_not_research(self):
+        prompt = "Codex review: address the unresolved P2 on this PR head before merge"
+        category, reason, _risk = _classify(CONFIG, prompt)
+        self.assertEqual(category, "code")
+        self.assertIn("keyword:", reason)
+        self.assertNotEqual(category, "research")
+        # Already on the code primary => no switch needed.
+        route = ZeroAPIRouter(CONFIG).resolve(prompt, current_model="openai-codex/gpt-5.4")
+        self.assertIsNone(route)
+
+    def test_literature_review_stays_research(self):
+        category, reason, _risk = _classify(
+            CONFIG,
+            "review the literature and compare evidence across peer-reviewed papers",
+        )
+        self.assertEqual(category, "research")
+        self.assertTrue(reason.startswith("keyword:"))
+
+    def test_resolve_review_keyword_category_helpers(self):
+        self.assertIsNone(resolve_review_keyword_category("please review this carefully"))
+        self.assertEqual(resolve_review_keyword_category("review this pr head"), "code")
+        self.assertEqual(
+            resolve_review_keyword_category("review the literature and papers"),
+            "research",
+        )
 
     def test_keeps_current_model_for_default_messages(self):
         route = ZeroAPIRouter(CONFIG).resolve("buna bir bak", current_model="openai-codex/gpt-5.4")

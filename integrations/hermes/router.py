@@ -295,6 +295,59 @@ DEFAULT_RISK_LEVELS: dict[str, str] = {
     "default": "low",
 }
 
+# Bare "review" is overloaded: code/PR/security review vs literature review.
+# Count it only when the surrounding prompt disambiguates; never let a lone
+# "review" steal a turn into the research lane.
+CODE_REVIEW_CONTEXT = [
+    "pr",
+    "pull request",
+    "pull-request",
+    "code review",
+    "codex",
+    "github",
+    "gitlab",
+    "merge",
+    "commit",
+    "branch",
+    "diff",
+    "patch",
+    "ci",
+    "issue",
+    "thread",
+    "inline",
+    "unresolved",
+    "blocker",
+    "head",
+    "lint",
+    "regression",
+    "test",
+    "security review",
+    "release review",
+    "exact-head",
+    "exact head",
+]
+
+RESEARCH_REVIEW_CONTEXT = [
+    "literature",
+    "paper",
+    "papers",
+    "study",
+    "studies",
+    "evidence",
+    "survey",
+    "journal",
+    "academic",
+    "peer-reviewed",
+    "peer reviewed",
+    "meta-analysis",
+    "meta analysis",
+    "research",
+    "analyze",
+    "investigate",
+    "compare",
+    "explain",
+]
+
 
 def load_config(path: str | None = None) -> Config | None:
     config_path = path or os.getenv("ZEROAPI_CONFIG_PATH")
@@ -590,6 +643,36 @@ def _resolve_continuation_category(
     return _history_continuation_category(config, conversation_history, allowed)
 
 
+def _has_any_whole_keyword(lower: str, keywords: list[str]) -> bool:
+    return any(_keyword_regex(keyword).search(lower) for keyword in keywords)
+
+
+def resolve_review_keyword_category(lower: str) -> str | None:
+    """Attribute a matched 'review' token to code, research, or neither."""
+    code_context = _has_any_whole_keyword(lower, CODE_REVIEW_CONTEXT)
+    research_context = _has_any_whole_keyword(lower, RESEARCH_REVIEW_CONTEXT)
+    if code_context and not research_context:
+        return "code"
+    if research_context and not code_context:
+        return "research"
+    if code_context and research_context:
+        # Mixed prompts lean code: the durable action is software work.
+        return "code"
+    return None
+
+
+def _score_keyword_match(category: str, keyword: str, lower: str) -> tuple[int, str] | None:
+    matches = _keyword_regex(keyword).findall(lower)
+    if not matches:
+        return None
+    if keyword.lower() == "review":
+        resolved = resolve_review_keyword_category(lower)
+        if resolved is None:
+            return None
+        return len(matches), resolved
+    return len(matches), category
+
+
 def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = None) -> tuple[TaskCategory, str, str]:
     lower = prompt.lower().strip()
     if not lower:
@@ -600,24 +683,31 @@ def _classify(config: Config, prompt: str, workspace_hints: list[Any] | None = N
     best_category = "default"
     best_reason = "no_match"
     best_score = 0
+    scores: dict[str, dict[str, Any]] = {}
     keywords = config.get("keywords", {})
     if isinstance(keywords, dict):
         for category, values in keywords.items():
             if not isinstance(category, str) or not isinstance(values, list):
                 continue
-            score = 0
-            first = ""
             for keyword in values:
                 if not isinstance(keyword, str):
                     continue
-                matches = _keyword_regex(keyword).findall(lower)
-                if matches:
-                    score += len(matches)
-                    first = first or keyword
-            if score > best_score:
-                best_category = category
-                best_reason = f"keyword:{first}" if first else "no_match"
-                best_score = score
+                scored = _score_keyword_match(category, keyword, lower)
+                if scored is None:
+                    continue
+                match_score, attributed = scored
+                bucket = scores.setdefault(attributed, {"score": 0, "first": ""})
+                bucket["score"] += match_score
+                if not bucket["first"]:
+                    bucket["first"] = (
+                        f"review→{attributed}" if keyword.lower() == "review" else keyword
+                    )
+
+    for category, bucket in scores.items():
+        if bucket["score"] > best_score:
+            best_category = category
+            best_reason = f"keyword:{bucket['first']}" if bucket["first"] else "no_match"
+            best_score = bucket["score"]
 
     if best_score == 0 and workspace_hints and len(workspace_hints) == 1:
         hint = workspace_hints[0]

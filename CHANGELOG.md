@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Stop treating a bare `review` keyword as automatic research routing. Software/PR/security-review collocates now score as `code`; literature collocates stay on `research`; an ambiguous lone `review` no longer steers the model switcher.
+
 ## [3.10.3] - 2026-08-10
 
 ### Fixed

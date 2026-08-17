@@ -3,7 +3,7 @@ import { classifyTask } from "../classifier.js";
 
 const defaultKeywords = {
   code: ["implement", "function", "class", "refactor", "fix", "test", "debug", "PR", "diff", "migration", "component", "endpoint"],
-  research: ["research", "analyze", "explain", "compare", "paper", "evidence", "investigate", "study"],
+  research: ["research", "analyze", "explain", "compare", "paper", "evidence", "investigate", "study", "review"],
   orchestration: ["orchestrate", "coordinate", "pipeline", "workflow", "sequence", "parallel", "fan-out"],
   math: ["calculate", "solve", "equation", "proof", "integral", "probability", "optimize", "formula"],
   fast: ["quick", "simple", "format", "convert", "translate", "rename", "one-liner", "list"],
@@ -130,5 +130,43 @@ describe("classifyTask", () => {
     const result = classifyTask("parse the JSON token from the response", defaultKeywords, highRisk);
     // "token" is NOT in our default highRisk list (only deploy, delete, drop, rm, production, credentials, secret, password)
     expect(result.risk).not.toBe("high");
+  });
+
+  it("ignores bare 'review' without disambiguating context", () => {
+    const result = classifyTask("please review this carefully", defaultKeywords, highRisk);
+    expect(result.category).toBe("default");
+    expect(result.reason).toBe("no_match");
+  });
+
+  it("routes software/PR review language to code, not research", () => {
+    const cases = [
+      "Codex review: address the unresolved P2 on this PR head",
+      "review the pull request and merge if CI is green",
+      "exact-head code review before merge",
+      "security review of this diff and CI blocker",
+    ];
+    for (const prompt of cases) {
+      const result = classifyTask(prompt, defaultKeywords, highRisk);
+      expect(result.category).toBe("code");
+      expect(result.reason).toMatch(/keyword:review→code|keyword:(pr|diff|test|code review)/i);
+    }
+  });
+
+  it("keeps literature review language on research", () => {
+    const result = classifyTask(
+      "review the literature and compare evidence across peer-reviewed papers",
+      defaultKeywords,
+      highRisk,
+    );
+    expect(result.category).toBe("research");
+  });
+
+  it("does not let a lone 'review' override an explicit code task", () => {
+    const result = classifyTask(
+      "implement the fix after the code review comments",
+      defaultKeywords,
+      highRisk,
+    );
+    expect(result.category).toBe("code");
   });
 });
