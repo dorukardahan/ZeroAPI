@@ -1,6 +1,6 @@
 {
   "name": "zeroapi-workspace",
-  "version": "3.10.3",
+  "version": "3.10.4",
   "private": true,
   "description": "Subscription-aware, benchmark-informed routing policy for the OpenClaw plugin and experimental Hermes Agent adapter",
   "type": "module",
