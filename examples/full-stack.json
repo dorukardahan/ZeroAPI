@@ -1,7 +1,7 @@
 {
   "version": "3.10.3",
-  "generated": "2026-08-30T00:00:00.000Z",
-  "benchmarks_date": "2026-08-30",
+  "generated": "2026-09-06T00:00:00.000Z",
+  "benchmarks_date": "2026-09-06",
   "subscription_catalog_version": "1.1.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -39,71 +39,71 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 84.156,
-      "ttft_seconds": 50.555,
+      "speed_tps": 79.307,
+      "ttft_seconds": 50.228,
       "benchmarks": {
-        "intelligence": 60.9,
+        "intelligence": 51.3,
         "coding": 77.4,
         "tau2": 0.851,
         "tau3_banking": 0.443,
         "terminalbench": 0.88,
         "ifbench": 0.727,
         "gpqa": 0.941,
-        "lcr": 0.777,
+        "lcr": 0.84,
         "hle": 0.495,
-        "scicode": 0.561
+        "scicode": 0.571
       }
     },
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 110.017,
-      "ttft_seconds": 119.679,
+      "speed_tps": 104.085,
+      "ttft_seconds": 104.021,
       "benchmarks": {
-        "intelligence": 56.6,
+        "intelligence": 46.8,
         "coding": 76.7,
         "tau2": 0.863,
         "tau3_banking": 0.402,
         "terminalbench": 0.88,
         "ifbench": 0.712,
         "gpqa": 0.925,
-        "lcr": 0.797,
+        "lcr": 0.83,
         "hle": 0.429,
-        "scicode": 0.539
+        "scicode": 0.55
       }
     },
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 128.526,
-      "ttft_seconds": 69.708,
+      "speed_tps": 110.498,
+      "ttft_seconds": 104.276,
       "benchmarks": {
-        "intelligence": 52.3,
+        "intelligence": 43.4,
         "coding": 71.4,
         "tau3_banking": 0.311,
         "terminalbench": 0.809,
         "gpqa": 0.911,
-        "lcr": 0.783,
+        "lcr": 0.837,
         "hle": 0.395,
-        "scicode": 0.525
+        "scicode": 0.536
       }
     },
     "zai/glm-5.2": {
       "context_window": 1000000,
       "supports_vision": false,
-      "speed_tps": 68.376,
-      "ttft_seconds": 1.283,
+      "speed_tps": 70.351,
+      "ttft_seconds": 1.427,
       "benchmarks": {
-        "intelligence": 52.6,
+        "intelligence": 42.5,
         "coding": 68.8,
         "tau2": 0.991,
         "tau3_banking": 0.346,
         "terminalbench": 0.779,
         "ifbench": 0.733,
         "gpqa": 0.895,
-        "lcr": 0.767,
+        "lcr": 0.783,
         "hle": 0.411,
-        "scicode": 0.505
+        "scicode": 0.512
       }
     },
     "zai/glm-5.1": {
@@ -112,34 +112,33 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 41,
+        "intelligence": 31.9,
         "coding": 55.8,
         "tau2": 0.977,
         "tau3_banking": 0.136,
         "terminalbench": 0.618,
         "ifbench": 0.763,
         "gpqa": 0.868,
-        "lcr": 0.68,
-        "hle": 0.301,
-        "scicode": 0.438
+        "lcr": 0.737,
+        "hle": 0.301
       }
     },
     "moonshot/kimi-k2.7-code": {
       "context_window": 262144,
       "supports_vision": true,
-      "speed_tps": 42.586,
-      "ttft_seconds": 1.284,
+      "speed_tps": 46.905,
+      "ttft_seconds": 1.263,
       "benchmarks": {
-        "intelligence": 43,
+        "intelligence": 33.9,
         "coding": 60.8,
         "tau2": 0.901,
         "tau3_banking": 0.202,
         "terminalbench": 0.674,
         "ifbench": 0.631,
         "gpqa": 0.896,
-        "lcr": 0.75,
+        "lcr": 0.793,
         "hle": 0.35,
-        "scicode": 0.475
+        "scicode": 0.478
       }
     },
     "moonshot/kimi-k2.6": {
@@ -148,34 +147,33 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 45.1,
+        "intelligence": 35.8,
         "coding": 61.8,
         "tau2": 0.959,
         "tau3_banking": 0.233,
         "terminalbench": 0.659,
         "ifbench": 0.76,
         "gpqa": 0.911,
-        "lcr": 0.767,
-        "hle": 0.375,
-        "scicode": 0.535
+        "lcr": 0.81,
+        "hle": 0.375
       }
     },
     "minimax-portal/MiniMax-M3": {
       "context_window": 1000000,
       "supports_vision": true,
-      "speed_tps": 125.906,
-      "ttft_seconds": 0.977,
+      "speed_tps": 84.624,
+      "ttft_seconds": 1.121,
       "benchmarks": {
-        "intelligence": 45.4,
+        "intelligence": 35.7,
         "coding": 58.6,
         "tau2": 0.889,
         "tau3_banking": 0.153,
         "terminalbench": 0.652,
         "ifbench": 0.829,
         "gpqa": 0.929,
-        "lcr": 0.803,
+        "lcr": 0.83,
         "hle": 0.39,
-        "scicode": 0.454
+        "scicode": 0.471
       }
     },
     "minimax-portal/MiniMax-M2.7": {
@@ -184,16 +182,15 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 38.9,
+        "intelligence": 30.1,
         "coding": 52.6,
         "tau2": 0.848,
         "tau3_banking": 0.099,
         "terminalbench": 0.554,
         "ifbench": 0.757,
         "gpqa": 0.874,
-        "lcr": 0.753,
-        "hle": 0.296,
-        "scicode": 0.47
+        "lcr": 0.783,
+        "hle": 0.296
       }
     },
     "qwen-oauth/qwen3.5-plus": {
@@ -202,16 +199,15 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 40.5,
+        "intelligence": 31.5,
         "coding": 54.5,
         "tau2": 0.977,
         "tau3_banking": 0.208,
         "terminalbench": 0.614,
         "ifbench": 0.752,
         "gpqa": 0.882,
-        "lcr": 0.723,
-        "hle": 0.278,
-        "scicode": 0.407
+        "lcr": 0.783,
+        "hle": 0.278
       }
     },
     "xai/grok-4.5": {
@@ -220,16 +216,16 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 37.9,
+        "intelligence": 29.3,
         "coding": 42.2,
         "tau2": 0.977,
         "tau3_banking": 0.124,
         "terminalbench": 0.397,
         "ifbench": 0.813,
         "gpqa": 0.901,
-        "lcr": 0.66,
+        "lcr": 0.73,
         "hle": 0.372,
-        "scicode": 0.473
+        "scicode": 0.483
       }
     },
     "xai/grok-build-0.1": {
@@ -238,14 +234,13 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 40.7,
+        "intelligence": 31.7,
         "coding": 51.5,
         "tau3_banking": 0.134,
         "terminalbench": 0.521,
         "gpqa": 0.895,
-        "lcr": 0.7,
-        "hle": 0.383,
-        "scicode": 0.502
+        "lcr": 0.747,
+        "hle": 0.383
       }
     },
     "xai/grok-4.3": {
@@ -254,16 +249,16 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 37.9,
+        "intelligence": 29.3,
         "coding": 42.2,
         "tau2": 0.977,
         "tau3_banking": 0.124,
         "terminalbench": 0.397,
         "ifbench": 0.813,
         "gpqa": 0.901,
-        "lcr": 0.66,
+        "lcr": 0.73,
         "hle": 0.372,
-        "scicode": 0.473
+        "scicode": 0.483
       }
     }
   },
@@ -297,8 +292,8 @@
         "xai/grok-build-0.1",
         "xai/grok-4.5",
         "xai/grok-4.3",
-        "minimax-portal/MiniMax-M2.7",
         "qwen-oauth/qwen3.5-plus",
+        "minimax-portal/MiniMax-M2.7",
         "zai/glm-5.1"
       ]
     },
@@ -339,8 +334,8 @@
     "fast": {
       "primary": "minimax-portal/MiniMax-M3",
       "fallbacks": [
-        "zai/glm-5.2",
         "moonshot/kimi-k2.7-code",
+        "zai/glm-5.2",
         "openai/gpt-5.6-sol",
         "openai/gpt-5.6-luna",
         "openai/gpt-5.6-terra",
