@@ -63,6 +63,87 @@ mnop\trefs/tags/3.5.1
   assert.equal(latestVersionFromGitRefs(stdout), "3.5.1");
 });
 
+test("managed Git inherits network settings without sharing them with OpenClaw", () => {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-managed-git-network-"));
+  const binDir = join(root, "bin");
+  const callsPath = join(root, "calls.jsonl");
+  mkdirSync(binDir);
+  const network = {
+    http_proxy: "http://synthetic-http.invalid:8080",
+    https_proxy: "http://synthetic-https.invalid:8080",
+    HTTPS_PROXY: "http://synthetic-uppercase.invalid:8080",
+    all_proxy: "socks5://synthetic-all.invalid:1080",
+    ALL_PROXY: "socks5://synthetic-uppercase-all.invalid:1080",
+    no_proxy: "", // An explicit empty value must also survive.
+    NO_PROXY: "synthetic.internal",
+    GIT_HTTP_PROXY_AUTHMETHOD: "negotiate",
+    GIT_SSL_CAINFO: "/synthetic/ca.pem",
+    GIT_SSL_CAPATH: "/synthetic/ca-directory",
+    GIT_PROXY_SSL_CAINFO: "/synthetic/proxy-ca.pem",
+    SSH_AUTH_SOCK: "/synthetic/agent.sock",
+  };
+  const excluded = {
+    ZEROAPI_TEST_UNRELATED_SECRET: "synthetic-not-a-credential",
+    GIT_ASKPASS: "/synthetic/askpass",
+    GIT_SSH_COMMAND: "synthetic-command",
+    GIT_SSL_NO_VERIFY: "true",
+  };
+  // Probe resolution without a real login shell or any saved host configuration.
+  writeExecutable(join(binDir, "bash"), `#!${process.execPath}
+process.exit(process.argv[2] === "-lc" && process.argv[3] === "command -v git" ? 0 : 91);
+`);
+  for (const command of ["git", "openclaw"]) {
+    writeExecutable(join(binDir, command), `#!${process.execPath}
+const fs = require("node:fs");
+const path = require("node:path");
+const args = process.argv.slice(2);
+const network = ${JSON.stringify(network)};
+fs.appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({
+  command: ${JSON.stringify(command)},
+  operation: args[0],
+  networkMatches: Object.fromEntries(Object.entries(network).map(([name, expected]) => [name, process.env[name] === expected])),
+  networkAbsent: Object.keys(network).every((name) => process.env[name] === undefined),
+  excludedAbsent: ${JSON.stringify(Object.keys(excluded))}.every((name) => process.env[name] === undefined),
+}) + "\\n");
+if (args[0] === "ls-remote") process.stdout.write("0000000000000000000000000000000000000000\\trefs/tags/v3.11.0\\n");
+if (args[0] === "clone") {
+  const plugin = path.join(args.at(-1), "plugin");
+  fs.mkdirSync(plugin, {recursive: true});
+  fs.writeFileSync(path.join(plugin, "package.json"), JSON.stringify({version: "3.11.0"}));
+}
+`);
+  }
+  const helperUrl = new URL("../managed-install-lib.mjs", import.meta.url).href;
+  try {
+    const result = spawnSync(process.execPath, ["--input-type=module", "-e", `
+      import { latestTaggedVersion, cloneTagSnapshot, runCommand } from ${JSON.stringify(helperUrl)};
+      const version = latestTaggedVersion("https://example.invalid/ZeroAPI.git");
+      if (version !== "3.11.0") throw new Error("Synthetic tag discovery failed");
+      cloneTagSnapshot({ repoUrl: "ssh://git@example.invalid/ZeroAPI.git", version, destinationDir: ${JSON.stringify(join(root, "snapshot"))} });
+      runCommand("openclaw", ["--version"]);
+    `], {
+      cwd: root,
+      encoding: "utf8",
+      env: { PATH: binDir, ...network, ...excluded },
+    });
+    assert.equal(result.status, 0, "synthetic managed command failed");
+    const calls = readFileSync(callsPath, "utf8").trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(calls.map(({ command, operation }) => [command, operation]), [
+      ["git", "ls-remote"], ["git", "clone"], ["openclaw", "--version"],
+    ]);
+    for (const call of calls) {
+      assert.equal(call.excludedAbsent, true);
+      if (call.command === "git") {
+        assert.ok(Object.values(call.networkMatches).every(Boolean), "Git lost a network setting");
+      } else {
+        assert.equal(call.networkAbsent, true);
+      }
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("copyRepoSnapshot excludes .git and node_modules", () => {
   const root = mkdtempSync(join(tmpdir(), "zeroapi-managed-lib-"));
   const source = join(root, "source");

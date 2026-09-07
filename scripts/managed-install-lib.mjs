@@ -296,6 +296,15 @@ const COMMAND_ENV_KEYS = [
   "XDG_STATE_HOME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "NO_COLOR",
 ];
 
+// Git's HTTP transport and SSH agent need the caller's network configuration.
+// Keep it separate from OpenClaw and other child processes, and let Git apply
+// its own lowercase/uppercase proxy precedence and certificate verification.
+const GIT_NETWORK_ENV_KEYS = [
+  "http_proxy", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY",
+  "no_proxy", "NO_PROXY", "GIT_HTTP_PROXY_AUTHMETHOD",
+  "GIT_SSL_CAINFO", "GIT_SSL_CAPATH", "GIT_PROXY_SSL_CAINFO", "SSH_AUTH_SOCK",
+];
+
 export function commandEnvironment(overrides = {}) {
   const env = {};
   for (const name of COMMAND_ENV_KEYS) {
@@ -304,12 +313,20 @@ export function commandEnvironment(overrides = {}) {
   return { ...env, ...overrides };
 }
 
+function gitCommandEnvironment(overrides = {}) {
+  const env = {};
+  for (const name of GIT_NETWORK_ENV_KEYS) {
+    if (process.env[name] !== undefined) env[name] = process.env[name];
+  }
+  return commandEnvironment({ ...env, ...overrides });
+}
+
 export function runCommand(command, args, options = {}) {
   const result = spawnSync(command, args, {
     encoding: "utf-8",
     stdio: options.stdio ?? "pipe",
     cwd: options.cwd,
-    env: commandEnvironment(options.env),
+    env: command === "git" ? gitCommandEnvironment(options.env) : commandEnvironment(options.env),
   });
   if (options.allowFailure) {
     return result;
