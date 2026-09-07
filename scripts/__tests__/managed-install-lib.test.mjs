@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { delimiter, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -10,6 +10,7 @@ import {
   buildManagedInstallState,
   classifyVersionBump,
   compareVersions,
+  commandEnvironment,
   copyRepoSnapshot,
   installOrUpdatePlugin,
   latestVersionFromGitRefs,
@@ -164,7 +165,7 @@ test("stage_clawhub_plugin uses local npm exec esbuild without npx fetch", () =>
       cwd: root,
       encoding: "utf-8",
       env: {
-        ...process.env,
+        ...commandEnvironment(),
         PATH: `${binDir}${delimiter}${process.env.PATH}`,
         ZEROAPI_NPM_ARGS_FILE: argsFile,
       },
@@ -177,167 +178,148 @@ test("stage_clawhub_plugin uses local npm exec esbuild without npx fetch", () =>
   assert.ok(npmArgs.some((arg) => arg.startsWith("--outdir=")));
 });
 
-test("removeDuplicateZeroAPILoadPaths removes stale zeroapi plugin load paths only", () => {
-  const root = mkdtempSync(join(tmpdir(), "zeroapi-load-paths-"));
-  const openclawDir = join(root, ".openclaw");
-  mkdirSync(openclawDir, { recursive: true });
-  writeFileSync(
-    join(openclawDir, "openclaw.json"),
-    JSON.stringify({
-      plugins: {
-        load: {
-          paths: [
-            "/opt/openclaw/sample-memory-plugin",
-            "/opt/openclaw/ZeroAPI/plugin",
-            "/root/.openclaw/zeroapi-managed/repo/plugin",
-          ],
-        },
-      },
-    }),
-  );
-  const removed = removeDuplicateZeroAPILoadPaths(openclawDir);
-  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
-  assert.deepEqual(removed, [
-    "/opt/openclaw/ZeroAPI/plugin",
-    "/root/.openclaw/zeroapi-managed/repo/plugin",
-  ]);
-  assert.deepEqual(updated.plugins.load.paths, ["/opt/openclaw/sample-memory-plugin"]);
+function withFakeOpenClaw(run, options = {}) {
+  const root = mkdtempSync(join(tmpdir(), "zeroapi-native-install-"));
+  const binDir = join(root, "bin");
+  const openclawDir = join(root, "state");
+  const pluginDir = join(root, "plugin");
+  const callsPath = join(root, "calls.jsonl");
+  mkdirSync(binDir);
+  mkdirSync(openclawDir);
+  mkdirSync(pluginDir);
+  const originalConfig = '{"plugins":{"entries":{"unrelated":{"enabled":false}}}}\n';
+  writeFileSync(join(openclawDir, "openclaw.json"), originalConfig);
+  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.10.3"}\n');
+  writeExecutable(join(binDir, "openclaw"), `#!${process.execPath}
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+const options = ${JSON.stringify(options)};
+const promptInputObserved = options.promptWitness && args[0] === "plugins" && args[1] === "install"
+  ? fs.readFileSync(0, "utf8") === "synthetic-consent\\n" : null;
+fs.appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({
+  args,
+  stateDir: process.env.OPENCLAW_STATE_DIR,
+  configPath: process.env.OPENCLAW_CONFIG_PATH,
+  unrelatedCredentialPresent: process.env.ZEROAPI_TEST_UNRELATED_SECRET !== undefined,
+  promptInputObserved,
+}) + "\\n");
+if (options.promptWitness && args[0] === "plugins" && args[1] === "install") {
+  process.stdout.write("native consent prompt witness\\n");
+}
+if (args[0] === "config" && args[1] === "get") {
+  if (options.getError) {
+    if (options.legacyError) process.stderr.write(options.getError);
+    else process.stdout.write(JSON.stringify({ok:false,error:{type:"cli_error",message:options.getError}}));
+    process.exit(1);
+  }
+  process.stdout.write(JSON.stringify(options.loadPaths ?? []));
+}
+if (options.installFails && args[0] === "plugins" && args[1] === "install") {
+  process.stderr.write("Synthetic install policy rejected");
+  process.exit(9);
+}
+`);
+  const previousPath = process.env.PATH;
+  const previousSentinel = process.env.ZEROAPI_TEST_UNRELATED_SECRET;
+  process.env.PATH = `${binDir}${delimiter}${previousPath}`;
+  process.env.ZEROAPI_TEST_UNRELATED_SECRET = "synthetic-not-a-credential";
+  const calls = () => existsSync(callsPath)
+    ? readFileSync(callsPath, "utf8").trim().split("\n").map((line) => JSON.parse(line)) : [];
+  try {
+    run({ openclawDir, pluginDir, calls, originalConfig });
+  } finally {
+    if (previousPath === undefined) delete process.env.PATH;
+    else process.env.PATH = previousPath;
+    if (previousSentinel === undefined) delete process.env.ZEROAPI_TEST_UNRELATED_SECRET;
+    else process.env.ZEROAPI_TEST_UNRELATED_SECRET = previousSentinel;
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test("managed install delegates replacement, narrow config writes, and enablement to OpenClaw", () => {
+  withFakeOpenClaw(({ pluginDir, openclawDir, calls, originalConfig }) => {
+    installOrUpdatePlugin(pluginDir, openclawDir);
+    const recorded = calls();
+    assert.deepEqual(recorded.map((call) => call.args), [
+      ["plugins", "install", pluginDir, "--force"],
+      ["config", "set", "plugins.entries.zeroapi-router.hooks.allowConversationAccess", "true", "--strict-json"],
+      ["plugins", "enable", "zeroapi-router"],
+    ]);
+    for (const call of recorded) {
+      assert.equal(call.stateDir, openclawDir);
+      assert.equal(call.configPath, join(openclawDir, "openclaw.json"));
+      assert.equal(call.unrelatedCredentialPresent, false);
+      assert.equal(call.args.some((arg) => /accept-capabilities|unsafe-install|acknowledge-install-policy/.test(arg)), false);
+    }
+    // The fake host does not write: the manager must not bypass it with raw
+    // config/index writes or copied package files of its own.
+    assert.equal(readFileSync(join(openclawDir, "openclaw.json"), "utf8"), originalConfig);
+    assert.equal(existsSync(join(openclawDir, "extensions")), false);
+    assert.equal(existsSync(join(openclawDir, "plugins", "installs.json")), false);
+  });
 });
 
-test("installOrUpdatePlugin copies plugin files and updates openclaw config without CLI", () => {
-  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-install-"));
-  const openclawDir = join(root, ".openclaw");
-  const pluginDir = join(root, "plugin");
-  mkdirSync(openclawDir, { recursive: true });
-  mkdirSync(pluginDir, { recursive: true });
-  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: { load: { paths: ["/opt/openclaw/sample-memory-plugin"] } } }));
-  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
-  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
-
-  installOrUpdatePlugin(pluginDir, openclawDir);
-
-  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
-  assert.equal(updated.plugins.entries["zeroapi-router"].enabled, true);
-  assert.equal(updated.plugins.entries["zeroapi-router"].hooks.allowConversationAccess, true);
-  assert.equal(updated.plugins.installs["zeroapi-router"].sourcePath, pluginDir);
-  assert.equal(updated.plugins.allow, undefined);
-  assert.equal(
-    readFileSync(join(openclawDir, "extensions", "zeroapi-router", "index.ts"), "utf-8"),
-    "export default {};\n",
-  );
+test("a native install policy failure stops the manager without fallback or bypass", () => {
+  withFakeOpenClaw(({ pluginDir, openclawDir, calls, originalConfig }) => {
+    assert.throws(() => installOrUpdatePlugin(pluginDir, openclawDir), /Synthetic install policy rejected/);
+    assert.equal(calls().length, 1);
+    assert.equal(readFileSync(join(openclawDir, "openclaw.json"), "utf8"), originalConfig);
+    assert.equal(existsSync(join(openclawDir, "extensions")), false);
+  }, { installFails: true });
 });
 
-test("installOrUpdatePlugin pins zeroapi in plugins.allow for a fresh plugin profile", () => {
-  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-allow-"));
-  const openclawDir = join(root, ".openclaw");
-  const pluginDir = join(root, "plugin");
-  mkdirSync(openclawDir, { recursive: true });
-  mkdirSync(pluginDir, { recursive: true });
-  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: {} }));
-  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
-  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
+for (const interactive of [false, true]) {
+  test(`managed native consent keeps ${interactive ? "manual input and output" : "background updates noninteractive"}`, () => {
+    withFakeOpenClaw(({ pluginDir, openclawDir, calls }) => {
+      const helperUrl = new URL("../managed-install-lib.mjs", import.meta.url).href;
+      const options = interactive ? [{ interactive: true }] : [];
+      const result = spawnSync(process.execPath, ["--input-type=module", "-e", `
+        import { installOrUpdatePlugin } from ${JSON.stringify(helperUrl)};
+        installOrUpdatePlugin(...${JSON.stringify([pluginDir, openclawDir, ...options])});
+      `], {
+        encoding: "utf8",
+        input: "synthetic-consent\n",
+        env: commandEnvironment(),
+      });
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      assert.equal(result.stdout, interactive ? "native consent prompt witness\n" : "");
+      const recorded = calls();
+      assert.equal(recorded.length, 3);
+      assert.equal(recorded[0].promptInputObserved, interactive);
+      for (const call of recorded) {
+        assert.equal(call.args.some((arg) => /accept-capabilities|unsafe-install|acknowledge-install-policy/.test(arg)), false);
+      }
+    }, { promptWitness: true });
+  });
+}
 
-  installOrUpdatePlugin(pluginDir, openclawDir);
-
-  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
-  assert.deepEqual(updated.plugins.allow, ["zeroapi-router"]);
+test("duplicate load-path cleanup uses native config get/set and preserves unrelated paths", () => {
+  withFakeOpenClaw(({ openclawDir, calls, originalConfig }) => {
+    const removed = removeDuplicateZeroAPILoadPaths(openclawDir);
+    assert.deepEqual(removed, ["/opt/openclaw/ZeroAPI/plugin", "/managed/zeroapi/repo/plugin"]);
+    assert.deepEqual(calls().map((call) => call.args), [
+      ["config", "get", "plugins.load.paths", "--json"],
+      ["config", "set", "plugins.load.paths", '["/opt/sample-memory-plugin"]', "--strict-json"],
+    ]);
+    assert.equal(readFileSync(join(openclawDir, "openclaw.json"), "utf8"), originalConfig);
+  }, { loadPaths: ["/opt/sample-memory-plugin", "/opt/openclaw/ZeroAPI/plugin", "/managed/zeroapi/repo/plugin"] });
 });
 
-test("installOrUpdatePlugin appends zeroapi to an existing explicit plugins.allow list", () => {
-  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-allow-append-"));
-  const openclawDir = join(root, ".openclaw");
-  const pluginDir = join(root, "plugin");
-  mkdirSync(openclawDir, { recursive: true });
-  mkdirSync(pluginDir, { recursive: true });
-  writeFileSync(
-    join(openclawDir, "openclaw.json"),
-    JSON.stringify({ plugins: { allow: ["existing-plugin"] } }),
-  );
-  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
-  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
+for (const options of [
+  { getError: "Config path not found: plugins.load.paths", legacyError: true },
+  { getError: "Config path is valid but unset: plugins.load.paths. The runtime default applies until you set an authored value." },
+]) {
+  test(`unset load paths are a no-op (${options.legacyError ? "legacy" : "current"} CLI)`, () => {
+    withFakeOpenClaw(({ openclawDir, calls }) => {
+      assert.deepEqual(removeDuplicateZeroAPILoadPaths(openclawDir), []);
+      assert.equal(calls().length, 1);
+    }, options);
+  });
+}
 
-  installOrUpdatePlugin(pluginDir, openclawDir);
-
-  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
-  assert.deepEqual(updated.plugins.allow, ["existing-plugin", "zeroapi-router"]);
-});
-
-test("installOrUpdatePlugin preserves existing entry fields while enabling conversation hook access", () => {
-  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-hooks-"));
-  const openclawDir = join(root, ".openclaw");
-  const pluginDir = join(root, "plugin");
-  mkdirSync(openclawDir, { recursive: true });
-  mkdirSync(pluginDir, { recursive: true });
-  writeFileSync(
-    join(openclawDir, "openclaw.json"),
-    JSON.stringify({
-      plugins: {
-        entries: {
-          "zeroapi-router": {
-            enabled: false,
-            hooks: {
-              timeoutMs: 5000,
-            },
-          },
-        },
-      },
-    }),
-  );
-  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.5.0"}\n');
-  writeFileSync(join(pluginDir, "index.ts"), "export default {};\n");
-
-  installOrUpdatePlugin(pluginDir, openclawDir);
-
-  const updated = JSON.parse(readFileSync(join(openclawDir, "openclaw.json"), "utf-8"));
-  assert.equal(updated.plugins.entries["zeroapi-router"].enabled, true);
-  assert.equal(updated.plugins.entries["zeroapi-router"].hooks.timeoutMs, 5000);
-  assert.equal(updated.plugins.entries["zeroapi-router"].hooks.allowConversationAccess, true);
-});
-
-test("installOrUpdatePlugin repairs stale clawhub install registry pins", () => {
-  const root = mkdtempSync(join(tmpdir(), "zeroapi-plugin-registry-"));
-  const openclawDir = join(root, ".openclaw");
-  const pluginDir = join(root, "plugin");
-  mkdirSync(join(openclawDir, "plugins"), { recursive: true });
-  mkdirSync(pluginDir, { recursive: true });
-  writeFileSync(join(openclawDir, "openclaw.json"), JSON.stringify({ plugins: {} }));
-  writeFileSync(
-    join(openclawDir, "plugins", "installs.json"),
-    JSON.stringify({
-      installRecords: {
-        "zeroapi-router": {
-          source: "clawhub",
-          spec: "clawhub:zeroapi@3.8.2",
-          version: "3.8.2",
-          integrity: "sha256-old",
-          artifactKind: "legacy-zip",
-          artifactFormat: "zip",
-          clawhubPackage: "zeroapi",
-          installPath: join(openclawDir, "extensions", "zeroapi-router"),
-        },
-      },
-      plugins: [
-        {
-          pluginId: "zeroapi-router",
-          packageName: "zeroapi",
-          packageVersion: "3.8.2",
-          rootDir: join(openclawDir, "extensions", "zeroapi-router"),
-        },
-      ],
-    }),
-  );
-  writeFileSync(join(pluginDir, "package.json"), '{"version":"3.8.4"}\n');
-  writeFileSync(join(pluginDir, "index.js"), "export default {};\n");
-  writeFileSync(join(pluginDir, "openclaw.plugin.json"), '{"id":"zeroapi-router"}\n');
-
-  installOrUpdatePlugin(pluginDir, openclawDir);
-
-  const registry = JSON.parse(readFileSync(join(openclawDir, "plugins", "installs.json"), "utf-8"));
-  assert.equal(registry.installRecords["zeroapi-router"].source, "clawhub");
-  assert.equal(registry.installRecords["zeroapi-router"].spec, "clawhub:zeroapi@3.8.4");
-  assert.equal(registry.installRecords["zeroapi-router"].version, "3.8.4");
-  assert.equal(registry.installRecords["zeroapi-router"].integrity, undefined);
-  assert.equal(registry.installRecords["zeroapi-router"].artifactKind, undefined);
-  assert.equal(registry.installRecords["zeroapi-router"].artifactFormat, undefined);
-  assert.equal(registry.plugins[0].packageVersion, "3.8.4");
+test("a native config read failure is not mistaken for absent load paths", () => {
+  withFakeOpenClaw(({ openclawDir, calls }) => {
+    assert.throws(() => removeDuplicateZeroAPILoadPaths(openclawDir), /could not read plugins.load.paths/);
+    assert.equal(calls().length, 1);
+  }, { getError: "Synthetic database permission denied" });
 });

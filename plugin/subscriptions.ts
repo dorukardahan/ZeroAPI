@@ -25,7 +25,7 @@ export type ProviderCatalogEntry = {
   notes?: string;
 };
 
-export const SUBSCRIPTION_CATALOG_VERSION = "1.1.0";
+export const SUBSCRIPTION_CATALOG_VERSION = "1.2.0";
 
 export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
   {
@@ -56,13 +56,13 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       },
     ],
     benchmarkRoutingBias: 0.7,
-    notes: "OpenAI tiers should be preferred only when benchmark advantage justifies subscription pressure.",
+    notes: "OpenAI tiers should be preferred only when benchmark advantage justifies subscription pressure. GPT-6 Astra rollout must be verified in every selected account's live catalog; a Plus/Pro selection alone does not grant access.",
   },
   {
     providerId: "kimi",
-    label: "Kimi",
-    openclawProviderId: "moonshot",
-    openclawProviderAliases: ["kimi", "kimi-coding"],
+    label: "Kimi Coding",
+    openclawProviderId: "kimi",
+    openclawProviderAliases: ["kimi-coding"],
     status: "active",
     authMode: "api_key",
     selectionMode: "single_tier",
@@ -73,6 +73,17 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       { tierId: "vivace", label: "Vivace", monthlyPriceUsd: 199, annualEffectiveMonthlyUsd: null, availability: "available", routingWeight: 4, recommendedUsage: "Top-tier Kimi subscription for aggressive routing allowance." },
     ],
     benchmarkRoutingBias: 1.1,
+    notes: "Kimi Coding membership uses its own API key and the kimi provider (Hermes: kimi-coding). Moonshot API keys and billing are separate. K3-256k is available on Moderato and above; full 1M K3 and HighSpeed require Allegretto or above. Never migrate a Moonshot auth profile merely by renaming the provider.",
+  },
+  {
+    providerId: "moonshot",
+    label: "Moonshot API",
+    openclawProviderId: "moonshot",
+    status: "excluded",
+    authMode: "api_key",
+    selectionMode: "single_tier",
+    tiers: [],
+    notes: "Usage-billed Moonshot API access is not Kimi Coding membership. Older ZeroAPI catalogs conflated these identities; re-verify the endpoint and account before configuring the separate kimi membership provider.",
   },
   {
     providerId: "zai",
@@ -113,10 +124,10 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
     authMode: "api_key",
     selectionMode: "single_tier",
     tiers: [
-      { tierId: "free", label: "Portal token", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "legacy", routingWeight: 1, recommendedUsage: "Existing Qwen Portal token and legacy OAuth migration surface; re-onboard with a current token when needed." },
+      { tierId: "free", label: "Portal token", monthlyPriceUsd: 0, annualEffectiveMonthlyUsd: 0, availability: "legacy", routingWeight: 1, recommendedUsage: "Existing Portal accounts only on a runtime that still supports qwen-oauth, including Hermes 245e480." },
     ],
     benchmarkRoutingBias: 0.95,
-    notes: "Portal uses canonical qwen-oauth with qwen-portal and qwen-cli legacy aliases. Legacy OAuth profiles are not refreshable; re-run onboarding with a current Portal token. Qwen Cloud and Coding Plan remain separate providers.",
+    notes: "Portal uses canonical qwen-oauth with qwen-portal and qwen-cli legacy aliases. Legacy OAuth profiles are not refreshable. Current OpenClaw removed Portal, so it is excluded from fresh OpenClaw starters; existing compatible-runtime configs remain recognizable. Qwen Cloud and Token Plan require separate credentials and are not automatically subscription eligible.",
   },
   {
     providerId: "xai",

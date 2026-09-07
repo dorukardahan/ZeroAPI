@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.10.3
+version: 3.11.0
 description: >
   Route tasks to the best AI model across paid subscriptions via OpenClaw gateway plugin.
   Use when the user mentions model routing, multi-model setup, "which model should I use",
@@ -13,7 +13,7 @@ compatibility: Requires OpenClaw 2026.4.2+ with at least one AI subscription. Cu
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
 
-# ZeroAPI v3.10.3 - Plugin-Based Model Routing
+# ZeroAPI v3.11.0 - Plugin-Based Model Routing
 
 You are configuring an OpenClaw **gateway plugin**. ZeroAPI routes **eligible** messages at runtime through the `before_model_resolve` hook. You do **not** route messages manually. Your job is to inspect the user's setup, generate `zeroapi-config.json`, align `openclaw.json`, install/update the plugin, and verify the result.
 
@@ -76,15 +76,15 @@ ZeroAPI also supports a **subscription-aware foundation**:
 
 ## Supported providers
 
-Six subscription or account-quota providers are currently supported by the routing policy.
+Fresh current-OpenClaw onboarding offers five subscription providers. Qwen Portal remains a compatibility entry for hosts that still support it, including Hermes.
 
 | Provider | OpenClaw ID | Auth | Tiers |
 |----------|-------------|------|-------|
 | OpenAI | `openai-codex` | OAuth PKCE via ChatGPT | Plus, Pro |
-| Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | API key | Moderato, Allegretto, Allegro, Vivace |
+| Kimi Coding | `kimi` (Hermes: `kimi-coding`) | Membership API key, separate from Moonshot API billing | Moderato, Allegretto, Allegro, Vivace |
 | Z AI (GLM) | `zai` | API key (`zai-coding-global`) | Lite, Pro, Max |
 | MiniMax | `minimax-portal` (`minimax` alias) | OAuth portal | Starter, Plus, Max, Ultra-HS |
-| Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token; legacy OAuth migration requires re-onboarding | Portal token (`free` tier id retained for compatibility) |
+| Qwen Portal compatibility | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Existing supported runtime only; removed in current OpenClaw | Legacy `free` tier ID; not a fresh OpenClaw choice |
 | xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | OpenClaw or Hermes OAuth via SuperGrok | SuperGrok |
 
 See `references/cost-summary.md` for bundle examples and `references/subscription-catalog.md` for the public tier catalog used by the config.
@@ -197,12 +197,12 @@ Conversation rules for this step:
 
 Practical subscription mapping:
 
-- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks; direct Artificial Analysis max-effort rows back all three routes
-- Kimi -> K2.7 Code for code and K2.6 for general/default
-- Z AI -> GLM-5.2, retaining GLM-5.1 compatibility
+- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks and direct AA max-effort rows. Add Astra only after fresh native discovery proves access in every selected account; its canonical AA reference is xhigh, not max. Never infer entitlement from tier or config.
+- Kimi Coding -> `kimi/k3-256k` on Moderato+ with an explicit AA K3 max quality reference. Membership defaults to high; API benchmark throughput is not membership endpoint throughput. Do not rename or reuse a Moonshot API account as Kimi membership.
+- Z AI -> text-only GLM-5.3 and vision-capable GLM-5.3 Flash, both Coding Plan eligible
 - MiniMax -> MiniMax-M3 with M2.7 fallback
-- Qwen Portal -> canonical `qwen-oauth/qwen3.5-plus`, using Qwen3.6 Plus as an explicit proxy; never treat Qwen Cloud 3.7 rows as Portal routes
-- xAI -> Grok 4.5 with conservative Grok 4.3 proxy, direct Grok Build 0.1, and Grok 4.3 fallback
+- Qwen Portal -> retain existing compatible-runtime policies only; current OpenClaw removed this provider. Qwen Cloud/Token Plan has separate credentials and is not inferred from Portal access.
+- xAI -> Grok 4.6 and 4.5 with direct high-effort AA references, plus direct Build 0.1 and 4.3 compatibility fallbacks; subscription-backed OAuth only
 
 Persist the result into a subscription profile with:
 - `global` provider selections
@@ -235,14 +235,14 @@ Required config shape:
 
 ```json
 {
-  "version": "3.10.3",
+  "version": "3.11.0",
   "generated": "<ISO timestamp>",
   "benchmarks_date": "<fetched date>",
-  "subscription_catalog_version": "1.1.0",
+  "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "routing_modifier": "coding-aware",
   "subscription_profile": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "global": {},
     "agentOverrides": {}
   },

@@ -88,13 +88,14 @@ describe("syncSessionAuthProfileOverride", () => {
     };
     const modern = createMemoryPatcher(entries);
     const legacy = vi.fn();
+    const resolveStorePath = vi.fn(() => "/resolved/main/sessions.json");
     const patchSessionEntry = createSessionEntryPatcher(
       {
         patchSessionEntry: modern,
-        resolveStorePath: vi.fn(),
+        resolveStorePath,
         updateSessionStoreEntry: legacy,
       },
-      "/custom/sessions.json",
+      "/custom/{agentId}/sessions.json",
     );
 
     const result = await syncSessionAuthProfileOverride({
@@ -106,6 +107,11 @@ describe("syncSessionAuthProfileOverride", () => {
 
     expect(result.action).toBe("updated");
     expect(modern).toHaveBeenCalledOnce();
+    expect(resolveStorePath).toHaveBeenCalledWith("/custom/{agentId}/sessions.json", { agentId: "main" });
+    expect(modern).toHaveBeenCalledWith(expect.objectContaining({
+      storePath: "/resolved/main/sessions.json",
+      preserveActivity: true,
+    }));
     expect(legacy).not.toHaveBeenCalled();
   });
 

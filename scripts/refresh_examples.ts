@@ -20,16 +20,15 @@ const presets: Record<string, StarterConfigOptions> = {
     providers: [
       { providerId: "openai-codex", tierId: "plus" },
       { providerId: "zai", tierId: "max" },
-      { providerId: "moonshot", tierId: "moderato" },
+      { providerId: "kimi", tierId: "moderato" },
     ],
   },
   "full-stack.json": {
     providers: [
       { providerId: "openai-codex", tierId: "plus" },
       { providerId: "zai", tierId: "max" },
-      { providerId: "moonshot", tierId: "moderato" },
+      { providerId: "kimi", tierId: "moderato" },
       { providerId: "minimax-portal", tierId: "starter" },
-      { providerId: "qwen-oauth", tierId: "free" },
       { providerId: "xai", tierId: "supergrok" },
     ],
   },

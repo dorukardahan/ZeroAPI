@@ -60,7 +60,11 @@ function canonicalizeProviderId(providerId: unknown): string | null {
   if (typeof providerId !== "string") return null;
   const trimmed = providerId.trim();
   if (!trimmed) return null;
-  return getProviderCatalogEntry(trimmed)?.openclawProviderId ?? null;
+  const entry = getProviderCatalogEntry(trimmed);
+  if (!entry || entry.status !== "active" || !entry.tiers.some((tier) => tier.availability === "available")) {
+    return null;
+  }
+  return entry.openclawProviderId;
 }
 
 function getSupportedProviderLabel(providerId: string): string {

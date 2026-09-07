@@ -72,6 +72,7 @@ describe("plugin entry registration", () => {
         warn: vi.fn(),
       },
       on,
+      registerService: vi.fn(),
     };
 
     try {
@@ -84,6 +85,8 @@ describe("plugin entry registration", () => {
       expect(api.logger.info).toHaveBeenCalledWith(
         expect.stringContaining("ZeroAPI Router v"),
       );
+      expect(startSubscriptionAdvisoryMonitor).not.toHaveBeenCalled();
+      api.registerService.mock.calls[0][0].start();
       expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledWith(
         expect.objectContaining({ openclawDir: profileDir }),
       );
@@ -103,7 +106,7 @@ describe("plugin entry registration", () => {
     }
   });
 
-  it("registers hooks only once per process", async () => {
+  it("registers hooks only once for the same host API", async () => {
     const home = mkdtempSync(join(tmpdir(), "zeroapi-home-"));
     const previousHome = process.env.HOME;
     process.env.HOME = home;
@@ -116,6 +119,7 @@ describe("plugin entry registration", () => {
         warn: vi.fn(),
       },
       on,
+      registerService: vi.fn(),
     };
 
     try {
@@ -125,6 +129,8 @@ describe("plugin entry registration", () => {
 
       expect(on).toHaveBeenCalledTimes(2);
       expect(api.logger.info).toHaveBeenCalledTimes(1);
+      expect(startSubscriptionAdvisoryMonitor).not.toHaveBeenCalled();
+      api.registerService.mock.calls[0][0].start();
       expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledTimes(1);
     } finally {
       process.env.HOME = previousHome;
@@ -206,6 +212,7 @@ describe("plugin entry registration", () => {
         warn: vi.fn(),
       },
       on,
+      registerService: vi.fn(),
     };
 
     try {
@@ -277,6 +284,7 @@ describe("plugin entry registration", () => {
         warn: vi.fn(),
       },
       on,
+      registerService: vi.fn(),
     };
 
     try {
@@ -285,6 +293,8 @@ describe("plugin entry registration", () => {
 
       expect(on).toHaveBeenCalledTimes(1);
       expect(on.mock.calls[0]?.[0]).toBe("before_model_resolve");
+      expect(startSubscriptionAdvisoryMonitor).not.toHaveBeenCalled();
+      api.registerService.mock.calls[0][0].start();
       expect(startSubscriptionAdvisoryMonitor).toHaveBeenCalledTimes(1);
       expect(maybePrefixChannelAdvisory).not.toHaveBeenCalled();
     } finally {
@@ -403,6 +413,7 @@ describe("plugin entry registration", () => {
         warn: vi.fn(),
       },
       on,
+      registerService: vi.fn(),
     };
 
     try {
@@ -465,7 +476,7 @@ describe("plugin entry registration", () => {
     vi.resetModules();
 
     const on = vi.fn();
-    const api = { logger: { info: vi.fn(), warn: vi.fn() }, on };
+    const api = { logger: { info: vi.fn(), warn: vi.fn() }, on, registerService: vi.fn() };
 
     try {
       const mod = await import("../index.js");

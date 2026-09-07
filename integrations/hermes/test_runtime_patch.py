@@ -18,6 +18,7 @@ from patch_runtime import (
     rollback_runtime_transaction,
     patch_conversation_loop_source,
     patch_delegate_tool_source,
+    patch_agent_runtime_helpers_source,
     patch_plugins_source,
     patch_run_agent_source,
     patch_turn_context_source,
@@ -39,9 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 class AIAgent:
-    def switch_model(self, **kwargs):
-        self.model = kwargs.get("new_model")
-        self.provider = kwargs.get("new_provider")
+    def switch_model(self, new_model, new_provider, api_key='', base_url='', api_mode=''):
+        """Forwarder — see ``agent.agent_runtime_helpers.switch_model``."""
+        from agent.agent_runtime_helpers import switch_model
+        return switch_model(self, new_model, new_provider, api_key, base_url, api_mode)
 
     def _safe_print(self, *args, **kwargs):
         pass
@@ -91,9 +93,10 @@ class AIAgent:
 
 UPSTREAM_MODULAR_RUN_AGENT = '''
 class AIAgent:
-    def switch_model(self, **kwargs):
-        self.model = kwargs.get("new_model")
-        self.provider = kwargs.get("new_provider")
+    def switch_model(self, new_model, new_provider, api_key='', base_url='', api_mode=''):
+        """Forwarder — see ``agent.agent_runtime_helpers.switch_model``."""
+        from agent.agent_runtime_helpers import switch_model
+        return switch_model(self, new_model, new_provider, api_key, base_url, api_mode)
 
     def _safe_print(self, *args, **kwargs):
         pass
@@ -237,6 +240,93 @@ def build_turn_context(
 '''
 
 
+UPSTREAM_RUNTIME_HELPERS = '''
+import time
+
+
+class _Logger:
+    def info(self, *args, **kwargs):
+        pass
+
+
+logger = _Logger()
+
+
+def try_recover_primary_transport(agent, api_error, *, retry_count, max_retries):
+    if agent._fallback_activated:
+        return False
+    return True
+
+
+def restore_primary_runtime(agent):
+    if not agent._fallback_activated:
+        agent._fallback_index = 0
+        return False
+
+    if getattr(agent, "_rate_limited_until", 0) > time.monotonic():
+        return False  # primary still in rate-limit cooldown, stay on fallback
+
+    try:
+        pool = getattr(agent, "_credential_pool", None)
+        next_at = getattr(pool, "next_available_at", lambda: None)()
+        if next_at is not None:
+            return False
+    except Exception:
+        pass
+
+    try:
+        if getattr(agent, "_cache_disabled", False):
+            agent._use_prompt_caching = False
+            agent._use_native_cache_layout = False
+
+        # ── Reset fallback chain for the new turn ──
+        agent._fallback_activated = False
+        agent._fallback_index = 0
+        return True
+    except Exception:
+        return False
+
+
+def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mode=''):
+    old_model = agent.model
+    old_provider = agent.provider
+    _MISSING = object()
+    _snapshot = {
+        "_config_context_length": getattr(agent, "_config_context_length", _MISSING),
+    }
+    agent.model = new_model
+    agent.provider = new_provider
+
+    # ── Update _primary_runtime so the change persists across turns ──
+    agent._primary_runtime = {
+        "model": agent.model,
+        "provider": agent.provider,
+    }
+    if api_mode == "anthropic_messages":
+        agent._primary_runtime.update({"api_mode": api_mode})
+
+    # ── Reset fallback state ──
+    agent._fallback_activated = False
+    agent._provider_fallback_active = False
+    agent._provider_fallback_route = None
+    agent._fallback_index = 0
+
+    old_norm = (old_provider or "").strip().lower()
+    new_norm = (new_provider or "").strip().lower()
+    fallback_chain = list(getattr(agent, "_fallback_chain", []) or [])
+    if old_norm and new_norm and old_norm != new_norm:
+        fallback_chain = [
+            entry for entry in fallback_chain
+            if (entry.get("provider") or "").strip().lower() not in {old_norm, new_norm}
+        ]
+    agent._fallback_chain = fallback_chain
+
+    session_db = getattr(agent, "_session_db", None)
+    if session_db is not None:
+        session_db.update_session_billing_route("session")
+'''
+
+
 UPSTREAM_LIKE_DELEGATE_TOOL = '''
 import logging
 from typing import Optional
@@ -330,6 +420,7 @@ VALID_HOOKS = {
     def test_patches_upstream_like_run_agent_runtime_contract(self):
         patched, changes = patch_run_agent_source(UPSTREAM_LIKE_RUN_AGENT)
 
+        self.assertIn("forwarded turn-scoped switch_model controls", changes)
         self.assertIn("inserted _apply_pre_model_route_hook", changes)
         self.assertIn("inserted pre_model_route call before system prompt", changes)
         self.assertIn("guarded stored system_prompt reuse after route switch", changes)
@@ -341,6 +432,27 @@ VALID_HOOKS = {
         self.assertIn("self._apply_pre_model_route_hook(\n            original_user_message,", patched)
         self.assertIn('not getattr(self, "_pre_model_route_switched_this_turn", False)', patched)
         self.assertIn("if not conversation_history:", patched)
+        self.assertIn("persist_primary=False", patched)
+        self.assertIn("prune_fallback_chain=False", patched)
+        self.assertNotIn("except TypeError", patched)
+
+    def test_patches_runtime_helpers_for_turn_scoped_routes(self):
+        patched, changes = patch_agent_runtime_helpers_source(
+            UPSTREAM_RUNTIME_HELPERS
+        )
+
+        self.assertIn("added turn-scoped switch_model controls", changes)
+        self.assertIn("kept transient routes out of the primary runtime snapshot", changes)
+        self.assertIn("guarded primary transport recovery during a transient route", changes)
+        self.assertIn("persist_primary=True", patched)
+        self.assertIn("prune_fallback_chain=True", patched)
+        self.assertIn("if not persist_primary:", patched)
+        self.assertIn("_transient_primary_config_context_length", patched)
+        self.assertIn("if prune_fallback_chain and old_norm", patched)
+
+        patched_again, second_changes = patch_agent_runtime_helpers_source(patched)
+        self.assertEqual(second_changes, [])
+        self.assertEqual(patched_again, patched)
 
     def test_patches_modular_run_agent_without_requiring_loop_anchor(self):
         patched, changes = patch_run_agent_source(UPSTREAM_MODULAR_RUN_AGENT)
@@ -691,7 +803,14 @@ VALID_HOOKS = {
         self.assertEqual(plan.layout, "v019-turn-context")
         self.assertEqual(
             plan.changed_labels,
-            ("run_agent", "conversation_loop", "turn_context", "delegate_tool", "plugins"),
+            (
+                "runtime_helpers",
+                "run_agent",
+                "conversation_loop",
+                "turn_context",
+                "delegate_tool",
+                "plugins",
+            ),
         )
 
     def test_patch_is_idempotent(self):
@@ -864,6 +983,7 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
         paths = {
             "plugins": root / "hermes_cli" / "plugins.py",
             "run_agent": root / "run_agent.py",
+            "runtime_helpers": root / "agent" / "agent_runtime_helpers.py",
             "conversation_loop": root / "agent" / "conversation_loop.py",
             "turn_context": root / "agent" / "turn_context.py",
             "delegate_tool": root / "tools" / "delegate_tool.py",
@@ -875,6 +995,10 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
             encoding="utf-8",
         )
         paths["run_agent"].write_text(UPSTREAM_MODULAR_RUN_AGENT, encoding="utf-8")
+        paths["runtime_helpers"].write_text(
+            UPSTREAM_RUNTIME_HELPERS,
+            encoding="utf-8",
+        )
         paths["conversation_loop"].write_text(UPSTREAM_V019_CONVERSATION_LOOP, encoding="utf-8")
         paths["turn_context"].write_text(UPSTREAM_V019_TURN_CONTEXT, encoding="utf-8")
         paths["delegate_tool"].write_text(delegate_source, encoding="utf-8")
@@ -1377,7 +1501,7 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
 
     def test_next_invocation_recovers_interrupted_committing_journal(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             paths = self._write_tree(root)
             before = self._hashes(paths)
             backup_root = root / "state" / "backups" / "zeroapi-router"
@@ -1469,7 +1593,7 @@ class HermesRuntimeTransactionTest(unittest.TestCase):
 
     def test_cleanup_failure_preserves_primary_error_and_is_recoverable(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             paths = self._write_tree(root)
             backup_root = root / "state" / "backups" / "zeroapi-router"
             plan = plan_runtime_patch(

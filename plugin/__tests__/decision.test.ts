@@ -85,19 +85,20 @@ const config: ZeroAPIConfig = {
 };
 
 describe("resolveRoutingDecision", () => {
-  it("preserves the Kimi code route after subscription-weighted runtime ranking", () => {
+  it("routes code through Kimi membership without selecting the Moonshot API", () => {
     const kimiConfig = buildStarterConfig({
-      providers: [{ providerId: "moonshot", tierId: "moderato" }],
+      providers: [{ providerId: "kimi", tierId: "moderato" }],
     });
+    kimiConfig.external_model_policy = "allow";
     const result = resolveRoutingDecision(kimiConfig, {
       prompt: "implement a function and add tests",
-      currentModel: kimiConfig.default_model,
+      currentModel: "moonshot/kimi-k3",
     });
 
-    expect(kimiConfig.default_model).toBe("moonshot/kimi-k2.6");
-    expect(result.weightedCandidates[0]).toBe("moonshot/kimi-k2.7-code");
+    expect(kimiConfig.default_model).toBe("kimi/k3-256k");
+    expect(result.weightedCandidates[0]).toBe("kimi/k3-256k");
     expect(result.action).toBe("route");
-    expect(result.selectedModel).toBe("moonshot/kimi-k2.7-code");
+    expect(result.selectedModel).toBe("kimi/k3-256k");
   });
 
   it("skips specialist agents before classification", () => {
@@ -551,7 +552,7 @@ describe("resolveRoutingDecision", () => {
         ...visionConfig,
         models: {
           ...visionConfig.models,
-          "moonshot/kimi-k2.6": {
+          "kimi/k3-256k": {
             context_window: 262144,
             supports_vision: true,
             speed_tps: 35,
@@ -568,7 +569,7 @@ describe("resolveRoutingDecision", () => {
           global: {
             "openai-codex": { enabled: true, tierId: "plus" },
             "zai": { enabled: true, tierId: "max" },
-            "moonshot": { enabled: true, tierId: "vivace" },
+            "kimi": { enabled: true, tierId: "vivace" },
           },
         },
       };
@@ -579,8 +580,8 @@ describe("resolveRoutingDecision", () => {
       });
 
       expect(result.action).toBe("route");
-      expect(result.selectedModel).toBe("moonshot/kimi-k2.6");
-      expect(result.weightedCandidates[0]).toBe("moonshot/kimi-k2.6");
+      expect(result.selectedModel).toBe("kimi/k3-256k");
+      expect(result.weightedCandidates[0]).toBe("kimi/k3-256k");
     });
 
     it("detects Turkish and shorthand visual requests without an attachment flag", () => {

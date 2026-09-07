@@ -66,7 +66,7 @@ function main() {
   copyRepoSnapshot(REPO_ROOT, repoDir);
   copyRepoSnapshot(repoDir, skillDir);
   stageManagedRuntimePlugin(repoDir, runtimePluginDir);
-  installOrUpdatePlugin(runtimePluginDir, args.openclawDir);
+  installOrUpdatePlugin(runtimePluginDir, args.openclawDir, { interactive: true });
   const removedLoadPaths = removeDuplicateZeroAPILoadPaths(args.openclawDir);
 
   let timerEnabled = false;

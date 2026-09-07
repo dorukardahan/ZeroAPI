@@ -40,7 +40,7 @@ CONFIG = {
             "ttft_seconds": 0.9,
             "benchmarks": {"intelligence": 51.4, "coding": 43.4, "terminalbench": 0.432, "tau2": 0.977, "ifbench": 0.763},
         },
-        "moonshot/kimi-k2.5": {
+        "kimi/kimi-k2.5": {
             "context_window": 262144,
             "supports_vision": True,
             "speed_tps": 32,
@@ -49,9 +49,9 @@ CONFIG = {
         },
     },
     "routing_rules": {
-        "code": {"primary": "openai-codex/gpt-5.4", "fallbacks": ["zai/glm-5.1", "moonshot/kimi-k2.5"]},
-        "orchestration": {"primary": "zai/glm-5.1", "fallbacks": ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"]},
-        "fast": {"primary": "zai/glm-5.1", "fallbacks": ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"]},
+        "code": {"primary": "openai-codex/gpt-5.4", "fallbacks": ["zai/glm-5.1", "kimi/kimi-k2.5"]},
+        "orchestration": {"primary": "zai/glm-5.1", "fallbacks": ["kimi/kimi-k2.5", "openai-codex/gpt-5.4"]},
+        "fast": {"primary": "zai/glm-5.1", "fallbacks": ["kimi/kimi-k2.5", "openai-codex/gpt-5.4"]},
         "default": {"primary": "openai-codex/gpt-5.4", "fallbacks": ["zai/glm-5.1"]},
     },
     "workspace_hints": {},
@@ -68,13 +68,29 @@ CONFIG = {
         "global": {
             "openai-codex": {"enabled": True, "tierId": "plus"},
             "zai": {"enabled": True, "tierId": "max"},
-            "moonshot": {"enabled": True, "tierId": "moderato"},
+            "kimi": {"enabled": True, "tierId": "moderato"},
         },
     },
 }
 
 
 class ZeroAPIHermesRouterTest(unittest.TestCase):
+    def test_kimi_membership_and_moonshot_api_remain_separate(self):
+        self.assertEqual(_hermes_provider("kimi", {}), "kimi-coding")
+        self.assertEqual(_hermes_provider("kimi-coding", {}), "kimi-coding")
+        self.assertEqual(_hermes_provider("moonshot", {}), "moonshot")
+        legacy = copy.deepcopy(CONFIG)
+        legacy["subscription_profile"]["global"]["moonshot"] = {"enabled": True, "tierId": "vivace"}
+        legacy["subscription_inventory"] = {"accounts": {"old-account": {
+            "provider": "moonshot", "enabled": True, "tierId": "vivace", "authProfile": "moonshot:operator",
+        }}}
+        before = copy.deepcopy(legacy)
+        self.assertFalse(_allowed_by_subscriptions(legacy, "moonshot/kimi-k3", None))
+        self.assertTrue(_allowed_by_subscriptions(legacy, "kimi/k3-256k", None))
+        self.assertFalse(_resolve_capacity(legacy, "moonshot", None, None)["enabled"])
+        self.assertFalse(_allowed_by_subscriptions({}, "moonshot/kimi-k3", None))
+        self.assertEqual(legacy, before, "provider eligibility must never migrate saved account identity")
+
     def test_routes_orchestration_to_hermes_provider(self):
         route = ZeroAPIRouter(CONFIG).resolve(
             "coordinate this workflow",
@@ -257,7 +273,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             "subscription_catalog_version": "1.0.0",
             "default_model": "qwen/coder-model",
             "disabled_providers": [
-                " ZAI ", None, " qWeN ", "qwen-portal", "moonshot",
+                " ZAI ", None, " qWeN ", "qwen-portal", "kimi",
                 "QWEN-DASHSCOPE", " qwen-cli ", "qwen-oauth", 17,
                 {"provider": "qwen"}, "zai",
             ],
@@ -285,7 +301,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
 
         router = ZeroAPIRouter(legacy)
 
-        self.assertEqual(router.config["disabled_providers"], ["zai", "qwen-oauth", "moonshot"])
+        self.assertEqual(router.config["disabled_providers"], ["zai", "qwen-oauth", "kimi"])
         self.assertIsNone(router.resolve("implement this feature", current_model="qwen/coder-model"))
         self.assertEqual(legacy, untouched)
 
@@ -475,8 +491,8 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
 
     def test_non_openai_catalog_alias_uses_same_comparison_identity(self):
         config = copy.deepcopy(CONFIG)
-        config["models"] = {"moonshot/synthetic-model": config["models"]["moonshot/kimi-k2.5"]}
-        config["routing_rules"]["code"] = {"primary": "moonshot/synthetic-model", "fallbacks": []}
+        config["models"] = {"kimi/synthetic-model": config["models"]["kimi/kimi-k2.5"]}
+        config["routing_rules"]["code"] = {"primary": "kimi/synthetic-model", "fallbacks": []}
         self.assertIsNone(ZeroAPIRouter(config).resolve(
             "implement this feature", current_model="kimi/synthetic-model",
         ))
@@ -491,9 +507,9 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
         ):
             with self.subTest(order=[key for key, _ in entries]):
                 config = copy.deepcopy(CONFIG)
-                config["models"] = dict([*entries, ("moonshot/kimi-k2.5", CONFIG["models"]["moonshot/kimi-k2.5"])])
+                config["models"] = dict([*entries, ("kimi/kimi-k2.5", CONFIG["models"]["kimi/kimi-k2.5"])])
                 config["default_model"] = entries[0][0]
-                config["routing_rules"]["default"] = {"primary": "moonshot/kimi-k2.5", "fallbacks": []}
+                config["routing_rules"]["default"] = {"primary": "kimi/kimi-k2.5", "fallbacks": []}
                 self.assertIsNone(ZeroAPIRouter(config).resolve(
                     "inspect this screenshot", current_model="openai/gpt-collision",
                 ))
@@ -524,7 +540,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
     def test_skips_unhinted_agent_with_non_default_model(self):
         route = ZeroAPIRouter(CONFIG).resolve(
             "coordinate this workflow",
-            current_model="moonshot/kimi-k2.5",
+            current_model="kimi/kimi-k2.5",
             agent_id="research-agent",
         )
         self.assertIsNone(route)
@@ -568,7 +584,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
                 "global": {
                     "openai-codex": {"enabled": True, "tierId": "plus"},
                     "zai": {"enabled": True, "tierId": "max"},
-                    "moonshot": {"enabled": True, "tierId": "moderato"},
+                    "kimi": {"enabled": True, "tierId": "moderato"},
                 },
                 "agentOverrides": {"ops": {"zai": {"enabled": False, "tierId": "max"}}},
             },
@@ -586,7 +602,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             "coordinate this workflow",
             current_model="openai-codex/gpt-5.4",
         )
-        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["provider"], "kimi-coding")
         self.assertEqual(route["model"], "kimi-k2.5")
 
     def test_disabled_provider_env_is_honored(self):
@@ -598,7 +614,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
                 "coordinate this workflow",
                 current_model="openai-codex/gpt-5.4",
             )
-            self.assertEqual(route["provider"], "kimi-for-coding")
+            self.assertEqual(route["provider"], "kimi-coding")
             self.assertEqual(route["model"], "kimi-k2.5")
         finally:
             if previous is None:
@@ -606,7 +622,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             else:
                 os.environ["ZEROAPI_DISABLED_PROVIDERS"] = previous
 
-    def test_maps_moonshot_to_hermes_kimi_provider(self):
+    def test_maps_kimi_to_hermes_kimi_provider(self):
         config = {
             **CONFIG,
             "subscription_profile": {
@@ -614,7 +630,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
                 "global": {
                     "openai-codex": {"enabled": False, "tierId": None},
                     "zai": {"enabled": False, "tierId": None},
-                    "moonshot": {"enabled": True, "tierId": "moderato"},
+                    "kimi": {"enabled": True, "tierId": "moderato"},
                 },
             },
         }
@@ -622,7 +638,7 @@ class ZeroAPIHermesRouterTest(unittest.TestCase):
             "coordinate this workflow",
             current_model="openai-codex/gpt-5.4",
         )
-        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["provider"], "kimi-coding")
         self.assertEqual(route["model"], "kimi-k2.5")
 
     def test_maps_supergrok_subscription_to_hermes_xai_oauth_provider(self):
@@ -832,7 +848,7 @@ class VisionCapabilityEscapeTest(unittest.TestCase):
             **self.VISION_CONFIG,
             "models": {
                 **self.VISION_CONFIG["models"],
-                "moonshot/kimi-k2.6": {
+                "kimi/kimi-k2.6": {
                     "context_window": 262144,
                     "supports_vision": True,
                     "speed_tps": 35,
@@ -849,7 +865,7 @@ class VisionCapabilityEscapeTest(unittest.TestCase):
                 "global": {
                     "openai-codex": {"enabled": True, "tierId": "plus"},
                     "zai": {"enabled": True, "tierId": "max"},
-                    "moonshot": {"enabled": True, "tierId": "vivace"},
+                    "kimi": {"enabled": True, "tierId": "vivace"},
                 },
             },
         }
@@ -860,7 +876,7 @@ class VisionCapabilityEscapeTest(unittest.TestCase):
         )
 
         self.assertIsNotNone(route)
-        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["provider"], "kimi-coding")
         self.assertEqual(route["model"], "kimi-k2.6")
 
     def test_routes_turkish_vision_keywords(self):

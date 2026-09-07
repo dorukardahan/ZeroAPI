@@ -1,14 +1,14 @@
 # Routing Examples
 
-Representative examples for the conservative classifier:
+These results use the generated `examples/openai-glm.json` policy with the 2026-09-06 benchmark snapshot, OpenAI Plus + Z.AI Max, balanced routing, and current model `zai/glm-5.3`. Different subscriptions, modifiers, account catalogs, or active models can change the result.
 
-| Prompt | Category | Routed To | Reason |
+| Prompt | Category | Effective result | Reason |
 |--------|----------|-----------|--------|
-| `refactor the auth module` | CODE | GPT-5.6 Sol | current coding leader, keyword: `refactor` |
-| `research the differences between WAL modes` | RESEARCH | GPT-5.6 Sol | direct research benchmark leader, keyword: `research` |
-| `coordinate a 3-service pipeline` | ORCHESTRATION | GLM-5.2 | composite orchestration score, keywords: `coordinate`, `pipeline` |
-| `quickly format this as markdown` | FAST | GLM-5.2 | low TTFT inside the starter policy pool, keywords: `quickly`, `format` |
-| `deploy to production` | CODE / HIGH RISK DIAGNOSTIC | routes normally | high-risk keywords are diagnostic-only, not a routing block |
+| `refactor the auth module` | CODE | Stay on GLM-5.3 | benchmark-near subscription weighting favors the current model; keyword: `refactor` |
+| `research the differences between WAL modes` | RESEARCH | Stay on GLM-5.3 | benchmark-near subscription weighting favors the current model; keyword: `research` |
+| `coordinate a 3-service pipeline` | ORCHESTRATION | GPT-5.6 Sol | current effective orchestration winner; keyword: `coordinate` |
+| `quickly format this as markdown` | FAST | Stay on GLM-5.3 | low TTFT inside the starter policy pool; keyword: `format` |
+| `deploy to production` | DEFAULT / HIGH RISK DIAGNOSTIC | Stay on default | no category keyword matches this prompt; the high-risk diagnostic does not block routing |
 | `buna bi bak` | DEFAULT | stays on default | no keyword match |
 
 Notes:

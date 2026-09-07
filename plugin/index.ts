@@ -2,8 +2,7 @@ import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import * as sessionStoreRuntime from "openclaw/plugin-sdk/session-store-runtime";
 import { loadConfig, getConfigLoadStatus } from "./config.js";
 import { resolveRoutingDecision } from "./decision.js";
-import { existsSync, readFileSync } from "fs";
-import { dirname, join } from "path";
+import { dirname } from "path";
 import { initLogger, logRouting, logRoutingEvent } from "./logger.js";
 import {
   createSessionEntryPatcher,
@@ -15,21 +14,30 @@ import { maybePrefixChannelAdvisory } from "./advisory-delivery.js";
 import { readPreviousCategory, recordRouteCategory } from "./route-state.js";
 import type { TaskCategory } from "./types.js";
 
-const PLUGIN_VERSION = "3.10.3";
+const PLUGIN_VERSION = "3.11.0";
 const REGISTER_STATE_KEY = Symbol.for("zeroapi-router.register-state");
 
 type RegisterState = {
-  advisoryMonitorStarted?: boolean;
   registered: boolean;
   continuationState?: Map<string, { category: TaskCategory; updatedAt: number }>;
 };
 
-function getRegisterState(): RegisterState {
+function getRegisterState(api: object): RegisterState {
   const globalStore = globalThis as typeof globalThis & {
-    [REGISTER_STATE_KEY]?: RegisterState;
+    [REGISTER_STATE_KEY]?: WeakMap<object, RegisterState>;
   };
-  globalStore[REGISTER_STATE_KEY] ??= { registered: false };
-  return globalStore[REGISTER_STATE_KEY];
+  // A discovery pass and a replacement runtime own different registries, even
+  // when OpenClaw reuses this module in the same process.
+  if (!(globalStore[REGISTER_STATE_KEY] instanceof WeakMap)) {
+    globalStore[REGISTER_STATE_KEY] = new WeakMap();
+  }
+  const states = globalStore[REGISTER_STATE_KEY];
+  let state = states.get(api);
+  if (!state) {
+    state = { registered: false };
+    states.set(api, state);
+  }
+  return state;
 }
 
 function resolveOpenClawDir(env: NodeJS.ProcessEnv = process.env): string {
@@ -73,10 +81,15 @@ export default definePluginEntry({
   description: "Balanced benchmark-aware model routing across subscription providers",
 
   register(api) {
+    if (["cli-metadata", "setup-only", "setup-runtime"].includes(api.registrationMode)) {
+      return;
+    }
+    const registerState = getRegisterState(api);
+    if (registerState.registered) {
+      return;
+    }
     const openclawDir = resolveOpenClawDir();
-    const hostConfig = (api as typeof api & {
-      config?: { session?: { store?: unknown } };
-    }).config;
+    const hostConfig = api.config;
     const configuredSessionStore = typeof hostConfig?.session?.store === "string"
       ? hostConfig.session.store
       : undefined;
@@ -86,7 +99,10 @@ export default definePluginEntry({
     );
 
     const config = loadConfig(openclawDir);
-    initLogger(openclawDir);
+    const isRuntimeRegistration = !api.registrationMode || api.registrationMode === "full";
+    if (isRuntimeRegistration) {
+      initLogger(openclawDir);
+    }
 
     if (!config) {
       const status = getConfigLoadStatus();
@@ -94,52 +110,48 @@ export default definePluginEntry({
         api.logger.warn(
           `zeroapi-config.json failed to load (${status}); routing is disabled until it is fixed. Run /zeroapi to regenerate.`
         );
-        logRoutingEvent({ category: "system", reason: `config_${status}` });
+        if (isRuntimeRegistration) {
+          logRoutingEvent({ category: "system", reason: `config_${status}` });
+        }
       } else {
         api.logger.warn("zeroapi-config.json not found. Run /zeroapi to configure.");
-        logRoutingEvent({ category: "system", reason: "config_missing" });
+        if (isRuntimeRegistration) {
+          logRoutingEvent({ category: "system", reason: "config_missing" });
+        }
       }
       return;
     }
 
-    const registerState = getRegisterState();
-    if (registerState.registered) {
-      return;
-    }
-
-    if (!registerState.advisoryMonitorStarted) {
-      startSubscriptionAdvisoryMonitor({
-        openclawDir,
-        config,
-        logger: api.logger,
-      });
-      registerState.advisoryMonitorStarted = true;
-    }
+    let monitor: ReturnType<typeof startSubscriptionAdvisoryMonitor> | undefined;
+    api.registerService({
+      id: "zeroapi-router-advisories",
+      start() {
+        initLogger(openclawDir);
+        monitor ??= startSubscriptionAdvisoryMonitor({ openclawDir, config, logger: api.logger });
+      },
+      stop() {
+        monitor?.stop();
+        monitor = undefined;
+      },
+    });
 
     api.logger.info(
       `ZeroAPI Router v${PLUGIN_VERSION} loaded (policy config v${config.version}, mode=${config.routing_mode ?? "balanced"}${config.routing_modifier ? `, modifier=${config.routing_modifier}` : ""}, ${Object.keys(config.models).length} models, benchmarks from ${config.benchmarks_date})`
     );
 
-    try {
-      const openclawConfigPath = join(openclawDir, "openclaw.json");
-      if (existsSync(openclawConfigPath)) {
-        const openclawConfig = JSON.parse(readFileSync(openclawConfigPath, "utf-8"));
-        const runtimeDefault = openclawConfig?.agents?.defaults?.model?.primary;
-        if (typeof runtimeDefault === "string" && runtimeDefault !== config.default_model) {
-          api.logger.warn(
-            `ZeroAPI default_model (${config.default_model}) does not match openclaw.json runtime default (${runtimeDefault}). Routing policy and runtime default are out of sync.`
-          );
-          logRoutingEvent({
-            category: "system",
-            reason: `default_mismatch:${config.default_model}->${runtimeDefault}`,
-            model: runtimeDefault,
-          });
-        }
+    const hostDefault = hostConfig?.agents?.defaults?.model;
+    const runtimeDefault = typeof hostDefault === "string" ? hostDefault : hostDefault?.primary;
+    if (typeof runtimeDefault === "string" && runtimeDefault !== config.default_model) {
+      api.logger.warn(
+        `ZeroAPI default_model (${config.default_model}) does not match the OpenClaw runtime default (${runtimeDefault}). Routing policy and runtime default are out of sync.`
+      );
+      if (isRuntimeRegistration) {
+        logRoutingEvent({
+          category: "system",
+          reason: `default_mismatch:${config.default_model}->${runtimeDefault}`,
+          model: runtimeDefault,
+        });
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      api.logger.warn(`ZeroAPI runtime config check failed: ${message}`);
-      logRoutingEvent({ category: "system", reason: `runtime_config_check_failed:${message}` });
     }
 
     api.on("before_model_resolve", async (event, ctx) => {
@@ -151,6 +163,11 @@ export default definePluginEntry({
       const previousCategory = readPreviousCategory(state, stateKey, Date.now());
       const resolution = resolveRoutingDecision(config, {
         prompt: event.prompt,
+        // Older supported hosts omit attachments. Only actual images assert
+        // the vision requirement; a PDF/audio attachment is not an image.
+        hasImageAttachment: "attachments" in event && Array.isArray(event.attachments)
+          ? event.attachments.some((attachment) => attachment?.kind === "image")
+          : false,
         agentId: ctx.agentId,
         trigger: ctx.trigger,
         currentModel,

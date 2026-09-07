@@ -74,10 +74,10 @@ describe("subscription advisory", () => {
   });
 
   it("detects supported runtime providers that are not in current zeroapi policy", () => {
-    writeOpenClawConfig(openclawDir, ["openai-codex", "moonshot", "openrouter"]);
+    writeOpenClawConfig(openclawDir, ["openai-codex", "kimi", "openrouter", "moonshot", "qwen-oauth", "xai-api"]);
     const signals = collectRuntimeSubscriptionSignals(openclawDir);
 
-    expect(signals.providers).toEqual(["moonshot", "openai-codex"]);
+    expect(signals.providers).toEqual(["kimi", "openai-codex"]);
 
     const advisory = buildPendingSubscriptionAdvisory(
       buildConfig({
@@ -93,8 +93,8 @@ describe("subscription advisory", () => {
 
     expect(advisory?.pendingProviders).toEqual([
       {
-        providerId: "moonshot",
-        label: "Kimi",
+        providerId: "kimi",
+        label: "Kimi Coding",
       },
     ]);
     expect(advisory?.summary[0]).toContain("New supported providers detected");
@@ -177,19 +177,26 @@ describe("subscription advisory", () => {
   });
 
   it("does not raise auth-profile advisory for explicitly disabled inventory accounts", () => {
-    writeOpenClawConfig(openclawDir, ["moonshot"]);
+    writeOpenClawConfig(openclawDir, ["kimi"]);
     writeAuthProfiles(openclawDir, "main", {
-      "kimi-coding:default": { provider: "moonshot" },
+      "kimi-coding:default": { provider: "kimi-coding" },
     });
 
     const signals = collectRuntimeSubscriptionSignals(openclawDir);
+    expect(signals.providers).toEqual(["kimi"]);
+    expect(signals.authProfiles).toEqual([
+      { agentId: "main", profileId: "kimi-coding:default", providerId: "kimi" },
+    ]);
+    expect(buildPendingSubscriptionAdvisory(buildConfig(), signals)?.pendingProviders).toEqual([
+      { providerId: "kimi", label: "Kimi Coding" },
+    ]);
     const advisory = buildPendingSubscriptionAdvisory(
       buildConfig({
         subscription_inventory: {
           version: "1.0.0",
           accounts: {
             "kimi-cancelled": {
-              provider: "moonshot",
+              provider: "kimi",
               tierId: null,
               enabled: false,
               authProfile: "kimi-coding:default",

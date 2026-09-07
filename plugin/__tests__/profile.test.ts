@@ -54,7 +54,7 @@ describe("profile", () => {
     const aliasProfile: SubscriptionProfile = {
       version: "1.0.0",
       global: {
-        "moonshot": { enabled: true, tierId: "moderato" },
+        "kimi": { enabled: true, tierId: "moderato" },
       },
     };
     expect(isModelAllowedBySubscriptionProfile(aliasProfile, undefined, "kimi-coding/k2p5")).toBe(true);

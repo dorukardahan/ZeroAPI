@@ -7,6 +7,11 @@ import { tmpdir } from "node:os";
 
 const repoRoot = new URL("../..", import.meta.url);
 const scriptPath = new URL("../refresh_benchmarks.py", import.meta.url);
+const pythonEnv = Object.fromEntries(
+  ["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "SystemRoot", "WINDIR"]
+    .filter((name) => typeof process.env[name] === "string")
+    .map((name) => [name, process.env[name]]),
+);
 
 test("refresh benchmark workflow regenerates and commits starter examples", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/refresh-benchmarks.yml", import.meta.url), "utf8");
@@ -23,7 +28,7 @@ function runPython(code, args = []) {
     cwd: repoRoot,
     encoding: "utf-8",
     env: {
-      ...process.env,
+      ...pythonEnv,
       AA_API_KEY: "",
       AA_API_KEY_FILE: "",
     },
@@ -825,7 +830,7 @@ test("offline reannotation remaps the committed snapshot without an API key", ()
   const plugin = join(root, "plugin-benchmarks.json");
   const input = new URL("../../benchmarks.json", import.meta.url).pathname;
   const result = spawnSync("python3", [scriptPath.pathname, "--reannotate", "--input", input, "--output", output, "--plugin-output", plugin], {
-    cwd: repoRoot, encoding: "utf-8", env: { ...process.env, AA_API_KEY: "", AA_API_KEY_FILE: "" },
+    cwd: repoRoot, encoding: "utf-8", env: { ...pythonEnv, AA_API_KEY: "", AA_API_KEY_FILE: "" },
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.deepEqual(readFileSync(output), readFileSync(plugin));
@@ -918,5 +923,54 @@ except SystemExit as exc:
     assert "new_agentic_score" in str(exc)
 else:
     raise AssertionError("unknown numeric AA evaluations must fail closed")
+`);
+});
+
+test("AA refresh preserves measured zero and distinguishes missing source evaluations", () => {
+  runPython(`
+import importlib.util
+import json
+import pathlib
+import sys
+
+spec = importlib.util.spec_from_file_location("refresh_benchmarks", pathlib.Path(sys.argv[1]))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+rows = [
+    {"evaluations": {"gpqa": 0}},
+    {"evaluations": {"gpqa": None}},
+    {"evaluations": {}},
+    {"evaluations": {"gpqa": False}},
+    {"evaluations": {"gpqa": "0.9"}},
+    {"evaluations": {"gpqa": -1}},
+    {"evaluations": {"gpqa": float("nan")}},
+    {"evaluations": {"gpqa": 0.92356}},
+]
+coverage = module.source_evaluation_coverage(rows)
+assert coverage["gpqa"] == {"absent": 1, "null": 1, "zero": 1, "positive": 1, "invalid": 4}
+json.dumps(coverage, allow_nan=False)
+assert module.resolve_benchmark({"gpqa": 0}, "gpqa") == 0
+assert module.resolve_benchmark({"gpqa": None}, "gpqa") is None
+assert module.resolve_benchmark({"gpqa": False}, "gpqa") is None
+assert module.resolve_benchmark({"gpqa": float("inf")}, "gpqa") is None
+assert module.resolve_benchmark(
+    {"terminalbench_v2_1": 0, "terminalbench_hard": 0.72},
+    ("terminalbench_v2_1", "terminalbench_hard"),
+) == 0
+model = module.transform_models([
+    {"id": "synthetic-model-id", "slug": "synthetic-measured-zero", "model_creator": {"id": "synthetic-creator-id", "slug": "openai"}, "evaluations": {"gpqa": 0}}
+], {})[0]
+assert model["id"] == "synthetic-model-id"
+assert model["creator_id"] == "synthetic-creator-id"
+assert model["creator_slug"] == "openai"
+assert model["benchmarks"]["gpqa"] == 0
+assert model["benchmarks"]["scicode"] is None
+try:
+    module.validate_evaluation_schema([{"evaluations": {"new_score": 0}}])
+except SystemExit as exc:
+    assert "new_score" in str(exc)
+else:
+    raise AssertionError("an unknown measured-zero evaluation must not be silently dropped")
 `);
 });

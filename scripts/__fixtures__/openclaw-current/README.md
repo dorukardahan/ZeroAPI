@@ -1,0 +1,1 @@
+This is an isolated compatibility fixture with synthetic, fixed routing scores. It does not report current benchmark measurements or authorize provider calls. The canonical OpenClaw provider is `openai`; the legacy fixture remains separate.

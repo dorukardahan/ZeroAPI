@@ -96,8 +96,8 @@ class HermesParityTest(unittest.TestCase):
                 self.assertIsNotNone(route)
                 assert route is not None
                 self.assertEqual(route["provider"], "zai")
-                self.assertEqual(route["model"], "glm-5.2")
-                self.assertIsNone(router.resolve(prompt, current_model="zai/glm-5.2"))
+                self.assertEqual(route["model"], "glm-5.3")
+                self.assertIsNone(router.resolve(prompt, current_model="zai/glm-5.3"))
 
     def test_tau3_banking_changes_orchestration_strength(self):
         banking_strong = _m(
@@ -151,7 +151,7 @@ class HermesParityTest(unittest.TestCase):
         profile["global"] = dict([
             ("openai", {"enabled": True, "tierId": "pro"}),
             ("xai", {"enabled": True, "tierId": "supergrok"}),
-            ("moonshot", {"enabled": True, "tierId": "moderato"}),
+            ("kimi", {"enabled": True, "tierId": "moderato"}),
             ("minimax-portal", {"enabled": True, "tierId": "starter"}),
             ("zai", {"enabled": True, "tierId": "lite"}),
             *collision_entries,
@@ -167,8 +167,8 @@ class HermesParityTest(unittest.TestCase):
             "xai-main": {"provider": "xai", "tierId": "supergrok", "enabled": True,
                           "authProfile": "xai-secondary", "usagePriority": 1.0,
                           "intendedUse": []},
-            "moonshot-main": {"provider": "moonshot", "tierId": "moderato", "enabled": True,
-                               "authProfile": "moonshot-main", "usagePriority": 1.0,
+            "kimi-main": {"provider": "kimi", "tierId": "moderato", "enabled": True,
+                               "authProfile": "kimi-main", "usagePriority": 1.0,
                                "intendedUse": []},
             "minimax-main": {"provider": "minimax-portal", "tierId": "starter", "enabled": True,
                               "authProfile": None, "usagePriority": 1.0,
@@ -188,7 +188,7 @@ class HermesParityTest(unittest.TestCase):
         common_models = [
             ("openai/current-model", _m(1000000, False, 9, 1, intelligence=40, coding=40)),
             ("xai/grok-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
-            ("moonshot/kimi-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
+            ("kimi/kimi-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
             ("minimax-portal/minimax-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
             ("zai/glm-model", _m(1000000, False, 8, 1, intelligence=39, coding=39)),
         ]
@@ -204,7 +204,7 @@ class HermesParityTest(unittest.TestCase):
         return _base(
             dict([*common_models, *model_entries]),
             {"code": {"primary": qwen_model, "fallbacks": ["openai/current-model"]},
-             "default": {"primary": qwen_model, "fallbacks": ["xai/grok-model", "moonshot/kimi-model",
+             "default": {"primary": qwen_model, "fallbacks": ["xai/grok-model", "kimi/kimi-model",
                                                                   "minimax-portal/minimax-model", "zai/glm-model"]}},
             **top,
             default_model="openai/current-model",
@@ -330,7 +330,7 @@ process.stdout.write(JSON.stringify({
         self.assertEqual(
             typescript["inventoryAccountEntries"], [list(item) for item in expected_accounts.items()], label,
         )
-        for account_id in ("openai-main", "xai-main", "moonshot-main", "minimax-main", "zai-main"):
+        for account_id in ("openai-main", "xai-main", "kimi-main", "minimax-main", "zai-main"):
             self.assertEqual(expected_accounts[account_id], cfg["subscription_inventory"]["accounts"][account_id], label)
 
         if legacy_structural:
@@ -389,9 +389,9 @@ process.stdout.write(JSON.stringify({
             ("env-only legacy alias", {"subscription_catalog_version": "1.0.0"}, [],
              " qWeN ", ["qwen-oauth"], True),
             ("file-env collisions and unrelated order", {"subscription_catalog_version": "1.0.0"},
-             [" ZAI ", "qwen-portal", "moonshot", "qwen-oauth", "zai"],
-             " QWEN-DASHSCOPE , minimax, moonshot, qwen-oauth ",
-             ["zai", "qwen-oauth", "moonshot", "minimax-portal"], True),
+             [" ZAI ", "qwen-portal", "kimi", "qwen-oauth", "zai"],
+             " QWEN-DASHSCOPE , minimax, kimi, qwen-oauth ",
+             ["zai", "qwen-oauth", "kimi", "minimax-portal"], True),
             ("fresh Cloud stays separate from Portal", {"subscription_catalog_version": "1.1.0"},
              [" QWEN "], "qwen", ["qwen"], False),
             ("missing version stays non-legacy", {}, ["qwen"], " qwen ", ["qwen"], False),
@@ -515,21 +515,21 @@ process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unc
 
     def test_D5_unsubscribed_provider_is_disabled(self):
         cfg = _base(
-            {"zai/glm-5.1": ZAI, "moonshot/kimi-k2.5": KIMI_STRONG},
-            {"code": {"primary": "moonshot/kimi-k2.5", "fallbacks": ["zai/glm-5.1"]},
+            {"zai/glm-5.1": ZAI, "kimi/kimi-k2.5": KIMI_STRONG},
+            {"code": {"primary": "kimi/kimi-k2.5", "fallbacks": ["zai/glm-5.1"]},
              "default": {"primary": "zai/glm-5.1", "fallbacks": []}},
             subscription_profile={"version": "1.0.0", "global": {"zai": {"enabled": True, "tierId": "lite"}}})
         route = ZeroAPIRouter(cfg).resolve("refactor the auth module", current_model="zai/glm-5.1")
-        self.assertIsNone(route, "moonshot is not in subscription_profile.global -> must be filtered out")
+        self.assertIsNone(route, "kimi is not in subscription_profile.global -> must be filtered out")
 
     def test_D2_fast_drops_ttft_missing_model(self):
         cfg = _base(
-            {"zai/glm-5.1": ZAI, "moonshot/kimi-k2.5": KIMI_NO_TTFT},
-            {"fast": {"primary": "moonshot/kimi-k2.5", "fallbacks": []},
+            {"zai/glm-5.1": ZAI, "kimi/kimi-k2.5": KIMI_NO_TTFT},
+            {"fast": {"primary": "kimi/kimi-k2.5", "fallbacks": []},
              "default": {"primary": "zai/glm-5.1", "fallbacks": []}},
             subscription_profile={"version": "1.0.0", "global": {
                 "zai": {"enabled": True, "tierId": "lite"},
-                "moonshot": {"enabled": True, "tierId": "moderato"}}})
+                "kimi": {"enabled": True, "tierId": "moderato"}}})
         route = ZeroAPIRouter(cfg).resolve("quick format this list", current_model="zai/glm-5.1")
         self.assertIsNone(route, "fast task must drop a model with no measured TTFT")
 
@@ -602,13 +602,13 @@ process.stdout.write(JSON.stringify({ config, status: getConfigLoadStatus(), unc
         # coding-aware modifier on a RESEARCH prompt is a cross-pair: it must use the default
         # pressure-first sort (TS), not the strength-first coding/research sort.
         cfg = _base(
-            {"zai/glm-5.1": R_ZAI, "openai-codex/gpt-5.4": R_OPENAI, "moonshot/kimi-k2.5": R_KIMI},
+            {"zai/glm-5.1": R_ZAI, "openai-codex/gpt-5.4": R_OPENAI, "kimi/kimi-k2.5": R_KIMI},
             {"research": {"primary": "zai/glm-5.1", "fallbacks": ["openai-codex/gpt-5.4"]},
              "default": {"primary": "zai/glm-5.1", "fallbacks": []}},
             routing_modifier="coding-aware",
             subscription_profile={"version": "1.0.0", "global": {
                 "zai": {"enabled": True, "tierId": "max"}, "openai-codex": {"enabled": True, "tierId": "pro"}}})
-        route = ZeroAPIRouter(cfg).resolve("research and analyze this", current_model="moonshot/kimi-k2.5")
+        route = ZeroAPIRouter(cfg).resolve("research and analyze this", current_model="kimi/kimi-k2.5")
         self.assertIsNotNone(route)
         self.assertEqual(route["model"], "glm-5.1", "pressure-first sort must win zai for a research+coding-aware cross-pair")
 

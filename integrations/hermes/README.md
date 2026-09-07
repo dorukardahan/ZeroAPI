@@ -44,8 +44,11 @@ python3 integrations/hermes/install.py
 ```
 
 The installer checks Hermes's bundled, user, and project plugin discovery roots
-before mutation and refuses duplicate `zeroapi-router` names from either
-`plugin.yaml` or `plugin.yml`. For custom layouts, pass `--destination`, one or
+before mutation and refuses duplicate `zeroapi-router` names from
+`plugin.yaml`, `plugin.yml`, or portable `plugin.json` manifests. YAML takes
+precedence when a directory contains both formats, matching Hermes discovery.
+Portable manifests require the Agent Plugins v1 schema and name rules.
+For custom layouts, pass `--destination`, one or
 more `--discovery-root` values, and `--backup-root` explicitly. Upgrade backups,
 staged candidates, and rollback journals are stored under
 `$HERMES_HOME/backups/zeroapi-router/`, outside plugin discovery roots and on the
@@ -85,24 +88,64 @@ patch:
 python ~/.hermes/plugins/zeroapi-router/patch_runtime.py --dry-run
 ```
 
-Then apply it and restart Hermes:
+Apply source changes to an inactive staging checkout and validate it before
+activating that release. If updating a checkout in place, stop Hermes and drain
+its turns/workers first: per-file atomic replacement does not make a group of
+Python modules safe to replace while they are being imported. Keep the previous
+release and its runtime transaction available until acceptance passes.
+
+From the target Hermes environment, apply the validated patch:
 
 ```bash
 python ~/.hermes/plugins/zeroapi-router/patch_runtime.py
 ```
 
-The patch supports three verified runtime layouts:
+The patch supports these verified runtime layouts:
 
 - the legacy monolithic turn loop in `run_agent.py`
 - the modular turn loop in `agent/conversation_loop.py`
 - Hermes v0.19's turn prologue in `agent/turn_context.py`
+- the split `AIAgent` lazy forwarders and `TurnFacadeMixin` on upstream main
+  [`245e4800`](https://github.com/NousResearch/hermes-agent/tree/245e48008fa814b3251f50755eb656bd9fb86cb1),
+  checked on 2026-09-06
+
+The current-main recipe adds `agent/model_routing.py` and patches the actual
+turn, runtime-helper, delegate-config, and plugin-hook owners. It preserves
+native model/provider resolution and capability propagation. Automatic routes
+use `persist_primary=False` and `prune_fallback_chain=False`; a manual model
+switch retains the host's persistent behavior. A routed continuation restores
+the primary frozen prompt before selecting its route, keeps routed prompt bytes
+out of the saved primary prompt, and restores the original prompt/static prefix
+and plugin sections for the next turn. Real provider failures still obey native
+fallback cooldowns.
 
 Layout selection is structural and fail-closed. Every required source is read,
 transformed, compiled, and checked with the doctor's AST/call-graph proof before
 the first write. Changed files are staged beside their targets and committed with
 atomic per-file replacements. If a handled commit failure occurs, already replaced
-files are restored and verified from the transaction journal. A second successful
+files are restored and verified from the transaction journal; a module created
+by that transaction is removed on rollback. Unrelated changes made after
+planning cause a refusal. A second successful
 run is a no-op and creates no additional backup.
+
+The recipe accepts only reviewed source blocks. An unknown or differently
+customized runtime fails before writing. Already compatible split runtimes pass
+the doctor and remain unchanged. The patch does not migrate Hermes configuration,
+session databases, service units, memory providers, or channel bridges.
+
+For staging, pass all three source selectors explicitly so auto-discovery cannot
+mix the staged checkout with the installed interpreter's source:
+
+```bash
+python integrations/hermes/patch_runtime.py --dry-run \
+  --run-agent /path/to/staged-hermes/run_agent.py \
+  --plugins /path/to/staged-hermes/hermes_cli/plugins.py \
+  --delegate-tool /path/to/staged-hermes/tools/delegate_tool.py \
+  --backup-root /path/to/external-runtime-backups
+```
+
+Repeat without `--dry-run` only for the inactive checkout. The remaining module
+paths are resolved beside the explicit `run_agent.py`.
 
 Runtime originals and journals are stored under
 `$HERMES_HOME/backups/zeroapi-router/`, outside plugin discovery roots. To restore
@@ -130,7 +173,7 @@ without the patch, prefer the upstream runtime.
 
 ## Manual Model Selection Limitation
 
-Hermes v0.19 does not expose public per-turn model-selection provenance or scope
+The verified v0.19 and main `245e4800` hook contracts do not expose public per-turn model-selection provenance or scope
 to `pre_model_route`. The adapter can see the effective provider and model, but it
 cannot distinguish a manual session selection or a one-turn `/model --once`
 selection from an earlier automatic route. Therefore ZeroAPI cannot guarantee that
@@ -149,7 +192,9 @@ Hermes provider IDs before returning a route:
 
 - `openai`, `openai-codex` -> `openai-codex`
 - `zai` -> `zai`
-- `moonshot`, `kimi`, `kimi-coding` -> `kimi-for-coding`
+- `kimi`, `kimi-coding` -> `kimi-coding`
+- `moonshot` remains `moonshot` and is excluded from subscription routing;
+  Moonshot API access is separate from Kimi Coding membership
 - `minimax-portal`, `minimax` -> `minimax-oauth`
 - `qwen-oauth`, `qwen-portal`, `qwen-cli` -> `qwen-oauth`
 - `qwen`, `qwen-dashscope` -> `alibaba-coding-plan` (separate Qwen Cloud/Coding Plan; not Portal)
@@ -157,12 +202,17 @@ Hermes provider IDs before returning a route:
 You can override these defaults with a `hermes_provider_map` object in
 `zeroapi-config.json`.
 
+Kimi Coding model IDs such as `k3-256k` and `kimi-for-coding` are model names,
+not provider IDs. Legacy Moonshot policies or account profiles are not renamed
+automatically. Qwen Portal remains supported on the verified Hermes runtime;
+current OpenClaw has removed that provider, so new OpenClaw starters differ.
+
 ## Runtime Contract
 
 ZeroAPI returns only:
 
 ```json
-{"provider": "zai", "model": "glm-5.2", "reason": "zeroapi:orchestration:keyword:workflow"}
+{"provider": "zai", "model": "glm-5.3", "reason": "zeroapi:orchestration:keyword:workflow"}
 ```
 
 It never returns API keys, auth profiles, base URLs, or transport settings.
@@ -259,5 +309,42 @@ python3 integrations/hermes/test_vision_aux.py
 python3 integrations/hermes/test_doctor.py
 python3 integrations/hermes/test_runtime_patch.py
 python3 integrations/hermes/test_install.py
-python3 integrations/hermes/doctor.py
 ```
+
+The source compatibility suite can also use explicit public Hermes sources.
+`ZEROAPI_HERMES_GIT_ROOT` enables tests against the pinned pristine main Git
+objects, including real patch application, import of the new route module,
+idempotency, rollback, and fault injection. `ZEROAPI_HERMES_SOURCE_ROOT` checks
+an already compatible main checkout. These tests read an exact list of Python
+source paths, never a runtime home.
+
+```bash
+PYTHONPATH=integrations/hermes \
+ZEROAPI_HERMES_GIT_ROOT=/path/to/public-hermes-git \
+python3 -m pytest integrations/hermes/test_upstream_source.py -q
+```
+
+Source proofs supplement native acceptance. Run the following with the staged
+Hermes environment's own Python and dependencies, installed using its reviewed
+lockfile. This performs real `AIAgent` imports, model switches, two-turn restores,
+fresh-agent continuation against a temporary `SessionDB`, child provider/pool
+normalization, callable credential identity, and native plugin-manifest parity.
+
+```bash
+/path/to/hermes/venv/bin/python -I -B \
+  integrations/hermes/native_smoke.py --hermes-root /path/to/staged-hermes
+```
+
+The runner creates a temporary HOME/HERMES_HOME, passes a small explicit child
+environment, disables plugin auto-discovery from operator directories, and
+blocks network connections and child-process launches inside the tests. It
+does not call a model API or contact a messaging channel. Portable manifest
+tests are explicitly skipped on older Hermes versions without that module;
+the routing and delegation tests remain required. Run it on both pristine-main
+plus the proposed patch and any older runtime that will receive an upgrade.
+
+If that native environment lacks pytest, `--test-deps /path/to/reviewed-test-deps`
+can supply only its missing test dependencies. The directory is appended after
+the native runtime's packages, so it cannot replace them. Use an isolated copy
+of reviewed pytest dependencies, never another Hermes virtualenv's entire
+`site-packages`, and keep production environments unchanged.

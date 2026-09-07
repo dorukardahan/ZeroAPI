@@ -11,6 +11,7 @@ type SessionEntryPatch = Partial<SessionEntry> | null;
 type PatchSessionEntryParams = {
   agentId?: string;
   sessionKey: string;
+  storePath?: string;
   preserveActivity?: boolean;
   update: (
     entry: SessionEntry,
@@ -90,7 +91,14 @@ export function createSessionEntryPatcher(
   configuredStore?: string,
 ): SessionEntryPatcher {
   if (typeof runtime.patchSessionEntry === "function") {
-    return (params) => runtime.patchSessionEntry!(params);
+    return (params) => runtime.patchSessionEntry!({
+      ...params,
+      ...(configuredStore ? {
+        storePath: runtime.resolveStorePath(configuredStore, {
+          ...(params.agentId ? { agentId: params.agentId } : {}),
+        }),
+      } : {}),
+    });
   }
 
   return async ({ agentId, sessionKey, update }) => {

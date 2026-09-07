@@ -10,8 +10,8 @@ import {
 } from "../subscriptions.js";
 
 describe("subscription catalog", () => {
-  it("publishes the July 2026 catalog contract version", () => {
-    expect(SUBSCRIPTION_CATALOG_VERSION).toBe("1.1.0");
+  it("publishes the September 2026 provider identity contract", () => {
+    expect(SUBSCRIPTION_CATALOG_VERSION).toBe("1.2.0");
   });
 
   it("keeps fresh Qwen Cloud ids separate while migrating 1.0 Portal aliases", () => {
@@ -40,6 +40,20 @@ describe("subscription catalog", () => {
     expect(portal.authMode).toBe("api_key");
     expect(portal.tiers[0]).toMatchObject({ tierId: "free", label: "Portal token", availability: "legacy" });
     expect(portal.notes).toContain("not refreshable");
+    expect(getStarterProviders().map((entry) => entry.openclawProviderId)).not.toContain("qwen-oauth");
+    expect(isModelAllowedBySubscriptionProfile({ version: "1.1.0", global: { "qwen-oauth": { enabled: true, tierId: "free" } } }, undefined, "qwen-oauth/qwen3.5-plus")).toBe(true);
+  });
+
+  it("never lets Kimi membership enable the separate Moonshot API", () => {
+    expect(getProviderCatalogEntry("kimi")?.openclawProviderId).toBe("kimi");
+    expect(getProviderCatalogEntry("moonshot")?.status).toBe("excluded");
+    expect(getStarterProviders().map((entry) => entry.openclawProviderId)).not.toContain("moonshot");
+    const profile = { version: "1.2.0", global: { kimi: { enabled: true, tierId: "moderato" } } };
+    expect(isModelAllowedBySubscriptionProfile(profile, undefined, "kimi/k3-256k")).toBe(true);
+    expect(isModelAllowedBySubscriptionProfile(profile, undefined, "moonshot/kimi-k3")).toBe(false);
+    const legacy = { version: "1.1.0", global: { moonshot: { enabled: true, tierId: "moderato" } } };
+    expect(isModelAllowedBySubscriptionProfile(legacy, undefined, "moonshot/kimi-k2.6")).toBe(false);
+    expect(isModelAllowedBySubscriptionProfile(legacy, undefined, "kimi/k3-256k")).toBe(false);
   });
 
   it("keeps active xAI OAuth separate from excluded xAI API billing", () => {
@@ -74,7 +88,7 @@ describe("subscription catalog", () => {
 
   it("keeps legacy xAI and other provider aliases compatible", () => {
     expect(getProviderCatalogEntry("xai-oauth")?.openclawProviderId).toBe("xai");
-    expect(getProviderCatalogEntry("kimi-coding")?.openclawProviderId).toBe("moonshot");
+    expect(getProviderCatalogEntry("kimi-coding")?.openclawProviderId).toBe("kimi");
     expect(getProviderCatalogEntry("minimax")?.openclawProviderId).toBe("minimax-portal");
   });
 });

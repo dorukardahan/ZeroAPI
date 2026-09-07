@@ -7,13 +7,21 @@ from pathlib import Path
 from unittest import mock
 
 from doctor import (
+    _runtime_helpers_turn_scope_contract,
     _source_for_module,
+    _switch_model_forwarder_contract,
+    _turn_scoped_route_call_contract,
     _valid_hooks_from_source,
     analyze_plugin_enablement,
     analyze_plugin_installation,
     analyze_runtime_sources,
     main,
 )
+from patch_runtime import (
+    patch_agent_runtime_helpers_source,
+    patch_run_agent_source,
+)
+from test_runtime_patch import UPSTREAM_MODULAR_RUN_AGENT, UPSTREAM_RUNTIME_HELPERS
 
 
 PLUGINS_NO_DISCOVERY = '''
@@ -266,6 +274,37 @@ def messages(checks):
 
 
 class HermesDoctorRuntimeContractTest(unittest.TestCase):
+    def test_turn_scoped_runtime_contract_is_proven_end_to_end(self):
+        run_agent, _ = patch_run_agent_source(UPSTREAM_MODULAR_RUN_AGENT)
+        runtime_helpers, _ = patch_agent_runtime_helpers_source(
+            UPSTREAM_RUNTIME_HELPERS
+        )
+
+        self.assertTrue(_turn_scoped_route_call_contract(run_agent))
+        self.assertTrue(_switch_model_forwarder_contract(run_agent))
+        self.assertTrue(_runtime_helpers_turn_scope_contract(runtime_helpers))
+
+    def test_persistent_route_and_incomplete_host_support_are_rejected(self):
+        run_agent, _ = patch_run_agent_source(UPSTREAM_MODULAR_RUN_AGENT)
+        runtime_helpers, _ = patch_agent_runtime_helpers_source(
+            UPSTREAM_RUNTIME_HELPERS
+        )
+        persistent_route = run_agent.replace(
+            "                persist_primary=False,\n",
+            "                persist_primary=True,\n",
+            1,
+        )
+        incomplete_helpers = runtime_helpers.replace(
+            ' or getattr(\n        agent, "_transient_route_activated", False\n    )',
+            "",
+            1,
+        )
+
+        self.assertFalse(_turn_scoped_route_call_contract(persistent_route))
+        self.assertFalse(
+            _runtime_helpers_turn_scope_contract(incomplete_helpers)
+        )
+
     def test_cli_does_not_treat_arbitrary_plugin_parent_as_discoverable(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

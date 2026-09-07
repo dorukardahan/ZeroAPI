@@ -35,7 +35,7 @@ const models: Record<string, ModelCapabilities> = {
       scicode: 0.438,
     },
   },
-  "moonshot/kimi-k2.5": {
+  "kimi/kimi-for-coding": {
     context_window: 1000,
     supports_vision: false,
     speed_tps: 32.926,
@@ -72,19 +72,19 @@ const models: Record<string, ModelCapabilities> = {
 const rules: Record<string, RoutingRule> = {
   code: {
     primary: "openai-codex/gpt-5.4",
-    fallbacks: ["zai/glm-5.1", "moonshot/kimi-k2.5"],
+    fallbacks: ["zai/glm-5.1", "kimi/kimi-for-coding"],
   },
   default: {
     primary: "openai-codex/gpt-5.4",
-    fallbacks: ["zai/glm-5.1", "moonshot/kimi-k2.5"],
+    fallbacks: ["zai/glm-5.1", "kimi/kimi-for-coding"],
   },
   orchestration: {
     primary: "zai/glm-5.1",
-    fallbacks: ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"],
+    fallbacks: ["kimi/kimi-for-coding", "openai-codex/gpt-5.4"],
   },
   fast: {
     primary: "zai/glm-5.1",
-    fallbacks: ["moonshot/kimi-k2.5", "openai-codex/gpt-5.4"],
+    fallbacks: ["kimi/kimi-for-coding", "openai-codex/gpt-5.4"],
   },
 };
 
@@ -93,7 +93,7 @@ const profile: SubscriptionProfile = {
   global: {
     "openai-codex": { enabled: true, tierId: "plus" },
     "zai": { enabled: true, tierId: "max" },
-    "moonshot": { enabled: true, tierId: "moderato" },
+    "kimi": { enabled: true, tierId: "moderato" },
   },
 };
 
@@ -126,7 +126,7 @@ describe("router weighting", () => {
   it("preserves the orchestration leader while keeping benchmark-near fallbacks in pressure order", () => {
     const candidates = getSubscriptionWeightedCandidates("orchestration", models, rules, profile, undefined, undefined);
     expect(candidates[0]).toBe("zai/glm-5.1");
-    expect(candidates[1]).toBe("moonshot/kimi-k2.5");
+    expect(candidates[1]).toBe("kimi/kimi-for-coding");
     expect(candidates).toContain("openai-codex/gpt-5.4");
   });
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from copy import deepcopy
 import json
+import math
 import os
 import shutil
 import stat
@@ -49,7 +50,7 @@ CANONICAL_BENCHMARK_CATEGORIES = {
     "intelligence": {
         "key": "artificial_analysis_intelligence_index",
         "scale": "0-100",
-        "description": "Artificial Analysis Intelligence Index v4.1 composite (9 evaluations; see methodology)",
+        "description": "Artificial Analysis Intelligence Index v4.2 composite (10 evaluations; see methodology)",
     },
     "coding": {
         "key": "artificial_analysis_coding_index",
@@ -142,7 +143,12 @@ def validate_evaluation_schema(items: Iterable[Dict[str, Any]]) -> None:
     observed: set[str] = set()
     for item in items:
         for key, value in (item.get("evaluations") or {}).items():
-            if not isinstance(value, bool) and isinstance(value, (int, float)) and value > 0:
+            if (
+                not isinstance(value, bool)
+                and isinstance(value, (int, float))
+                and math.isfinite(value)
+                and value >= 0
+            ):
                 observed.add(key)
 
     unknown = sorted(observed - benchmark_source_keys())
@@ -151,6 +157,39 @@ def validate_evaluation_schema(items: Iterable[Dict[str, Any]]) -> None:
             "Artificial Analysis evaluation schema contains unmapped numeric fields: "
             + ", ".join(unknown)
         )
+
+
+def source_evaluation_coverage(items: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    """Record source coverage before normalization, without inventing missing scores."""
+    coverage = {
+        key: {kind: 0 for kind in ("absent", "null", "zero", "positive", "invalid")}
+        for key in sorted(benchmark_source_keys())
+    }
+    for item in items:
+        evaluations = item.get("evaluations") or {}
+        for key, counts in coverage.items():
+            value = evaluations.get(key)
+            if key not in evaluations:
+                kind = "absent"
+            elif value is None:
+                kind = "null"
+            elif isinstance(value, bool) or not isinstance(value, (int, float)):
+                kind = "invalid"
+            elif not math.isfinite(value) or value < 0:
+                kind = "invalid"
+            else:
+                kind = "zero" if value == 0 else "positive"
+            counts[kind] += 1
+    return coverage
+
+
+def normalize_benchmark_score(value: Any) -> Optional[float]:
+    # A measured zero is a score, not evidence of a missing evaluation.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if not math.isfinite(value) or value < 0:
+        return None
+    return round(float(value), 3)
 
 
 def canonicalize_benchmark_categories(categories: Any) -> Dict[str, Any]:
@@ -171,11 +210,11 @@ def resolve_benchmark(evaluations: Dict[str, Any], source_spec: Any) -> Optional
     """
     if isinstance(source_spec, tuple):
         for key in source_spec:
-            value = normalize_optional_number(evaluations.get(key))
+            value = normalize_benchmark_score(evaluations.get(key))
             if value is not None:
                 return value
         return None
-    return normalize_optional_number(evaluations.get(source_spec))
+    return normalize_benchmark_score(evaluations.get(source_spec))
 
 
 EXCLUDED_SLUG_PATTERNS = ("realtime",)
@@ -513,6 +552,8 @@ def transform_models(
                 "slug": slug,
                 "id": item.get("id"),
                 "creator": creator.get("name"),
+                "creator_id": creator.get("id"),
+                "creator_slug": creator.get("slug"),
                 "openclaw_provider": PROVIDER_MAP[creator.get("slug")],
                 "openclaw_model": policy_family.get("openclaw_model_id"),
                 "release_date": item.get("release_date"),
@@ -639,7 +680,9 @@ def main() -> None:
     response = fetch_data(api_key)
     validate_evaluation_schema(response.get("data") or [])
     prompt_options = response.get("prompt_options") or {}
-    models = transform_models(response.get("data") or [], policy_slug_map)
+    supported_items = [item for item in (response.get("data") or []) if should_include(item)]
+    coverage = source_evaluation_coverage(supported_items)
+    models = transform_models(supported_items, policy_slug_map)
 
     output_path = Path(args.output)
     benchmark_categories = read_existing_benchmark_categories(output_path)
@@ -655,6 +698,7 @@ def main() -> None:
         "note": "Routeability and benchmark evidence are separate. Anthropic, Google, and API-only horizon providers are not auto-routed; see references/provider-model-status.md.",
         "prompt_options": prompt_options,
         "benchmark_categories": benchmark_categories,
+        "source_evaluation_coverage": coverage,
         "policy_families": {
             "version": policy_families.get("version"),
             "description": policy_families.get("description"),
@@ -668,6 +712,7 @@ def main() -> None:
     print(f"Fetched {len(response.get('data') or [])} API models")
     print(f"Kept {len(models)} ZeroAPI-supported models")
     print(f"Marked {policy_family_included_count} models as policy-family members")
+    print("AA source evaluation coverage: " + json.dumps(coverage, sort_keys=True))
     print(f"Output: {args.output}")
 
     if args.dry_run:

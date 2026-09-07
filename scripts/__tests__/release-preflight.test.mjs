@@ -25,6 +25,7 @@ const PREFLIGHT_INPUTS = [
   "plugin/README.md",
   "scripts/stage_clawhub_plugin.mjs",
   "scripts/refresh_benchmarks.py",
+  "scripts/verify_clawhub_release.mjs",
   ".github/workflows/publish-clawhub-plugin.yml",
   "benchmarks.json",
   "plugin/benchmarks.json",
@@ -189,3 +190,34 @@ test("release_preflight catches plugin install-pin version drift", () => {
     rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+for (const [label, relativePath, original, replacement, message] of [
+  ["missing verifier invocation", ".github/workflows/publish-clawhub-plugin.yml",
+    'node scripts/verify_clawhub_release.mjs "$EXPECTED_VERSION"', 'echo "unchecked release"',
+    "must run the canonical release verifier"],
+  ["wrong exact release acceptance", "scripts/verify_clawhub_release.mjs",
+    "security?.release?.version !== expected", "false",
+    "must check the exact release security response"],
+  ["unconditional scan success", "scripts/verify_clawhub_release.mjs",
+    'trust.scanStatus === "clean" && latestReady', "true",
+    "must require both exact clean scan and matching latest"],
+  ["swallowed terminal failures", "scripts/verify_clawhub_release.mjs",
+    "if (!(error instanceof PendingMetadata)) throw error;", "// Terminal failure was incorrectly ignored.",
+    "must preserve terminal trust and error rejection"],
+]) {
+  test(`release_preflight catches ${label}`, () => {
+    const tmp = buildAlignedFixture();
+    try {
+      const path = join(tmp, relativePath);
+      const source = readFileSync(path, "utf8");
+      assert.ok(source.includes(original), "fixture mutation must change the active guard");
+      writeFileSync(path, source.replace(original, replacement));
+      assert.throws(
+        () => runPreflight(tmp),
+        (error) => `${error.stdout ?? ""}${error.stderr ?? ""}`.includes(message),
+      );
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+}
