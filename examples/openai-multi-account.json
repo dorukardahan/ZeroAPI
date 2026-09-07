@@ -1,7 +1,7 @@
 {
   "version": "3.11.0",
-  "generated": "2026-09-06T00:00:00.000Z",
-  "benchmarks_date": "2026-09-06",
+  "generated": "2026-09-07T00:00:00.000Z",
+  "benchmarks_date": "2026-09-07",
   "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
