@@ -1,14 +1,14 @@
 # OpenClaw compatibility
 
-The 2026-09-06 review checked the deployed OpenClaw `2026.9.1` package, the
-minimum supported `2026.5.2` package, and upstream main at
-`2d361a8cdbafe2c0810d176211263e2e51fbb569` (package version `2026.9.2`).
+The 2026-09-06 review checked the deployed OpenClaw `2026.9.1` package and the
+minimum supported `2026.5.2` package. The 2026-09-07 refresh checked upstream main
+at `6223cf8b74800e22b85f16c71cfd002965d426e0` (package version `2026.9.2`).
 
 | Host | Runtime proof | Session store |
 | --- | --- | --- |
 | `2026.5.2` | Native CLI import/activation and registered callback dispatch | Native public JSON store |
 | `2026.9.1` | Native CLI import/activation and native hook runner | Native public SQLite store |
-| Main `2d361a8cdbafe2c0810d176211263e2e51fbb569` | Actual pinned source hook runner, bundled without changing upstream | `2026.9.1` public SQLite runtime, with source contract comparison |
+| Main `6223cf8b74800e22b85f16c71cfd002965d426e0` | Actual pinned source hook runner, bundled without changing upstream | `2026.9.1` public SQLite runtime, with source contract comparison |
 
 The main check executes the current native hook dispatcher. It does not claim a
 complete main gateway build, provider request, channel delivery, or migration of
@@ -16,12 +16,24 @@ an existing production database. Stable and main hook declarations match for
 the model/provider routing result. Changes to the public session patch API are
 additive; ZeroAPI delegates storage to that API.
 
-The final 16-commit refresh from `1c2fdc53` preserved the plugin entry, hook,
-registration, public session-store and dependency-lock contracts. Provider
-catalog changes add explicit failure outcomes for bundled strict discovery;
-external callers that omit strict mode retain the advisory behavior. The fresh
-ZeroAPI `3.11.0` artifact passed both the new source runner and native `2026.9.1`
-runner checks without an adapter change.
+The refresh covers relevant changes in 809 commits since `2d361a8c`. The routing
+event/result declarations, hook runner, public session patch entry point and
+SDK exports used by ZeroAPI are unchanged. Registry/service internals were
+refactored; their public registration methods remain compatible. SQLite adds
+server-owned fields that ZeroAPI leaves to the native session API.
+
+Provider discovery became stricter: xAI OAuth no longer seeds a failed live
+catalog with static model rows, and OpenAI/MiniMax keep discovery tied to the
+selected auth profile. An unavailable catalog or static fallback is not model
+entitlement evidence. This preserves the requirement to verify Astra in every
+selected account's live catalog.
+
+The fresh ZeroAPI `3.11.0` artifact passed the new source runner, bundled from
+148 official source files with the reviewed `2026.9.1` dependencies. Coding and
+image routing, registry isolation, persisted account selection and unchanged
+legacy JSON passed without warnings or an adapter change. Main's dependency
+lock changed; this focused proof does not substitute those dependencies or
+claim execution of main's SQLite implementation.
 
 ## Runtime boundaries
 
@@ -65,7 +77,7 @@ For current main, check out the exact reviewed official commit in a separate
 directory and reuse the installed `2026.9.1` package's dependencies:
 
 ```bash
-OPENCLAW_MAIN_SHA=2d361a8cdbafe2c0810d176211263e2e51fbb569
+OPENCLAW_MAIN_SHA=6223cf8b74800e22b85f16c71cfd002965d426e0
 test "$(git -C /tmp/openclaw-main rev-parse HEAD)" = "$OPENCLAW_MAIN_SHA"
 node scripts/openclaw_source_hooks.mjs \
   /tmp/openclaw-main "$OPENCLAW_MAIN_SHA" \

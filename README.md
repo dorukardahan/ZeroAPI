@@ -426,7 +426,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). The 2026-09-06 AA snapshot contains 244 reference rows. `benchmarks.json` and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 uses direct AA max-effort rows; Grok 4.6 and 4.5 use direct high-effort rows. Missing measurements remain missing. For profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). The 2026-09-07 AA snapshot contains 244 reference rows. `benchmarks.json` and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 uses direct AA max-effort rows; Grok 4.6 and 4.5 use direct high-effort rows. Missing measurements remain missing. For profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 The benchmark snapshot intentionally stays broader than the routeable starter pool. Direct rows, explicit proxies, and subscription routeability are listed separately in the provider/model status reference; do not infer one from another.
 

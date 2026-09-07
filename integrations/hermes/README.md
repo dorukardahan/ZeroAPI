@@ -106,8 +106,8 @@ The patch supports these verified runtime layouts:
 - the modular turn loop in `agent/conversation_loop.py`
 - Hermes v0.19's turn prologue in `agent/turn_context.py`
 - the split `AIAgent` lazy forwarders and `TurnFacadeMixin` on upstream main
-  [`245e4800`](https://github.com/NousResearch/hermes-agent/tree/245e48008fa814b3251f50755eb656bd9fb86cb1),
-  checked on 2026-09-06
+  [`693641aa`](https://github.com/NousResearch/hermes-agent/tree/693641aa8b4359c602283bdbbc14041e03bc47bc),
+  checked on 2026-09-07
 
 The current-main recipe adds `agent/model_routing.py` and patches the actual
 turn, runtime-helper, delegate-config, and plugin-hook owners. It preserves
@@ -173,7 +173,7 @@ without the patch, prefer the upstream runtime.
 
 ## Manual Model Selection Limitation
 
-The verified v0.19 and main `245e4800` hook contracts do not expose public per-turn model-selection provenance or scope
+The verified v0.19 and main `693641aa` hook contracts do not expose public per-turn model-selection provenance or scope
 to `pre_model_route`. The adapter can see the effective provider and model, but it
 cannot distinguish a manual session selection or a one-turn `/model --once`
 selection from an earlier automatic route. Therefore ZeroAPI cannot guarantee that

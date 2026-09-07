@@ -11,7 +11,7 @@ permissions:
 
 env:
   NPM_CONFIG_IGNORE_SCRIPTS: 'true'
-  OPENCLAW_MAIN_SHA: '2d361a8cdbafe2c0810d176211263e2e51fbb569'
+  OPENCLAW_MAIN_SHA: '6223cf8b74800e22b85f16c71cfd002965d426e0'
 
 jobs:
   test:
@@ -129,7 +129,7 @@ jobs:
             sha: '3c27eb6234bf91b8ceee9e9071591b31e9b148cb'
             native: false
           - label: current-main
-            sha: '245e48008fa814b3251f50755eb656bd9fb86cb1'
+            sha: '693641aa8b4359c602283bdbbc14041e03bc47bc'
             native: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

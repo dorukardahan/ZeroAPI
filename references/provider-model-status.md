@@ -1,4 +1,4 @@
-# Provider and model status - 2026-09-06
+# Provider and model status - 2026-09-07
 
 Benchmark evidence and runtime availability are separate. A direct Artificial Analysis (AA) row does not prove that a subscription provider can route the model; a routeable model may also need an explicit proxy until AA publishes a matching row.
 
@@ -15,7 +15,7 @@ These ISO dates are authoritative for the matching exclusions in the top-level R
 
 ## Current provider and model status
 
-Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa` and Hermes `245e48008fa814b3251f50755eb656bd9fb86cb1`. Benchmark evidence is the 2026-09-06 AA API snapshot, 244 rows. The exclusion review dates above are unchanged historical reviews; this model update does not claim a fresh Anthropic/Google policy review.
+Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa` and Hermes `245e48008fa814b3251f50755eb656bd9fb86cb1`. Benchmark evidence is the 2026-09-07 AA API snapshot, 244 rows. The exclusion review dates above are unchanged historical reviews; this model update does not claim a fresh Anthropic/Google policy review.
 
 | Provider/model | Benchmark evidence | Subscription route status |
 |---|---|---|

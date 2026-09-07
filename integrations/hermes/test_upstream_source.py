@@ -19,7 +19,7 @@ from patch_runtime import (
 )
 
 
-UPSTREAM_REF = "245e48008fa814b3251f50755eb656bd9fb86cb1"
+UPSTREAM_REF = "693641aa8b4359c602283bdbbc14041e03bc47bc"
 SOURCE_PATHS = {
     "plugins": "hermes_cli/plugins.py",
     "run_agent": "run_agent.py",
