@@ -3,7 +3,7 @@
 [![Tests](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml/badge.svg)](https://github.com/dorukardahan/ZeroAPI/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.5.2+-blue)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/version-3.10.3-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.10.3)
+[![Version](https://img.shields.io/badge/version-3.11.0-green)](https://github.com/dorukardahan/ZeroAPI/releases/tag/v3.11.0)
 
 **Your AI subscriptions. One plugin. Routing policy that improves with data.**
 
@@ -38,7 +38,7 @@ For the written product contract behind the current router, including the option
 
 **Google (status reviewed 2026-07-10):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
 
-ZeroAPI routes exclusively across subscription or account-quota providers: OpenAI, Kimi, Z AI (GLM), MiniMax, Qwen Portal, and xAI Grok OAuth / SuperGrok.
+Fresh OpenClaw setups support OpenAI, Kimi Coding, Z AI (GLM), MiniMax, and xAI Grok OAuth / SuperGrok subscription accounts. Existing Qwen Portal configurations remain recognizable for runtimes that still support that provider, including Hermes; current OpenClaw has removed Portal. Moonshot API billing and Qwen Cloud/Token Plan credentials are separate from those accounts.
 
 ## How It Works
 
@@ -66,7 +66,7 @@ Cross-provider fallback requires at least two configured and eligible subscripti
 
 Important: “Rate limit” did not correspond to an implemented capability-filter signal and has been removed from the stage description. [`plugin/filter.ts`](plugin/filter.ts) can reject configured models only for request size versus context window, required vision support, the `fast`-task TTFT ceiling, or an explicit caller-supplied provider exclusion; the live routing path in [`plugin/decision.ts`](plugin/decision.ts) supplies only the first three inputs. [`plugin/router.ts`](plugin/router.ts) then ranks that already-filtered candidate set and does not read provider responses, cooldown state, or quota snapshots. Therefore the capability filter has no runtime-local cooldown or live-availability input. ZeroAPI does **not** directly access provider dashboards, fetch quota or billing endpoints, or collect raw usage telemetry. The separate quota modules can process an optional token-free snapshot supplied by a host integration in memory, but neither shipped router currently supplies or consumes one. In the current hot paths, “headroom” remains a static policy signal derived from configured tier, `usagePriority`, `intendedUse`, and account count; see the [quota-signal provenance, privacy, and fallback contract](references/routing-policy-spec.md#runtime-quota-signal-contract).
 
-Vision routing uses the same policy. Image attachments and visual requests are routed to the best eligible vision-capable model in the configured subscription pool, not to a hardcoded provider. For example, GPT-5.6 can win in an OpenAI + Z AI setup because Z AI Coding Plan text models do not include GLM-5V-Turbo API access by default. A different user with a configured Kimi vision subscription can route vision turns to Kimi instead.
+Vision routing uses the same policy. Image attachments and visual requests are routed to the best eligible vision-capable model in the configured subscription pool, not to a hardcoded provider. GLM-5.3 is text-only; GLM-5.3 Flash accepts images and is available through Coding Plan. Kimi Coding K3 and supported OpenAI/xAI models can also be candidates when the configured account and runtime accept images. Model-specific access and capabilities determine the pool.
 
 When the hook returns an override, the model is switched for that turn only. The session, conversation history, and workspace files remain intact. OpenClaw runtime state is still the authority.
 
@@ -80,22 +80,24 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 
 ## Supported Providers
 
-| Provider | OpenClaw ID | Subscription | Monthly | Annual (eff/mo) | Models |
-|----------|------------|--------------|---------|-----------------|--------|
-| OpenAI | `openai-codex` subscription (`openai/*` model refs) | ChatGPT Plus / Pro | $20-$200 | $17-$167 | GPT-5.6 Sol, Terra, Luna (direct AA max-effort rows) |
-| Kimi | `moonshot` (`kimi`, `kimi-coding` legacy aliases) | Moderato-Vivace | $19-$199 | $15-$159 | Kimi K2.7 Code, K2.6 general default |
-| Z AI (GLM) | `zai` | Lite-Max | $10-$80 | $7-$56 | GLM-5.2, GLM-5.1 |
-| MiniMax | `minimax-portal` (`minimax` alias) | Starter-Max | $10-$50 | $8-$42 | MiniMax-M3, M2.7 fallback |
-| Qwen Portal | `qwen-oauth` (`qwen-portal`, `qwen-cli` aliases) | Portal token (legacy migration surface) | n/a | n/a | qwen3.5-plus; re-onboard with a current token; no Portal Qwen 3.7 claim |
-| xAI Grok OAuth | `xai` (`xai-oauth` legacy Hermes alias) | SuperGrok | varies | varies | Grok 4.5, Build 0.1, Grok 4.3 fallback |
+| Provider | OpenClaw route/account | Access | Models and canonical route refs |
+|----------|------------------------|--------|---------------------------------|
+| OpenAI | `openai-codex` subscription; `openai/*` routes | ChatGPT account with verified model access | GPT-5.6 Sol (`openai/gpt-5.6-sol`), Terra (`openai/gpt-5.6-terra`), Luna (`openai/gpt-5.6-luna`); Astra (`openai/gpt-6-astra`) only after discovery in every selected account |
+| Kimi Coding | `kimi`; Hermes provider `kimi-coding` | Separate Kimi Coding membership/key | K3-256k (`kimi/k3-256k`) for Moderato and above; full-context K3 (`kimi/k3`) needs the appropriate tier |
+| Z AI (GLM) | `zai` | Coding Plan | Text GLM-5.3 (`zai/glm-5.3`), vision-capable GLM-5.3 Flash (`zai/glm-5.3-flash`) |
+| MiniMax | `minimax-portal` | Coding Plan / supported OAuth account | MiniMax-M3 (`minimax-portal/MiniMax-M3`), M2.7 fallback (`minimax-portal/MiniMax-M2.7`) |
+| xAI Grok OAuth | `xai`; Hermes alias `xai-oauth` | Subscription-backed OAuth | Grok 4.6 (`xai/grok-4.6`), 4.5 (`xai/grok-4.5`), Build 0.1 (`xai/grok-build-0.1`), 4.3 fallback (`xai/grok-4.3`) |
+| Qwen Portal compatibility | `qwen-oauth` | Existing account on a runtime that still supports Portal | Qwen 3.5 Plus (`qwen-oauth/qwen3.5-plus`); excluded from fresh current-OpenClaw onboarding |
 
-Model namespaces such as `openai/*`, `kimi/*`, or `zai/*` are routing references only. They do not by themselves establish subscription eligibility. A route is subscription-backed only when the corresponding account surface is actually configured and authorized in OpenClaw (for example, a signed-in ChatGPT Plus/Pro account for `openai/*`). Eligibility comes from the configured account surface, not from a model reference alone.
+Display names are followed by canonical route refs in code formatting. These refs do not by themselves establish subscription eligibility. Eligibility comes from the actual configured account, endpoint, model entitlement, and host runtime. The live-source review and effort qualifications are in [provider/model status](references/provider-model-status.md) and [benchmarks](references/benchmarks.md); this table makes no current pricing claim.
 
-OpenAI auth uses `openclaw models auth login --provider openai`; the resulting ChatGPT subscription pool routes the current `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, and `openai/gpt-5.6-luna` model refs. ZeroAPI maps those routes to their direct Artificial Analysis max-effort rows.
+OpenAI auth uses `openclaw models auth login --provider openai`. GPT-5.6 Sol/Terra/Luna use direct AA max-effort reference rows. Astra has separate AA effort rows; ZeroAPI uses the xhigh reference because the checked Hermes main clamps Astra max to xhigh. The starter includes Astra only when fresh native account-catalog results supplied to the generator show it in every selected OpenAI account. A tier name, existing config, or benchmark row does not establish Astra access.
 
-Vision capability is tracked per model in `zeroapi-config.json`. Starter configs only mark models as vision-capable when the OpenClaw runtime route is known to accept images. Provider-specific VLM/API models such as `zai/glm-5v-turbo` or custom Qwen VL routes should be added only when the user has explicit access and runtime metadata confirms image input.
+Kimi Coding uses the native `kimi` provider and its own membership key. `moonshot/*` denotes the separately billed Moonshot API; older ZeroAPI catalogs conflated these identities. Existing Moonshot profiles are never renamed into Kimi membership accounts automatically. The K3 membership starter uses AA K3 max as an explicit quality reference, while the membership default is high; no matching endpoint throughput or latency is claimed.
 
-Grok has two different surfaces. Current OpenClaw SuperGrok auth uses `openclaw models auth login --provider xai --method oauth`, routing `xai/grok-4.5` and `xai/grok-build-0.1`. Hermes-only setups may use the clearly separate legacy `xai-oauth` adapter and `hermes auth add xai-oauth`. Plain xAI API-key usage remains explicit API billing and is excluded from subscription routing.
+GLM-5.3 and Flash have direct AA rows. Flash's AA row carries no explicit effort label. Grok 4.6 and 4.5 now have direct high-effort rows, replacing the old 4.3 proxy for 4.5. Different effort settings can yield different results. OpenClaw SuperGrok auth uses `openclaw models auth login --provider xai --method oauth`; Hermes can use `hermes auth add xai-oauth`. Plain xAI API-key usage remains separate billing.
+
+Qwen3.8 Max is benchmark reference data for the separate Cloud route. There is no direct AA row for Qwen3.8 Flash or the dated Max-0902 snapshot in the fetched data. Flash-Next is a different model and is not substituted. Portal credentials are not converted into Cloud or Token Plan credentials.
 
 ## Task Categories
 
@@ -170,7 +172,7 @@ ZeroAPI is a source-linked ClawHub package. Before installing from ClawHub, veri
 - source path: `plugin`
 - source tag or commit: matches the GitHub release you intend to install
 
-Prefer exact version installs such as `clawhub:zeroapi@3.10.3` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
+Prefer exact version installs such as `clawhub:zeroapi@3.11.0` instead of an unpinned `latest` install. Do not install mirror packages, standalone skills, or similarly named packages that do not link back to this repository.
 
 ZeroAPI does not require shell-piped installer commands. The GitHub release workflow publishes the ClawHub package from `plugin/`, verifies ClawHub latest/exact-version metadata, and runs an OpenClaw install smoke test before treating the release as published.
 
@@ -296,7 +298,7 @@ Current scoring contract in plain terms:
 
 For the exact rules and formulas, see [`references/account-pool-spec.md`](references/account-pool-spec.md).
 
-When the winning inventory account has an `authProfile`, ZeroAPI returns `authProfileOverride` alongside `providerOverride` and `modelOverride` for forward compatibility, and also performs a best-effort session-store sync so the active session can prefer the right auth profile. Current stable OpenClaw releases still do not merge `authProfileOverride` from `before_model_resolve`, so the session-store path remains the runtime path for same-provider account steering until native hook support lands. OpenClaw still owns cooldown handling, failover, and session stickiness after that profile preference is applied.
+When the winning inventory account has an `authProfile`, ZeroAPI uses OpenClaw's public session API to persist that preference for an existing session. Its callback also retains the optional `authProfileOverride` extension for compatible hosts. Official OpenClaw consumes only `providerOverride` and `modelOverride` from that hook and drops the extra field, so persistence does not guarantee a same-turn account switch. OpenClaw owns cooldown handling, failover, and session stickiness. See the tested [OpenClaw compatibility contract](references/openclaw-compatibility.md).
 
 Important: the compatibility fallback only updates sessions that already exist in OpenClaw's session store and it never overwrites a user-pinned auth profile. If the session store is unavailable, `subscription_inventory` still improves provider weighting and the final same-provider account choice falls back to OpenClaw `auth.order`.
 
@@ -354,8 +356,8 @@ ZeroAPI/
 │       └── test.yml
 ├── SKILL.md                              # Setup wizard — scans OpenClaw, configures routing
 ├── package.json                          # Root scripts for tests and repo-local tools
-├── benchmarks.json                       # 193 benchmark reference models, plus policy-family tags
-├── policy-families.json                  # 16 practical policy-family members across 6 providers
+├── benchmarks.json                       # AA benchmark reference rows and policy-family tags
+├── policy-families.json                  # Versioned model families, evidence, and route eligibility
 ├── scripts-zeroapi-doctor.sh             # Runtime/policy self-check helper
 ├── scripts/
 │   ├── first_run.ts                      # Interactive starter wizard for public repo onboarding
@@ -424,7 +426,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). `benchmarks.json` (fetched 2026-07-24) and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 uses direct AA max-effort rows; Grok 4.5 retains an explicit proxy instead of an invented direct row. For detailed profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). The 2026-09-07 AA snapshot contains 244 reference rows. `benchmarks.json` and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 uses direct AA max-effort rows; Grok 4.6 and 4.5 use direct high-effort rows. Missing measurements remain missing. For profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 The benchmark snapshot intentionally stays broader than the routeable starter pool. Direct rows, explicit proxies, and subscription routeability are listed separately in the provider/model status reference; do not infer one from another.
 
@@ -432,14 +434,7 @@ The benchmark snapshot intentionally stays broader than the routeable starter po
 
 For bundle planning details, see [`references/cost-summary.md`](references/cost-summary.md).
 
-| Setup | Providers | Monthly | Annual (eff/mo) |
-|-------|-----------|---------|-----------------|
-| OpenAI only | 1 | $20 | $17 |
-| OpenAI + GLM | 2 | $30 | $24 |
-| OpenAI + GLM + Kimi | 3 | $49 | $39 |
-| + MiniMax | 4 | $59 | $47 |
-| + Qwen Portal | 5 | $59 | $47 |
-| + xAI SuperGrok (all supported routes) | 6 | varies | varies |
+The fresh OpenClaw full-stack example includes five subscription providers: OpenAI, GLM, Kimi Coding, MiniMax, and xAI OAuth. Existing Qwen Portal policies require a host that still supports Portal. Check current provider checkout prices and account entitlements before choosing a bundle; benchmark scores do not establish price or access.
 
 ## FAQ
 

@@ -44,6 +44,56 @@ def _tree_hash(path: Path) -> str:
 
 
 class HermesPluginInstallTest(unittest.TestCase):
+    def test_portable_duplicate_blocks_install_before_any_mutation(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            source, destination = root / "source", root / "plugins" / "zeroapi-router"
+            duplicate = root / "plugins" / "category" / "portable-copy"
+            backup_root = root / "backups"
+            _write_plugin(source)
+            _write_plugin(destination, payload="active")
+            duplicate.mkdir(parents=True)
+            manifest = duplicate / "plugin.json"
+            manifest.write_text(json.dumps({
+                "$schema": install._PORTABLE_SCHEMA,
+                "name": "zeroapi-router",
+                "version": "1.0.0",
+            }), encoding="utf-8")
+            before = _tree_hash(destination)
+            with self.assertRaises(DuplicatePluginError):
+                install_plugin(source=source, destination=destination,
+                               discovery_roots=[root / "plugins"], backup_root=backup_root)
+            self.assertEqual(_tree_hash(destination), before)
+            self.assertFalse(backup_root.exists())
+            self.assertIn(manifest, discover_plugin_manifests([root / "plugins"]))
+
+    def test_yaml_manifest_takes_precedence_over_portable_manifest(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            plugin = root / "other"
+            _write_plugin(plugin, name="other", manifest_filename="plugin.yml")
+            (plugin / "plugin.json").write_text(json.dumps({
+                "$schema": install._PORTABLE_SCHEMA, "name": "zeroapi-router",
+            }), encoding="utf-8")
+            self.assertEqual(discover_plugin_manifests([root]), [plugin / "plugin.yml"])
+            self.assertEqual(install._manifest_name(install._manifest_path(plugin)), "other")
+
+    def test_invalid_portable_schema_and_name_fail_closed_without_yaml(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "plugin.json"
+            for payload in (
+                {"name": "zeroapi-router"},
+                {"$schema": install._PORTABLE_SCHEMA, "name": "bad--name"},
+                {"$schema": install._PORTABLE_SCHEMA, "name": "zeroapi-router", "author": "author"},
+            ):
+                with self.subTest(payload=payload):
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    with self.assertRaises(ValueError):
+                        install._manifest_name(path)
+            path.write_text(json.dumps({"$schema": install._PORTABLE_SCHEMA, "name": "zeroapi-router"}), encoding="utf-8")
+            with mock.patch.object(install, "yaml", None):
+                self.assertEqual(install._manifest_name(path), "zeroapi-router")
+
     def test_default_discovery_roots_cover_bundled_user_and_project_locations(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -104,7 +154,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_discovery_matches_v019_direct_and_one_category_level_deterministically(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp) / "plugins"
+            root = Path(tmp).resolve() / "plugins"
             _write_plugin(root / "z-direct", name="z")
             _write_plugin(root / "category" / "a-nested", name="a")
             _write_plugin(root / "category" / "too-deep" / "ignored", name="ignored")
@@ -118,7 +168,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_discovery_accepts_plugin_yml_and_deduplicates_canonical_roots(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp) / "plugins"
+            root = Path(tmp).resolve() / "plugins"
             plugin = root / "zeroapi-router"
             _write_plugin(
                 plugin,
@@ -126,7 +176,7 @@ class HermesPluginInstallTest(unittest.TestCase):
                 inline_comment=True,
             )
 
-            manifests = discover_plugin_manifests([root, root.resolve()])
+            manifests = discover_plugin_manifests([Path(tmp) / "plugins", root])
 
             self.assertEqual(manifests, [plugin / "plugin.yml"])
 
@@ -195,7 +245,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_upgrade_backup_stays_outside_discovery_and_rollback_restores_bytes(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"
@@ -235,7 +285,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_upgrade_stage_is_never_discoverable(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"
@@ -263,7 +313,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_interrupted_upgrade_is_recovered_on_next_invocation(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"
@@ -294,7 +344,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_next_install_invocation_recovers_after_candidate_rename(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"
@@ -332,7 +382,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_handled_mid_commit_failure_restores_original_and_removes_stage(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"
@@ -473,7 +523,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_interrupted_rollback_finishes_from_the_durable_journal(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"
@@ -507,7 +557,7 @@ class HermesPluginInstallTest(unittest.TestCase):
 
     def test_next_rollback_invocation_finishes_after_original_rename(self):
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             source = root / "source"
             plugin_root = root / "hermes-home" / "plugins"
             destination = plugin_root / "zeroapi-router"

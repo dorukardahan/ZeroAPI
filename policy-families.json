@@ -1,14 +1,22 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Benchmark mappings and separately documented current subscription routes. A benchmark row does not by itself imply routeability.",
   "families": [
+    {
+      "id": "openai-astra-routes",
+      "provider": "openai-codex",
+      "label": "OpenAI GPT-6 Astra account-discovered route",
+      "openclaw_model_ids": ["gpt-6-astra"],
+      "benchmark_slugs": ["gpt-6-astra-xhigh"],
+      "notes": "The 2026-09-06 AA xhigh row is the shared reference: Hermes 245e480 clamps Astra max to xhigh. Vendor max is separate. Route eligibility requires the selected accounts' live catalogs; Plus/Pro alone is not evidence of rollout access."
+    },
     {
       "id": "openai-gpt56-routes",
       "provider": "openai-codex",
       "label": "OpenAI GPT-5.6 subscription routes",
       "openclaw_model_ids": ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"],
       "benchmark_slugs": ["gpt-5-6-sol", "gpt-5-6-terra", "gpt-5-6-luna"],
-      "notes": "GPT-5.6 Sol, Terra, and Luna have direct Artificial Analysis max-effort rows as of the 2026-07-24 snapshot."
+      "notes": "GPT-5.6 Sol, Terra, and Luna retain direct Artificial Analysis max-effort rows in the 2026-09-06 snapshot."
     },
     {
       "id": "openai-gpt55-core",
@@ -21,8 +29,37 @@
       "id": "zai-glm-core",
       "provider": "zai",
       "label": "Z AI GLM core family",
-      "openclaw_model_ids": ["glm-5.2", "glm-5.1", "glm-5", "glm-5-turbo", "glm-4.7-flash"],
-      "benchmark_slugs": ["glm-5-2", "glm-5-1", "glm-5", "glm-5-turbo", "glm-4-7-flash"]
+      "openclaw_model_ids": ["glm-5.3", "glm-5.3-flash", "glm-5.2", "glm-5.1", "glm-5", "glm-5-turbo", "glm-4.7-flash"],
+      "benchmark_slugs": ["glm-5-3", "glm-5-3-flash", "glm-5-2", "glm-5-1", "glm-5", "glm-5-turbo", "glm-4-7-flash"],
+      "notes": "GLM-5.3 and vision-capable GLM-5.3-Flash are both Coding Plan eligible. AA labels GLM-5.3 max; the Flash row has no effort suffix. Coding endpoints may server-route older 5.2/5.1 IDs to 5.3."
+    },
+    {
+      "id": "kimi-k3-reference",
+      "provider": "moonshot",
+      "label": "Moonshot Kimi K3 benchmark reference",
+      "openclaw_model_ids": ["kimi-k3"],
+      "benchmark_slugs": ["kimi-k3"],
+      "notes": "AA max-effort API reference only. Moonshot API billing is separate from Kimi Coding membership. The low-effort AA row is retained as reference data but does not share the canonical max mapping."
+    },
+    {
+      "id": "kimi-coding-routes",
+      "provider": "kimi",
+      "label": "Kimi Coding membership routes",
+      "openclaw_model_ids": [],
+      "benchmark_slugs": [],
+      "route_model_ids": ["k3", "k3-256k"],
+      "benchmark_proxy": "moonshot/kimi-k3",
+      "notes": "K3 routes use the AA K3 max row as an explicit quality reference, not a measurement of the membership endpoint or its default high effort. k3-256k is the Moderato+ starter; 1M k3 and HighSpeed require Allegretto+. No endpoint TPS/TTFT is inferred from the API row."
+    },
+    {
+      "id": "kimi-coding-compatibility-routes",
+      "provider": "kimi",
+      "label": "Kimi Coding K2.7 membership compatibility routes",
+      "openclaw_model_ids": [],
+      "benchmark_slugs": [],
+      "route_model_ids": ["kimi-for-coding", "kimi-for-coding-highspeed"],
+      "benchmark_proxy": "moonshot/kimi-k2.7-code",
+      "notes": "K2.7 Code quality reference only; no claim of matching membership endpoint throughput. HighSpeed requires Allegretto+. These IDs are distinct from K3 and must not receive its benchmark row."
     },
     {
       "id": "kimi-k2-core",
@@ -30,7 +67,7 @@
       "label": "Moonshot Kimi K2 family",
       "openclaw_model_ids": ["kimi-k2.7-code", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-thinking-turbo", "kimi-k2-turbo"],
       "benchmark_slugs": ["kimi-k2-7-code", "kimi-k2-6", "kimi-k2-5", "kimi-k2-thinking", "kimi-k2-thinking-turbo", "kimi-k2-turbo"],
-      "notes": "Kimi K2.6 remains the general/default route. K2.7 Code is code-focused and always-thinking."
+      "notes": "Legacy Moonshot API references, not Kimi membership entitlements. Current Moonshot defaults to K3; K2.7 Code is always-thinking."
     },
     {
       "id": "minimax-core",
@@ -44,29 +81,28 @@
       "id": "qwen-cloud-reference",
       "provider": "qwen",
       "label": "Qwen Cloud benchmark reference",
-      "openclaw_model_ids": ["qwen3.7-plus", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
-      "benchmark_slugs": ["qwen3-7-plus", "qwen3-7-max", "qwen3-6-plus", "qwen3-5-plus"],
-      "notes": "These rows describe Qwen Cloud/Coding Plan or Standard endpoints. They are not claims that Qwen Portal qwen-oauth can route Qwen 3.7."
+      "openclaw_model_ids": ["qwen3.8-max", "qwen3.7-plus", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
+      "benchmark_slugs": ["qwen3-8-max", "qwen3-7-plus", "qwen3-7-max", "qwen3-6-plus", "qwen3-5-plus"],
+      "route_model_ids": ["qwen3.8-flash", "qwen3.8-max-0902"],
+      "notes": "Qwen Cloud remains outside automatic subscription routing. 3.8 uses Standard PAYG or a separate Token Plan, not the old Coding Plan. AA has no direct 3.8 Flash or dated Max-0902 row; Flash-Next is a different model and must not be substituted."
     },
     {
       "id": "qwen-portal-routes",
       "provider": "qwen-oauth",
-      "label": "Qwen Portal static route catalog",
+      "label": "Legacy Qwen Portal compatibility catalog",
       "openclaw_model_ids": [],
       "benchmark_slugs": [],
       "route_model_ids": ["qwen3.5-plus", "qwen3.6-plus", "qwen3-max-2026-01-23", "qwen3-coder-next", "qwen3-coder-plus", "MiniMax-M2.5", "glm-5", "glm-4.7", "kimi-k2.5"],
       "benchmark_proxy": "qwen/qwen3.6-plus",
-      "notes": "Canonical provider qwen-oauth; qwen-portal and qwen-cli are legacy aliases. The documented Portal static catalog does not include Qwen 3.7."
+      "notes": "Legacy qwen-oauth with qwen-portal/qwen-cli aliases. OpenClaw 679193c removes Portal; Hermes 245e480 still supports it. Retained for existing compatible runtimes, never a fresh current-OpenClaw starter or Qwen Cloud entitlement."
     },
     {
       "id": "xai-grok-core",
       "provider": "xai-oauth",
       "label": "xAI Grok OAuth routeable family",
-      "openclaw_model_ids": ["grok-build-0.1", "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
-      "benchmark_slugs": ["grok-build-0-1-06-16", "grok-4-3", "grok-4-20", "grok-4-20-0309-non-reasoning"],
-      "route_model_ids": ["grok-4.5"],
-      "benchmark_proxy": "grok-4.3",
-      "notes": "Grok 4.5 is routeable but has no direct row in the snapshot, so starter metrics use the conservative Grok 4.3 proxy. Grok Build 0.1 has a direct row."
+      "openclaw_model_ids": ["grok-4.6", "grok-4.5", "grok-build-0.1", "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
+      "benchmark_slugs": ["grok-4-6", "grok-4-5", "grok-build-0-1-06-16", "grok-4-3", "grok-4-20", "grok-4-20-0309-non-reasoning"],
+      "notes": "Grok 4.6 and 4.5 have direct high-effort AA rows in the 2026-09-06 snapshot; the old 4.3 proxy is retired. Other 4.6 efforts remain separate reference rows. Only subscription-backed OAuth is eligible; xAI API billing and the moving auto/build-latest aliases do not inherit these scores."
     }
   ]
 }

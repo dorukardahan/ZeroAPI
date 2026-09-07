@@ -1,13 +1,7 @@
 # Cost Summary
 
-Illustrative subscription bundles:
+The fresh OpenClaw starter examples progress from OpenAI alone to OpenAI + GLM, then add Kimi Coding, MiniMax, and xAI OAuth. The full-stack example has five providers. Qwen Portal is retained only for compatible existing runtimes and is not part of fresh current-OpenClaw onboarding.
 
-| Setup | Monthly | Annual (eff/mo) | Providers |
-|-------|---------|------------------|-----------|
-| OpenAI only | $20 | $17 | 1 |
-| OpenAI + GLM | $30 | $24 | 2 |
-| OpenAI + GLM + Kimi | $49 | $39 | 3 |
-| + MiniMax | $59 | $47 | 4 |
-| + Qwen | $59 | $47 | 5 |
+Choose tiers using actual account entitlements and current provider checkout prices. This reference does not quote a current bundle price: region, billing period, promotions, and plan changes can change the total. Kimi Coding membership, Moonshot API billing, Qwen Portal, and Qwen Cloud/Token Plan are separate products with separate credentials.
 
-Use this only as a planning baseline. Provider pricing changes faster than benchmark rankings.
+See [subscription catalog](subscription-catalog.md) for supported tier identities and [provider/model status](provider-model-status.md) for the dated routing evidence. Benchmark rank alone does not prove subscription access or available quota.

@@ -41,7 +41,7 @@ Expected behavior:
 
 - if the secret is missing, the workflow skips cleanly
 - if the snapshot is unchanged, no commit is created
-- if the snapshot changed, the workflow commits only `benchmarks.json`
+- if the snapshot or generated starter examples changed, the workflow commits `benchmarks.json`, the byte-identical `plugin/benchmarks.json`, and generated `examples/*.json` together
 
 ## Freshness thresholds
 

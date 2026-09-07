@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.10.3
+version: 3.11.0
 description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi, asks to set up model routing, pastes the ZeroAPI repo URL, or asks what the repo does or whether it would help.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
@@ -36,10 +36,11 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
 4. Ask which supported subscriptions should be included:
    - OpenAI Codex Plus / Pro
    - Z AI Lite / Pro / Max
-   - Kimi paid tiers
+   - Kimi Coding membership tiers using the native `kimi` provider
    - MiniMax portal tiers
-   - Qwen Portal OAuth
    - xAI Grok OAuth / SuperGrok when OpenClaw exposes native `xai` device-code or browser OAuth or Hermes exposes legacy `xai-oauth`
+
+   Fresh current-OpenClaw setup excludes Qwen Portal. Preserve existing Portal policies only on a runtime that still supports them. Moonshot API billing and Qwen Cloud/Token Plan are separate products; never reinterpret their credentials as subscription accounts.
 
 5. Write `~/.openclaw/zeroapi-config.json` with:
    - `version`: current plugin version
@@ -47,6 +48,8 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
    - optional `routing_modifier`: `coding-aware`, `research-aware`, or `speed-aware`
    - `external_model_policy`: `stay`
    - model pool and routing rules based on available providers and the bundled `benchmarks.json`.
+
+   Include `openai/gpt-6-astra` only when fresh native model-catalog evidence confirms it in every selected OpenAI account. A Plus/Pro tier, existing policy entry, or AA benchmark row is not entitlement proof. Kimi K3-256k requires Moderato or above; full-context K3 requires the appropriate higher tier. GLM-5.3 is text-only; use a verified vision-capable route such as GLM-5.3 Flash for images.
 
 6. Align OpenClaw runtime state before restart:
    - add missing ZeroAPI model ids under `agents.defaults.models`
@@ -66,6 +69,6 @@ ZeroAPI is for subscription or account-quota providers. It should not take over 
 
 Excluded by default:
 
-- Anthropic subscription routing, because current subscription access does not cover OpenClaw third-party usage.
-- Google/Gemini CLI OAuth routing, because third-party CLI OAuth is not supported for this use.
+- Anthropic subscription routing, until the canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path is implemented and tested. This exclusion is not a claim that subscription access forbids all third-party usage.
+- Google/Gemini CLI OAuth routing, during the documented individual-access sunset and Antigravity transition.
 - Plain xAI API-key billing, unless the operator explicitly models that account as quota capacity. SuperGrok subscription routing should use OpenClaw native `xai` OAuth or Hermes `xai-oauth`.

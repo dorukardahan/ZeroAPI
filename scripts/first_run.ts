@@ -309,7 +309,15 @@ async function main() {
     }
 
     const providers = getStarterProviders();
+    const unavailableDefaults = (starterDefaults?.providers ?? []).filter((selection) =>
+      !providers.some((provider) => provider.openclawProviderId === selection.providerId),
+    );
+    if (unavailableDefaults.length > 0) {
+      console.log(`\nCurrent OpenClaw starter setup cannot reuse: ${unavailableDefaults.map((provider) => provider.providerId).join(", ")}.`);
+      console.log("Moonshot API billing is separate from Kimi Coding membership, and current OpenClaw removed Qwen Portal. Verify replacement accounts before selecting them.");
+    }
     console.log("\nDesteklenen provider'lar:");
+    console.log("GPT-6 Astra requires live catalog verification for every selected OpenAI account. This wizard starts with GPT-5.6 until that access is verified.");
     providers.forEach((provider, index) => {
       const tiers = getStarterTierChoices(provider.openclawProviderId).map((tier) => tier.label).join(", ");
       console.log(`  ${index + 1}. ${provider.label} (${provider.openclawProviderId}) - ${provider.authMode} - tier'lar: ${tiers}`);

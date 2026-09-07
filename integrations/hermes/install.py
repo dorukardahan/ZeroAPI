@@ -1,8 +1,8 @@
 """Crash-recoverable installer for the ZeroAPI Hermes plugin.
 
 Plugin candidates, displaced trees, backups, and rollback journals stay outside
-Hermes plugin discovery roots. The installer mirrors Hermes v0.19 manifest
-parsing and directory discovery for deterministic duplicate-name detection.
+Hermes plugin discovery roots. Duplicate-name detection includes native YAML
+manifests and the portable plugin.json format supported by current Hermes.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import uuid
 from dataclasses import dataclass
@@ -26,7 +27,9 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by dependency-free i
 
 
 PLUGIN_NAME = "zeroapi-router"
-_MANIFEST_FILENAMES = ("plugin.yaml", "plugin.yml")
+_MANIFEST_FILENAMES = ("plugin.yaml", "plugin.yml", "plugin.json")
+_PORTABLE_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+_PORTABLE_NAME = re.compile(r"^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$")
 _INCOMPLETE_STATES = {
     "preparing",
     "prepared",
@@ -63,6 +66,36 @@ def _manifest_path(plugin_dir: Path) -> Path | None:
 def _manifest_name(path: Path) -> str:
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"Plugin manifest must be a regular non-symlink file: {path}")
+    if path.name == "plugin.json":
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"Could not parse portable plugin manifest: {path}") from exc
+        if not isinstance(payload, dict) or payload.get("$schema") != _PORTABLE_SCHEMA:
+            raise ValueError(f"Portable plugin manifest requires the supported schema: {path}")
+        name = payload.get("name")
+        if not isinstance(name, str) or not 1 <= len(name) <= 64 or not _PORTABLE_NAME.fullmatch(name):
+            raise ValueError(f"Portable plugin manifest has an invalid name: {path}")
+        # Match the native validator's fields that can reject an otherwise
+        # valid name. Unknown fields are diagnostic-only in Hermes.
+        for key in ("version", "description", "homepage", "repository", "license"):
+            if key in payload and not isinstance(payload[key], str):
+                raise ValueError(f"Portable plugin manifest has an invalid {key}: {path}")
+        if "keywords" in payload and not (
+            isinstance(payload["keywords"], list)
+            and all(isinstance(item, str) for item in payload["keywords"])
+        ):
+            raise ValueError(f"Portable plugin manifest has invalid keywords: {path}")
+        if "author" in payload and not (
+            isinstance(payload["author"], dict)
+            and set(payload["author"]) <= {"name", "email", "url"}
+            and all(isinstance(value, str) for value in payload["author"].values())
+        ):
+            raise ValueError(f"Portable plugin manifest has an invalid author: {path}")
+        extensions = payload.get("extensions")
+        if isinstance(extensions, dict) and not all(isinstance(value, dict) for value in extensions.values()):
+            raise ValueError(f"Portable plugin manifest has invalid extensions: {path}")
+        return name
     if yaml is None:
         raise ValueError(
             "PyYAML is required to parse Hermes plugin manifests; install the yaml dependency first."
@@ -87,7 +120,7 @@ def _canonical_roots(discovery_roots: list[Path]) -> list[Path]:
 
 
 def discover_plugin_manifests(discovery_roots: list[Path]) -> list[Path]:
-    """Mirror Hermes v0.19 direct-child and one-category-level discovery."""
+    """Mirror native direct-child and one-category-level manifest precedence."""
     manifests: set[Path] = set()
     for root in _canonical_roots(discovery_roots):
         if not root.is_dir() or root.is_symlink():

@@ -30,29 +30,31 @@ const PACKAGE_FILE = resolve(MODULE_DIR, "package.json");
 export const STARTER_AUTH_CHOICES: Record<string, string> = {
   "openai-codex": "openclaw models auth login --provider openai",
   "zai": "openclaw onboard --auth-choice zai-coding-global",
-  "moonshot": "openclaw onboard --auth-choice moonshot-api-key",
+  "kimi": "openclaw onboard --auth-choice kimi-code-api-key",
+  "kimi-coding": "hermes auth add kimi-coding",
   "minimax-portal": "openclaw onboard --auth-choice minimax-global-oauth",
-  "qwen-portal": "openclaw onboard --auth-choice qwen-oauth",
-  "qwen-oauth": "openclaw onboard --auth-choice qwen-oauth",
   "xai": "openclaw models auth login --provider xai --method oauth",
   "xai-oauth": "hermes auth add xai-oauth",
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
+  // Astra's native window is 1.05M; current OpenClaw keeps a 272K active input budget.
+  "openai/gpt-6-astra": { context_window: 272000, supports_vision: true },
   // Codex/ChatGPT subscription routes expose 372K, while direct API routes expose 1.05M.
   "openai/gpt-5.6-sol": { context_window: 372000, supports_vision: true },
   "openai/gpt-5.6-terra": { context_window: 372000, supports_vision: true },
   "openai/gpt-5.6-luna": { context_window: 372000, supports_vision: true },
-  "zai/glm-5.2": { context_window: 1000000, supports_vision: false },
-  "zai/glm-5.1": { context_window: 202800, supports_vision: false },
-  "moonshot/kimi-k2.7-code": { context_window: 262144, supports_vision: true },
-  "moonshot/kimi-k2.6": { context_window: 262144, supports_vision: true },
+  "zai/glm-5.3": { context_window: 1048576, supports_vision: false },
+  "zai/glm-5.3-flash": { context_window: 1048576, supports_vision: true },
+  "kimi/k3-256k": { context_window: 262144, supports_vision: true },
   "minimax-portal/MiniMax-M3": { context_window: 1000000, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
   "qwen-oauth/qwen3.5-plus": { context_window: 1000000, supports_vision: true },
+  "xai/grok-4.6": { context_window: 500000, supports_vision: true },
   "xai/grok-4.5": { context_window: 500000, supports_vision: true },
   "xai/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai/grok-4.3": { context_window: 1000000, supports_vision: true },
+  "xai-oauth/grok-4.6": { context_window: 500000, supports_vision: true },
   "xai-oauth/grok-4.5": { context_window: 500000, supports_vision: true },
   "xai-oauth/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai-oauth/grok-4.3": { context_window: 1000000, supports_vision: true },
@@ -60,19 +62,22 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
 
 const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
   "openai-codex": ["openai/gpt-5.6-sol", "openai/gpt-5.6-terra", "openai/gpt-5.6-luna"],
-  "zai": ["zai/glm-5.2", "zai/glm-5.1"],
-  "moonshot": ["moonshot/kimi-k2.7-code", "moonshot/kimi-k2.6"],
+  "zai": ["zai/glm-5.3", "zai/glm-5.3-flash"],
+  "kimi": ["kimi/k3-256k"],
   "minimax-portal": ["minimax-portal/MiniMax-M3", "minimax-portal/MiniMax-M2.7"],
   "qwen-oauth": ["qwen-oauth/qwen3.5-plus"],
   "qwen-portal": ["qwen-oauth/qwen3.5-plus"],
-  "xai": ["xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"],
-  "xai-oauth": ["xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"],
+  "xai": ["xai/grok-4.6", "xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"],
+  "xai-oauth": ["xai-oauth/grok-4.6", "xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"],
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
+  // Membership defaults to high effort. AA K3 max is a quality reference only;
+  // API endpoint latency/throughput is not a membership endpoint measurement.
+  "kimi/k3-256k": "moonshot/kimi-k3",
   "qwen-oauth/qwen3.5-plus": "qwen/qwen3.6-plus",
-  "xai/grok-4.5": "xai-oauth/grok-4.3",
-  "xai-oauth/grok-4.5": "xai-oauth/grok-4.3",
+  "xai/grok-4.6": "xai-oauth/grok-4.6",
+  "xai/grok-4.5": "xai-oauth/grok-4.5",
   "xai/grok-build-0.1": "xai-oauth/grok-build-0.1",
   "xai/grok-4.3": "xai-oauth/grok-4.3",
 };
@@ -112,6 +117,8 @@ type BenchmarkSnapshot = {
 export type StarterProviderSelection = {
   providerId: string;
   tierId: string;
+  /** Live native account-catalog model refs, never inferred from the tier or config. */
+  discoveredModels?: string[];
 };
 
 export type StarterInventoryAccountInput = {
@@ -121,6 +128,8 @@ export type StarterInventoryAccountInput = {
   authProfile?: string | null;
   usagePriority?: number;
   intendedUse?: TaskCategory[];
+  /** Live catalog for this account; every selected OpenAI account must expose Astra. */
+  discoveredModels?: string[];
 };
 
 export type StarterConfigOptions = {
@@ -174,6 +183,7 @@ function getDefaultTierId(providerId: string): string {
 
 function canonicalStarterProviderId(providerId: string, catalogVersion?: string): string {
   const normalized = providerId.trim().toLowerCase();
+  if (["kimi", "kimi-coding"].includes(normalized)) return "kimi";
   if (["qwen-oauth", "qwen-portal", "qwen-cli"].includes(normalized)) return "qwen-oauth";
   if (/^1\.0(?:\.|$)/.test(catalogVersion ?? "") && ["qwen", "qwen-dashscope"].includes(normalized)) {
     return getVersionAwareCanonicalProviderId(providerId, catalogVersion);
@@ -305,12 +315,16 @@ function getStarterBenchmarkRecord(snapshot: BenchmarkSnapshot, modelKey: string
   throw new Error(`Missing benchmark data for starter model ${modelKey}`);
 }
 
-function buildStarterModels(snapshot: BenchmarkSnapshot, providerIds: string[]): Record<string, ModelCapabilities> {
-  const includeOpenAIMini = providerIds.length === 1 && providerIds[0] === "openai-codex";
+function buildStarterModels(
+  snapshot: BenchmarkSnapshot,
+  providerIds: string[],
+  includeAstra: boolean,
+): Record<string, ModelCapabilities> {
   const modelKeys = providerIds.flatMap((providerId) => {
     const starterModels = STARTER_PROVIDER_MODELS[providerId] ?? [];
-    if (providerId !== "openai-codex") return starterModels;
-    return includeOpenAIMini ? starterModels : starterModels.filter((model) => model !== "openai/gpt-5.4-mini");
+    return providerId === "openai-codex" && includeAstra
+      ? ["openai/gpt-6-astra", ...starterModels]
+      : starterModels;
   });
 
   const result: Record<string, ModelCapabilities> = {};
@@ -325,8 +339,8 @@ function buildStarterModels(snapshot: BenchmarkSnapshot, providerIds: string[]):
     result[modelKey] = {
       context_window: runtimeMeta.context_window,
       supports_vision: runtimeMeta.supports_vision,
-      speed_tps: benchmarkRecord.speed_tps,
-      ttft_seconds: benchmarkRecord.ttft_seconds,
+      speed_tps: modelKey.startsWith("kimi/") ? null : benchmarkRecord.speed_tps,
+      ttft_seconds: modelKey.startsWith("kimi/") ? null : benchmarkRecord.ttft_seconds,
       benchmarks: Object.fromEntries(
         Object.entries(benchmarkRecord.benchmarks).filter(([, value]) => value != null),
       ) as Record<string, number>,
@@ -347,35 +361,12 @@ function sortModelsForCategory(category: TaskCategory, models: Record<string, Mo
   });
 }
 
-function preferKimiGeneralDefault(candidates: string[]): string[] {
-  const codeModel = "moonshot/kimi-k2.7-code";
-  const generalModel = "moonshot/kimi-k2.6";
-  if (candidates[0] !== codeModel || !candidates.includes(generalModel)) {
-    return candidates;
-  }
-  return [generalModel, ...candidates.filter((candidate) => candidate !== generalModel)];
-}
-
-function preferKimiCodeDefault(candidates: string[]): string[] {
-  const codeModel = "moonshot/kimi-k2.7-code";
-  const generalModel = "moonshot/kimi-k2.6";
-  if (candidates[0] !== generalModel || !candidates.includes(codeModel)) {
-    return candidates;
-  }
-  return [codeModel, ...candidates.filter((candidate) => candidate !== codeModel)];
-}
-
 function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<string, RoutingRule> {
   const categories: TaskCategory[] = ["code", "research", "orchestration", "math", "fast", "default"];
   const rules: Record<string, RoutingRule> = {};
 
   for (const category of categories) {
-    const scored = sortModelsForCategory(category, models);
-    const ranked = category === "default"
-      ? preferKimiGeneralDefault(scored)
-      : category === "code"
-        ? preferKimiCodeDefault(scored)
-        : scored;
+    const ranked = sortModelsForCategory(category, models);
     rules[category] = {
       primary: ranked[0],
       fallbacks: ranked.slice(1),
@@ -440,7 +431,10 @@ function getFastTtftThreshold(providerIds: string[]): number {
 }
 
 export function getStarterProviders(): ProviderCatalogEntry[] {
-  return SUBSCRIPTION_CATALOG.filter((entry) => entry.status === "active");
+  // Keep legacy entries recognizable without offering removed OpenClaw auth paths.
+  return SUBSCRIPTION_CATALOG.filter((entry) =>
+    entry.status === "active" && entry.tiers.some((tier) => tier.availability === "available"),
+  );
 }
 
 export function getStarterTierChoices(providerId: string) {
@@ -548,8 +542,31 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
     throw new Error("At least one provider must be selected for starter onboarding.");
   }
 
+  for (const providerId of providerIds) {
+    const entry = getProviderCatalogEntry(providerId);
+    if (!entry || entry.status !== "active" || !entry.tiers.some((tier) => tier.availability === "available") || !STARTER_PROVIDER_MODELS[providerId]) {
+      throw new Error(`Provider ${providerId} is not eligible for subscription starter routing on current OpenClaw.`);
+    }
+  }
+  for (const selection of [...normalizedProviders, ...(normalizedInventoryAccounts ?? [])]) {
+    const entry = getProviderCatalogEntry(selection.providerId)!;
+    if (!entry.tiers.some((tier) => tier.tierId === selection.tierId && tier.availability === "available")) {
+      throw new Error(`Tier ${selection.tierId} is not available for ${selection.providerId} starter routing.`);
+    }
+  }
+
+  const openAiInventoryAccounts = normalizedInventoryAccounts?.filter((account) => account.providerId === "openai-codex") ?? [];
+  const openAiAccounts = openAiInventoryAccounts.length > 0
+    ? openAiInventoryAccounts
+    : normalizedProviders.filter((provider) => provider.providerId === "openai-codex");
+  const includeAstra = openAiAccounts.length > 0 && openAiAccounts.every((account) =>
+    account.discoveredModels?.some((model) =>
+      model === "openai/gpt-6-astra" || model === "openai-codex/gpt-6-astra",
+    ),
+  );
+
   const snapshot = loadBenchmarkSnapshot();
-  const models = buildStarterModels(snapshot, providerIds);
+  const models = buildStarterModels(snapshot, providerIds, includeAstra);
   const routingRules = buildRoutingRules(models);
   const inventoryProviderIds = new Set((normalizedInventoryAccounts ?? []).map((account) => account.providerId));
   const subscriptionProfile = buildSubscriptionProfile(normalizedProviders, inventoryProviderIds);
@@ -564,7 +581,7 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
     "balanced",
     options.routingModifier,
   );
-  const defaultModel = preferKimiGeneralDefault(weightedDefaultCandidates)[0] ?? routingRules.default.primary;
+  const defaultModel = weightedDefaultCandidates[0] ?? routingRules.default.primary;
 
   return {
     version: loadZeroAPIVersion(),

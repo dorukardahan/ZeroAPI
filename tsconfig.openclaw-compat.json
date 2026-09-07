@@ -8,13 +8,12 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "baseUrl": ".",
     "paths": {
       "openclaw/plugin-sdk/plugin-entry": [
-        "node_modules/openclaw/dist/plugin-sdk/plugin-entry.d.ts"
+        "./node_modules/openclaw/dist/plugin-sdk/plugin-entry.d.ts"
       ],
-      "openclaw/plugin-sdk/types": [
-        "node_modules/openclaw/dist/plugin-sdk/types.d.ts"
+      "openclaw/plugin-sdk/session-store-runtime": [
+        "./node_modules/openclaw/dist/plugin-sdk/session-store-runtime.d.ts"
       ]
     },
     "types": ["node"],

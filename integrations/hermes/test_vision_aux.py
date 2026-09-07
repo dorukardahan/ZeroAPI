@@ -46,7 +46,7 @@ class HermesVisionAuxiliaryConfigTest(unittest.TestCase):
             **VISION_CONFIG,
             "models": {
                 **VISION_CONFIG["models"],
-                "moonshot/kimi-k2.6": {
+                "kimi/kimi-k2.6": {
                     "context_window": 262144,
                     "supports_vision": True,
                     "speed_tps": 35,
@@ -63,7 +63,7 @@ class HermesVisionAuxiliaryConfigTest(unittest.TestCase):
                 "global": {
                     "openai-codex": {"enabled": True, "tierId": "plus"},
                     "zai": {"enabled": True, "tierId": "max"},
-                    "moonshot": {"enabled": True, "tierId": "vivace"},
+                    "kimi": {"enabled": True, "tierId": "vivace"},
                 },
             },
         }
@@ -74,7 +74,7 @@ class HermesVisionAuxiliaryConfigTest(unittest.TestCase):
             current_model="glm-5.1",
         )
 
-        self.assertEqual(route["provider"], "kimi-for-coding")
+        self.assertEqual(route["provider"], "kimi-coding")
         self.assertEqual(route["model"], "kimi-k2.6")
 
     def test_updates_existing_auxiliary_vision_auto_section(self):

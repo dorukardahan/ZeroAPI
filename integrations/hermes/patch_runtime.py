@@ -30,6 +30,11 @@ try:
 except ModuleNotFoundError:  # Package import during repository-level test runs.
     from .install import default_plugin_discovery_roots
 
+try:
+    from patch_modular_main import MAIN_RUNTIME_FILES, has_split_turn_facade, patch_modular_main_sources
+except ModuleNotFoundError:
+    from .patch_modular_main import MAIN_RUNTIME_FILES, has_split_turn_facade, patch_modular_main_sources
+
 
 PRE_MODEL_ROUTE_METHOD = r'''
     def _apply_pre_model_route_hook(
@@ -145,23 +150,15 @@ PRE_MODEL_ROUTE_METHOD = r'''
 
             old_model = self.model
             old_provider = self.provider
-            try:
-                self.switch_model(
-                    new_model=result.new_model,
-                    new_provider=result.target_provider,
-                    api_key=result.api_key,
-                    base_url=result.base_url,
-                    api_mode=result.api_mode,
-                    prune_fallback_chain=False,
-                )
-            except TypeError:
-                self.switch_model(
-                    new_model=result.new_model,
-                    new_provider=result.target_provider,
-                    api_key=result.api_key,
-                    base_url=result.base_url,
-                    api_mode=result.api_mode,
-                )
+            self.switch_model(
+                new_model=result.new_model,
+                new_provider=result.target_provider,
+                api_key=result.api_key,
+                base_url=result.base_url,
+                api_mode=result.api_mode,
+                persist_primary=False,
+                prune_fallback_chain=False,
+            )
             self._pre_model_route_switched_this_turn = True
             logging.info(
                 "pre_model_route switched model for this turn: %s (%s) -> %s (%s)%s",
@@ -182,12 +179,12 @@ def _normalize_child_runtime_tuple(
     provider: Optional[str],
     model: Optional[str],
     base_url: Optional[str],
-    api_key: Optional[str],
+    api_key: object,
     api_mode: Optional[str],
     explicit_provider: bool,
     explicit_base_url: bool,
     acp_command: Optional[str],
-) -> tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+) -> tuple[Optional[str], Optional[str], object, Optional[str]]:
     """Keep child provider/model/base_url/api_mode tuples internally consistent.
 
     Explicit ``delegation.base_url`` is a direct endpoint contract and must not
@@ -236,11 +233,21 @@ def _normalize_child_runtime_tuple(
         )
         return provider, base_url, api_key, api_mode
 
+    required_fields = {"provider", "base_url", "api_key", "api_mode"}
+    if not isinstance(runtime, dict) or not required_fields.issubset(runtime):
+        return provider, base_url, api_key, api_mode
     resolved_provider = runtime.get("provider") or provider_name
     resolved_base_url = (runtime.get("base_url") or "").rstrip("/") or None
     resolved_api_mode = runtime.get("api_mode") or None
     resolved_api_key = runtime.get("api_key") or None
     current_base_url = (base_url or "").rstrip("/") or None
+    if (
+        not resolved_provider
+        or resolved_provider.strip().lower() != provider_name.strip().lower()
+        or not resolved_base_url
+        or not resolved_api_mode
+    ):
+        return provider, base_url, api_key, api_mode
 
     provider_mismatch = bool(resolved_provider and provider != resolved_provider)
     base_url_mismatch = bool(
@@ -359,6 +366,61 @@ def _replace_once(text: str, old: str, new: str, label: str) -> tuple[str, bool]
     return text.replace(old, new, 1), True
 
 
+def _replace_function_once(
+    source: str,
+    function_name: str,
+    old: str,
+    new: str,
+    label: str,
+) -> tuple[str, bool]:
+    """Replace one exact block inside a top-level function only."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        raise ValueError(f"Could not parse source while patching {label}: {exc}") from exc
+    matches = [
+        node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == function_name
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected exactly one top-level {function_name} while patching {label}."
+        )
+    node = matches[0]
+    lines = source.splitlines(keepends=True)
+    start = sum(len(line) for line in lines[: node.lineno - 1])
+    end = sum(len(line) for line in lines[: node.end_lineno])
+    function_source = source[start:end]
+    count = function_source.count(old)
+    if count > 1:
+        raise ValueError(f"Found multiple {label} anchors inside {function_name}.")
+    if count == 0:
+        return source, False
+    patched_function = function_source.replace(old, new, 1)
+    return source[:start] + patched_function + source[end:], True
+
+
+def _replace_required_in_function(
+    source: str,
+    function_name: str,
+    old: str,
+    new: str,
+    label: str,
+) -> str:
+    patched, changed = _replace_function_once(
+        source,
+        function_name,
+        old,
+        new,
+        label,
+    )
+    if not changed:
+        raise ValueError(f"Could not find {label} anchor in {function_name}.")
+    return patched
+
+
 def patch_plugins_source(source: str) -> tuple[str, list[str]]:
     """Return patched ``hermes_cli/plugins.py`` source and applied changes."""
     changes: list[str] = []
@@ -382,11 +444,380 @@ def patch_plugins_source(source: str) -> tuple[str, list[str]]:
     return text, changes
 
 
+def patch_agent_runtime_helpers_source(source: str) -> tuple[str, list[str]]:
+    """Add the host support required for a turn-scoped ZeroAPI route."""
+    changes: list[str] = []
+    text = source
+
+    switch_header = "def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mode=''):\n"
+    turn_scoped_header = '''def switch_model(
+    agent,
+    new_model,
+    new_provider,
+    api_key='',
+    base_url='',
+    api_mode='',
+    *,
+    persist_primary=True,
+    prune_fallback_chain=True,
+):
+'''
+    switch_source = text.split("def switch_model", 1)[1] if "def switch_model" in text else ""
+    if "persist_primary=True" not in switch_source.split("\ndef ", 1)[0]:
+        capability_header = '''def switch_model(
+    agent,
+    new_model,
+    new_provider,
+    api_key='',
+    base_url='',
+    api_mode='',
+    capabilities=None,
+):
+'''
+        if capability_header in text:
+            switch_header = capability_header
+            turn_scoped_header = capability_header.replace(
+                "    capabilities=None,\n):\n",
+                "    capabilities=None,\n    *,\n    persist_primary=True,\n    prune_fallback_chain=True,\n):\n",
+            )
+        if switch_header not in text:
+            raise ValueError("Could not find the Hermes switch_model signature anchor.")
+        text = text.replace(switch_header, turn_scoped_header, 1)
+        changes.append("added turn-scoped switch_model controls")
+
+    transport_source = text.split("def try_recover_primary_transport", 1)[1].split("\ndef ", 1)[0]
+    if 'getattr(\n        agent, "_transient_route_activated", False\n    )' not in transport_source:
+        text = _replace_required_in_function(
+            text,
+            "try_recover_primary_transport",
+            "    if agent._fallback_activated:\n        return False\n",
+            '''    if agent._fallback_activated or getattr(
+        agent, "_transient_route_activated", False
+    ):
+        return False
+''',
+            "transient-route transport guard",
+        )
+        changes.append("guarded primary transport recovery during a transient route")
+
+    restore_source = text.split("def restore_primary_runtime", 1)[1].split("\ndef ", 1)[0]
+    if "transient_route_activated = bool(" not in restore_source:
+        text = _replace_required_in_function(
+            text,
+            "restore_primary_runtime",
+            "    if not agent._fallback_activated:\n",
+            '''    transient_route_activated = bool(
+        getattr(agent, "_transient_route_activated", False)
+    )
+    if not agent._fallback_activated and not transient_route_activated:
+''',
+            "transient-route restore entry",
+        )
+        changes.append("allowed next-turn restoration after a transient route")
+
+    restore_source = text.split("def restore_primary_runtime", 1)[1].split("\ndef ", 1)[0]
+    if "not transient_route_activated\n        and getattr(agent, \"_rate_limited_until\"" not in restore_source:
+        text = _replace_required_in_function(
+            text,
+            "restore_primary_runtime",
+            '''    if getattr(agent, "_rate_limited_until", 0) > time.monotonic():
+        return False  # primary still in rate-limit cooldown, stay on fallback
+''',
+            '''    if (
+        not transient_route_activated
+        and getattr(agent, "_rate_limited_until", 0) > time.monotonic()
+    ):
+        return False  # primary still in rate-limit cooldown, stay on fallback
+''',
+            "transient-route cooldown bypass",
+        )
+        changes.append("bypassed fallback cooldown for transient-route restoration")
+
+    restore_source = text.split("def restore_primary_runtime", 1)[1].split("\ndef ", 1)[0]
+    if "None\n            if transient_route_activated\n            else getattr(pool, \"next_available_at\"" not in restore_source:
+        text = _replace_required_in_function(
+            text,
+            "restore_primary_runtime",
+            '        next_at = getattr(pool, "next_available_at", lambda: None)()\n',
+            '''        next_at = (
+            None
+            if transient_route_activated
+            else getattr(pool, "next_available_at", lambda: None)()
+        )
+''',
+            "transient-route pool cooldown bypass",
+        )
+        changes.append("bypassed pool reset gate for transient-route restoration")
+
+    restore_source = text.split("def restore_primary_runtime", 1)[1].split("\ndef ", 1)[0]
+    if "_transient_primary_config_context_length" not in restore_source:
+        text = _replace_required_in_function(
+            text,
+            "restore_primary_runtime",
+            '''        if getattr(agent, "_cache_disabled", False):
+            agent._use_prompt_caching = False
+            agent._use_native_cache_layout = False
+''',
+            '''        if getattr(agent, "_cache_disabled", False):
+            agent._use_prompt_caching = False
+            agent._use_native_cache_layout = False
+        if transient_route_activated:
+            agent._config_context_length = getattr(
+                agent, "_transient_primary_config_context_length", None
+            )
+''',
+            "transient-route context-length restore",
+        )
+        changes.append("restored the primary context-length intent")
+
+    restore_source = text.split("def restore_primary_runtime", 1)[1].split("\ndef ", 1)[0]
+    if "agent._transient_route_activated = False" not in restore_source:
+        text = _replace_required_in_function(
+            text,
+            "restore_primary_runtime",
+            '''        # ── Reset fallback chain for the new turn ──
+        agent._fallback_activated = False
+        agent._fallback_index = 0
+''',
+            '''        # ── Reset fallback chain for the new turn ──
+        agent._fallback_activated = False
+        agent._transient_route_activated = False
+        agent._transient_primary_config_context_length = None
+        agent._fallback_index = 0
+''',
+            "transient-route marker reset",
+        )
+        changes.append("cleared transient-route state after restoration")
+
+    switch_source = text.split("def switch_model", 1)[1].split("\ndef ", 1)[0]
+    if "if not persist_primary:" not in switch_source:
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "    # ── Update _primary_runtime so the change persists across turns ──\n",
+            '''    if not persist_primary:
+        # This is a deliberate per-turn route, not a provider failure. Keep a
+        # distinct marker so the next-turn restore bypasses fallback cooldown
+        # gates without changing their behavior for real provider fallbacks.
+        agent._transient_route_activated = True
+        _primary_config_context_length = _snapshot["_config_context_length"]
+        agent._transient_primary_config_context_length = (
+            None
+            if _primary_config_context_length is _MISSING
+            else _primary_config_context_length
+        )
+        agent._fallback_activated = False
+        agent._provider_fallback_active = False
+        agent._provider_fallback_route = None
+        logger.info(
+            "Model switched in-place for one turn: %s (%s) -> %s (%s)",
+            old_model, old_provider, new_model, new_provider,
+        )
+        return
+
+    # ── Update _primary_runtime so the change persists across turns ──
+''',
+            "non-persistent switch branch",
+        )
+        changes.append("kept transient routes out of the primary runtime snapshot")
+
+    switch_source = text.split("def switch_model", 1)[1].split("\ndef ", 1)[0]
+    if "agent._transient_route_activated = False" not in switch_source:
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "    # ── Reset fallback state ──\n",
+            '''    agent._transient_route_activated = False
+    agent._transient_primary_config_context_length = None
+
+    # ── Reset fallback state ──
+''',
+            "persistent-switch transient reset",
+        )
+        changes.append("cleared stale transient state on persistent switches")
+
+    switch_source = text.split("def switch_model", 1)[1].split("\ndef ", 1)[0]
+    if "if prune_fallback_chain and old_norm" not in switch_source:
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "    if old_norm and new_norm and old_norm != new_norm:\n",
+            "    if prune_fallback_chain and old_norm and new_norm and old_norm != new_norm:\n",
+            "conditional fallback-chain pruning",
+        )
+        changes.append("preserved fallback chains for transient routes")
+
+    switch_source = text.split("def switch_model", 1)[1].split("\ndef ", 1)[0]
+    if "_zeroapi_primary_prompt_state = {" not in switch_source:
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "    old_provider = agent.provider\n",
+            '''    old_provider = agent.provider
+    _zeroapi_primary_prompt_state = {
+        name: (hasattr(agent, name), getattr(agent, name, None))
+        for name in (
+            "_cached_system_prompt",
+            "_cached_system_prompt_static",
+            "_plugin_system_prompt_sections_snapshot",
+            "_plugin_system_prompt_sections_previous",
+            "_static_rebuild_failed_for",
+        )
+    }
+''',
+            "primary prompt state snapshot",
+        )
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "        agent._transient_route_activated = True\n",
+            "        agent._transient_route_activated = True\n"
+            "        agent._transient_primary_prompt_state = _zeroapi_primary_prompt_state\n",
+            "transient prompt snapshot binding",
+        )
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "    agent._transient_route_activated = False\n",
+            "    agent._transient_route_activated = False\n"
+            "    agent._transient_primary_prompt_state = None\n",
+            "persistent switch prompt snapshot reset",
+        )
+        changes.append("preserved exact primary prompt and frozen plugin sections")
+
+    restore_source = text.split("def restore_primary_runtime", 1)[1].split("\ndef ", 1)[0]
+    if "_zeroapi_prompt_state = getattr(" not in restore_source:
+        text = _replace_required_in_function(
+            text,
+            "restore_primary_runtime",
+            "        # ── Reset fallback chain for the new turn ──\n",
+            '''        if transient_route_activated:
+            _zeroapi_prompt_state = getattr(agent, "_transient_primary_prompt_state", None)
+            if isinstance(_zeroapi_prompt_state, dict):
+                for _name, (_existed, _value) in _zeroapi_prompt_state.items():
+                    if _existed:
+                        setattr(agent, _name, _value)
+                    elif hasattr(agent, _name):
+                        delattr(agent, _name)
+            for _name in ("_cached_system_prompt", "_cached_system_prompt_static"):
+                if not hasattr(agent, _name):
+                    setattr(agent, _name, None)
+            agent._transient_primary_prompt_state = None
+
+        # ── Reset fallback chain for the new turn ──
+''',
+            "primary prompt state restoration",
+        )
+        identity_rewrite = '        rewrite_prompt_model_identity(agent, rt["model"], rt["provider"])\n'
+        if identity_rewrite in restore_source:
+            text = _replace_required_in_function(
+                text,
+                "restore_primary_runtime",
+                identity_rewrite,
+                "        if not transient_route_activated:\n    " + identity_rewrite,
+                "exact transient primary prompt identity",
+            )
+        changes.append("restored exact primary prompt after a transient route")
+
+    switch_source = text.split("def switch_model", 1)[1].split("\ndef ", 1)[0]
+    if (
+        "def _apply_switched_provider_request_overrides(" in text
+        and "if not persist_primary:\n        try:\n" not in switch_source
+    ):
+        text = _replace_required_in_function(
+            text,
+            "switch_model",
+            "    if not persist_primary:\n",
+            '''    if not persist_primary:
+        try:
+            _apply_switched_provider_request_overrides(agent, new_provider)
+        except Exception:
+            logger.debug("switch_model: request_overrides re-derivation failed", exc_info=True)
+''',
+            "transient provider request overrides",
+        )
+        changes.append("applied native request overrides for the routed provider")
+
+    return text, changes
+
+
 def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
     """Return patched ``run_agent.py`` source and a list of applied changes."""
     changes: list[str] = []
     text = source
     modular_conversation_loop = "from agent.conversation_loop import run_conversation" in text
+
+    if "persist_primary=persist_primary" not in text:
+        old_forwarder = '''    def switch_model(self, new_model, new_provider, api_key='', base_url='', api_mode=''):
+        """Forwarder — see ``agent.agent_runtime_helpers.switch_model``."""
+        from agent.agent_runtime_helpers import switch_model
+        return switch_model(self, new_model, new_provider, api_key, base_url, api_mode)
+'''
+        new_forwarder = '''    def switch_model(
+        self,
+        new_model,
+        new_provider,
+        api_key='',
+        base_url='',
+        api_mode='',
+        *,
+        persist_primary=True,
+        prune_fallback_chain=True,
+    ):
+        """Forwarder — see ``agent.agent_runtime_helpers.switch_model``."""
+        from agent.agent_runtime_helpers import switch_model
+        return switch_model(
+            self,
+            new_model,
+            new_provider,
+            api_key,
+            base_url,
+            api_mode,
+            persist_primary=persist_primary,
+            prune_fallback_chain=prune_fallback_chain,
+        )
+'''
+        capability_forwarder = '''    def switch_model(
+        self,
+        new_model,
+        new_provider,
+        api_key='',
+        base_url='',
+        api_mode='',
+        capabilities=None,
+    ):
+        """Forwarder — see ``agent.agent_runtime_helpers.switch_model``."""
+        from agent.agent_runtime_helpers import switch_model
+        return switch_model(
+            self,
+            new_model,
+            new_provider,
+            api_key,
+            base_url,
+            api_mode,
+            capabilities,
+        )
+'''
+        if capability_forwarder in text:
+            old_forwarder = capability_forwarder
+            new_forwarder = capability_forwarder.replace(
+                "        capabilities=None,\n    ):\n",
+                "        capabilities=None,\n        *,\n        persist_primary=True,\n        prune_fallback_chain=True,\n    ):\n",
+            ).replace(
+                "            capabilities,\n        )\n",
+                "            capabilities,\n            persist_primary=persist_primary,\n            prune_fallback_chain=prune_fallback_chain,\n        )\n",
+            )
+        text, changed = _replace_once(
+            text,
+            old_forwarder,
+            new_forwarder,
+            "turn-scoped switch_model forwarder",
+        )
+        if not changed:
+            raise ValueError(
+                "Could not find the Hermes AIAgent.switch_model forwarder anchor."
+            )
+        changes.append("forwarded turn-scoped switch_model controls")
 
     if "def _apply_pre_model_route_hook" not in text:
         anchor = "\n    def _safe_print(self, *args, **kwargs):"
@@ -440,6 +871,88 @@ def patch_run_agent_source(source: str) -> tuple[str, list[str]]:
                 raise ValueError("Could not patch existing pre_model_route gateway metadata kwargs.")
             changes.append("added gateway metadata kwargs to pre_model_route")
 
+        method = text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
+        if "persist_primary=False" not in method:
+            legacy_try_switch = '''            try:
+                self.switch_model(
+                    new_model=result.new_model,
+                    new_provider=result.target_provider,
+                    api_key=result.api_key,
+                    base_url=result.base_url,
+                    api_mode=result.api_mode,
+                    prune_fallback_chain=False,
+                )
+            except TypeError:
+                self.switch_model(
+                    new_model=result.new_model,
+                    new_provider=result.target_provider,
+                    api_key=result.api_key,
+                    base_url=result.base_url,
+                    api_mode=result.api_mode,
+                )
+'''
+            legacy_direct_switch = '''            self.switch_model(
+                new_model=result.new_model,
+                new_provider=result.target_provider,
+                api_key=result.api_key,
+                base_url=result.base_url,
+                api_mode=result.api_mode,
+                prune_fallback_chain=False,
+            )
+'''
+            turn_scoped_switch = '''            self.switch_model(
+                new_model=result.new_model,
+                new_provider=result.target_provider,
+                api_key=result.api_key,
+                base_url=result.base_url,
+                api_mode=result.api_mode,
+                persist_primary=False,
+                prune_fallback_chain=False,
+            )
+'''
+            text, changed = _replace_once(
+                text,
+                legacy_try_switch,
+                turn_scoped_switch,
+                "turn-scoped pre_model_route switch",
+            )
+            if not changed:
+                text, changed = _replace_once(
+                    text,
+                    legacy_direct_switch,
+                    turn_scoped_switch,
+                    "turn-scoped pre_model_route switch",
+                )
+            if not changed:
+                text, changed = _replace_once(
+                    text,
+                    legacy_direct_switch.replace("                prune_fallback_chain=False,\n", ""),
+                    turn_scoped_switch,
+                    "turn-scoped pre_model_route switch",
+                )
+            if not changed:
+                raise ValueError(
+                    "Could not upgrade pre_model_route to a turn-scoped model switch."
+                )
+            changes.append("made pre_model_route model switches turn-scoped")
+
+
+        method = text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
+        if "except TypeError" in method:
+            raise ValueError(
+                "pre_model_route still contains a persistent TypeError fallback."
+            )
+
+    method = text.split("def _apply_pre_model_route_hook", 1)[1].split("\n    def ", 1)[0]
+    if "capabilities=None," in text and "capabilities=getattr(result," not in method:
+        old = "                api_mode=result.api_mode,\n                persist_primary=False,\n"
+        new = "                api_mode=result.api_mode,\n                capabilities=getattr(result, \"runtime_capabilities\", None),\n                persist_primary=False,\n"
+        text, changed = _replace_once(text, old, new, "routed native capability map")
+        if not changed:
+            raise ValueError("Could not forward the routed native capability map.")
+        changes.append("forwarded routed native capabilities")
+
+
     route_call_marker = "self._apply_pre_model_route_hook(\n            original_user_message,"
     if route_call_marker not in text:
         if not modular_conversation_loop:
@@ -482,7 +995,8 @@ def _patch_conversation_prompt_restore_source(
     text = source
 
     prompt_guard_marker = 'not getattr(agent, "_pre_model_route_switched_this_turn", False)'
-    if prompt_guard_marker not in text:
+    strict_prompt_guard_marker = 'getattr(agent, "_pre_model_route_switched_this_turn", None) is not True'
+    if prompt_guard_marker not in text and strict_prompt_guard_marker not in text:
         text, changed = _replace_once(
             text,
             "    if conversation_history and agent._session_db:\n",
@@ -502,6 +1016,25 @@ def _patch_conversation_prompt_restore_source(
             raise ValueError("Could not find modular on_session_start anchor.")
         if changed:
             changes.append("guarded on_session_start on continuation prompt rebuild")
+
+    persist_anchor = '''    if agent._session_db:
+        try:
+            agent._session_db.update_system_prompt(agent.session_id, agent._cached_system_prompt)
+'''
+    if persist_anchor in text:
+        text, _ = _replace_once(
+            text,
+            persist_anchor,
+            '''    if (
+        agent._session_db
+        and getattr(agent, "_pre_model_route_switched_this_turn", None) is not True
+    ):
+        try:
+            agent._session_db.update_system_prompt(agent.session_id, agent._cached_system_prompt)
+''',
+            "transient prompt persistence guard",
+        )
+        changes.append("kept routed prompts out of the primary session snapshot")
 
     return text, changes
 
@@ -575,6 +1108,9 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
     marker = "# ZeroAPI compatibility: route before prompt restoration."
     anchor = "    # ── System prompt (cached per session for prefix caching) ──\n"
     route_block = '''    # ZeroAPI compatibility: route before prompt restoration.
+    agent._pre_model_route_switched_this_turn = False
+    if conversation_history and agent._cached_system_prompt is None:
+        restore_or_build_system_prompt(agent, system_message, conversation_history)
     if not callable(getattr(agent, "_apply_pre_model_route_hook", None)):
         agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None
     agent._apply_pre_model_route_hook(
@@ -582,7 +1118,7 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
         messages,
         is_first_turn=(not bool(conversation_history)),
     )
-    if getattr(agent, "_pre_model_route_switched_this_turn", False):
+    if getattr(agent, "_pre_model_route_switched_this_turn", None) is True:
         # A routed turn must not reuse prompt metadata from the old runtime.
         agent._cached_system_prompt = None
         try:
@@ -608,10 +1144,13 @@ def patch_turn_context_source(source: str) -> tuple[str, list[str]]:
             raise ValueError("Could not locate existing v0.19 pre_model_route turn block.")
         existing_block = text[start:end]
         required_contract = (
+            "agent._pre_model_route_switched_this_turn = False",
+            "if conversation_history and agent._cached_system_prompt is None:",
+            "restore_or_build_system_prompt(agent, system_message, conversation_history)",
             'if not callable(getattr(agent, "_apply_pre_model_route_hook", None))',
             "agent._apply_pre_model_route_hook = lambda *_args, **_kwargs: None",
             "agent._apply_pre_model_route_hook(",
-            'getattr(agent, "_pre_model_route_switched_this_turn", False)',
+            'getattr(agent, "_pre_model_route_switched_this_turn", None) is True',
             "agent._cached_system_prompt = None",
             "from agent.auxiliary_client import set_runtime_main",
             'base_url=getattr(agent, "base_url", "") or ""',
@@ -656,6 +1195,7 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
             "explicit_provider: bool" not in normalizer
             or "detect_provider_for_model(" not in normalizer
             or "api_key_mismatch" not in normalizer
+            or "required_fields.issubset(runtime)" not in normalizer
         ):
             text = text[:start] + DELEGATE_RUNTIME_NORMALIZER + text[end:]
             changes.append("updated delegate runtime tuple normalizer")
@@ -699,6 +1239,20 @@ def patch_delegate_tool_source(source: str) -> tuple[str, list[str]]:
             raise ValueError("Could not update existing delegate runtime normalization call.")
         changes.append("updated delegate runtime normalization call")
 
+    if "child_capabilities = _inherit_parent_capabilities(" in text and "_zeroapi_original_child_runtime" not in text:
+        guarded_call = '''    _zeroapi_original_child_runtime = (
+        effective_provider, effective_base_url, effective_api_key, effective_api_mode
+    )
+''' + new_route_call + '''    if _zeroapi_original_child_runtime != (
+        effective_provider, effective_base_url, effective_api_key, effective_api_mode
+    ):
+        child_capabilities = None
+'''
+        text, changed = _replace_once(text, new_route_call, guarded_call, "normalized child capability isolation")
+        if not changed:
+            raise ValueError("Could not guard inherited capabilities after child runtime normalization.")
+        changes.append("isolated parent capabilities from changed child runtimes")
+
     resolver_start = text.find("\ndef _resolve_child_credential_pool(")
     if resolver_start != -1:
         resolver_end = text.find("\ndef _resolve_delegation_credentials(", resolver_start)
@@ -737,6 +1291,7 @@ class SourceSnapshot:
     inode: int
     size: int
     mtime_ns: int
+    exists: bool = True
 
 
 @dataclass(frozen=True)
@@ -777,7 +1332,7 @@ def _sha256(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def _snapshot_source(label: str, path: Path) -> SourceSnapshot:
+def _snapshot_source(label: str, path: Path, *, allow_absent: bool = False) -> SourceSnapshot:
     path = path.expanduser()
     if not path.is_absolute():
         path = Path.cwd() / path
@@ -785,6 +1340,15 @@ def _snapshot_source(label: str, path: Path) -> SourceSnapshot:
         raise ValueError(f"Refusing symlink runtime target for {label}: {path}")
     try:
         metadata = path.stat()
+    except FileNotFoundError:
+        if not allow_absent or not path.parent.is_dir():
+            raise ValueError(f"Could not stat required {label} source: {path}")
+        parent = path.parent.stat()
+        return SourceSnapshot(
+            label=label, path=path, source="", raw=b"", digest=_sha256(b""),
+            mode=0o644, uid=parent.st_uid, gid=parent.st_gid,
+            device=parent.st_dev, inode=0, size=0, mtime_ns=0, exists=False,
+        )
     except OSError as exc:
         raise ValueError(f"Could not stat required {label} source: {path}: {exc}") from exc
     if not stat.S_ISREG(metadata.st_mode):
@@ -893,9 +1457,16 @@ def _validate_runtime_postconditions(layout: str, sources: dict[str, str]) -> No
         valid_hooks=_valid_hooks_from_source(sources.get("plugins")),
         plugins_source=sources.get("plugins"),
         run_agent_source=sources.get("run_agent"),
+        runtime_helpers_source=sources.get("runtime_helpers"),
         conversation_loop_source=sources.get("conversation_loop"),
         turn_context_source=sources.get("turn_context"),
         delegate_tool_source=sources.get("delegate_tool"),
+        pre_model_route_source=sources.get("pre_model_route"),
+        model_routing_source=sources.get("model_routing"),
+        delegate_config_source=sources.get("delegate_config"),
+        turn_facade_source=sources.get("turn_facade"),
+        lazy_forward_source=sources.get("lazy_forward"),
+        require_turn_scoped_routing=True,
     )
     failures = [check.message for check in checks if check.level == "FAIL"]
     detected = next(
@@ -920,20 +1491,50 @@ def plan_runtime_patch(
     *,
     plugins: Path,
     run_agent: Path,
+    runtime_helpers: Path | None = None,
     delegate_tool: Path,
     conversation_loop: Path | None = None,
     turn_context: Path | None = None,
+    pre_model_route: Path | None = None,
+    model_routing: Path | None = None,
+    turn_facade: Path | None = None,
+    lazy_forward: Path | None = None,
+    delegate_config: Path | None = None,
 ) -> RuntimePatchPlan:
     """Read and validate every required source before returning a pure patch plan."""
+    runtime_helpers = runtime_helpers or _optional_sibling(
+        run_agent, "agent/agent_runtime_helpers.py"
+    )
+    pre_model_route = pre_model_route or _optional_sibling(
+        run_agent, "agent/pre_model_route.py"
+    )
+    model_routing = model_routing or _optional_sibling(run_agent, "agent/model_routing.py")
+    turn_facade = turn_facade or _optional_sibling(run_agent, "agent/turn_facade.py")
+    lazy_forward = lazy_forward or _optional_sibling(run_agent, "agent/lazy_forward.py")
+    delegate_config = delegate_config or _optional_sibling(
+        run_agent, "tools/delegate_tool_config.py"
+    )
     required: list[tuple[str, Path]] = [
         ("plugins", plugins),
         ("run_agent", run_agent),
         ("delegate_tool", delegate_tool),
     ]
+    if runtime_helpers is not None:
+        required.append(("runtime_helpers", runtime_helpers))
     if conversation_loop is not None:
         required.append(("conversation_loop", conversation_loop))
     if turn_context is not None:
         required.append(("turn_context", turn_context))
+    if pre_model_route is not None:
+        required.append(("pre_model_route", pre_model_route))
+    if model_routing is not None:
+        required.append(("model_routing", model_routing))
+    if turn_facade is not None:
+        required.append(("turn_facade", turn_facade))
+    if lazy_forward is not None:
+        required.append(("lazy_forward", lazy_forward))
+    if delegate_config is not None:
+        required.append(("delegate_config", delegate_config))
     snapshots = tuple(_snapshot_source(label, path) for label, path in required)
     aliases: dict[tuple[int, int], str] = {}
     for snapshot in snapshots:
@@ -946,6 +1547,44 @@ def plan_runtime_patch(
         _validate_python(snapshot.label, snapshot.source, snapshot.path)
 
     by_label = {snapshot.label: snapshot for snapshot in snapshots}
+    if {
+        "conversation_loop",
+        "turn_context",
+        "turn_facade",
+        "lazy_forward",
+        "delegate_config",
+    }.issubset(by_label) and ({"pre_model_route", "model_routing"} & by_label.keys()):
+        current_sources = {
+            label: snapshot.source for label, snapshot in by_label.items()
+        }
+        try:
+            _validate_runtime_postconditions("v019-turn-context", current_sources)
+        except ValueError:
+            pass
+        else:
+            return RuntimePatchPlan("v019-turn-context", snapshots, ())
+
+    if has_split_turn_facade(by_label["run_agent"].source):
+        current_sources = {label: snapshot.source for label, snapshot in by_label.items()}
+        planned_sources = patch_modular_main_sources(current_sources)
+        if "model_routing" not in by_label:
+            route_snapshot = _snapshot_source(
+                "model_routing", run_agent.parent / MAIN_RUNTIME_FILES["model_routing"], allow_absent=True,
+            )
+            if route_snapshot.exists:
+                raise ValueError("Route module appeared during planning; refusing replacement.")
+            snapshots += (route_snapshot,)
+            by_label["model_routing"] = route_snapshot
+        entries = []
+        for label in MAIN_RUNTIME_FILES:
+            snapshot = by_label[label]
+            patched = planned_sources[label]
+            _validate_python(label, patched, snapshot.path)
+            if patched != snapshot.source:
+                entries.append(PatchEntry(snapshot, patched, ("installed split runtime routing contract",)))
+        _validate_runtime_postconditions("v019-turn-context", planned_sources)
+        return RuntimePatchPlan("v019-turn-context", snapshots, tuple(entries))
+
     layout = _classify_layout(
         by_label["run_agent"].source,
         by_label.get("conversation_loop").source if "conversation_loop" in by_label else None,
@@ -956,9 +1595,10 @@ def plan_runtime_patch(
     if layout == "v019-turn-context" and "turn_context" not in by_label:
         raise ValueError("The Hermes v0.19 layout requires agent/turn_context.py.")
 
-    patchers: list[tuple[str, Callable[[str], tuple[str, list[str]]]]] = [
-        ("run_agent", patch_run_agent_source),
-    ]
+    patchers: list[tuple[str, Callable[[str], tuple[str, list[str]]]]] = []
+    if "runtime_helpers" in by_label:
+        patchers.append(("runtime_helpers", patch_agent_runtime_helpers_source))
+    patchers.append(("run_agent", patch_run_agent_source))
     if layout == "legacy-monolith":
         pass
     elif layout == "modular-conversation-loop":
@@ -1078,6 +1718,10 @@ def _cleanup_transaction_stages(transaction_dir: Path, manifest: dict) -> None:
 def _assert_snapshot_unchanged(snapshot: SourceSnapshot) -> None:
     if snapshot.path.is_symlink():
         raise RuntimeError(f"Runtime target became a symlink after planning: {snapshot.label}")
+    if not snapshot.exists:
+        if snapshot.path.exists():
+            raise RuntimeError(f"Runtime target appeared after planning: {snapshot.label}")
+        return
     metadata = snapshot.path.stat()
     if (metadata.st_dev, metadata.st_ino) != (snapshot.device, snapshot.inode):
         raise RuntimeError(f"Runtime target changed identity after planning: {snapshot.label}")
@@ -1230,6 +1874,7 @@ def apply_runtime_patch(
                     "patched_sha256": _sha256(entry.patched.encode("utf-8")),
                     "backup": str(backup.relative_to(transaction_dir)),
                     "mode": entry.snapshot.mode,
+                    "original_exists": entry.snapshot.exists,
                 }
             )
         _fsync_directory(originals_dir)
@@ -1250,9 +1895,11 @@ def apply_runtime_patch(
         _write_manifest(transaction_dir, manifest)
 
         for entry in plan.entries:
+            # Record write intent before replace: a wrapper or directory fsync
+            # may raise after the destination already changed.
+            replaced.append(entry)
             replace_file(staged_paths[entry.label], entry.path)
             staged_paths.pop(entry.label, None)
-            replaced.append(entry)
             _fsync_directory(entry.path.parent)
 
         for entry in plan.entries:
@@ -1288,6 +1935,15 @@ def apply_runtime_patch(
             pass
         try:
             for entry in reversed(replaced):
+                if not entry.snapshot.exists:
+                    if entry.path.is_symlink():
+                        raise RuntimeError(f"New runtime target has foreign changes: {entry.label}.")
+                    if entry.path.exists():
+                        if _sha256(entry.path.read_bytes()) != _sha256(entry.patched.encode("utf-8")):
+                            raise RuntimeError(f"New runtime target has foreign changes: {entry.label}.")
+                        entry.path.unlink()
+                        _fsync_directory(entry.path.parent)
+                    continue
                 restore_stage = _stage_bytes(
                     entry.snapshot,
                     entry.snapshot.raw,
@@ -1301,6 +1957,10 @@ def apply_runtime_patch(
                     if restore_stage.exists():
                         restore_stage.unlink()
             for snapshot in plan.snapshots:
+                if not snapshot.exists:
+                    if snapshot.path.exists() or snapshot.path.is_symlink():
+                        raise RuntimeError(f"Rollback did not remove new target: {snapshot.label}.")
+                    continue
                 if _sha256(snapshot.path.read_bytes()) != snapshot.digest:
                     raise RuntimeError(f"Rollback hash verification failed for {snapshot.label}.")
         except Exception as exc:
@@ -1368,30 +2028,39 @@ def rollback_runtime_transaction(
     snapshots: list[SourceSnapshot] = []
     originals: dict[str, bytes] = {}
     modes: dict[str, int] = {}
+    original_exists: dict[str, bool] = {}
     for target in targets:
         if not isinstance(target, dict):
             raise ValueError("Runtime transaction target entry is invalid.")
         label = str(target.get("label") or "")
         path = Path(str(target.get("path") or ""))
         backup = transaction_dir / str(target.get("backup") or "")
-        if not label or not path.is_absolute() or path.is_symlink() or not path.is_file():
+        existed = target.get("original_exists", True)
+        if not isinstance(existed, bool):
+            raise ValueError(f"Invalid runtime existence marker for {label}.")
+        if (not label or not path.is_absolute() or path.is_symlink()
+                or (path.exists() and not path.is_file()) or (existed and not path.is_file())):
             raise ValueError(f"Unsafe runtime rollback target for {label or 'unknown'}.")
         original = backup.read_bytes()
         original_digest = str(target.get("original_sha256") or "")
         patched_digest = str(target.get("patched_sha256") or "")
         if _sha256(original) != original_digest:
             raise ValueError(f"Runtime backup hash mismatch for {label}.")
-        current_digest = _sha256(path.read_bytes())
-        if current_digest not in {original_digest, patched_digest}:
+        current_digest = _sha256(path.read_bytes()) if path.exists() else None
+        allowed_digests = {original_digest, patched_digest} if existed else {None, patched_digest}
+        if current_digest not in allowed_digests:
             raise ValueError(f"Runtime target has foreign changes; refusing rollback for {label}.")
-        snapshots.append(_snapshot_source(label, path))
+        snapshots.append(_snapshot_source(label, path, allow_absent=not existed))
         originals[label] = original
         modes[label] = int(target.get("mode") or snapshots[-1].mode)
+        original_exists[label] = existed
 
     staged: dict[str, Path] = {}
     replaced: list[SourceSnapshot] = []
     try:
         for snapshot in snapshots:
+            if not original_exists[snapshot.label]:
+                continue
             rollback_snapshot = SourceSnapshot(
                 label=snapshot.label,
                 path=snapshot.path,
@@ -1405,6 +2074,7 @@ def rollback_runtime_transaction(
                 inode=snapshot.inode,
                 size=snapshot.size,
                 mtime_ns=snapshot.mtime_ns,
+                exists=snapshot.exists,
             )
             staged[snapshot.label] = _stage_bytes(
                 rollback_snapshot,
@@ -1412,14 +2082,26 @@ def rollback_runtime_transaction(
                 ".transaction-rollback",
                 transaction_token=transaction_id,
             )
+        for snapshot in snapshots:
+            _assert_snapshot_unchanged(snapshot)
         manifest["state"] = "rollback_committing"
         _write_manifest(transaction_dir, manifest)
         for snapshot in reversed(snapshots):
+            if not original_exists[snapshot.label]:
+                if snapshot.exists:
+                    replaced.append(snapshot)
+                    snapshot.path.unlink()
+                    _fsync_directory(snapshot.path.parent)
+                continue
+            replaced.append(snapshot)
             replace_file(staged[snapshot.label], snapshot.path)
             staged.pop(snapshot.label, None)
-            replaced.append(snapshot)
             _fsync_directory(snapshot.path.parent)
         for snapshot in snapshots:
+            if not original_exists[snapshot.label]:
+                if snapshot.path.exists() or snapshot.path.is_symlink():
+                    raise RuntimeError(f"Runtime rollback did not remove new target: {snapshot.label}.")
+                continue
             expected = _sha256(originals[snapshot.label])
             if _sha256(snapshot.path.read_bytes()) != expected:
                 raise RuntimeError(f"Runtime rollback verification failed for {snapshot.label}.")
@@ -1442,6 +2124,10 @@ def rollback_runtime_transaction(
                     if restore.exists():
                         restore.unlink()
             for snapshot in snapshots:
+                if not snapshot.exists:
+                    if snapshot.path.exists() or snapshot.path.is_symlink():
+                        raise RuntimeError(f"Rollback reversion created a target: {snapshot.label}.")
+                    continue
                 if _sha256(snapshot.path.read_bytes()) != snapshot.digest:
                     raise RuntimeError(f"Rollback reversion verification failed for {snapshot.label}.")
         except Exception as exc:
@@ -1527,6 +2213,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Patch Hermes runtime for ZeroAPI pre_model_route compatibility.")
     parser.add_argument("--plugins", type=Path, help="Path to Hermes hermes_cli/plugins.py.")
     parser.add_argument("--run-agent", type=Path, help="Path to Hermes run_agent.py.")
+    parser.add_argument("--runtime-helpers", type=Path, help="Path to Hermes agent/agent_runtime_helpers.py.")
     parser.add_argument("--conversation-loop", type=Path, help="Path to Hermes agent/conversation_loop.py.")
     parser.add_argument("--turn-context", type=Path, help="Path to Hermes agent/turn_context.py.")
     parser.add_argument("--delegate-tool", type=Path, help="Path to Hermes tools/delegate_tool.py.")
@@ -1565,11 +2252,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"OK recovered interrupted runtime transaction: {recovered}")
         plugins = args.plugins or _auto_path("hermes_cli.plugins", "hermes_cli/plugins.py")
         delegate_tool = args.delegate_tool or _auto_path("tools.delegate_tool", "tools/delegate_tool.py")
+        runtime_helpers = args.runtime_helpers or _optional_sibling(
+            run_agent,
+            "agent/agent_runtime_helpers.py",
+        )
+        if runtime_helpers is None:
+            raise ValueError(
+                "Could not locate agent/agent_runtime_helpers.py required for turn-scoped routing."
+            )
         conversation_loop = args.conversation_loop or _optional_sibling(run_agent, "agent/conversation_loop.py")
         turn_context = args.turn_context or _optional_sibling(run_agent, "agent/turn_context.py")
         plan = plan_runtime_patch(
             plugins=plugins,
             run_agent=run_agent,
+            runtime_helpers=runtime_helpers,
             conversation_loop=conversation_loop,
             turn_context=turn_context,
             delegate_tool=delegate_tool,

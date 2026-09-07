@@ -2,22 +2,19 @@
 
 ## Provider Exclusions
 
-**Google (Gemini):** Removed in v3.0. Google declared CLI OAuth with third-party tools a ToS violation as of March 25, 2026. Do not set up Google OAuth for use with OpenClaw.
-
-**Anthropic (Claude):** Removed in v3.0. Subscriptions no longer cover OpenClaw as of April 4, 2026.
+Google and Anthropic remain outside ZeroAPI's automatic subscription routing. This is not a blanket claim that every provider subscription excludes third-party tools. The dated policy reasons and unimplemented runtime requirements are maintained in [provider-model-status.md](provider-model-status.md).
 
 ## Provider Auth Summary
 
 | Provider | Auth Method | Setup Command | Token Lifetime |
 |----------|-------------|---------------|----------------|
 | OpenAI | OAuth PKCE via ChatGPT | `openclaw models auth login --provider openai` | Refreshable OAuth token |
-| Kimi | Static API key | `openclaw onboard --auth-choice moonshot-api-key` | Never expires |
+| Kimi Coding membership | Membership API key | `openclaw onboard --auth-choice kimi-code-api-key` | Provider-managed key |
 | Z AI (GLM) | Static API key | `openclaw onboard --auth-choice zai-coding-global` | Never expires |
 | MiniMax | OAuth portal | `openclaw onboard --auth-choice minimax-global-oauth` | Refreshable OAuth token |
-| Qwen Portal | Current Portal token / legacy OAuth migration | `openclaw onboard --auth-choice qwen-oauth` | Token; legacy OAuth is not refreshable—re-onboard with a current token |
 | xAI Grok OAuth | OpenClaw OAuth via SuperGrok, or Hermes legacy OAuth | `openclaw models auth login --provider xai --method oauth` / `hermes auth add xai-oauth` | Refreshable OAuth token |
 
-**Reliability note**: Kimi / GLM static keys are stable. MiniMax and OpenAI OAuth can refresh. Qwen Portal is token-like and legacy OAuth profiles cannot refresh; re-onboard with a current token when needed.
+Kimi membership and GLM Coding Plan use their own scoped keys; MiniMax and OpenAI OAuth can refresh. Current OpenClaw removed Qwen Portal and its onboarding command. Existing compatible Hermes/older-runtime accounts remain separate from Qwen Cloud credentials; legacy Portal OAuth profiles are not refreshable.
 
 ---
 
@@ -43,14 +40,16 @@ OpenClaw's auto-refresh handles renewal. Users can freely use ChatGPT and Codex 
 These providers use static API keys. Setup is simpler:
 
 ```bash
-# Kimi
-openclaw onboard --auth-choice moonshot-api-key
+# Kimi Coding membership
+openclaw onboard --auth-choice kimi-code-api-key
 
 # Z AI / GLM (Coding Plan endpoint)
 openclaw onboard --auth-choice zai-coding-global
 ```
 
 The wizard prompts for the API key and saves it to auth profiles. Never paste API keys into chat channels.
+
+Kimi Coding uses the `kimi` provider in OpenClaw and `kimi-coding` in Hermes. A Moonshot API key belongs to the separately billed `moonshot` provider; do not rename its profile or treat it as a Kimi membership key.
 
 ---
 
@@ -63,11 +62,7 @@ openclaw plugins enable minimax-portal-auth
 openclaw onboard --auth-choice minimax-global-oauth
 ```
 
-Qwen Portal uses a current token through onboarding. This is also the migration path for old Qwen OAuth/CLI profiles; those legacy OAuth profiles are not refreshable:
-
-```bash
-openclaw onboard --auth-choice qwen-oauth
-```
+Qwen Portal is unavailable for fresh current-OpenClaw setup. Do not convert a Portal profile into Qwen Cloud or Token Plan access. Use the installed runtime's supported workflow for an existing compatible Portal account; see [provider-config.md](provider-config.md#qwen-compatibility-and-qwen-cloud).
 
 OpenAI Codex also uses the model-auth flow:
 
@@ -116,12 +111,6 @@ tmux send-keys -t oauth 'THE_FULL_LOCALHOST_CALLBACK_URL_FROM_USER' Enter
 openclaw models status
 ```
 
-For Qwen, replace the session command with:
-
-```bash
-openclaw onboard --auth-choice qwen-oauth
-```
-
 For MiniMax, use:
 
 ```bash
@@ -157,6 +146,6 @@ openclaw doctor
 
 ## Profile Drift Notes
 
-OpenClaw can sync some external CLI profiles, for example Codex CLI, Qwen CLI, or MiniMax CLI credentials. If an unexpected `*:default` or CLI-derived profile appears, verify it with `openclaw models status`, then clean stale profiles through OpenClaw's auth/profile commands or the config store.
+OpenClaw can sync some external CLI profiles, for example Codex CLI or MiniMax CLI credentials. A historical Qwen CLI profile does not restore Portal support in current OpenClaw. If an unexpected `*:default` or CLI-derived profile appears, verify it with `openclaw models status`, then clean stale profiles through OpenClaw's auth/profile commands or the config store.
 
 ZeroAPI should not assume every profile for a provider belongs in the routing pool. Prefer explicit `subscription_inventory.accounts[*].authProfile` for multi-account setups.

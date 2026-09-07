@@ -20,8 +20,10 @@ jobs:
     # publish. It still stops a genuinely wedged job well under the 6h default.
     timeout-minutes: 60
     env:
-      CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+      CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/zeroapi-clawhub-auth/config.json
       CLAWHUB_CLI_VERSION: "0.12.2"
+      NPM_CONFIG_IGNORE_SCRIPTS: "true"
+      NO_COLOR: "1"
       # Intentionally "latest": this is a post-publish smoke test whose job is to
       # confirm the freshly published plugin installs under the OpenClaw users
       # actually have now. Pinning would let it pass against a stale binary while
@@ -46,16 +48,36 @@ jobs:
       - name: Stage runtime plugin package
         run: node scripts/stage_clawhub_plugin.mjs .tmp-clawhub-plugin
 
-      - name: Require ClawHub token
+      - name: Prepare private ClawHub authentication
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
         run: |
-          if [ -z "$CLAWHUB_TOKEN" ]; then
-            echo "::error::CLAWHUB_TOKEN secret is required to publish ZeroAPI to ClawHub."
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const token = process.env.CLAWHUB_TOKEN;
+          if (!token) throw new Error("CLAWHUB_TOKEN secret is required");
+          const target = process.env.CLAWHUB_CONFIG_PATH;
+          // ClawHub v0.12.2's documented config override and native config schema.
+          // The credential exists only in this private runner-local CLI store.
+          fs.mkdirSync(path.dirname(target), { mode: 0o700 });
+          fs.writeFileSync(target, JSON.stringify({ registry: "https://clawhub.ai", token }),
+            { mode: 0o600, flag: "wx" });
+          NODE
+
+      - name: Verify ClawHub publisher identity
+        run: |
+          identity="$(npx --yes "clawhub@$CLAWHUB_CLI_VERSION" whoami 2>&1)" || {
+            echo "::error::ClawHub authentication failed."
+            exit 1
+          }
+          if [[ ! "$identity" =~ (^|$'\n')[^[:alnum:]@]*@?dorukardahan($|$'\r'|$'\n') ]]; then
+            echo "::error::ClawHub publisher does not match the expected package owner."
             exit 1
           fi
 
       - name: Publish plugin package
         run: |
-          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" login --token "$CLAWHUB_TOKEN" --no-browser
           set +e
           npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package publish .tmp-clawhub-plugin \
             --family code-plugin \
@@ -81,64 +103,21 @@ jobs:
         env:
           EXPECTED_VERSION: ${{ steps.version.outputs.value }}
         run: |
-          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --json > .tmp-clawhub-inspect.json
-          npx --yes "clawhub@$CLAWHUB_CLI_VERSION" package inspect zeroapi --versions --json > .tmp-clawhub-versions.json
-          node <<'NODE'
-          const fs = require("node:fs");
-
-          const expected = process.env.EXPECTED_VERSION;
-          const inspect = JSON.parse(fs.readFileSync(".tmp-clawhub-inspect.json", "utf8"));
-          const versionsPayload = JSON.parse(fs.readFileSync(".tmp-clawhub-versions.json", "utf8"));
-
-          const latest =
-            inspect.latestVersion ??
-            inspect.tags?.latest ??
-            inspect.package?.latestVersion ??
-            inspect.package?.tags?.latest;
-
-          if (latest !== expected) {
-            throw new Error(`ClawHub latest version mismatch: expected ${expected}, got ${latest ?? "missing"}`);
-          }
-
-          const versions = new Set();
-          const collectVersions = (value) => {
-            if (!value) return;
-            if (Array.isArray(value)) {
-              for (const item of value) collectVersions(item);
-              return;
-            }
-            if (typeof value === "object") {
-              if (typeof value.version === "string") versions.add(value.version);
-              for (const item of Object.values(value)) collectVersions(item);
-            }
-          };
-          collectVersions(versionsPayload);
-
-          if (!versions.has(expected)) {
-            throw new Error(`ClawHub exact version ${expected} was not found in version metadata`);
-          }
-
-          const scanStatus =
-            inspect.package?.verification?.scanStatus ??
-            inspect.package?.scanStatus ??
-            inspect.verification?.scanStatus ??
-            inspect.scanStatus;
-          if (scanStatus !== "clean") {
-            throw new Error(
-              `ClawHub exact release ${expected} is not scan-clean (status: ${scanStatus ?? "missing"}); refusing automated risk acknowledgement`,
-            );
-          }
-
-          console.log(`ClawHub metadata and clean scan verified for zeroapi@${expected}`);
-          NODE
+          # Community release scans are asynchronous. Wait at most five minutes
+          # for the exact release's public trust result and package latest.
+          node scripts/verify_clawhub_release.mjs "$EXPECTED_VERSION"
 
       - name: Verify ClawHub package is downloadable
         run: |
           tmp_dir="$(mktemp -d)"
           trap 'rm -rf "$tmp_dir"' EXIT
           cd "$tmp_dir"
+          export OPENCLAW_STATE_DIR="$tmp_dir/openclaw-state"
+          export OPENCLAW_CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"
+          # Consent applies to this reviewed, exact, scan-clean package. Native
+          # policy and unsafe-install gates remain enabled.
           for attempt in $(seq 1 10); do
-            if timeout 300s env npm_config_yes=true npx --yes "openclaw@$OPENCLAW_VERIFY_VERSION" plugins install "clawhub:zeroapi@${{ steps.version.outputs.value }}"; then
+            if timeout 300s env npm_config_yes=true npx --yes "openclaw@$OPENCLAW_VERIFY_VERSION" plugins install "clawhub:zeroapi@${{ steps.version.outputs.value }}" --accept-capabilities; then
               exit 0
             fi
             if [ "$attempt" -eq 10 ]; then
@@ -148,3 +127,15 @@ jobs:
             echo "OpenClaw install smoke test failed; retrying in 15s ($attempt/10)."
             sleep 15
           done
+
+      - name: Remove temporary ClawHub authentication
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const target = process.env.CLAWHUB_CONFIG_PATH;
+          fs.rmSync(target, { force: true });
+          try { fs.rmdirSync(path.dirname(target)); }
+          catch (error) { if (error.code !== "ENOENT") throw error; }
+          NODE

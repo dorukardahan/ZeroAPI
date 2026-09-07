@@ -68,11 +68,10 @@ Good style:
 I found an existing ZeroAPI config with OpenAI + GLM.
 What should ZeroAPI manage now?
 1. OpenAI
-2. Kimi
+2. Kimi Coding membership
 3. Z AI
 4. MiniMax
-5. Qwen Portal
-6. xAI Grok OAuth (OpenClaw `xai` device-code/browser OAuth or Hermes `xai-oauth`)
+5. xAI Grok OAuth (OpenClaw `xai` device-code/browser OAuth or Hermes `xai-oauth`)
 Reply with numbers.
 ```
 
@@ -96,10 +95,11 @@ If auth is missing, the chat flow should:
 Examples:
 
 - `openclaw models auth login --provider openai`
-- `openclaw onboard --auth-choice moonshot-api-key`
-- `openclaw onboard --auth-choice qwen-oauth`
+- `openclaw onboard --auth-choice kimi-code-api-key` for Kimi membership
 - `openclaw models auth login --provider xai --method oauth` for current OpenClaw SuperGrok routing
 - `hermes auth add xai-oauth` for Hermes SuperGrok routing
+
+Moonshot API billing is separate from Kimi membership. Current OpenClaw removed Qwen Portal, so it is not a fresh onboarding choice; compatible existing Hermes/older-runtime identities are retained. Verify Astra in every selected OpenAI account's live catalog before adding it. See `references/provider-model-status.md` for the checked native contracts.
 
 ## Host-only follow-up steps
 

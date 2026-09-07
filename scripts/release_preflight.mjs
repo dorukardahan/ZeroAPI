@@ -83,9 +83,27 @@ assert(
   "ClawHub install smoke must not use the deprecated dangerous-force flag",
 );
 assert(
-  clawHubWorkflow.includes('scanStatus !== "clean"') &&
-    clawHubWorkflow.includes("refusing automated risk acknowledgement"),
-  "ClawHub install smoke must fail closed unless the exact release scan is clean",
+  /^\s+node scripts\/verify_clawhub_release\.mjs "\$EXPECTED_VERSION"\s*$/m.test(clawHubWorkflow) &&
+    clawHubWorkflow.indexOf('node scripts/verify_clawhub_release.mjs "$EXPECTED_VERSION"') <
+      clawHubWorkflow.indexOf("- name: Verify ClawHub package is downloadable"),
+  "ClawHub install smoke must run the canonical release verifier before installation",
+);
+const clawHubVerifier = readText(join(repoRoot, "scripts", "verify_clawhub_release.mjs"));
+assert(
+  clawHubVerifier.includes('`${PACKAGE_URL}/versions/${expected}/security`') &&
+    clawHubVerifier.includes("security?.release?.version !== expected"),
+  "ClawHub verifier must check the exact release security response",
+);
+assert(
+  clawHubVerifier.includes("latestIsReady(detail.package.latestVersion, expected)") &&
+    clawHubVerifier.includes('trust.scanStatus === "clean" && latestReady'),
+  "ClawHub verifier must require both exact clean scan and matching latest",
+);
+assert(
+  clawHubVerifier.includes("trust.blockedFromDownload || trust.stale") &&
+    clawHubVerifier.includes('![null, "approved"].includes(trust.moderationState)') &&
+    clawHubVerifier.includes("if (!(error instanceof PendingMetadata)) throw error;"),
+  "ClawHub verifier must preserve terminal trust and error rejection",
 );
 
 console.log(`ZeroAPI release preflight ok for ${version}`);

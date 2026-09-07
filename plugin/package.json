@@ -1,6 +1,6 @@
 {
   "name": "zeroapi",
-  "version": "3.10.3",
+  "version": "3.11.0",
   "private": true,
   "description": "ZeroAPI - transparent subscription-aware model and account routing for OpenClaw",
   "type": "module",
@@ -19,12 +19,12 @@
     "compat": {
       "pluginApi": ">=2026.5.2",
       "minGatewayVersion": "2026.5.2",
-      "notes": "Model/provider routing is fully compatible. Auth-profile/account choices are persisted through OpenClaw's public session-store API across the v2026.7.1-2 JSON layout and newer SQLite layout. Upstream before_model_resolve does not expose a same-turn authProfileOverride result field; same-turn selection still requires a compatible host extension."
+      "notes": "Model/provider hooks are tested with OpenClaw 2026.5.2, 2026.9.1 and reviewed current-main source. Auth-profile preferences use the public session API for existing JSON/SQLite sessions; the native hook supports only model/provider overrides and does not guarantee same-turn account switching. See references/openclaw-compatibility.md for exact source pins and test limits."
     },
     "build": {
-      "openclawVersion": "2026.5.2",
-      "pluginSdkVersion": "2026.5.2",
-      "lastAuditedOpenClaw": "2026.8.1-beta.1"
+      "openclawVersion": "2026.9.1",
+      "pluginSdkVersion": "2026.9.1",
+      "lastAuditedOpenClaw": "2026.9.1"
     }
   },
   "devDependencies": {

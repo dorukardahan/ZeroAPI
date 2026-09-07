@@ -141,11 +141,18 @@ PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
         "tier_weights": {"plus": 1, "pro": 3},
         "bias": 0.7,
     },
-    "moonshot": {
-        "canonical": "moonshot",
-        "aliases": ["kimi", "kimi-coding"],
+    "kimi": {
+        "canonical": "kimi",
+        "aliases": ["kimi-coding"],
         "tier_weights": {"moderato": 1, "allegretto": 2, "allegro": 3, "vivace": 4},
         "bias": 1.1,
+    },
+    "moonshot": {
+        "canonical": "moonshot",
+        "aliases": [],
+        "status": "excluded",
+        "tier_weights": {},
+        "bias": 1.0,
     },
     "zai": {
         "canonical": "zai",
@@ -179,9 +186,9 @@ PROVIDER_CATALOG: dict[str, dict[str, Any]] = {
 HERMES_PROVIDER_MAP = {
     "openai": "openai-codex",
     "openai-codex": "openai-codex",
-    "moonshot": "kimi-for-coding",
-    "kimi": "kimi-for-coding",
-    "kimi-coding": "kimi-for-coding",
+    "moonshot": "moonshot",
+    "kimi": "kimi-coding",
+    "kimi-coding": "kimi-coding",
     "zai": "zai",
     "minimax-portal": "minimax-oauth",
     "minimax": "minimax-oauth",
@@ -853,6 +860,8 @@ def _resolve_provider_subscription(config: Config, provider: str, agent_id: str 
     entry = _catalog_entry(provider)
     if entry is None:
         return None
+    if entry.get("status", "active") != "active":
+        return {"enabled": False, "routing_weight": 0.0, "preferred_account_id": None, "preferred_auth_profile": None}
 
     profile = config.get("subscription_profile", {})
     profile = profile if isinstance(profile, dict) else {}
@@ -938,6 +947,8 @@ def _resolve_capacity(config: Config, provider: str, category: TaskCategory | No
     entry = _catalog_entry(provider)
     if entry is None:
         return None
+    if entry.get("status", "active") != "active":
+        return {"enabled": False, "routing_weight": 0.0, "preferred_account_id": None, "preferred_auth_profile": None}
     canonical = str(entry["canonical"])
     inventory = config.get("subscription_inventory", {})
     accounts = inventory.get("accounts", {}) if isinstance(inventory, dict) else {}

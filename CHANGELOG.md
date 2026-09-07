@@ -2,8 +2,24 @@
 
 ## [Unreleased]
 
+## [3.11.0] - 2026-09-07
+
+### Added
+
+- Support the refactored Hermes main runtime with transactional patches, explicit recovery journals, and native AIAgent/plugin-dispatch tests. Preserve the primary model, account pool, prompt sections, and tool order across transient routing and delegated turns.
+- Test the OpenClaw adapter with native 2026.9.1 SQLite sessions, the minimum 2026.5.2 JSON session API, and the pinned current-main hook runner. Keep CLI metadata registration inert and register background work through the host service lifecycle.
+- Add current model-family evidence for GPT-6 Astra, GLM-5.3/Flash, Kimi K3, Grok 4.6, and Qwen3.8 reference rows. Astra onboarding requires fresh model-catalog evidence in every selected account.
+
+### Changed
+
+- Separate Kimi Coding membership from Moonshot API billing, use the native Kimi provider IDs, and exclude removed Qwen Portal support from fresh current-OpenClaw onboarding while preserving compatible existing policies.
+- Refresh the paired Artificial Analysis snapshots and generated policies. Preserve valid zero scores, record source-field coverage, reject unknown numeric evaluations, and leave absent measurements missing. Label effort and endpoint mismatches explicitly.
+- Use native OpenClaw install/index operations with scoped capability consent, while retaining exact-version ClawHub verification and the clean-scan gate. Keep publishing credentials inside a private native CLI store and out of process arguments.
+
 ### Fixed
 
+- Persist account preferences through the host's public session API and verify the native runner's model/provider-only result contract, while retaining the optional auth-profile extension for compatible hosts. Read image requirements from native attachment metadata and preserve user-pinned profiles.
+- Recognize portable Hermes plugin manifests using native schema and discovery precedence, including duplicate-plugin checks.
 - Stop treating a bare `review` keyword as automatic research routing. Software/PR/security-review collocates now score as `code`; literature collocates stay on `research`; an ambiguous lone `review` no longer steers the model switcher.
 
 ## [3.10.3] - 2026-08-10

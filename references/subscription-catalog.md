@@ -2,7 +2,7 @@
 
 This document defines the provider and subscription catalog used by ZeroAPI for subscription-aware routing.
 
-The current static catalog contract is `1.1.0`. Existing `1.0.0` configs remain accepted; `1.1.0` only changes fresh metadata and canonical Qwen aliasing, not the runtime config schema.
+The current static catalog contract is `1.2.0`, reviewed against provider sources on 2026-09-06. Existing config schemas remain readable. This catalog corrects Kimi membership versus Moonshot API identity and removes Qwen Portal from fresh current-OpenClaw setup. Those are eligibility changes: older Moonshot entries must be reviewed rather than renamed into membership accounts.
 
 ZeroAPI does not read live provider quota or private usage telemetry. Catalog weights are static policy hints based on public/provider-declared tiers and account-quota shape.
 
@@ -15,14 +15,15 @@ ZeroAPI does not read live provider quota or private usage telemetry. Catalog we
 
 ## Supported Providers in v1
 
-ZeroAPI v1 subscription-aware routing supports exactly these subscription or account-quota providers:
+Fresh current-OpenClaw setup offers these subscription providers:
 
 1. OpenAI
-2. Kimi
+2. Kimi Coding membership (`kimi`, alias `kimi-coding`)
 3. Z AI (GLM)
 4. MiniMax
-5. Qwen Portal
-6. xAI Grok OAuth
+5. xAI Grok OAuth
+
+Qwen Portal remains recognizable for existing compatible-runtime configs, including Hermes at the checked commit, but is not offered by fresh OpenClaw setup. Moonshot API and plain xAI API entries are explicitly excluded from subscription capacity. Qwen Cloud, its separate Token Plan, and the old Coding Plan do not inherit Portal eligibility.
 
 Excluded from catalog:
 
@@ -70,12 +71,16 @@ Each tier should define:
 - Plus
 - Pro
 
+GPT-6 Astra has a separate account rollout gate. A tier selection is not evidence of access. Starter callers may supply live `discoveredModels` refs per selected account; Astra is included only when every selected OpenAI account exposes it. Discovery is not persisted as a permanent entitlement. The interactive wizard retains GPT-5.6 when it cannot attest per-account discovery.
+
 ### Kimi
 
 - Moderato
 - Allegretto
 - Allegro
 - Vivace
+
+These are Kimi Coding membership tiers, not Moonshot API balances. Current OpenClaw uses `kimi/k3-256k` for ZeroAPI's Moderato+ starter. Full 1M `kimi/k3` and HighSpeed require Allegretto or above; no higher-tier entitlement is inferred for a mixed account pool. The membership endpoint and API keys differ from `moonshot`; older auth profile IDs are never migrated automatically. See the pinned sources in [provider-model-status.md](provider-model-status.md).
 
 ### Z AI (GLM)
 
@@ -92,7 +97,7 @@ Each tier should define:
 
 ### Qwen Portal
 
-Tier id: `free` (retained for config compatibility). Access is a current Portal token, marked `legacy` because this surface exists for Portal users and legacy OAuth/CLI migration. Legacy OAuth profiles cannot refresh; re-run `openclaw onboard --auth-choice qwen-oauth` with a current token. Qwen Cloud and Coding Plan use separate `qwen` surfaces. Direct Qwen3.7 Plus/Max benchmark rows do not make them Portal-routeable.
+Tier id: `free`, retained as legacy compatibility metadata. Current OpenClaw removed the Portal provider and onboarding command. Hermes and older compatible runtimes may still use this identity, so catalog lookup remains available; fresh OpenClaw starter generation fails closed. Legacy OAuth profiles are not refreshable. Qwen Cloud uses separate credentials; direct Qwen3.8 Max benchmark data does not establish Portal access, and Flash-Next is not the new Cloud Flash model.
 
 ### xAI Grok OAuth
 

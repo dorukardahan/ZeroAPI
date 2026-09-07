@@ -199,29 +199,43 @@ export function stageManagedRuntimePlugin(repoDir, runtimePluginDir) {
   return runtimePluginDir;
 }
 
+function openClawCommandEnvironment(openclawDir) {
+  return {
+    OPENCLAW_STATE_DIR: openclawDir,
+    OPENCLAW_CONFIG_PATH: join(openclawDir, "openclaw.json"),
+    NO_COLOR: "1",
+  };
+}
+
 export function removeDuplicateZeroAPILoadPaths(openclawDir) {
-  const configPath = join(openclawDir, "openclaw.json");
-  if (!existsSync(configPath)) {
-    return [];
-  }
-  const config = readJson(configPath);
-  const loadPaths = config?.plugins?.load?.paths;
-  if (!Array.isArray(loadPaths) || loadPaths.length === 0) {
-    return [];
-  }
-  const removed = [];
-  const nextPaths = loadPaths.filter((value) => {
-    if (typeof value !== "string") return true;
-    const normalized = value.replaceAll("\\", "/").toLowerCase();
-    const shouldRemove = normalized.includes("/zeroapi") && normalized.endsWith("/plugin");
-    if (shouldRemove) removed.push(value);
-    return !shouldRemove;
+  const env = openClawCommandEnvironment(openclawDir);
+  const result = runCommand("openclaw", ["config", "get", "plugins.load.paths", "--json"], {
+    env, allowFailure: true,
   });
-  if (removed.length === 0) {
-    return [];
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    // Older supported hosts report an unset path on stderr instead of JSON.
   }
-  config.plugins.load.paths = nextPaths;
-  writeJsonAtomic(configPath, config);
+  if (result.status !== 0) {
+    const message = parsed?.error?.message ?? result.stderr?.trim();
+    if (message === "Config path not found: plugins.load.paths" ||
+        message?.startsWith("Config path is valid but unset: plugins.load.paths.")) {
+      return [];
+    }
+    fail("OpenClaw could not read plugins.load.paths; no load paths were changed.");
+  }
+  if (!Array.isArray(parsed) || parsed.some((value) => typeof value !== "string")) {
+    fail("OpenClaw returned invalid plugin load paths; no load paths were changed.");
+  }
+  const removed = parsed.filter(isZeroAPIPluginPath);
+  if (removed.length > 0) {
+    runCommand("openclaw", [
+      "config", "set", "plugins.load.paths",
+      JSON.stringify(parsed.filter((value) => !isZeroAPIPluginPath(value))), "--strict-json",
+    ], { env });
+  }
   return removed;
 }
 
@@ -229,53 +243,6 @@ function isZeroAPIPluginPath(value) {
   if (typeof value !== "string") return false;
   const normalized = value.replaceAll("\\", "/").toLowerCase();
   return normalized.includes("/zeroapi") && normalized.endsWith("/plugin");
-}
-
-function syncOpenClawPluginRegistry({ openclawDir, pluginPath, installPath, version }) {
-  const registryPath = join(openclawDir, "plugins", "installs.json");
-  if (!existsSync(registryPath)) {
-    return { updated: false, reason: "registry_missing" };
-  }
-
-  const registry = readJson(registryPath);
-  registry.installRecords =
-    registry.installRecords && typeof registry.installRecords === "object" ? registry.installRecords : {};
-
-  const existingRecord = registry.installRecords["zeroapi-router"];
-  const source = existingRecord?.source === "clawhub" ? "clawhub" : "path";
-  const nextRecord = { ...(existingRecord ?? {}) };
-  delete nextRecord.integrity;
-  delete nextRecord.resolvedAt;
-  delete nextRecord.installedAt;
-  delete nextRecord.artifactKind;
-  delete nextRecord.artifactFormat;
-  delete nextRecord.archiveSha256;
-  delete nextRecord.npmIntegrity;
-  delete nextRecord.npmShasum;
-  registry.installRecords["zeroapi-router"] = {
-    ...nextRecord,
-    source,
-    installPath,
-    version,
-    updatedAt: new Date().toISOString(),
-    ...(source === "clawhub"
-      ? { spec: `clawhub:zeroapi@${version}`, clawhubPackage: "zeroapi" }
-      : { spec: pluginPath, sourcePath: pluginPath }),
-  };
-
-  if (Array.isArray(registry.plugins)) {
-    for (const plugin of registry.plugins) {
-      if (plugin?.pluginId !== "zeroapi-router") continue;
-      plugin.rootDir = installPath;
-      plugin.source = join(installPath, "index.js");
-      plugin.manifestPath = join(installPath, "openclaw.plugin.json");
-      plugin.packageName = "zeroapi";
-      plugin.packageVersion = version;
-    }
-  }
-
-  writeJsonAtomic(registryPath, registry);
-  return { updated: true, reason: source };
 }
 
 export function ensureManagedUpdateWrapper({ wrapperPath, nodePath, repoDir, openclawDir }) {
@@ -323,12 +290,43 @@ export function commandExists(command) {
   return result.status === 0;
 }
 
+const COMMAND_ENV_KEYS = [
+  "PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LC_ALL", "LC_CTYPE",
+  "TMPDIR", "TMP", "TEMP", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME",
+  "XDG_STATE_HOME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "NO_COLOR",
+];
+
+// Git's HTTP transport and SSH agent need the caller's network configuration.
+// Keep it separate from OpenClaw and other child processes, and let Git apply
+// its own lowercase/uppercase proxy precedence and certificate verification.
+const GIT_NETWORK_ENV_KEYS = [
+  "http_proxy", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY",
+  "no_proxy", "NO_PROXY", "GIT_HTTP_PROXY_AUTHMETHOD",
+  "GIT_SSL_CAINFO", "GIT_SSL_CAPATH", "GIT_PROXY_SSL_CAINFO", "SSH_AUTH_SOCK",
+];
+
+export function commandEnvironment(overrides = {}) {
+  const env = {};
+  for (const name of COMMAND_ENV_KEYS) {
+    if (process.env[name] !== undefined) env[name] = process.env[name];
+  }
+  return { ...env, ...overrides };
+}
+
+function gitCommandEnvironment(overrides = {}) {
+  const env = {};
+  for (const name of GIT_NETWORK_ENV_KEYS) {
+    if (process.env[name] !== undefined) env[name] = process.env[name];
+  }
+  return commandEnvironment({ ...env, ...overrides });
+}
+
 export function runCommand(command, args, options = {}) {
   const result = spawnSync(command, args, {
     encoding: "utf-8",
     stdio: options.stdio ?? "pipe",
     cwd: options.cwd,
-    env: options.env ? { ...process.env, ...options.env } : process.env,
+    env: command === "git" ? gitCommandEnvironment(options.env) : commandEnvironment(options.env),
   });
   if (options.allowFailure) {
     return result;
@@ -358,57 +356,23 @@ export function enableManagedUpdateTimer() {
   return { enabled: true, reason: null };
 }
 
-export function installOrUpdatePlugin(pluginPath, openclawDir) {
-  const configPath = join(openclawDir, "openclaw.json");
-  if (!existsSync(configPath)) {
-    fail(`openclaw.json not found at ${configPath}`);
+export function installOrUpdatePlugin(pluginPath, openclawDir, { interactive = false } = {}) {
+  if (!existsSync(join(openclawDir, "openclaw.json"))) {
+    fail("The selected OpenClaw state directory has no openclaw.json.");
   }
-  const installPath = join(openclawDir, "extensions", "zeroapi-router");
-  const version = loadPluginDirectoryVersion(pluginPath);
-  copyRepoSnapshot(pluginPath, installPath);
-  const config = readJson(configPath);
-  config.plugins = config.plugins && typeof config.plugins === "object" ? config.plugins : {};
-  config.plugins.entries =
-    config.plugins.entries && typeof config.plugins.entries === "object" ? config.plugins.entries : {};
-  config.plugins.installs =
-    config.plugins.installs && typeof config.plugins.installs === "object" ? config.plugins.installs : {};
-  const existingPluginIds = Object.keys(config.plugins.entries);
-  const loadPaths = Array.isArray(config.plugins.load?.paths) ? config.plugins.load.paths : [];
-  const nonZeroAPILoadPaths = loadPaths.filter((value) => typeof value === "string" && !isZeroAPIPluginPath(value));
-  const existingEntry = config.plugins.entries["zeroapi-router"];
-  const entry = existingEntry && typeof existingEntry === "object" && !Array.isArray(existingEntry)
-    ? { ...existingEntry }
-    : {};
-  const existingHooks = entry.hooks && typeof entry.hooks === "object" && !Array.isArray(entry.hooks)
-    ? entry.hooks
-    : {};
-  config.plugins.entries["zeroapi-router"] = {
-    ...entry,
-    enabled: true,
-    hooks: {
-      ...existingHooks,
-      allowConversationAccess: true,
-    },
-  };
-  config.plugins.installs["zeroapi-router"] = {
-    source: "path",
-    sourcePath: pluginPath,
-    installPath,
-    version,
-    installedAt: new Date().toISOString(),
-  };
-  if (Array.isArray(config.plugins.allow)) {
-    if (!config.plugins.allow.includes("zeroapi-router")) {
-      config.plugins.allow.push("zeroapi-router");
-    }
-  } else if (
-    existingPluginIds.every((pluginId) => pluginId === "zeroapi-router") &&
-    nonZeroAPILoadPaths.length === 0
-  ) {
-    config.plugins.allow = ["zeroapi-router"];
-  }
-  writeJsonAtomic(configPath, config);
-  syncOpenClawPluginRegistry({ openclawDir, pluginPath, installPath, version });
+  loadPluginDirectoryVersion(pluginPath);
+  const env = openClawCommandEnvironment(openclawDir);
+  const commandOptions = { env, ...(interactive ? { stdio: "inherit" } : {}) };
+  // OpenClaw owns package replacement, capability consent, config validation,
+  // and the JSON/SQLite install index. --force confirms this reviewed local
+  // source and replaces an existing install; it does not bypass host policy.
+  // Manual installation preserves native prompts. Background updates keep
+  // piped stdio and stop if a new capability needs explicit consent.
+  runCommand("openclaw", ["plugins", "install", pluginPath, "--force"], commandOptions);
+  runCommand("openclaw", [
+    "config", "set", "plugins.entries.zeroapi-router.hooks.allowConversationAccess", "true", "--strict-json",
+  ], commandOptions);
+  runCommand("openclaw", ["plugins", "enable", "zeroapi-router"], commandOptions);
 }
 
 export function restartGatewayIfPossible() {

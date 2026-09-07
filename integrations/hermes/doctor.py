@@ -20,7 +20,6 @@ import importlib
 import importlib.util
 import inspect
 import os
-import sys
 from pathlib import Path
 
 try:
@@ -43,6 +42,21 @@ except ModuleNotFoundError:  # Package import during repository-level test runs.
         _manifest_path,
         default_plugin_discovery_roots,
         discover_plugin_manifests,
+    )
+
+try:
+    from doctor_modular import (
+        materialize_split_run_agent,
+        materialize_split_turn_context,
+        split_delegate_contracts,
+        split_runtime_helpers_contract,
+    )
+except ModuleNotFoundError:  # Package import during repository-level test runs.
+    from .doctor_modular import (
+        materialize_split_run_agent,
+        materialize_split_turn_context,
+        split_delegate_contracts,
+        split_runtime_helpers_contract,
     )
 
 
@@ -960,6 +974,184 @@ def _run_agent_discovers_before_pre_model_route(run_agent_source: str) -> bool:
     return bool(discovery_lines and invoke_lines and min(discovery_lines) < min(invoke_lines))
 
 
+def _literal_keyword(call: ast.Call, name: str, expected: object) -> bool:
+    return any(
+        keyword.arg == name
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value is expected
+        for keyword in call.keywords
+    )
+
+
+def _turn_scoped_route_call_contract(run_agent_source: str) -> bool:
+    tree = _parse_source(run_agent_source)
+    method = _class_method(tree, "AIAgent", "_apply_pre_model_route_hook")
+    calls = _calls_on_receiver(method, "switch_model", "self")
+    if len(calls) != 1:
+        return False
+    call = calls[0]
+    return bool(
+        _literal_keyword(call, "persist_primary", False)
+        and _literal_keyword(call, "prune_fallback_chain", False)
+    )
+
+
+def _switch_model_forwarder_contract(run_agent_source: str) -> bool:
+    tree = _parse_source(run_agent_source)
+    method = _class_method(tree, "AIAgent", "switch_model")
+    if method is None:
+        return False
+    kwonly = {
+        argument.arg: default
+        for argument, default in zip(
+            method.args.kwonlyargs,
+            method.args.kw_defaults,
+        )
+    }
+    if not all(
+        name in kwonly
+        and isinstance(kwonly[name], ast.Constant)
+        and kwonly[name].value is True
+        for name in ("persist_primary", "prune_fallback_chain")
+    ):
+        return False
+    calls = _calls_named(method, "switch_model")
+    forwarded = [
+        call
+        for call in calls
+        if any(
+            keyword.arg == "persist_primary"
+            and isinstance(keyword.value, ast.Name)
+            and keyword.value.id == "persist_primary"
+            for keyword in call.keywords
+        )
+        and any(
+            keyword.arg == "prune_fallback_chain"
+            and isinstance(keyword.value, ast.Name)
+            and keyword.value.id == "prune_fallback_chain"
+            for keyword in call.keywords
+        )
+    ]
+    return len(forwarded) == 1
+
+
+def _assigns_agent_attribute(
+    node: ast.AST,
+    attribute: str,
+    *,
+    constant: object | None = None,
+) -> bool:
+    for candidate in ast.walk(node):
+        if not isinstance(candidate, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = (
+            candidate.targets
+            if isinstance(candidate, ast.Assign)
+            else [candidate.target]
+        )
+        if not any(
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "agent"
+            and target.attr == attribute
+            for target in targets
+        ):
+            continue
+        value = candidate.value
+        if constant is None:
+            return True
+        if isinstance(value, ast.Constant) and value.value is constant:
+            return True
+    return False
+
+
+def _uses_name(node: ast.AST, name: str) -> bool:
+    return any(
+        isinstance(candidate, ast.Name) and candidate.id == name
+        for candidate in ast.walk(node)
+    )
+
+
+def _runtime_helpers_turn_scope_contract(source: str | None) -> bool:
+    tree = _parse_source(source)
+    switch = _module_function(tree, "switch_model")
+    restore = _module_function(tree, "restore_primary_runtime")
+    recover = _module_function(tree, "try_recover_primary_transport")
+    if switch is None or restore is None or recover is None:
+        return False
+
+    kwonly = {
+        argument.arg: default
+        for argument, default in zip(
+            switch.args.kwonlyargs,
+            switch.args.kw_defaults,
+        )
+    }
+    if not all(
+        name in kwonly
+        and isinstance(kwonly[name], ast.Constant)
+        and kwonly[name].value is True
+        for name in ("persist_primary", "prune_fallback_chain")
+    ):
+        return False
+
+    transient_branches = [
+        node
+        for node in ast.walk(switch)
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.UnaryOp)
+        and isinstance(node.test.op, ast.Not)
+        and isinstance(node.test.operand, ast.Name)
+        and node.test.operand.id == "persist_primary"
+        and _assigns_agent_attribute(node, "_transient_route_activated", constant=True)
+        and _assigns_agent_attribute(node, "_fallback_activated", constant=False)
+        and any(isinstance(candidate, ast.Return) for candidate in ast.walk(node))
+    ]
+    if len(transient_branches) != 1:
+        return False
+    branch = transient_branches[0]
+    billing_calls = _calls_named(switch, "update_session_billing_route")
+    if billing_calls and branch.lineno >= min(call.lineno for call in billing_calls):
+        return False
+    if not _assigns_agent_attribute(
+        branch,
+        "_transient_primary_config_context_length",
+    ):
+        return False
+
+    prune_guards = [
+        node
+        for node in ast.walk(switch)
+        if isinstance(node, ast.If)
+        and _uses_name(node.test, "prune_fallback_chain")
+        and _uses_name(node, "fallback_chain")
+    ]
+    if not prune_guards:
+        return False
+
+    restore_source = ast.get_source_segment(source or "", restore) or ""
+    required_restore_markers = (
+        'getattr(agent, "_transient_route_activated", False)',
+        "if not agent._fallback_activated and not transient_route_activated:",
+        "not transient_route_activated",
+        'if transient_route_activated:',
+        '"_transient_primary_config_context_length"',
+        "agent._transient_route_activated = False",
+        "agent._transient_primary_config_context_length = None",
+    )
+    if not all(marker in restore_source for marker in required_restore_markers):
+        return False
+
+    recover_source = ast.get_source_segment(source or "", recover) or ""
+    if not (
+        'getattr(\n        agent, "_transient_route_activated", False\n    )'
+        in recover_source
+        and "return False" in recover_source
+    ):
+        return False
+    return True
+
+
 def _delegate_tool_normalizes_runtime_tuple(delegate_tool_source: str) -> bool:
     tree = _parse_source(delegate_tool_source)
     normalizer = _module_function(tree, "_normalize_child_runtime_tuple")
@@ -1141,9 +1333,16 @@ def analyze_runtime_sources(
     valid_hooks: set[str],
     plugins_source: str | None,
     run_agent_source: str | None,
+    runtime_helpers_source: str | None = None,
     conversation_loop_source: str | None = None,
     turn_context_source: str | None = None,
     delegate_tool_source: str | None = None,
+    pre_model_route_source: str | None = None,
+    model_routing_source: str | None = None,
+    delegate_config_source: str | None = None,
+    turn_facade_source: str | None = None,
+    lazy_forward_source: str | None = None,
+    require_turn_scoped_routing: bool = False,
 ) -> list[Check]:
     checks: list[Check] = []
 
@@ -1158,7 +1357,42 @@ def analyze_runtime_sources(
         checks.append(Check("FAIL", "Could not read run_agent.py source."))
         return checks
 
-    proof = _runtime_proof(run_agent_source, conversation_loop_source, turn_context_source)
+    materialized = materialize_split_run_agent(
+        run_agent_source,
+        pre_model_route_source,
+        turn_facade_source,
+        lazy_forward_source,
+        model_routing_source=model_routing_source,
+    )
+    if materialized.detected and not materialized.valid:
+        checks.append(
+            Check(
+                "FAIL",
+                f"Hermes split runtime is not structurally compatible: {materialized.message}",
+            )
+        )
+        return checks
+    contract_run_agent_source = materialized.source
+
+    materialized_turn = materialize_split_turn_context(
+        turn_context_source,
+        frozen_primary_route=(materialized.route_module == "agent.model_routing"),
+    )
+    if materialized_turn.detected and not materialized_turn.valid:
+        checks.append(
+            Check(
+                "FAIL",
+                f"Hermes split turn context is not structurally compatible: {materialized_turn.message}",
+            )
+        )
+        return checks
+    contract_turn_context_source = materialized_turn.source or turn_context_source
+
+    proof = _runtime_proof(
+        contract_run_agent_source,
+        conversation_loop_source,
+        contract_turn_context_source,
+    )
     if not proof.ok:
         checks.append(
             Check(
@@ -1168,9 +1402,16 @@ def analyze_runtime_sources(
         )
         return checks
     checks.append(Check("OK", f"Detected {proof.layout} owner at {proof.owner}."))
+    if materialized.detected:
+        checks.append(
+            Check(
+                "OK",
+                f"Detected exact split AIAgent forwarders and {materialized.route_module} owner.",
+            )
+        )
 
     invoke_auto_discovers = bool(plugins_source and _invoke_hook_discovers_plugins(plugins_source))
-    run_agent_discovers = _run_agent_discovers_before_pre_model_route(run_agent_source)
+    run_agent_discovers = _run_agent_discovers_before_pre_model_route(contract_run_agent_source)
     if not (invoke_auto_discovers or run_agent_discovers):
         checks.append(
             Check(
@@ -1180,6 +1421,43 @@ def analyze_runtime_sources(
         )
     else:
         checks.append(Check("OK", "pre_model_route discovery path is present."))
+
+    if require_turn_scoped_routing:
+        if not _turn_scoped_route_call_contract(contract_run_agent_source):
+            checks.append(
+                Check(
+                    "FAIL",
+                    "pre_model_route is not proven turn-scoped; it must call switch_model exactly once with persist_primary=False and prune_fallback_chain=False.",
+                )
+            )
+        else:
+            checks.append(Check("OK", "pre_model_route model selection is turn-scoped."))
+
+        if not _switch_model_forwarder_contract(contract_run_agent_source):
+            checks.append(
+                Check(
+                    "FAIL",
+                    "AIAgent.switch_model does not explicitly forward the turn-scope controls.",
+                )
+            )
+        else:
+            checks.append(Check("OK", "AIAgent forwards turn-scope controls."))
+
+        runtime_helpers_ok = _runtime_helpers_turn_scope_contract(
+            runtime_helpers_source
+        ) or (
+            materialized.detected
+            and split_runtime_helpers_contract(runtime_helpers_source)
+        )
+        if not runtime_helpers_ok:
+            checks.append(
+                Check(
+                    "FAIL",
+                    "agent_runtime_helpers does not prove transient restore, context restoration, transport isolation, and fallback-chain preservation.",
+                )
+            )
+        else:
+            checks.append(Check("OK", "Hermes host runtime preserves and restores transient routes safely."))
 
     if not proof.prompt_refresh:
         checks.append(
@@ -1201,9 +1479,28 @@ def analyze_runtime_sources(
     elif proof.layout == "v019-turn-context":
         checks.append(Check("OK", "Auxiliary runtime is synchronized before the v0.19 prompt build."))
 
+    split_delegate_runtime, split_delegate_pool = split_delegate_contracts(
+        delegate_tool_source,
+        delegate_config_source,
+    )
+    delegate_runtime_ok = bool(
+        delegate_tool_source
+        and (
+            _delegate_tool_normalizes_runtime_tuple(delegate_tool_source)
+            or split_delegate_runtime
+        )
+    )
+    delegate_pool_ok = bool(
+        delegate_tool_source
+        and (
+            _delegate_pool_preserves_custom_endpoint_identity(delegate_tool_source)
+            or split_delegate_pool
+        )
+    )
+
     if not delegate_tool_source:
         checks.append(Check("FAIL", "Could not read tools.delegate_tool source."))
-    elif not _delegate_tool_normalizes_runtime_tuple(delegate_tool_source):
+    elif not delegate_runtime_ok:
         checks.append(
             Check(
                 "FAIL",
@@ -1213,9 +1510,7 @@ def analyze_runtime_sources(
     else:
         checks.append(Check("OK", "delegate_task child runtime tuple normalization is present."))
 
-    if delegate_tool_source and not _delegate_pool_preserves_custom_endpoint_identity(
-        delegate_tool_source
-    ):
+    if delegate_tool_source and not delegate_pool_ok:
         checks.append(
             Check(
                 "FAIL",
@@ -1268,6 +1563,17 @@ def main(argv: list[str] | None = None) -> int:
         plugins_path, plugins_source = _source_for_module("hermes_cli.plugins", search_root=hermes_root)
         hooks = _valid_hooks_from_source(plugins_source)
         run_agent_path, run_agent_source = _source_for_module("run_agent", search_root=hermes_root)
+        runtime_helpers_path, runtime_helpers_source = _source_for_module(
+            "agent.agent_runtime_helpers",
+            search_root=hermes_root,
+        )
+        pre_model_route_path, pre_model_route_source = _source_for_module(
+            "agent.pre_model_route",
+            search_root=hermes_root,
+        )
+        model_routing_path, model_routing_source = _source_for_module(
+            "agent.model_routing", search_root=hermes_root,
+        )
         conversation_loop_path, conversation_loop_source = _conversation_loop_source(
             search_root=hermes_root,
             run_agent_path=run_agent_path,
@@ -1276,7 +1582,19 @@ def main(argv: list[str] | None = None) -> int:
             search_root=hermes_root,
             run_agent_path=run_agent_path,
         )
+        turn_facade_path, turn_facade_source = _source_for_module(
+            "agent.turn_facade",
+            search_root=hermes_root,
+        )
+        lazy_forward_path, lazy_forward_source = _source_for_module(
+            "agent.lazy_forward",
+            search_root=hermes_root,
+        )
         delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool", search_root=hermes_root)
+        delegate_config_path, delegate_config_source = _source_for_module(
+            "tools.delegate_tool_config",
+            search_root=hermes_root,
+        )
     else:
         try:
             plugins = importlib.import_module("hermes_cli.plugins")
@@ -1295,16 +1613,35 @@ def main(argv: list[str] | None = None) -> int:
             plugins_source = None
 
         run_agent_path, run_agent_source = _source_for_module("run_agent")
+        runtime_helpers_path, runtime_helpers_source = _source_for_module(
+            "agent.agent_runtime_helpers"
+        )
+        pre_model_route_path, pre_model_route_source = _source_for_module(
+            "agent.pre_model_route"
+        )
+        model_routing_path, model_routing_source = _source_for_module("agent.model_routing")
         conversation_loop_path, conversation_loop_source = _conversation_loop_source(run_agent_path=run_agent_path)
         turn_context_path, turn_context_source = _turn_context_source(run_agent_path=run_agent_path)
+        turn_facade_path, turn_facade_source = _source_for_module("agent.turn_facade")
+        lazy_forward_path, lazy_forward_source = _source_for_module("agent.lazy_forward")
         delegate_tool_path, delegate_tool_source = _source_for_module("tools.delegate_tool")
+        delegate_config_path, delegate_config_source = _source_for_module(
+            "tools.delegate_tool_config"
+        )
     checks = analyze_runtime_sources(
         valid_hooks=hooks,
         plugins_source=plugins_source,
         run_agent_source=run_agent_source,
+        runtime_helpers_source=runtime_helpers_source,
         conversation_loop_source=conversation_loop_source,
         turn_context_source=turn_context_source,
         delegate_tool_source=delegate_tool_source,
+        pre_model_route_source=pre_model_route_source,
+        model_routing_source=model_routing_source,
+        delegate_config_source=delegate_config_source,
+        turn_facade_source=turn_facade_source,
+        lazy_forward_source=lazy_forward_source,
+        require_turn_scoped_routing=True,
     )
     plugin_root = (
         args.plugin_root.expanduser().resolve()
@@ -1337,12 +1674,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INFO hermes_cli.plugins={plugins_path}")
     if run_agent_path:
         print(f"INFO run_agent={run_agent_path}")
+    if runtime_helpers_path:
+        print(f"INFO agent.agent_runtime_helpers={runtime_helpers_path}")
+    if pre_model_route_path and pre_model_route_source:
+        print(f"INFO agent.pre_model_route={pre_model_route_path}")
+    if model_routing_path and model_routing_source:
+        print(f"INFO agent.model_routing={model_routing_path}")
     if conversation_loop_path and conversation_loop_source:
         print(f"INFO agent.conversation_loop={conversation_loop_path}")
     if turn_context_path and turn_context_source:
         print(f"INFO agent.turn_context={turn_context_path}")
+    if turn_facade_path and turn_facade_source:
+        print(f"INFO agent.turn_facade={turn_facade_path}")
     if delegate_tool_path:
         print(f"INFO tools.delegate_tool={delegate_tool_path}")
+    if delegate_config_path and delegate_config_source:
+        print(f"INFO tools.delegate_tool_config={delegate_config_path}")
     print(f"INFO zeroapi.plugin={plugin_root}")
 
     failed = False

@@ -16,40 +16,51 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      AA_API_KEY: ${{ secrets.AA_API_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+
+      - name: Check AA configuration
+        id: aa
+        env:
+          AA_API_KEY: ${{ secrets.AA_API_KEY }}
+        run: |
+          if [ -n "$AA_API_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        if: ${{ env.AA_API_KEY != '' }}
+        if: steps.aa.outputs.configured == 'true'
         with:
           node-version: "22"
 
       - name: Skip when AA API key is not configured
-        if: ${{ env.AA_API_KEY == '' }}
+        if: steps.aa.outputs.configured != 'true'
         run: echo "AA_API_KEY secret is not configured. Skipping weekly benchmark refresh."
 
       - name: Refresh benchmarks snapshot
-        if: ${{ env.AA_API_KEY != '' }}
+        if: steps.aa.outputs.configured == 'true'
+        env:
+          AA_API_KEY: ${{ secrets.AA_API_KEY }}
         run: python3 scripts/refresh_benchmarks.py
 
       - name: Install example generator dependencies
-        if: ${{ env.AA_API_KEY != '' }}
+        if: steps.aa.outputs.configured == 'true'
         run: npm ci --ignore-scripts
 
       - name: Regenerate starter examples
-        if: ${{ env.AA_API_KEY != '' }}
+        if: steps.aa.outputs.configured == 'true'
         run: npm exec -- tsx scripts/refresh_examples.ts
 
       - name: Detect benchmark changes
-        if: ${{ env.AA_API_KEY != '' }}
+        if: steps.aa.outputs.configured == 'true'
         id: diff
         run: |
           if git diff --quiet -- benchmarks.json plugin/benchmarks.json examples/*.json; then
@@ -59,7 +70,7 @@ jobs:
           fi
 
       - name: Commit refreshed benchmarks
-        if: ${{ env.AA_API_KEY != '' && steps.diff.outputs.changed == 'true' }}
+        if: steps.aa.outputs.configured == 'true' && steps.diff.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

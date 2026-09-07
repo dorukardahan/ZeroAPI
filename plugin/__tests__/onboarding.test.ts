@@ -10,6 +10,8 @@ import {
 import { getSubscriptionWeightedCandidates } from "../router.js";
 
 type DirectBenchmarkRow = {
+  id: string;
+  slug: string;
   openclaw_provider: string;
   openclaw_model: string;
   speed_tps: number | null;
@@ -51,23 +53,23 @@ describe("buildStarterConfig", () => {
     });
 
     expect(config.routing_mode).toBe("balanced");
-    expect(config.default_model).toBe("zai/glm-5.2");
+    expect(config.default_model).toBe("zai/glm-5.3");
     expect(Object.keys(config.models)).toEqual([
       "openai/gpt-5.6-sol",
       "openai/gpt-5.6-terra",
       "openai/gpt-5.6-luna",
-      "zai/glm-5.2",
-      "zai/glm-5.1",
+      "zai/glm-5.3",
+      "zai/glm-5.3-flash",
     ]);
     expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
-    expect(config.routing_rules.orchestration.primary).toBe("zai/glm-5.2");
-    const glm52 = directZaiBenchmarkRow("glm-5.2");
-    const glm51 = directZaiBenchmarkRow("glm-5.1");
-    expect(config.models["zai/glm-5.2"]?.benchmarks.tau3_banking).toBe(
-      glm52.benchmarks.tau3_banking ?? undefined,
+    expect(config.routing_rules.orchestration.primary).toBe("openai/gpt-5.6-sol");
+    const glm53 = directZaiBenchmarkRow("glm-5.3");
+    const flash = directZaiBenchmarkRow("glm-5.3-flash");
+    expect(config.models["zai/glm-5.3"]?.benchmarks.tau3_banking).toBe(
+      glm53.benchmarks.tau3_banking ?? undefined,
     );
-    expect(config.models["zai/glm-5.1"]?.benchmarks.tau3_banking).toBe(
-      glm51.benchmarks.tau3_banking ?? undefined,
+    expect(config.models["zai/glm-5.3-flash"]?.benchmarks.tau3_banking).toBe(
+      flash.benchmarks.tau3_banking ?? undefined,
     );
     expect(getSubscriptionWeightedCandidates(
       "orchestration",
@@ -77,7 +79,7 @@ describe("buildStarterConfig", () => {
       config.subscription_inventory,
       undefined,
       config.routing_mode,
-    )[0]).toBe("zai/glm-5.2");
+    )[0]).toBe("openai/gpt-5.6-sol");
     for (const category of ["code", "research"] as const) {
       expect(getSubscriptionWeightedCandidates(
         category,
@@ -87,7 +89,7 @@ describe("buildStarterConfig", () => {
         config.subscription_inventory,
         undefined,
         config.routing_mode,
-      )[0]).toBe("zai/glm-5.2");
+      )[0]).toBe("zai/glm-5.3");
     }
     expect(config.subscription_profile?.global).toEqual({
       "openai-codex": { enabled: true, tierId: "plus" },
@@ -130,61 +132,105 @@ describe("buildStarterConfig", () => {
     expect(config.fast_ttft_max_seconds).toBe(8);
   });
 
-  it("uses the current OpenClaw Moonshot default for Kimi starter configs", () => {
-    const config = buildStarterConfig({
-      providers: [{ providerId: "moonshot", tierId: "moderato" }],
-    });
+  it("keeps Astra gated by the live account catalog and uses its exact xhigh AA row", () => {
+    const provider = { providerId: "openai-codex", tierId: "pro" };
+    expect(buildStarterConfig({ providers: [provider] }).models["openai/gpt-6-astra"]).toBeUndefined();
+    expect(buildStarterConfig({ providers: [{ ...provider, discoveredModels: ["openai/gpt-5.6-sol"] }] }).models["openai/gpt-6-astra"]).toBeUndefined();
 
-    expect(Object.keys(config.models)).toEqual(["moonshot/kimi-k2.7-code", "moonshot/kimi-k2.6"]);
-    expect(config.models["moonshot/kimi-k2.6"]?.context_window).toBe(262144);
-    expect(config.default_model).toBe("moonshot/kimi-k2.6");
-    expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
-    expect(config.routing_rules.default.fallbacks).toEqual(["moonshot/kimi-k2.7-code"]);
-    expect(config.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
-    expect(config.routing_rules.code.fallbacks).toEqual(["moonshot/kimi-k2.6"]);
+    const config = buildStarterConfig({
+      providers: [{ ...provider, discoveredModels: ["openai/gpt-6-astra"] }],
+    });
+    const row = directOpenAiBenchmarkRow("gpt-6-astra");
+    expect(row.id).toBe("1f541ef3-913f-4eb2-9d07-0e93c7a9a5e3");
+    expect(row.slug).toBe("gpt-6-astra-xhigh");
+    expect(config.models["openai/gpt-6-astra"]).toMatchObject({
+      context_window: 272000,
+      supports_vision: true,
+      speed_tps: row.speed_tps,
+    });
+    expect(config.models["openai/gpt-6-astra"].benchmarks.terminalbench).toBe(row.benchmarks.terminalbench ?? undefined);
+    expect(config.default_model).toBe("openai/gpt-6-astra");
+    // A stored policy is not fresh access evidence on a later onboarding run.
+    expect(buildStarterConfig(deriveStarterDefaults(config)).models["openai/gpt-6-astra"]).toBeUndefined();
   });
 
-  it("uses the Kimi general default for Moonshot inventory-only starters and reruns", () => {
+  it("requires Astra discovery for every selected inventory account", () => {
+    const accounts = [
+      { accountId: "work", providerId: "openai-codex", tierId: "pro", discoveredModels: ["openai/gpt-6-astra"] },
+      { accountId: "personal", providerId: "openai-codex", tierId: "plus" },
+    ];
+    const providers = [{ providerId: "openai-codex", tierId: "pro", discoveredModels: ["openai/gpt-6-astra"] }];
+    expect(buildStarterConfig({ providers, inventoryAccounts: accounts }).models["openai/gpt-6-astra"]).toBeUndefined();
+    const config = buildStarterConfig({
+      providers,
+      inventoryAccounts: accounts.map((account) => ({ ...account, discoveredModels: ["openai-codex/gpt-6-astra"] })),
+    });
+    expect(config.models["openai/gpt-6-astra"]).toBeDefined();
+    expect(config.subscription_inventory?.accounts.work).not.toHaveProperty("discoveredModels");
+  });
+
+  it("uses the Kimi membership model with the Moderato context limit", () => {
+    const config = buildStarterConfig({
+      providers: [{ providerId: "kimi", tierId: "moderato" }],
+    });
+
+    expect(Object.keys(config.models)).toEqual(["kimi/k3-256k"]);
+    expect(config.models["kimi/k3-256k"]).toMatchObject({ context_window: 262144, supports_vision: true, speed_tps: null, ttft_seconds: null });
+    expect(config.default_model).toBe("kimi/k3-256k");
+    expect(config.routing_rules.default.primary).toBe("kimi/k3-256k");
+    expect(config.routing_rules.code.primary).toBe("kimi/k3-256k");
+    expect(config.models["kimi/k3"]).toBeUndefined();
+    expect(config.models["kimi/kimi-for-coding-highspeed"]).toBeUndefined();
+  });
+
+  it("preserves Kimi membership inventory without converting Moonshot auth profiles", () => {
     const config = buildStarterConfig({
       providers: [],
       inventoryAccounts: [{
-        accountId: "moonshot-main",
-        providerId: "moonshot",
+        accountId: "kimi-main",
+        providerId: "kimi-coding",
         tierId: "moderato",
-        authProfile: "moonshot:main",
+        authProfile: "kimi:main",
         usagePriority: 2,
         intendedUse: ["code", "default"],
       }],
     });
 
     expect(config.subscription_profile).toBeUndefined();
-    expect(config.subscription_inventory?.accounts["moonshot-main"]).toMatchObject({
-      provider: "moonshot",
+    expect(config.subscription_inventory?.accounts["kimi-main"]).toMatchObject({
+      provider: "kimi",
       tierId: "moderato",
-      authProfile: "moonshot:main",
+      authProfile: "kimi:main",
       usagePriority: 2,
       intendedUse: ["code", "default"],
     });
-    expect(config.default_model).toBe("moonshot/kimi-k2.6");
-    expect(config.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
-    expect(config.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+    expect(config.default_model).toBe("kimi/k3-256k");
+    expect(config.routing_rules.default.primary).toBe("kimi/k3-256k");
+    expect(config.routing_rules.code.primary).toBe("kimi/k3-256k");
 
     const regenerated = buildStarterConfig(deriveStarterDefaults(config));
-    expect(regenerated.default_model).toBe("moonshot/kimi-k2.6");
-    expect(regenerated.routing_rules.default.primary).toBe("moonshot/kimi-k2.6");
-    expect(regenerated.routing_rules.code.primary).toBe("moonshot/kimi-k2.7-code");
+    expect(regenerated.default_model).toBe("kimi/k3-256k");
+    expect(regenerated.routing_rules.default.primary).toBe("kimi/k3-256k");
+    expect(regenerated.routing_rules.code.primary).toBe("kimi/k3-256k");
     expect(regenerated.subscription_inventory).toEqual(config.subscription_inventory);
   });
 
-  it("does not force Kimi over an unrelated subscription-weighted default winner", () => {
+  it("rejects usage-billed API providers instead of inheriting membership tiers", () => {
+    for (const providerId of ["moonshot", "xai-api", "qwen"]) {
+      expect(() => buildStarterConfig({ providers: [{ providerId, tierId: "moderato" }] })).toThrow("not eligible for subscription starter routing");
+    }
+    expect(() => buildStarterConfig({ providers: [{ providerId: "kimi", tierId: "free" }] })).toThrow("Tier free is not available for kimi starter routing");
+  });
+
+  it("ranks the separate Kimi membership pool using subscription weights", () => {
     const config = buildStarterConfig({
       providers: [
         { providerId: "openai-codex", tierId: "plus" },
-        { providerId: "moonshot", tierId: "moderato" },
+        { providerId: "kimi", tierId: "moderato" },
       ],
     });
 
-    expect(config.default_model).toBe("openai/gpt-5.6-sol");
+    expect(config.default_model).toBe("kimi/k3-256k");
     expect(config.routing_rules.default.primary).toBe("openai/gpt-5.6-sol");
     expect(config.routing_rules.code.primary).toBe("openai/gpt-5.6-sol");
     expect(new Set(config.routing_rules.default.fallbacks).size).toBe(config.routing_rules.default.fallbacks.length);
@@ -199,12 +245,14 @@ describe("buildStarterConfig", () => {
     expect(config.models["minimax-portal/MiniMax-M2.7"]?.supports_vision).toBe(false);
   });
 
-  it("does not add Z.AI VLM models to Coding Plan starter configs", () => {
+  it("includes the verified GLM-5.3 Flash Coding Plan vision route", () => {
     const config = buildStarterConfig({
       providers: [{ providerId: "zai", tierId: "max" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["zai/glm-5.2", "zai/glm-5.1"]);
+    expect(Object.keys(config.models)).toEqual(["zai/glm-5.3", "zai/glm-5.3-flash"]);
+    expect(config.models["zai/glm-5.3"]).toMatchObject({ context_window: 1048576, supports_vision: false });
+    expect(config.models["zai/glm-5.3-flash"]).toMatchObject({ context_window: 1048576, supports_vision: true });
     expect(Object.keys(config.models).some((model) => model.includes("glm-5v"))).toBe(false);
   });
 
@@ -213,7 +261,7 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "xai-oauth", tierId: "supergrok" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"]);
+    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.6", "xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"]);
     expect(config.models["xai-oauth/grok-4.3"]?.supports_vision).toBe(true);
     expect(config.models["xai-oauth/grok-build-0.1"]?.supports_vision).toBe(true);
     expect(config.models["xai-oauth/grok-4.3"]?.context_window).toBe(1000000);
@@ -227,7 +275,13 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "xai", tierId: "supergrok" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"]);
+    expect(Object.keys(config.models)).toEqual(["xai/grok-4.6", "xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"]);
+    const grok46 = DIRECT_BENCHMARK_ROWS.find((row) => row.id === "c8adc5cf-fd5a-407b-af51-dc3bede3e49c")!;
+    const grok45 = DIRECT_BENCHMARK_ROWS.find((row) => row.id === "794f69b5-cede-482b-b1cc-d769478497cd")!;
+    expect(grok46.slug).toBe("grok-4-6");
+    expect(grok45.slug).toBe("grok-4-5");
+    expect(config.models["xai/grok-4.6"].benchmarks.terminalbench).toBe(grok46.benchmarks.terminalbench ?? undefined);
+    expect(config.models["xai/grok-4.5"].speed_tps).toBe(grok45.speed_tps);
     expect(config.models["xai/grok-4.3"]?.supports_vision).toBe(true);
     expect(config.models["xai/grok-build-0.1"]?.supports_vision).toBe(true);
     expect(config.models["xai/grok-4.3"]?.context_window).toBe(1000000);
@@ -270,8 +324,8 @@ describe("buildStarterConfig", () => {
       authProfile: "openai:work",
     });
     expect(Object.keys(config.models)).toEqual([
-      "zai/glm-5.2",
-      "zai/glm-5.1",
+      "zai/glm-5.3",
+      "zai/glm-5.3-flash",
       "openai/gpt-5.6-sol",
       "openai/gpt-5.6-terra",
       "openai/gpt-5.6-luna",
@@ -304,17 +358,18 @@ describe("buildStarterConfig", () => {
 });
 
 describe("starter onboarding helpers", () => {
-  it("uses the canonical Qwen Portal model while legacy provider aliases resolve", () => {
-    const config = buildStarterConfig({ providers: [{ providerId: "qwen-portal", tierId: "free" }] });
-    expect(Object.keys(config.models)).toEqual(["qwen-oauth/qwen3.5-plus"]);
-    expect(Object.keys(config.models).some((model) => model.includes("qwen3.7"))).toBe(false);
+  it("rejects fresh Qwen Portal starters even when a legacy alias is selected directly", () => {
+    for (const providerId of ["qwen-portal", "qwen-oauth", "qwen-cli"]) {
+      expect(() => buildStarterConfig({ providers: [{ providerId, tierId: "free" }] })).toThrow("not eligible for subscription starter routing on current OpenClaw");
+    }
+    expect(getStarterAuthCommands(["qwen-oauth", "qwen-portal"])).toEqual([]);
   });
   it("returns auth commands in provider order", () => {
-    expect(getStarterAuthCommands(["openai-codex", "zai", "minimax-portal", "qwen-oauth", "xai", "xai-oauth"])).toEqual([
+    expect(getStarterAuthCommands(["openai-codex", "zai", "kimi", "minimax-portal", "qwen-oauth", "xai", "xai-oauth"])).toEqual([
       "openclaw models auth login --provider openai",
       "openclaw onboard --auth-choice zai-coding-global",
+      "openclaw onboard --auth-choice kimi-code-api-key",
       "openclaw onboard --auth-choice minimax-global-oauth",
-      "openclaw onboard --auth-choice qwen-oauth",
       "openclaw models auth login --provider xai --method oauth",
       "hermes auth add xai-oauth",
     ]);
@@ -346,15 +401,15 @@ describe("starter onboarding helpers", () => {
     });
 
     expect(summarizeStarterConfig(config)).toEqual({
-      defaultModel: "zai/glm-5.2",
+      defaultModel: "zai/glm-5.3",
       inventoryAccountCount: 1,
       modifier: "research-aware",
       providerLabels: ["OpenAI", "Z AI (GLM)"],
     });
   });
 
-  it("canonicalizes legacy Qwen Portal defaults so a rerun preserves the provider", () => {
-    const legacy = buildStarterConfig({ providers: [{ providerId: "qwen-oauth", tierId: "free" }] });
+  it("recognizes legacy Qwen defaults without silently migrating them to Qwen Cloud", () => {
+    const legacy = buildStarterConfig({ providers: [{ providerId: "zai", tierId: "max" }] });
     legacy.subscription_catalog_version = "1.0.0";
     legacy.subscription_profile = {
       version: "1.0.0",
@@ -368,9 +423,8 @@ describe("starter onboarding helpers", () => {
     const defaults = deriveStarterDefaults(legacy);
     expect(defaults.providers).toEqual([{ providerId: "qwen-oauth", tierId: "free" }]);
     expect(defaults.inventoryAccounts[0]?.providerId).toBe("qwen-oauth");
-    const regenerated = buildStarterConfig(defaults);
-    expect(regenerated.subscription_inventory?.accounts.portal.provider).toBe("qwen-oauth");
-    expect(Object.keys(regenerated.models)).toEqual(["qwen-oauth/qwen3.5-plus"]);
+    expect(() => buildStarterConfig(defaults)).toThrow("not eligible for subscription starter routing on current OpenClaw");
+    expect(legacy.subscription_inventory.accounts.portal.provider).toBe("qwen-cli");
   });
 
   it("derives rerun defaults from current config including inventory providers", () => {
