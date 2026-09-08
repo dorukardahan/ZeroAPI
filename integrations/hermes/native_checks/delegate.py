@@ -15,6 +15,34 @@ def _normalizer():
     return normalizer
 
 
+def test_release_child_fallback_policy_survives_runtime_normalization():
+    import pytest
+    if not hasattr(delegate_tool, "_resolve_child_fallback_chain"):
+        pytest.skip("older host predates child-owned fallback configuration")
+    parent_chain = [{"provider": "nous", "model": "parent-fallback"}]
+    child_chain = [{"provider": "custom", "model": "child-fallback",
+                    "base_url": "https://child.invalid/v1"}]
+    parent = SimpleNamespace(model="primary", provider="custom",
+                             base_url="https://primary.invalid/v1",
+                             api_mode="chat_completions", _fallback_chain=parent_chain)
+
+    def resolve(model=None, routing_cfg=None, delegation_cfg=None):
+        return delegate_tool._resolve_child_runtime(
+            parent, delegation_cfg or {}, "synthetic-key", model=model,
+            override_provider=None, override_base_url=None, override_api_key=None,
+            override_api_mode=None, override_acp_command=None, override_acp_args=None,
+            routing_cfg=routing_cfg,
+        )["fallback_model"]
+
+    assert resolve() == parent_chain
+    assert resolve(model="pinned-child") is None
+    assert resolve(routing_cfg={"fallback_providers": []}) is None
+    assert resolve(model="pinned-child", routing_cfg={"fallback_providers": child_chain}) == child_chain
+    # The selected routing owner wins over an unrelated delegation config block.
+    assert resolve(model="pinned-child", routing_cfg={},
+                   delegation_cfg={"fallback_providers": child_chain}) is None
+
+
 def test_inferred_child_provider_repairs_the_full_runtime_tuple(monkeypatch):
     monkeypatch.setattr(
         "hermes_cli.models.detect_provider_for_model",

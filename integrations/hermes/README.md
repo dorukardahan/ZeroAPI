@@ -10,6 +10,16 @@ provider normalization, base URLs, API modes, and model switching.
 
 ## Requirements
 
+Official Hermes `v2026.9.7` (`2237be355906fbe6065ce1815711eee52b2d646e`)
+still needs the optional ZeroAPI runtime patch: it does not provide a native
+`pre_model_route` turn path. ZeroAPI 3.11.2 accepts its split runtime while
+preserving the release's child-owned fallback resolver. A pinned child never
+inherits the parent's fallback chain; explicit child fallbacks and an explicit
+empty chain keep their native meaning. Older supported patch layouts remain
+covered. Native offline tests exercise the real loader, callback, turn runtime,
+SQLite prompt persistence, and delegation with synthetic data. They do not
+authenticate to a provider or test live OAuth.
+
 - Hermes Agent with a working `pre_model_route` runtime path.
 - PyYAML 6.x for host-equivalent plugin manifest parsing. Hermes installations
   normally provide it; repository test environments can install the pinned test

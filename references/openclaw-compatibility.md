@@ -1,5 +1,22 @@
 # OpenClaw compatibility
 
+The 2026-09-09 review additionally checks official `v2026.9.3`, commit
+`1391f7cd2d40ab5bbcf2f5f831d3a64f520e72d7`, using its exact published package
+and Node 24.18.0. Native CLI import/activation, both hooks, SQLite persistence,
+current-model/external-model stay, missing user-pin preservation, explicit auth
+order, and rejection of API-key credentials for an OAuth-only profile pass.
+The existing adapter needs no runtime change for this release. CI retains the
+prior lanes and adds this exact package with registry integrity verification.
+
+Relative to the prior reviewed source, the consumed plugin entry/session SDK
+and model/provider hook result remain compatible. The host now preserves an
+unavailable explicit same-provider account until authentication can report
+recovery; ZeroAPI preserves that user pin instead of replacing it. OpenAI's
+subscription route remains `openai-chatgpt-responses`, separate from API-key
+Responses routing. xAI's native API endpoint and OAuth proxy are host-owned
+transport choices, not evidence of subscription eligibility by themselves.
+No live OAuth, provider request, or existing-user state migration was tested.
+
 The 2026-09-06 review checked the deployed OpenClaw `2026.9.1` package and the
 minimum supported `2026.5.2` package. The 2026-09-07 refresh checked upstream main
 at `6223cf8b74800e22b85f16c71cfd002965d426e0` (package version `2026.9.2`).

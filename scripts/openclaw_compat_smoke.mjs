@@ -137,12 +137,49 @@ try {
     assert.equal(imageRoute?.providerOverride, expectedProvider, "image attachment was not routed to a vision model");
     assert.equal(imageRoute?.modelOverride, "gpt-5.4");
   }
+  const alreadySelected = await dispatch({ prompt: "implement a compatibility regression test" }, {
+    ...context, modelId: "gpt-5.4", modelProviderId: expectedProvider,
+  });
+  assert.ok(!alreadySelected?.modelOverride, "current-model route should stay unchanged");
+  const external = await dispatch({ prompt: "implement a compatibility regression test" }, {
+    ...context, modelId: "private-model", modelProviderId: "custom",
+  });
+  assert.ok(!external?.modelOverride, "external-model stay policy must remain effective");
+  const { syncSessionAuthProfileOverride, createSessionEntryPatcher } = await import(
+    pathToFileURL(join(stagedPluginDir, "session-auth.js")).href);
+  const patchSessionEntry = createSessionEntryPatcher(sessionStoreRuntime);
+  await patchSessionEntry({ agentId: "main", sessionKey, preserveActivity: true,
+    update: () => ({ authProfileOverride: `${expectedProvider}:missing-user-pin`, authProfileOverrideSource: "user" }) });
+  const pinned = await syncSessionAuthProfileOverride({ agentId: "main", sessionKey,
+    authProfileOverride: `${expectedProvider}:ci`, patchSessionEntry });
+  assert.equal(pinned.reason, "user_pinned_preserved");
+  const pinnedEntry = typeof sessionStoreRuntime.getSessionEntry === "function"
+    ? sessionStoreRuntime.getSessionEntry({ agentId: "main", readConsistency: "latest", sessionKey })
+    : sessionStoreRuntime.loadSessionStore(sessionStoreRuntime.resolveStorePath(undefined, { agentId: "main" }), { skipCache: true })[sessionKey];
+  assert.equal(pinnedEntry.authProfileOverride, `${expectedProvider}:missing-user-pin`);
+  if (expectedDispatch === "native") {
+    const { resolveAuthProfileOrder } = await importSdk("provider-auth");
+    const store = { version: 1, profiles: {
+      "openai:a": { type: "api_key", provider: "openai", key: "synthetic-a" },
+      "openai:b": { type: "api_key", provider: "openai", key: "synthetic-b" },
+    } };
+    const ordered = (order) => resolveAuthProfileOrder({ provider: "openai", store,
+      cfg: { auth: { order: { openai: order } } } });
+    assert.deepEqual(ordered(["openai:b", "openai:a"]), ["openai:b", "openai:a"]);
+    assert.deepEqual(ordered([]), [], "explicit empty account order must not borrow fallback accounts");
+    assert.deepEqual(ordered(["openai:missing"]), [], "missing explicit account must not silently fall back");
+    assert.deepEqual(resolveAuthProfileOrder({ provider: "openai",
+      store: { version: 1, profiles: { "openai:a": store.profiles["openai:a"] } },
+      cfg: { auth: { profiles: { "openai:a": { provider: "openai", mode: "oauth" } } } },
+    }), [], "API-key credentials must not satisfy an OAuth-only profile");
+  }
   console.log(JSON.stringify({
     status: "ok", hooks: [...second.registered.keys()].sort(), dispatch: expectedDispatch,
     route: { providerOverride: route.providerOverride, modelOverride: route.modelOverride },
     registration: { metadataInert: true, freshRegistries: 2, servicesDeferred: true },
     sessionStore: { accountRouting: "persisted", layout: expectedLayout, staleJsonUntouched: expectedLayout === "sqlite" ? true : undefined },
-    imageRouting: fixtureName === "current" ? "passed" : "not-requested", warnings,
+    imageRouting: fixtureName === "current" ? "passed" : "not-requested",
+    stayAndPinnedProfile: "passed", nativeAuthOrder: expectedDispatch === "native" ? "passed" : "not-requested", warnings,
   }));
 } finally {
   resetHooks?.();

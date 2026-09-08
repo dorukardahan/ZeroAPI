@@ -1,7 +1,7 @@
 ---
 name: zeroapi
-version: 3.11.1
-description: Configure the ZeroAPI OpenClaw plugin for subscription-aware model routing. Use when the user runs /zeroapi, asks to set up model routing, pastes the ZeroAPI repo URL, or asks what the repo does or whether it would help.
+version: 3.11.2
+description: Explain ZeroAPI or configure its OpenClaw routing plugin when the user explicitly requests installation or routing changes. A repo URL or product question authorizes an explanation only.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
 ---
@@ -19,6 +19,9 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
 - Respect agent-specific fixed models unless the user explicitly opts that agent into routing.
 - If the user starts with a repo/product question, answer from repo/docs first and do not mention live host state until they ask to install or inspect it.
 - If the user says only `kuralım` or `install` right after that first repo/product question, continue the fresh install flow instead of replying with local install status.
+- Run Setup Flow only for an explicit installation or routing-configuration request. `/zeroapi status`, a bare `/zeroapi`, a repo URL, and product questions do not authorize install, restart, or persistent writes. Clarify the intended action when it is missing.
+- Before authorized setup, show the target host, plugin version, files to change, persistent model/account-routing effects, and required restart. The user's explicit request already authorizes its stated scope; ask once only if a required action exceeds it.
+- Preserve existing configuration and a scoped rollback copy before replacing it. Use native host configuration commands for host-owned state, change only the requested routing policy, and report how to restore the previous policy. Never enable automatic updates unless the user requests them.
 
 ## Setup Flow
 
