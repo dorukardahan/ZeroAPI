@@ -180,6 +180,11 @@ jobs:
         env:
           ZEROAPI_HERMES_GIT_ROOT: /tmp/hermes-exact
         run: python -m unittest discover -s integrations/hermes -p 'test_upstream_source.py'
+      - name: Check installed plugin against the native import-removal gate
+        if: matrix.native
+        env:
+          ZEROAPI_HERMES_COMPAT_ROOT: /tmp/hermes-exact
+        run: python -m unittest discover -s integrations/hermes -p 'test_host_plugin_compat.py'
       - name: Install exact source runtime and test dependencies from its lock
         if: matrix.native
         run: |
