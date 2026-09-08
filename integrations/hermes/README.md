@@ -37,6 +37,11 @@ in the Hermes release you use.
 
 ## Install
 
+Historical Hermes source fixtures live under `tests/fixtures/`. This keeps them
+available to the adapter's regression tests while letting the host classify
+them as test data during deprecated-import scans. Runtime imports remain subject
+to the host's normal compatibility and removal-date checks.
+
 Use the transactional installer from a trusted checkout:
 
 ```bash

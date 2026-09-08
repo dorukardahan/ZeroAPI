@@ -26,7 +26,7 @@ from patch_runtime import (
 
 
 V019_TURN_CONTEXT_FIXTURE = (
-    Path(__file__).parent / "fixtures" / "v019" / "agent" / "turn_context.py"
+    Path(__file__).parent / "tests" / "fixtures" / "v019" / "agent" / "turn_context.py"
 )
 V019_TURN_CONTEXT_SHA256 = (
     "fa273c7496c4e06a8c1834f835acdf8b0b12e7302d9ed9048118f4a3f442178d"

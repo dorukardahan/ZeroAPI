@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [3.11.1] - 2026-09-08
+
+### Fixed
+- Keep historical Hermes source fixtures under `tests/fixtures` so the native deprecated-import scanner does not classify test data as live plugin code and disable ZeroAPI on 2026-09-14. Runtime import checks remain enforced.
+- Exercise the installed Hermes plugin against the native removal-date gate, including a failing deprecated runtime import as a control.
+
 ## [3.11.0] - 2026-09-07
 
 ### Added
