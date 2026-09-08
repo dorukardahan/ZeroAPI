@@ -1,0 +1,3 @@
+# Public Hermes commit SHA in the test's environment-variable default, not a credential.
+# Ignore only this historical finding; all other files, rules and commits remain scanned.
+869464a58f2cec9acff6eacb15cede1f1cfb848f:integrations/hermes/test_upstream_source.py:generic-api-key:22

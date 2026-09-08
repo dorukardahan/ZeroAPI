@@ -23,11 +23,9 @@ jobs:
       CLAWHUB_CLI_VERSION: "0.12.2"
       NPM_CONFIG_IGNORE_SCRIPTS: "true"
       NO_COLOR: "1"
-      # Intentionally "latest": this is a post-publish smoke test whose job is to
-      # confirm the freshly published plugin installs under the OpenClaw users
-      # actually have now. Pinning would let it pass against a stale binary while
-      # real installs break.
-      OPENCLAW_VERIFY_VERSION: "latest"
+      # Match the official host release qualified by this product release.
+      # Keep publishing reproducible instead of following a moving dist-tag.
+      OPENCLAW_VERIFY_VERSION: "2026.9.3"
     steps:
       - name: Set private ClawHub config path
         run: printf 'CLAWHUB_CONFIG_PATH=%s/zeroapi-clawhub-auth/config.json\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
@@ -36,7 +34,7 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Install release tooling
         run: npm ci --ignore-scripts

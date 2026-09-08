@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [3.11.2] - 2026-09-09
+
+### Fixed
+- Apply the Hermes runtime compatibility patch to official `v2026.9.7` without replacing its child-owned fallback policy. Match the changed function body independently of adjacent declarations and comments; retain strict unique matching, validation, idempotency, and transactional rollback.
+
+### Tests and documentation
+- Add pinned Hermes `2237be35` and OpenClaw `2026.9.3` native CI lanes while retaining prior supported hosts. Cover real plugin discovery, current-model/stay behavior, pinned profiles, explicit auth order, OAuth/API-key separation, and child fallback ownership with synthetic state.
+- Document the unchanged OpenClaw model/provider-only hook contract and clarify that bundled setup instructions require a scoped user request. No live OAuth or deployment validation is claimed.
+
 ## [3.11.1] - 2026-09-08
 
 ### Fixed
