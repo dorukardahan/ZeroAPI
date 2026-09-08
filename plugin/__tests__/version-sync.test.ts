@@ -70,9 +70,9 @@ describe("version sync", () => {
       notes: expect.stringContaining("SQLite"),
     });
     expect(packageJson.openclaw?.build).toEqual({
-      openclawVersion: "2026.9.1",
-      pluginSdkVersion: "2026.9.1",
-      lastAuditedOpenClaw: "2026.9.1",
+      openclawVersion: "2026.9.3",
+      pluginSdkVersion: "2026.9.3",
+      lastAuditedOpenClaw: "2026.9.3",
     });
   });
 });

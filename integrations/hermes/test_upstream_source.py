@@ -19,7 +19,8 @@ from patch_runtime import (
 )
 
 
-UPSTREAM_REF = os.environ.get("ZEROAPI_HERMES_TEST_REF", "693641aa8b4359c602283bdbbc14041e03bc47bc")
+UPSTREAM_REF = "693641aa8b4359c602283bdbbc14041e03bc47bc"
+UPSTREAM_REF = os.environ.get("ZEROAPI_HERMES_TEST_REF") or UPSTREAM_REF
 SOURCE_PATHS = {
     "plugins": "hermes_cli/plugins.py",
     "run_agent": "run_agent.py",
