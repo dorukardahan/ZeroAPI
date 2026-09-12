@@ -24,7 +24,7 @@ from pathlib import Path
 
 try:
     import yaml
-except ModuleNotFoundError:  # pragma: no cover - doctor will fail closed with guidance
+except ModuleNotFoundError:
     yaml = None
 
 try:
