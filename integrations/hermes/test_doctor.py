@@ -1,9 +1,11 @@
 import io
 import os
+import subprocess
+import sys
 import unittest
 from contextlib import redirect_stdout
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import mock
 
 from doctor import (
@@ -22,6 +24,8 @@ from patch_runtime import (
     patch_run_agent_source,
 )
 from test_runtime_patch import UPSTREAM_MODULAR_RUN_AGENT, UPSTREAM_RUNTIME_HELPERS
+
+INTEGRATION_DIR = Path(__file__).resolve().parent
 
 
 PLUGINS_NO_DISCOVERY = '''
@@ -304,6 +308,89 @@ class HermesDoctorRuntimeContractTest(unittest.TestCase):
         self.assertFalse(
             _runtime_helpers_turn_scope_contract(incomplete_helpers)
         )
+
+    def test_missing_yaml_dependency_fails_closed_with_install_guidance(self):
+        """Issue #88: the pragma-excluded ModuleNotFoundError branch must fail closed.
+
+        Simulates a yaml-less environment from normal CI (where PyYAML is
+        installed) by blocking the import in a subprocess via
+        ``sys.modules["yaml"] = None`` before the doctor is imported, so the
+        guarded fallback is exercised for real instead of being asserted only
+        by the removed coverage marker.
+        """
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plugin_root = root / "checkout" / "zeroapi-router"
+            plugin_root.mkdir(parents=True)
+            (plugin_root / "plugin.yaml").write_text(
+                "name: zeroapi-router\n",
+                encoding="utf-8",
+            )
+            (plugin_root / "__init__.py").write_text(
+                "def _pre_model_route(**kwargs):\n    return None\n\n"
+                "def register(ctx):\n    ctx.register_hook('pre_model_route', _pre_model_route)\n",
+                encoding="utf-8",
+            )
+            hermes_root = root / "hermes"
+            (hermes_root / "hermes_cli").mkdir(parents=True)
+            (hermes_root / "hermes_cli" / "plugins.py").write_text(
+                'VALID_HOOKS = {"pre_model_route"}\n',
+                encoding="utf-8",
+            )
+            config = root / "config.yaml"
+            config.write_text(
+                "plugins:\n  enabled:\n    - zeroapi-router\n",
+                encoding="utf-8",
+            )
+
+            argv = [
+                "--hermes-root",
+                str(hermes_root),
+                "--plugin-root",
+                str(plugin_root),
+                "--plugin-discovery-root",
+                str(root / "bundled-plugins"),
+                "--config",
+                str(config),
+            ]
+            code = (
+                "import sys; sys.modules['yaml'] = None; "
+                f"sys.path.insert(0, {str(INTEGRATION_DIR)!r}); "
+                f"import doctor; raise SystemExit(doctor.main({argv!r}))"
+            )
+            env = {
+                **os.environ,
+                "HERMES_HOME": str(root),
+                "HERMES_ENABLE_PROJECT_PLUGINS": "",
+                "HERMES_BUNDLED_PLUGINS": str(root / "bundled-plugins"),
+            }
+            completed = subprocess.run(  # noqa: S603
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                cwd=str(root),
+                env=env,
+                timeout=120,
+            )
+
+            self.assertEqual(completed.returncode, 2)
+            self.assertEqual(completed.stderr, "")
+            stdout = completed.stdout
+            # Unhandled-traceback regression guard: an AttributeError from a
+            # ``yaml = None`` value reaching a call site would print a traceback
+            # on stderr and abort before any guidance is printed.
+            self.assertNotIn("Traceback (most recent call last)", stdout)
+            self.assertNotIn("AttributeError", stdout)
+            # Actionable install guidance from the guarded manifest branch...
+            self.assertIn(
+                "PyYAML is required to parse Hermes plugin manifests; install the yaml dependency first.",
+                stdout,
+            )
+            # ...and from the guarded plugins.enabled verification branch. Both
+            # messages are unreachable unless ``yaml is None``, so together they
+            # prove the doctor kept diagnosing instead of crashing.
+            self.assertIn("PyYAML is required to verify plugins.enabled.", stdout)
+            self.assertNotIn("ZeroAPI plugin is enabled", stdout)
 
     def test_cli_does_not_treat_arbitrary_plugin_parent_as_discoverable(self):
         with TemporaryDirectory() as tmp:
