@@ -1,7 +1,7 @@
 {
   "version": "3.11.2",
-  "generated": "2026-09-07T00:00:00.000Z",
-  "benchmarks_date": "2026-09-07",
+  "generated": "2026-09-13T00:00:00.000Z",
+  "benchmarks_date": "2026-09-13",
   "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -27,10 +27,10 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 79.307,
-      "ttft_seconds": 50.228,
+      "speed_tps": 67.721,
+      "ttft_seconds": 90.832,
       "benchmarks": {
-        "intelligence": 51.3,
+        "intelligence": 47.1,
         "coding": 77.4,
         "tau2": 0.851,
         "tau3_banking": 0.443,
@@ -45,10 +45,10 @@
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 104.085,
-      "ttft_seconds": 104.021,
+      "speed_tps": 117.496,
+      "ttft_seconds": 121.61,
       "benchmarks": {
-        "intelligence": 46.8,
+        "intelligence": 42.3,
         "coding": 76.7,
         "tau2": 0.863,
         "tau3_banking": 0.402,
@@ -63,10 +63,10 @@
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 110.498,
-      "ttft_seconds": 104.276,
+      "speed_tps": 120.525,
+      "ttft_seconds": 79.241,
       "benchmarks": {
-        "intelligence": 43.4,
+        "intelligence": 37.5,
         "coding": 71.4,
         "tau3_banking": 0.311,
         "terminalbench": 0.809,
@@ -79,10 +79,10 @@
     "zai/glm-5.3": {
       "context_window": 1048576,
       "supports_vision": false,
-      "speed_tps": 77.374,
-      "ttft_seconds": 1.248,
+      "speed_tps": 60.295,
+      "ttft_seconds": 2.954,
       "benchmarks": {
-        "intelligence": 48.6,
+        "intelligence": 44.9,
         "coding": 74.8,
         "tau3_banking": 0.503,
         "terminalbench": 0.839,
@@ -95,10 +95,10 @@
     "zai/glm-5.3-flash": {
       "context_window": 1048576,
       "supports_vision": true,
-      "speed_tps": 43.823,
-      "ttft_seconds": 1.209,
+      "speed_tps": 115.77,
+      "ttft_seconds": 2.02,
       "benchmarks": {
-        "intelligence": 46.2,
+        "intelligence": 41.9,
         "coding": 71.5,
         "tau3_banking": 0.472,
         "terminalbench": 0.843,
@@ -114,7 +114,7 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 50.2,
+        "intelligence": 43.8,
         "coding": 76.2,
         "tau3_banking": 0.46,
         "terminalbench": 0.85,
@@ -142,8 +142,8 @@
         "kimi/k3-256k",
         "openai/gpt-5.6-terra",
         "zai/glm-5.3",
-        "openai/gpt-5.6-luna",
-        "zai/glm-5.3-flash"
+        "zai/glm-5.3-flash",
+        "openai/gpt-5.6-luna"
       ]
     },
     "orchestration": {
@@ -167,11 +167,11 @@
       ]
     },
     "fast": {
-      "primary": "zai/glm-5.3",
+      "primary": "zai/glm-5.3-flash",
       "fallbacks": [
-        "zai/glm-5.3-flash",
-        "openai/gpt-5.6-sol",
+        "zai/glm-5.3",
         "openai/gpt-5.6-luna",
+        "openai/gpt-5.6-sol",
         "openai/gpt-5.6-terra",
         "kimi/k3-256k"
       ]
@@ -179,8 +179,8 @@
     "default": {
       "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
-        "kimi/k3-256k",
         "zai/glm-5.3",
+        "kimi/k3-256k",
         "openai/gpt-5.6-terra",
         "zai/glm-5.3-flash",
         "openai/gpt-5.6-luna"
