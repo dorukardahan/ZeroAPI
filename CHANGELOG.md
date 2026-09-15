@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [3.11.3] - 2026-09-15
+
+### Fixed
+- Support Hermes v2026.9.14 session-start and turn-boundary layouts while preserving native persistence-disabled forks, ZeroAPI's duplicate-hook guard, surface-switch behavior, strict patch matching, and transactional rollback. Retain prior host coverage (#92).
+- Cover the missing-PyYAML doctor fallback and clarify the Hermes runtime patch prerequisite (#89, #91).
+
+### Tests and documentation
+- Qualify pinned Hermes v2026.9.14 and OpenClaw v2026.9.4 with isolated native tests. Use OpenClaw 2026.9.4 for package publication smoke checks; no OpenClaw adapter or OAuth alias rewrite is needed.
+- Record the 2026-09-15 official Anthropic policy re-review without changing provider exclusions or the 90-day freshness gate.
+- Include the existing 2026-09-13 automated benchmark and starter snapshot refresh (61e333a), including regenerated example candidate ordering. This release preparation does not fetch new data or change routing policy.
+
 ## [3.11.2] - 2026-09-09
 
 ### Fixed
