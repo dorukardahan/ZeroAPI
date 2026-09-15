@@ -34,7 +34,7 @@ For the written product contract behind the current router, including the option
 
 [`references/provider-model-status.md`](references/provider-model-status.md) is authoritative for provider-policy review dates and the freshness interval. Run `node scripts/provider_policy_freshness.mjs` to detect missing, malformed, stale, or README-mismatched dates; the checker never changes provider configuration.
 
-**Anthropic (status reviewed 2026-06-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
+**Anthropic (status reviewed 2026-09-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
 
 **Google (status reviewed 2026-07-10):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
 
