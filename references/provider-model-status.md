@@ -8,14 +8,20 @@ Policy review freshness interval: 90 days.
 
 | Provider | Last reviewed | Status |
 |---|---|---|
-| Anthropic | 2026-06-15 | Excluded pending a tested canonical subscription runtime path |
+| Anthropic | 2026-09-15 | Excluded pending a tested canonical subscription runtime path |
 | Google | 2026-07-10 | Excluded because current access does not provide a routeable subscription provider |
 
-These ISO dates are authoritative for the matching exclusions in the top-level README. Run `node scripts/provider_policy_freshness.mjs` from the repository root to detect missing, malformed, stale, or mismatched claims. The checker is read-only and does not enable or disable providers.
+These dates record when the policy sources were reviewed, not their publication or effective dates. These ISO dates are authoritative for the matching exclusions in the top-level README. Run `node scripts/provider_policy_freshness.mjs` from the repository root to detect missing, malformed, stale, or mismatched claims. The checker is read-only and does not enable or disable providers.
+
+### Anthropic re-review - 2026-09-15
+
+The [official Agent SDK notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan), read again on 2026-09-15, displays an article date of June 16, 2026. Its June 15 update pauses the announced changes: signed-in Claude Agent SDK, `claude -p`, and third-party app usage still draw from subscription limits. The older separate-credit plan below that update is explicitly preserved for reference and is no longer taking effect on June 15; the notice gives no replacement effective date.
+
+The [official Pro/Max Claude Code guide](https://support.claude.com/en/articles/11145838-use-claude-code-with-your-pro-or-max-plan), also reviewed on 2026-09-15, distinguishes subscription usage from API-key authentication billed at API rates. This re-review preserves ZeroAPI's exclusion pending an implemented and tested canonical subscription runtime path; it does not establish a general Anthropic ban on subscription-backed SDK use or enable a provider.
 
 ## Current provider and model status
 
-Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa` and Hermes `245e48008fa814b3251f50755eb656bd9fb86cb1`. Benchmark evidence is the 2026-09-07 AA API snapshot, 244 rows. The exclusion review dates above are unchanged historical reviews; this model update does not claim a fresh Anthropic/Google policy review.
+Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa` and Hermes `245e48008fa814b3251f50755eb656bd9fb86cb1`. Benchmark evidence is the 2026-09-07 AA API snapshot, 244 rows. That model update did not refresh provider-policy reviews. The later, focused Anthropic re-review is recorded above; the Google review date is unchanged.
 
 | Provider/model | Benchmark evidence | Subscription route status |
 |---|---|---|
@@ -52,7 +58,7 @@ Kimi Coding is canonical `kimi` in current OpenClaw and `kimi-coding` in Hermes,
 
 ## Observed or excluded horizon providers
 
-- Anthropic (updated 2026-06-15): Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits while its separate Agent SDK credit plan is paused. ZeroAPI still does not auto-enable Anthropic. The required canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path has not been implemented and tested end to end.
+- Anthropic (status reviewed 2026-09-15): Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits while its separate Agent SDK credit plan is paused. ZeroAPI still does not auto-enable Anthropic. The required canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path has not been implemented and tested end to end.
 - Google (status checked 2026-07-10): Gemini CLI individual access is being sunset in favor of the Antigravity transition. ZeroAPI has no routeable Google subscription provider. Gemini API keys are usage-billed and remain outside subscription capacity.
 - DeepSeek, Mistral, and Cohere (status checked 2026-07-10): API-key/pay-as-you-go reference horizon only; not auto-routed as subscription capacity.
 
@@ -70,4 +76,4 @@ Kimi Coding is canonical `kimi` in current OpenClaw and `kimi-coding` in Hermes,
 - [OpenClaw Qwen migration](https://github.com/openclaw/openclaw/blob/679193c5ffbc02f96a54779da68e480145512cfa/docs/providers/qwen.md)
 - [xAI Grok 4.6](https://docs.x.ai/developers/grok-4-6) and [OpenClaw xAI catalog](https://github.com/openclaw/openclaw/blob/679193c5ffbc02f96a54779da68e480145512cfa/extensions/xai/openclaw.plugin.json)
 - [Artificial Analysis API reference](https://artificialanalysis.ai/api-reference) and [methodology](https://artificialanalysis.ai/methodology/intelligence-benchmarking)
-- [Anthropic historical Agent SDK plan notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan)
+- [Anthropic Agent SDK pause notice and historical plan](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan)

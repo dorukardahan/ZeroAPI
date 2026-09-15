@@ -24,7 +24,11 @@ class HostPluginCompatibilityTest(unittest.TestCase):
         cls.host = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = cls.host
         cls.addClassCleanup(sys.modules.pop, spec.name, None)
-        spec.loader.exec_module(cls.host)
+        # Newer scanners import the host's atomic writer. Resolve that real
+        # sibling from the explicit source tree, not the operator's Python path.
+        with patch.object(sys, "path", [str(Path(source).resolve()), *sys.path]):
+            with patch.dict(sys.modules):
+                spec.loader.exec_module(cls.host)
         if not cls.host.load_manifest():
             raise AssertionError("Native compatibility manifest must be present and nonempty")
 

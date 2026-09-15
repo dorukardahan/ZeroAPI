@@ -9,7 +9,7 @@
 
 ZeroAPI is an OpenClaw plugin that intercepts eligible messages at the gateway level and routes them to a policy-selected model from your active subscriptions. It is best thought of as a routing policy layer on top of host runtime behavior - not a replacement for OpenClaw's own model defaults, per-agent configuration, or unrelated provider/API-key setups. By default, it stays on current models that sit outside the ZeroAPI policy pool and leaves agent-specific model assignments alone unless that agent is explicitly opted into routing.
 
-An experimental Hermes Agent adapter now lives in [`integrations/hermes/`](integrations/hermes/). It uses the same `zeroapi-config.json` policy shape and Hermes' `pre_model_route` hook, so Hermes can make the same kind of deterministic subscription-aware routing decisions once that hook is available in Hermes releases. Official Hermes releases through `v2026.9.7` do not provide a native `pre_model_route` turn path and still need the optional ZeroAPI runtime patch; see the [Hermes integration requirements](integrations/hermes/README.md#requirements) before installing.
+An experimental Hermes Agent adapter now lives in [`integrations/hermes/`](integrations/hermes/). It uses the same `zeroapi-config.json` policy shape and Hermes' `pre_model_route` hook, so Hermes can make the same kind of deterministic subscription-aware routing decisions once that hook is available in Hermes releases. Official Hermes releases through `v2026.9.14` do not provide a native `pre_model_route` turn path and still need the optional ZeroAPI runtime patch; see the [Hermes integration requirements](integrations/hermes/README.md#requirements) before installing.
 
 > **For AI agents**: Start with `SKILL.md` — it contains the complete setup wizard. Read `benchmarks.json` for model data. The `plugin/` directory contains the router source code. Config examples are in `examples/`. Provider setup details are in `references/`.
 
@@ -34,7 +34,7 @@ For the written product contract behind the current router, including the option
 
 [`references/provider-model-status.md`](references/provider-model-status.md) is authoritative for provider-policy review dates and the freshness interval. Run `node scripts/provider_policy_freshness.mjs` to detect missing, malformed, stale, or README-mismatched dates; the checker never changes provider configuration.
 
-**Anthropic (status reviewed 2026-06-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
+**Anthropic (status reviewed 2026-09-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
 
 **Google (status reviewed 2026-07-10):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
 

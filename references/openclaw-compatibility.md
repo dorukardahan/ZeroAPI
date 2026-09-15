@@ -1,5 +1,16 @@
 # OpenClaw compatibility
 
+The 2026-09-15 review checks official `v2026.9.4`, commit
+`3a9d69db306cd7f081e06254cb89c4bcc14a7107`. The consumed plugin entry and
+session-store SDK exports are unchanged from 2026.9.3. Hook changes track async
+work without changing model/provider results. Native profile resolution adds
+model-scoped auth configuration, stored-credential alias handling and an opt-in
+pending-refresh settlement path. ZeroAPI continues to use the public session
+API and preserves explicit user pins; it adds no account-ID rewriting. The
+native hook still does not guarantee same-turn auth-profile selection. CI adds
+the exact 2026.9.4 package to the existing native hook/state/profile smoke, with
+registry integrity verification. No live OAuth or provider call is claimed.
+
 The 2026-09-09 review additionally checks official `v2026.9.3`, commit
 `1391f7cd2d40ab5bbcf2f5f831d3a64f520e72d7`, using its exact published package
 and Node 24.18.0. Native CLI import/activation, both hooks, SQLite persistence,

@@ -835,6 +835,36 @@ class RuntimeProof:
     auxiliary_sync: bool = True
 
 
+def _boundary_wrapped_turn_owner(tree, wrapper):
+    """Recognize only the native turn-boundary wrapper introduced in v2026.9.14."""
+    if wrapper is None:
+        return None
+    body = wrapper.body
+    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
+        body = body[1:]
+    expected = ast.parse("""
+from agent.turn_context import export_current_turn_boundary
+result = _run_conversation_turn(
+    agent, user_message, system_message=system_message,
+    conversation_history=conversation_history, task_id=task_id,
+    stream_callback=stream_callback, persist_user_message=persist_user_message,
+    persist_user_timestamp=persist_user_timestamp,
+    persist_user_display_kind=persist_user_display_kind,
+    persist_user_display_metadata=persist_user_display_metadata,
+    persist_user_platform_id=persist_user_platform_id,
+    moa_config=moa_config, turn_author=turn_author,
+)
+return export_current_turn_boundary(agent, result, user_message)
+""").body
+    if [ast.dump(node) for node in body] != [ast.dump(node) for node in expected]:
+        return None
+    owner = _module_function(tree, "_run_conversation_turn")
+    calls = _calls_named(owner, "build_turn_context")
+    if len(calls) != 1 or not calls[0].args or not isinstance(calls[0].args[0], ast.Name):
+        return None
+    return owner if calls[0].args[0].id == "agent" else None
+
+
 def _runtime_proof(
     run_agent_source: str,
     conversation_loop_source: str | None,
@@ -859,6 +889,10 @@ def _runtime_proof(
 
     run_owner = _class_method(run_tree, "AIAgent", "run_conversation")
     conversation_owner = _module_function(conversation_tree, "run_conversation")
+    if not _calls_named(conversation_owner, "build_turn_context"):
+        conversation_owner = (
+            _boundary_wrapped_turn_owner(conversation_tree, conversation_owner) or conversation_owner
+        )
     turn_owner = _module_function(turn_tree, "build_turn_context")
     candidates = [
         ("legacy-monolith", "run_agent.py:AIAgent.run_conversation", run_owner, "self"),

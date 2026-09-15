@@ -82,6 +82,46 @@ class UpstreamSourceTest(unittest.TestCase):
             self.assertEqual({name: path.read_bytes() for name, path in paths.items()}, original)
             rollback_runtime_transaction(transaction)
 
+    def test_unknown_or_ambiguous_session_hook_layout_is_rejected_before_writes(self):
+        import json
+        recipe = json.loads((Path(__file__).parent / "runtime_patches/main-245e4800.json").read_text())
+        variants = recipe["files"]["conversation_loop"]["hunks"][2]["variants"]
+        with TemporaryDirectory() as directory:
+            paths = self._tree(Path(directory) / "hermes")
+            original = paths["conversation_loop"].read_text()
+            selected = next(v for v in variants if v["before"] in original)
+            mutations = [
+                original.replace(selected["before"], "", 1),
+                original + selected["before"],
+                original + selected["after"],
+                original + next(v for v in variants if v != selected)["before"],
+            ]
+            for source in mutations:
+                with self.subTest(source_length=len(source)):
+                    paths["conversation_loop"].write_text(source)
+                    before = {name: path.read_bytes() for name, path in paths.items()}
+                    with self.assertRaises(ValueError):
+                        plan_runtime_patch(**paths)
+                    self.assertEqual({name: path.read_bytes() for name, path in paths.items()}, before)
+                    self.assertFalse((paths["run_agent"].parent / "agent/model_routing.py").exists())
+
+    def test_boundary_wrapper_rejects_dead_duplicate_or_redirected_turn_calls(self):
+        with TemporaryDirectory() as directory:
+            paths = self._tree(Path(directory) / "hermes")
+            original = paths["conversation_loop"].read_text()
+            if "def _run_conversation_turn(" not in original:
+                self.skipTest("host predates native turn boundary wrapper")
+            for replacement in (
+                "return {}\n    result = _run_conversation_turn(",
+                "result = unrelated_turn(",
+                "_run_conversation_turn(agent, user_message)\n    result = _run_conversation_turn(",
+            ):
+                with self.subTest(replacement=replacement):
+                    paths["conversation_loop"].write_text(original.replace(
+                        "result = _run_conversation_turn(", replacement, 1))
+                    with self.assertRaisesRegex(ValueError, "does not call build_turn_context"):
+                        plan_runtime_patch(**paths)
+
     def test_failure_after_new_module_rename_restores_exact_original_tree(self):
         with TemporaryDirectory() as directory:
             root = Path(directory).resolve()
