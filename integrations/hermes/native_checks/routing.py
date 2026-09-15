@@ -6,6 +6,7 @@ Run only through native_smoke.py with a disposable Hermes home.
 from __future__ import annotations
 
 import copy
+import pytest
 import importlib.util
 from pathlib import Path
 import re
@@ -437,3 +438,74 @@ def test_fresh_routed_continuations_restore_frozen_sections_and_tool_order(tmp_p
                 assert call.kwargs["model"] == "routed-b"
                 assert call.kwargs["session_id"] == "transient-route-test"
             renderer.assert_not_called()
+
+
+@pytest.mark.parametrize("history", [None, [{"role": "user", "content": "prior synthetic turn"}]])
+@pytest.mark.parametrize("switched", [False, True])
+@pytest.mark.parametrize("disabled", [False, True])
+def test_native_session_start_guards(history, switched, disabled):
+    # Earlier supported hosts did not have persistence-disabled fork semantics.
+    from agent import conversation_loop
+    has_fork_guard = "_persist_disabled" in str(
+        conversation_loop._restore_or_build_system_prompt.__code__.co_consts
+    )
+    if disabled and not has_fork_guard:
+        pytest.skip("host predates persistence-disabled session-start guard")
+    agent = SimpleNamespace(
+        _session_db=None, _cached_system_prompt=None,
+        _pre_model_route_switched_this_turn=switched, _persist_disabled=disabled,
+        _build_system_prompt=lambda _: "Model: fixture\nProvider: custom\nPlatform: tui",
+        session_id="synthetic-session", model="fixture", provider="custom", platform="tui",
+    )
+    with patch("hermes_cli.lifecycle.invoke_hook") as hook:
+        _restore_or_build_system_prompt(agent, None, history)
+    expected = not disabled and not (history and switched)
+    assert hook.call_count == int(bool(expected))
+    if expected:
+        hook.assert_called_once_with("on_session_start", session_id="synthetic-session",
+                                     model="fixture", platform="tui")
+    assert agent._cached_system_prompt.startswith("Model: fixture")
+
+
+def test_routed_rebuild_retires_old_native_surface_note():
+    from agent import conversation_loop
+    if "stage_surface_switch_note" not in conversation_loop._restore_or_build_system_prompt.__code__.co_names:
+        pytest.skip("host predates native surface-switch notes")
+    from agent.surface_switch import stage_surface_switch_note
+    agent = SimpleNamespace(
+        _session_db=None, _cached_system_prompt=None,
+        _pre_model_route_switched_this_turn=True, _persist_disabled=False,
+        _build_system_prompt=lambda _: "Model: fixture\nProvider: custom\nPlatform: tui",
+        session_id="synthetic-surface", model="fixture", provider="custom", platform="desktop",
+    )
+    # Create the old announcement through the actual native helper, then return
+    # to tui during a routed rebuild. The old desktop note must be superseded.
+    with patch("agent.system_prompt.platform_hint", return_value="synthetic desktop guidance"):
+        assert stage_surface_switch_note(agent, "Platform: tui", [])
+    history = [{"role": "user", "content": "prior", "api_content": agent._surface_switch_note}]
+    agent.platform = "tui"
+    agent._surface_switch_note = None
+    with patch("hermes_cli.lifecycle.invoke_hook") as hook:
+        _restore_or_build_system_prompt(agent, None, history)
+    assert "different interface: tui" in agent._surface_switch_note
+    assert "superseded" in agent._surface_switch_note
+    hook.assert_not_called()
+
+
+
+def test_native_boundary_wrapper_reaches_turn_context():
+    from agent import conversation_loop
+    if not hasattr(conversation_loop, "_run_conversation_turn"):
+        pytest.skip("host predates native turn boundary wrapper")
+    class ReachedTurnContext(Exception):
+        pass
+    agent = SimpleNamespace(_try_refresh_env_client_credentials=lambda: None)
+    with (
+        patch("agent.conversation_loop.begin_fast_mode_turn"),
+        patch("agent.conversation_loop.build_turn_context", side_effect=ReachedTurnContext) as build,
+        pytest.raises(ReachedTurnContext),
+    ):
+        conversation_loop.run_conversation(agent, "synthetic turn", moa_config={})
+    assert build.call_count == 1
+    assert build.call_args.args[:2] == (agent, "synthetic turn")
+    assert build.call_args.kwargs["restore_or_build_system_prompt"] is _restore_or_build_system_prompt

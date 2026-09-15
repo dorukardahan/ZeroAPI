@@ -63,6 +63,15 @@ jobs:
             typecheck: true
             source: true
             node: '22'
+          - version: '2026.9.4'
+            integrity: 'sha512-lTQpEEe1Xm3u2PCHaPEr+vP8paGk1vLdHuzdItsNToaLI6hAqRVvgJYg+GxukJhETJp4tPy/S1Gftl4KuB8n7A=='
+            label: release-2026.9.4
+            layout: sqlite
+            dispatch: native
+            fixture: current
+            typecheck: true
+            source: false
+            node: '24'
           - version: '2026.9.3'
             integrity: 'sha512-CzDHMeHdnjlIZ76ZyBb1lvLO4H/yBIMYXupFGGBN87x0853y3hg5nLAnKfxSKqLzqhbUKqy9ebDRAWWV4t8aew=='
             label: release-2026.9.3
@@ -142,6 +151,9 @@ jobs:
           - label: current-main
             sha: '693641aa8b4359c602283bdbbc14041e03bc47bc'
             native: true
+          - label: release-2026.9.14
+            sha: '345cd2b057a452236de401d3534b8502a7465e8d'
+            native: true
           - label: release-2026.9.7
             sha: '2237be355906fbe6065ce1815711eee52b2d646e'
             native: true
@@ -203,7 +215,7 @@ jobs:
       - name: Install exact source runtime and test dependencies from its lock
         if: matrix.native
         run: |
-          python -m pip install uv==0.12.1
+          python -m pip install uv==0.12.10
           uv sync --directory /tmp/hermes-exact --locked --extra dev --python 3.11
       - name: Exercise native AIAgent routing and delegation offline
         if: matrix.native

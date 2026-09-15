@@ -10,6 +10,15 @@ provider normalization, base URLs, API modes, and model switching.
 
 ## Requirements
 
+Official Hermes `v2026.9.14` (`345cd2b057a452236de401d3534b8502a7465e8d`)
+uses a persistence-disabled fork guard around `on_session_start` and a native
+turn-boundary wrapper. The optional patch supports this exact layout and the
+older block below: it preserves the fork guard, suppresses duplicate starts on
+routed continuations, and leaves surface-switch notes and turn-boundary export
+with the host. Unknown, duplicate, or mixed hook blocks still fail before writes.
+Native offline tests cover both guards, normal session starts, surface-note
+retirement after routing, and the wrapper's actual turn-context call.
+
 Official Hermes `v2026.9.7` (`2237be355906fbe6065ce1815711eee52b2d646e`)
 still needs the optional ZeroAPI runtime patch: it does not provide a native
 `pre_model_route` turn path. ZeroAPI 3.11.2 accepts its split runtime while

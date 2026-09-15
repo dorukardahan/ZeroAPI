@@ -52,6 +52,19 @@ def patch_modular_main_sources(sources: dict[str, str]) -> dict[str, str]:
             raise ValueError(f"Modular Hermes requires {relative}.")
         text = sources[label]
         for number, hunk in enumerate(entry["hunks"], 1):
+            variants = hunk.get("variants", [hunk])
+            if "variants" in hunk:
+                # Reviewed layouts are alternatives, never optional hunks. Count
+                # preimages and postimages together so mixed/duplicate blocks fail.
+                matched = [variant for variant in variants
+                           for block in (variant["before"], variant["after"]) if block
+                           for _ in range(text.count(block))]
+                if len(matched) != 1:
+                    raise ValueError(
+                        f"Unsupported or modified {relative}: expected one reviewed "
+                        f"variant for source block {number}, found {len(matched)}."
+                    )
+                hunk = matched[0]
             before, after = hunk["before"], hunk["after"]
             if not before or before == after:
                 raise ValueError(f"Invalid modular Hermes source block: {label}/{number}.")
