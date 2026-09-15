@@ -1,6 +1,6 @@
 ---
 name: zeroapi
-version: 3.11.2
+version: 3.11.3
 description: Explain ZeroAPI or configure its OpenClaw routing plugin when the user explicitly requests installation or routing changes. When the user pastes the ZeroAPI repo URL or asks a product question, provide an explanation only.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"⚡","category":"routing","os":["darwin","linux"],"requires":{"anyBins":["openclaw"],"config":["agents"]}}}
