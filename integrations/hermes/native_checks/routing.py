@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import sys
 import time
+import tomllib
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -440,16 +441,19 @@ def test_fresh_routed_continuations_restore_frozen_sections_and_tool_order(tmp_p
             renderer.assert_not_called()
 
 
+def _host_has_914_session_contract():
+    from agent import conversation_loop
+    manifest = Path(conversation_loop.__file__).resolve().parents[1] / "pyproject.toml"
+    version = tomllib.loads(manifest.read_text())["project"]["version"]
+    return tuple(int(part) for part in version.split(".")[:3]) >= (0, 21, 3)
+
+
 @pytest.mark.parametrize("history", [None, [{"role": "user", "content": "prior synthetic turn"}]])
 @pytest.mark.parametrize("switched", [False, True])
 @pytest.mark.parametrize("disabled", [False, True])
 def test_native_session_start_guards(history, switched, disabled):
     # Earlier supported hosts did not have persistence-disabled fork semantics.
-    from agent import conversation_loop
-    has_fork_guard = "_persist_disabled" in str(
-        conversation_loop._restore_or_build_system_prompt.__code__.co_consts
-    )
-    if disabled and not has_fork_guard:
+    if disabled and not _host_has_914_session_contract():
         pytest.skip("host predates persistence-disabled session-start guard")
     agent = SimpleNamespace(
         _session_db=None, _cached_system_prompt=None,
@@ -468,8 +472,7 @@ def test_native_session_start_guards(history, switched, disabled):
 
 
 def test_routed_rebuild_retires_old_native_surface_note():
-    from agent import conversation_loop
-    if "stage_surface_switch_note" not in conversation_loop._restore_or_build_system_prompt.__code__.co_names:
+    if not _host_has_914_session_contract():
         pytest.skip("host predates native surface-switch notes")
     from agent.surface_switch import stage_surface_switch_note
     agent = SimpleNamespace(
@@ -495,7 +498,7 @@ def test_routed_rebuild_retires_old_native_surface_note():
 
 def test_native_boundary_wrapper_reaches_turn_context():
     from agent import conversation_loop
-    if not hasattr(conversation_loop, "_run_conversation_turn"):
+    if not _host_has_914_session_contract():
         pytest.skip("host predates native turn boundary wrapper")
     class ReachedTurnContext(Exception):
         pass
