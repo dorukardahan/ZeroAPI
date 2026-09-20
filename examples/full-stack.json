@@ -1,7 +1,7 @@
 {
   "version": "3.11.3",
-  "generated": "2026-09-13T00:00:00.000Z",
-  "benchmarks_date": "2026-09-13",
+  "generated": "2026-09-20T00:00:00.000Z",
+  "benchmarks_date": "2026-09-20",
   "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -35,10 +35,10 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 67.721,
-      "ttft_seconds": 90.832,
+      "speed_tps": 64.928,
+      "ttft_seconds": 64.464,
       "benchmarks": {
-        "intelligence": 47.1,
+        "intelligence": 47,
         "coding": 77.4,
         "tau2": 0.851,
         "tau3_banking": 0.443,
@@ -53,10 +53,10 @@
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 117.496,
-      "ttft_seconds": 121.61,
+      "speed_tps": 88.083,
+      "ttft_seconds": 117.758,
       "benchmarks": {
-        "intelligence": 42.3,
+        "intelligence": 42.1,
         "coding": 76.7,
         "tau2": 0.863,
         "tau3_banking": 0.402,
@@ -71,10 +71,10 @@
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 120.525,
-      "ttft_seconds": 79.241,
+      "speed_tps": 148.353,
+      "ttft_seconds": 81.86,
       "benchmarks": {
-        "intelligence": 37.5,
+        "intelligence": 37.3,
         "coding": 71.4,
         "tau3_banking": 0.311,
         "terminalbench": 0.809,
@@ -87,10 +87,10 @@
     "zai/glm-5.3": {
       "context_window": 1048576,
       "supports_vision": false,
-      "speed_tps": 60.295,
-      "ttft_seconds": 2.954,
+      "speed_tps": 77.389,
+      "ttft_seconds": 2.654,
       "benchmarks": {
-        "intelligence": 44.9,
+        "intelligence": 44.8,
         "coding": 74.8,
         "tau3_banking": 0.503,
         "terminalbench": 0.839,
@@ -103,10 +103,10 @@
     "zai/glm-5.3-flash": {
       "context_window": 1048576,
       "supports_vision": true,
-      "speed_tps": 115.77,
-      "ttft_seconds": 2.02,
+      "speed_tps": 90.015,
+      "ttft_seconds": 2.477,
       "benchmarks": {
-        "intelligence": 41.9,
+        "intelligence": 41.8,
         "coding": 71.5,
         "tau3_banking": 0.472,
         "terminalbench": 0.843,
@@ -122,7 +122,7 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 43.8,
+        "intelligence": 43.6,
         "coding": 76.2,
         "tau3_banking": 0.46,
         "terminalbench": 0.85,
@@ -135,10 +135,10 @@
     "minimax-portal/MiniMax-M3": {
       "context_window": 1000000,
       "supports_vision": true,
-      "speed_tps": 119.085,
-      "ttft_seconds": 0.829,
+      "speed_tps": 107.461,
+      "ttft_seconds": 1.008,
       "benchmarks": {
-        "intelligence": 29.6,
+        "intelligence": 29.2,
         "coding": 58.6,
         "tau2": 0.889,
         "tau3_banking": 0.153,
@@ -156,7 +156,7 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 23.2,
+        "intelligence": 22.8,
         "coding": 52.6,
         "tau2": 0.848,
         "tau3_banking": 0.099,
@@ -171,10 +171,10 @@
     "xai/grok-4.6": {
       "context_window": 500000,
       "supports_vision": true,
-      "speed_tps": 72.952,
-      "ttft_seconds": 37.377,
+      "speed_tps": 57.647,
+      "ttft_seconds": 35.827,
       "benchmarks": {
-        "intelligence": 44.4,
+        "intelligence": 44.3,
         "coding": 76.8,
         "tau3_banking": 0.507,
         "terminalbench": 0.884,
@@ -187,10 +187,10 @@
     "xai/grok-4.5": {
       "context_window": 500000,
       "supports_vision": true,
-      "speed_tps": 61.423,
-      "ttft_seconds": 15.243,
+      "speed_tps": null,
+      "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 39.1,
+        "intelligence": 38.8,
         "coding": 72.4,
         "tau3_banking": 0.421,
         "terminalbench": 0.816,
@@ -221,7 +221,7 @@
       "speed_tps": null,
       "ttft_seconds": null,
       "benchmarks": {
-        "intelligence": 25.4,
+        "intelligence": 24.9,
         "coding": 42.2,
         "tau2": 0.977,
         "tau3_banking": 0.124,
@@ -259,8 +259,8 @@
         "openai/gpt-5.6-terra",
         "xai/grok-4.5",
         "zai/glm-5.3",
-        "minimax-portal/MiniMax-M3",
         "zai/glm-5.3-flash",
+        "minimax-portal/MiniMax-M3",
         "openai/gpt-5.6-luna",
         "xai/grok-build-0.1",
         "xai/grok-4.3",
@@ -304,13 +304,13 @@
       "fallbacks": [
         "zai/glm-5.3-flash",
         "zai/glm-5.3",
-        "xai/grok-4.5",
         "xai/grok-4.6",
-        "openai/gpt-5.6-luna",
         "openai/gpt-5.6-sol",
+        "openai/gpt-5.6-luna",
         "openai/gpt-5.6-terra",
         "kimi/k3-256k",
         "minimax-portal/MiniMax-M2.7",
+        "xai/grok-4.5",
         "xai/grok-build-0.1",
         "xai/grok-4.3"
       ]
