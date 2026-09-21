@@ -261,7 +261,9 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "xai-oauth", tierId: "supergrok" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.6", "xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"]);
+    expect(Object.keys(config.models)).toEqual(["xai-oauth/grok-4.7", "xai-oauth/grok-4.6", "xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"]);
+    expect(config.models["xai-oauth/grok-4.7"]).toMatchObject({ context_window: 500000, supports_vision: true });
+    expect(config.models["xai-oauth/grok-4.7"].benchmarks.terminalbench).toBe(config.models["xai-oauth/grok-4.6"].benchmarks.terminalbench);
     expect(config.models["xai-oauth/grok-4.3"]?.supports_vision).toBe(true);
     expect(config.models["xai-oauth/grok-build-0.1"]?.supports_vision).toBe(true);
     expect(config.models["xai-oauth/grok-4.3"]?.context_window).toBe(1000000);
@@ -275,9 +277,10 @@ describe("buildStarterConfig", () => {
       providers: [{ providerId: "xai", tierId: "supergrok" }],
     });
 
-    expect(Object.keys(config.models)).toEqual(["xai/grok-4.6", "xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"]);
     const grok46 = DIRECT_BENCHMARK_ROWS.find((row) => row.id === "c8adc5cf-fd5a-407b-af51-dc3bede3e49c")!;
     const grok45 = DIRECT_BENCHMARK_ROWS.find((row) => row.id === "794f69b5-cede-482b-b1cc-d769478497cd")!;
+    expect(Object.keys(config.models)).toEqual(["xai/grok-4.7", "xai/grok-4.6", "xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"]);
+    expect(config.models["xai/grok-4.7"].benchmarks.terminalbench).toBe(grok46.benchmarks.terminalbench ?? undefined);
     expect(grok46.slug).toBe("grok-4-6");
     expect(grok45.slug).toBe("grok-4-5");
     expect(config.models["xai/grok-4.6"].benchmarks.terminalbench).toBe(grok46.benchmarks.terminalbench ?? undefined);

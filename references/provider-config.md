@@ -56,7 +56,7 @@ Provider contracts were checked on 2026-09-06 against OpenClaw `679193c5ffbc02f9
 | Kimi Coding | `kimi/k3-256k` | Explicit K3 max quality reference; membership endpoint TPS/TTFT unavailable |
 | Z.AI Coding Plan | `zai/glm-5.3`, `zai/glm-5.3-flash` | Direct rows; Flash supports images and Coding Plan access |
 | MiniMax Portal | `minimax-portal/MiniMax-M3`, `minimax-portal/MiniMax-M2.7` | Direct rows |
-| xAI OAuth | `xai/grok-4.6`, `xai/grok-4.5`, `xai/grok-build-0.1`, `xai/grok-4.3` | Direct rows; 4.6/4.5 use high-effort reference rows |
+| xAI OAuth | `xai/grok-4.7`, `xai/grok-4.6`, `xai/grok-4.5`, `xai/grok-build-0.1`, `xai/grok-4.3` | 4.7 uses a conservative 4.6 high-effort proxy; 4.6/4.5 use direct high-effort rows |
 
 `npm run examples:refresh` generates public examples from this starter pool. It does not assert access to rollout models or rewrite an existing policy on plugin load.
 
@@ -130,7 +130,7 @@ openclaw models auth login --provider xai --method oauth
 hermes auth add xai-oauth
 ```
 
-Only subscription-backed OAuth accounts belong in the `xai` / `xai-oauth` pool; plain API keys remain usage-billed. `grok-4.6` supports text and images with a 500,000-token context. Its efforts are low/medium/high/xhigh, default high. ZeroAPI maps the high-effort AA row; a Hermes request clamped to xhigh is a different effort and must not be presented as the high measurement.
+Only subscription-backed OAuth accounts belong in the `xai` / `xai-oauth` pool; plain API keys remain usage-billed. `grok-4.7` is the current flagship (500,000-token context; same published price/speed class as 4.6). Until AA publishes a matching 4.7 row, ZeroAPI maps it to the Grok 4.6 high-effort measurement. `grok-4.6` supports text and images with a 500,000-token context. Its efforts are low/medium/high/xhigh, default high. ZeroAPI maps the high-effort AA row; a Hermes request clamped to xhigh is a different effort and must not be presented as the high measurement.
 
 Grok 4.5 now has a direct high-effort AA row, replacing the old 4.3 proxy. Grok Build 0.1 and 4.3 retain their own rows. The moving `xai/auto` and `grok-build-latest` aliases do not identify a fixed benchmark row; the checked native Build alias still targets 4.5.
 
