@@ -1,7 +1,7 @@
 {
   "version": "3.11.3",
-  "generated": "2026-09-20T00:00:00.000Z",
-  "benchmarks_date": "2026-09-20",
+  "generated": "2026-09-24T00:00:00.000Z",
+  "benchmarks_date": "2026-09-24",
   "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -23,8 +23,8 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 64.928,
-      "ttft_seconds": 64.464,
+      "speed_tps": 57.62,
+      "ttft_seconds": 79.856,
       "benchmarks": {
         "intelligence": 47,
         "coding": 77.4,
@@ -41,8 +41,8 @@
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 88.083,
-      "ttft_seconds": 117.758,
+      "speed_tps": 85.717,
+      "ttft_seconds": 217.469,
       "benchmarks": {
         "intelligence": 42.1,
         "coding": 76.7,
@@ -59,8 +59,8 @@
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 148.353,
-      "ttft_seconds": 81.86,
+      "speed_tps": 122.151,
+      "ttft_seconds": 91.956,
       "benchmarks": {
         "intelligence": 37.3,
         "coding": 71.4,
@@ -75,8 +75,8 @@
     "zai/glm-5.3": {
       "context_window": 1048576,
       "supports_vision": false,
-      "speed_tps": 77.389,
-      "ttft_seconds": 2.654,
+      "speed_tps": 63.714,
+      "ttft_seconds": 3.521,
       "benchmarks": {
         "intelligence": 44.8,
         "coding": 74.8,
@@ -91,8 +91,8 @@
     "zai/glm-5.3-flash": {
       "context_window": 1048576,
       "supports_vision": true,
-      "speed_tps": 90.015,
-      "ttft_seconds": 2.477,
+      "speed_tps": 44.274,
+      "ttft_seconds": 3.587,
       "benchmarks": {
         "intelligence": 41.8,
         "coding": 71.5,
@@ -143,11 +143,11 @@
       ]
     },
     "fast": {
-      "primary": "zai/glm-5.3-flash",
+      "primary": "zai/glm-5.3",
       "fallbacks": [
-        "zai/glm-5.3",
-        "openai/gpt-5.6-sol",
+        "zai/glm-5.3-flash",
         "openai/gpt-5.6-luna",
+        "openai/gpt-5.6-sol",
         "openai/gpt-5.6-terra"
       ]
     },

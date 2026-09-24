@@ -15,6 +15,7 @@ type DirectBenchmarkRow = {
   openclaw_provider: string;
   openclaw_model: string;
   speed_tps: number | null;
+  ttft_seconds: number | null;
   benchmarks: {
     terminalbench: number | null;
     tau3_banking: number | null;
@@ -167,6 +168,50 @@ describe("buildStarterConfig", () => {
     });
     expect(config.models["openai/gpt-6-astra"]).toBeDefined();
     expect(config.subscription_inventory?.accounts.work).not.toHaveProperty("discoveredModels");
+  });
+
+  it.each(["sol", "luna"])("gates GPT-6 %s independently and uses its exact direct xhigh row", (variant: string) => {
+    const key = `openai/gpt-6-${variant}`;
+    for (const tierId of ["plus", "pro"]) {
+      const provider = { providerId: "openai-codex", tierId };
+      for (const discoveredModels of [undefined, [], ["openai/gpt-6-astra"], [`openai/gpt-5.6-${variant}`], [`other/gpt-6-${variant}`], [`gpt-6-${variant}`]]) {
+        expect(buildStarterConfig({ providers: [{ ...provider, discoveredModels }] }).models[key]).toBeUndefined();
+      }
+      for (const prefix of ["openai", "openai-codex"]) {
+        const config = buildStarterConfig({ providers: [{ ...provider, discoveredModels: [`${prefix}/gpt-6-${variant}`] }] });
+        const row = directOpenAiBenchmarkRow(`gpt-6-${variant}`);
+        expect(row.slug).toBe(`gpt-6-${variant}-xhigh`);
+        expect(row.id).toBe(variant === "sol" ? "da2642fe-9f73-4788-b5af-24edcd55b37e" : "19813eb2-460a-475c-af65-810bb8660fec");
+        expect(config.models[key]).toEqual({
+          context_window: 272000,
+          supports_vision: true,
+          speed_tps: row.speed_tps,
+          ttft_seconds: row.ttft_seconds,
+          benchmarks: Object.fromEntries(Object.entries(row.benchmarks).filter(([, value]) => value != null)),
+        });
+        expect(config.models["openai/gpt-6-astra"]).toBeUndefined();
+        expect(config.models[`openai/gpt-6-${variant === "sol" ? "luna" : "sol"}`]).toBeUndefined();
+        expect(config.models[`openai/gpt-5.6-${variant}`]).toBeDefined();
+        expect(buildStarterConfig(deriveStarterDefaults(config)).models[key]).toBeUndefined();
+      }
+    }
+  });
+
+  it("intersects GPT-6 discovery per model across all selected inventory accounts", () => {
+    const providers = [{ providerId: "openai-codex", tierId: "pro", discoveredModels: ["openai/gpt-6-sol", "openai/gpt-6-luna", "openai/gpt-6-astra"] }];
+    const inventoryAccounts = [
+      { accountId: "first", providerId: "openai-codex", tierId: "pro", discoveredModels: providers[0].discoveredModels },
+      { accountId: "second", providerId: "openai-codex", tierId: "plus", discoveredModels: ["openai-codex/gpt-6-sol"] },
+    ];
+    const config = buildStarterConfig({ providers, inventoryAccounts });
+    expect(config.models["openai/gpt-6-sol"]).toBeDefined();
+    expect(config.models["openai/gpt-6-luna"]).toBeUndefined();
+    expect(config.models["openai/gpt-6-astra"]).toBeUndefined();
+    expect(config.subscription_inventory?.accounts.first).not.toHaveProperty("discoveredModels");
+    const missing = buildStarterConfig({ providers, inventoryAccounts: inventoryAccounts.map((account, i) => i === 1 ? { ...account, discoveredModels: undefined } : account) });
+    expect(missing.models["openai/gpt-6-sol"]).toBeUndefined();
+    const inventoryOnly = buildStarterConfig({ providers: [], inventoryAccounts });
+    expect(inventoryOnly.models["openai/gpt-6-sol"]).toEqual(config.models["openai/gpt-6-sol"]);
   });
 
   it("uses the Kimi membership model with the Moderato context limit", () => {

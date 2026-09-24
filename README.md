@@ -82,7 +82,7 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 
 | Provider | OpenClaw route/account | Access | Models and canonical route refs |
 |----------|------------------------|--------|---------------------------------|
-| OpenAI | `openai-codex` subscription; `openai/*` routes | ChatGPT account with verified model access | GPT-5.6 Sol (`openai/gpt-5.6-sol`), Terra (`openai/gpt-5.6-terra`), Luna (`openai/gpt-5.6-luna`); Astra (`openai/gpt-6-astra`) only after discovery in every selected account |
+| OpenAI | `openai-codex` subscription; `openai/*` routes | ChatGPT account with verified model access | GPT-5.6 Sol (`openai/gpt-5.6-sol`), Terra (`openai/gpt-5.6-terra`), Luna (`openai/gpt-5.6-luna`); GPT-6 Astra (`openai/gpt-6-astra`), Sol (`openai/gpt-6-sol`), Luna (`openai/gpt-6-luna`) each gated on exact discovery in every selected account |
 | Kimi Coding | `kimi`; Hermes provider `kimi-coding` | Separate Kimi Coding membership/key | K3-256k (`kimi/k3-256k`) for Moderato and above; full-context K3 (`kimi/k3`) needs the appropriate tier |
 | Z AI (GLM) | `zai` | Coding Plan | Text GLM-5.3 (`zai/glm-5.3`), vision-capable GLM-5.3 Flash (`zai/glm-5.3-flash`) |
 | MiniMax | `minimax-portal` | Coding Plan / supported OAuth account | MiniMax-M3 (`minimax-portal/MiniMax-M3`), M2.7 fallback (`minimax-portal/MiniMax-M2.7`) |
@@ -91,7 +91,7 @@ For agents without an explicit model, ZeroAPI setup can now align two OpenClaw r
 
 Display names are followed by canonical route refs in code formatting. These refs do not by themselves establish subscription eligibility. Eligibility comes from the actual configured account, endpoint, model entitlement, and host runtime. The live-source review and effort qualifications are in [provider/model status](references/provider-model-status.md) and [benchmarks](references/benchmarks.md); this table makes no current pricing claim.
 
-OpenAI auth uses `openclaw models auth login --provider openai`. GPT-5.6 Sol/Terra/Luna use direct AA max-effort reference rows. Astra has separate AA effort rows; ZeroAPI uses the xhigh reference because the checked Hermes main clamps Astra max to xhigh. The starter includes Astra only when fresh native account-catalog results supplied to the generator show it in every selected OpenAI account. A tier name, existing config, or benchmark row does not establish Astra access.
+OpenAI auth uses `openclaw models auth login --provider openai`. GPT-5.6 Sol/Terra/Luna use direct AA max-effort reference rows. GPT-6 Astra/Sol/Luna use distinct direct AA xhigh rows in the 2026-09-24 snapshot. The starter includes each GPT-6 id only when native account-catalog results supplied to the generator show that **exact id** in every selected OpenAI account. A tier name, existing config, or benchmark row does not establish access. The public API's 1.05M context is not the subscription starter's conservative 272K active budget.
 
 Kimi Coding uses the native `kimi` provider and its own membership key. `moonshot/*` denotes the separately billed Moonshot API; older ZeroAPI catalogs conflated these identities. Existing Moonshot profiles are never renamed into Kimi membership accounts automatically. The K3 membership starter uses AA K3 max as an explicit quality reference, while the membership default is high; no matching endpoint throughput or latency is claimed.
 
@@ -426,7 +426,7 @@ ZeroAPI/
 
 ## Benchmark Leaders
 
-Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). The 2026-09-07 AA snapshot contains 244 reference rows. `benchmarks.json` and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-5.6 uses direct AA max-effort rows; Grok 4.6 and 4.5 use direct high-effort rows. Missing measurements remain missing. For profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
+Current benchmark evidence and route status are dated in [`references/provider-model-status.md`](references/provider-model-status.md). The 2026-09-24 AA snapshot contains 258 reference rows. `benchmarks.json` and `plugin/benchmarks.json` are byte-identical release artifacts; release preflight fails if they drift. GPT-6 Astra/Sol/Luna use separate direct xhigh reference rows; GPT-5.6 uses direct max rows. Grok 4.7 high evidence is available but its starter route remains in PR #95. Missing measurements remain missing. For profiles and methodology, see [`references/benchmarks.md`](references/benchmarks.md). For freshness thresholds and maintenance ownership, see [`references/benchmark-governance.md`](references/benchmark-governance.md).
 
 The benchmark snapshot intentionally stays broader than the routeable starter pool. Direct rows, explicit proxies, and subscription routeability are listed separately in the provider/model status reference; do not infer one from another.
 

@@ -40,6 +40,9 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
   // Astra's native window is 1.05M; current OpenClaw keeps a 272K active input budget.
   "openai/gpt-6-astra": { context_window: 272000, supports_vision: true },
+  // Conservative starter budget, not the published 1.05M API window or a live Codex entitlement.
+  "openai/gpt-6-sol": { context_window: 272000, supports_vision: true },
+  "openai/gpt-6-luna": { context_window: 272000, supports_vision: true },
   // Codex/ChatGPT subscription routes expose 372K, while direct API routes expose 1.05M.
   "openai/gpt-5.6-sol": { context_window: 372000, supports_vision: true },
   "openai/gpt-5.6-terra": { context_window: 372000, supports_vision: true },
@@ -128,7 +131,7 @@ export type StarterInventoryAccountInput = {
   authProfile?: string | null;
   usagePriority?: number;
   intendedUse?: TaskCategory[];
-  /** Live catalog for this account; every selected OpenAI account must expose Astra. */
+  /** Live catalog for this account; each GPT-6 route requires discovery on every selected account. */
   discoveredModels?: string[];
 };
 
@@ -318,12 +321,12 @@ function getStarterBenchmarkRecord(snapshot: BenchmarkSnapshot, modelKey: string
 function buildStarterModels(
   snapshot: BenchmarkSnapshot,
   providerIds: string[],
-  includeAstra: boolean,
+  discoveredOpenAiModels: string[],
 ): Record<string, ModelCapabilities> {
   const modelKeys = providerIds.flatMap((providerId) => {
     const starterModels = STARTER_PROVIDER_MODELS[providerId] ?? [];
-    return providerId === "openai-codex" && includeAstra
-      ? ["openai/gpt-6-astra", ...starterModels]
+    return providerId === "openai-codex"
+      ? [...discoveredOpenAiModels, ...starterModels]
       : starterModels;
   });
 
@@ -336,11 +339,13 @@ function buildStarterModels(
       throw new Error(`Missing runtime metadata for starter model ${modelKey}`);
     }
 
+    const qualityProxyOnly = modelKey.startsWith("kimi/");
+
     result[modelKey] = {
       context_window: runtimeMeta.context_window,
       supports_vision: runtimeMeta.supports_vision,
-      speed_tps: modelKey.startsWith("kimi/") ? null : benchmarkRecord.speed_tps,
-      ttft_seconds: modelKey.startsWith("kimi/") ? null : benchmarkRecord.ttft_seconds,
+      speed_tps: qualityProxyOnly ? null : benchmarkRecord.speed_tps,
+      ttft_seconds: qualityProxyOnly ? null : benchmarkRecord.ttft_seconds,
       benchmarks: Object.fromEntries(
         Object.entries(benchmarkRecord.benchmarks).filter(([, value]) => value != null),
       ) as Record<string, number>,
@@ -559,14 +564,16 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
   const openAiAccounts = openAiInventoryAccounts.length > 0
     ? openAiInventoryAccounts
     : normalizedProviders.filter((provider) => provider.providerId === "openai-codex");
-  const includeAstra = openAiAccounts.length > 0 && openAiAccounts.every((account) =>
-    account.discoveredModels?.some((model) =>
-      model === "openai/gpt-6-astra" || model === "openai-codex/gpt-6-astra",
+  const discoveredOpenAiModels = ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"].filter((modelId) =>
+    openAiAccounts.length > 0 && openAiAccounts.every((account) =>
+      account.discoveredModels?.some((model) =>
+        model === `openai/${modelId}` || model === `openai-codex/${modelId}`,
+      ),
     ),
-  );
+  ).map((modelId) => `openai/${modelId}`);
 
   const snapshot = loadBenchmarkSnapshot();
-  const models = buildStarterModels(snapshot, providerIds, includeAstra);
+  const models = buildStarterModels(snapshot, providerIds, discoveredOpenAiModels);
   const routingRules = buildRoutingRules(models);
   const inventoryProviderIds = new Set((normalizedInventoryAccounts ?? []).map((account) => account.providerId));
   const subscriptionProfile = buildSubscriptionProfile(normalizedProviders, inventoryProviderIds);
