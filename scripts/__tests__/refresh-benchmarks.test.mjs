@@ -861,6 +861,26 @@ test("offline reannotation remaps the committed snapshot without an API key", ()
   assert.equal(families["qwen-portal-routes"].provider, "qwen-oauth");
 });
 
+test("GPT-6 Sol/Luna map exact direct xhigh rows without relabeling other efforts", () => {
+  const families = JSON.parse(readFileSync(new URL("../../policy-families.json", import.meta.url), "utf8")).families;
+  const snapshot = JSON.parse(readFileSync(new URL("../../benchmarks.json", import.meta.url), "utf8"));
+  for (const variant of ["sol", "luna"]) {
+    const family = families.find((item) => item.id === `openai-gpt6-${variant}-route`);
+    assert.ok(family, `missing GPT-6 ${variant} family`);
+    assert.equal(family.provider, "openai-codex");
+    assert.deepEqual(family.openclaw_model_ids, [`gpt-6-${variant}`]);
+    assert.deepEqual(family.benchmark_slugs, [`gpt-6-${variant}-xhigh`]);
+    assert.equal(family.benchmark_proxy, undefined);
+    assert.deepEqual(snapshot.policy_families.families.find((item) => item.id === family.id), family);
+    assert.ok(snapshot.models.some((row) => row.openclaw_model === `gpt-5.6-${variant}`));
+    const mapped = snapshot.models.filter((row) => row.openclaw_model === `gpt-6-${variant}`);
+    assert.equal(mapped.length, 1);
+    assert.equal(mapped[0].slug, `gpt-6-${variant}-xhigh`);
+    assert.equal(snapshot.models.find((row) => row.slug === `gpt-6-${variant}`).openclaw_model, null);
+  }
+  assert.equal(snapshot.models.find((row) => row.slug === "gpt-6-astra-xhigh").openclaw_model, "gpt-6-astra");
+});
+
 test("refresh_benchmarks terminalbench prefers v2_1 then falls back to hard", () => {
   runPython(`
 import importlib.util
