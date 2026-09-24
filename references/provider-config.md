@@ -52,11 +52,11 @@ Provider contracts were checked on 2026-09-06 against OpenClaw `679193c5ffbc02f9
 
 | Subscription provider | Fresh OpenClaw model refs | Benchmark evidence |
 |---|---|---|
-| OpenAI Codex | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-luna`; `openai/gpt-6-astra` only with live account discovery | GPT-5.6 max rows; Astra xhigh row |
+| OpenAI Codex | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-luna`; `openai/gpt-6-astra`, `openai/gpt-6-sol`, `openai/gpt-6-luna` only with per-model live account discovery | GPT-5.6 max rows; GPT-6 Astra/Sol/Luna distinct direct xhigh rows |
 | Kimi Coding | `kimi/k3-256k` | Explicit K3 max quality reference; membership endpoint TPS/TTFT unavailable |
 | Z.AI Coding Plan | `zai/glm-5.3`, `zai/glm-5.3-flash` | Direct rows; Flash supports images and Coding Plan access |
 | MiniMax Portal | `minimax-portal/MiniMax-M3`, `minimax-portal/MiniMax-M2.7` | Direct rows |
-| xAI OAuth | `xai/grok-4.6`, `xai/grok-4.5`, `xai/grok-build-0.1`, `xai/grok-4.3` | Direct rows; 4.6/4.5 use high-effort reference rows |
+| xAI OAuth | `xai/grok-4.7`, `xai/grok-4.6`, `xai/grok-4.5`, `xai/grok-build-0.1`, `xai/grok-4.3` | Distinct direct high-effort rows for 4.7/4.6/4.5 |
 
 `npm run examples:refresh` generates public examples from this starter pool. It does not assert access to rollout models or rewrite an existing policy on plugin load.
 
@@ -69,11 +69,11 @@ openclaw models auth login --provider openai
 openclaw models list --provider openai
 ```
 
-The runtime ref is `openai/*`; ZeroAPI's subscription profile remains `openai-codex`. A ChatGPT plan does not grant direct Platform API billing. Astra must appear in the selected account's live catalog. Configured entries, auth availability heuristics, offline fallback catalogs, and selecting Plus/Pro are insufficient evidence.
+The runtime ref is `openai/*`; ZeroAPI's subscription profile remains `openai-codex`. A ChatGPT plan does not grant direct Platform API billing. Each GPT-6 model must appear in every selected account's live catalog. Configured entries, auth availability heuristics, offline fallback catalogs, and selecting Plus/Pro are insufficient evidence.
 
-`buildStarterConfig` accepts `discoveredModels` on each provider selection or inventory account. Populate it only from verified live account catalog refs. With inventory, every selected OpenAI account must expose `openai/gpt-6-astra` (the legacy `openai-codex/gpt-6-astra` ref is also recognized). Discovery is not persisted as timeless access evidence: reruns require fresh verification. The interactive wizard has no per-account catalog attestation and therefore retains the GPT-5.6 starter pool.
+`buildStarterConfig` accepts `discoveredModels` on each provider selection or inventory account. Populate it only from verified live account catalog refs. With inventory, every selected OpenAI account must expose the exact GPT-6 model id (both `openai/*` and `openai-codex/*` catalog refs are recognized). Discovery is not persisted as timeless access evidence: reruns require fresh verification. The interactive wizard has no per-account catalog attestation and therefore retains the GPT-5.6 starter pool.
 
-Astra's native context is 1,050,000 tokens with 128,000 maximum output. The starter uses OpenClaw's conservative 272,000 active input budget. GPT-5.6's static subscription model window remains 372,000; the live runtime may apply a smaller active-input budget. Verify the account/runtime budget before expanding a live policy.
+The GPT-6 API models have a published 1,050,000-token context with 128,000 maximum output. The subscription starter conservatively uses a 272,000 active input budget, not a claim of live account limits. GPT-5.6's static subscription model window remains 372,000; the live runtime may apply a smaller active-input budget. Verify the account/runtime budget before expanding a live policy.
 
 Astra supports low, medium, high, xhigh, and max reasoning; reasoning cannot be disabled. Hermes at the checked commit clamps Astra max to xhigh, so ZeroAPI uses the direct AA xhigh row. This is not a claim that Hermes executes vendor max. GPT-5.4/5.4-mini subscription references are retired in current OpenClaw; its supported Doctor migration maps them to Terra/Luna while preserving incompatible locked policy choices for operator review. Direct API availability is a separate contract.
 
@@ -130,7 +130,7 @@ openclaw models auth login --provider xai --method oauth
 hermes auth add xai-oauth
 ```
 
-Only subscription-backed OAuth accounts belong in the `xai` / `xai-oauth` pool; plain API keys remain usage-billed. `grok-4.6` supports text and images with a 500,000-token context. Its efforts are low/medium/high/xhigh, default high. ZeroAPI maps the high-effort AA row; a Hermes request clamped to xhigh is a different effort and must not be presented as the high measurement.
+Only subscription-backed OAuth accounts belong in the `xai` / `xai-oauth` pool; plain API keys remain usage-billed. `grok-4.7` is the current flagship with a 500,000-token context and its own direct high-effort AA row. `grok-4.6` supports text and images with a 500,000-token context. Its efforts are low/medium/high/xhigh, default high. ZeroAPI maps its distinct high-effort AA row; a Hermes request clamped to xhigh is a different effort and must not be presented as the high measurement.
 
 Grok 4.5 now has a direct high-effort AA row, replacing the old 4.3 proxy. Grok Build 0.1 and 4.3 retain their own rows. The moving `xai/auto` and `grok-build-latest` aliases do not identify a fixed benchmark row; the checked native Build alias still targets 4.5.
 

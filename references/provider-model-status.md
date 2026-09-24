@@ -38,8 +38,8 @@ Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa`
 | Qwen Cloud `qwen3.8-max` | Direct `qwen3-8-max` row | Reference only. Standard PAYG/separate Token Plan credentials, not the old Coding Plan or Portal pool. |
 | Qwen Cloud `qwen3.8-flash`, `qwen3.8-max-0902` | Direct benchmark unavailable | Current model IDs; `qwen3-8-flash-next` is a different model and must not substitute for Flash. |
 | Qwen Portal `qwen-oauth` | Historical 3.5 Plus to 3.6 Plus proxy | Removed from current OpenClaw. Fresh starters reject it; compatible existing Hermes/older-runtime identities remain recognizable. |
+| xAI `grok-4.7` | Direct `grok-4-7-high` UUID `272f5f03-aea9-4675-a244-2b753b618cdf` | Subscription-backed OAuth flagship; separate high-effort AA evidence is not proof of an account entitlement. |
 | xAI `grok-4.6`, `grok-4.5` | Direct high-effort rows | Subscription-backed OAuth only. Grok 4.5 no longer uses the 4.3 proxy. |
-| xAI `grok-4.7` | Direct `grok-4-7-high` reference now exists | Model released, but this branch does not enable it in the starter; the independent Grok 4.7 source route is PR #95. Direct benchmark presence alone grants no account access. |
 | xAI `grok-build-0.1`, `grok-4.3` | Their own direct rows | Compatibility fallbacks where the account exposes them. Moving `auto`/`build-latest` aliases have no fixed benchmark mapping. |
 
 ## Exact new benchmark identities

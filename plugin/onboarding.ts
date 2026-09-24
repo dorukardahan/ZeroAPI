@@ -53,10 +53,12 @@ const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vi
   "minimax-portal/MiniMax-M3": { context_window: 1000000, supports_vision: true },
   "minimax-portal/MiniMax-M2.7": { context_window: 204800, supports_vision: false },
   "qwen-oauth/qwen3.5-plus": { context_window: 1000000, supports_vision: true },
+  "xai/grok-4.7": { context_window: 500000, supports_vision: true },
   "xai/grok-4.6": { context_window: 500000, supports_vision: true },
   "xai/grok-4.5": { context_window: 500000, supports_vision: true },
   "xai/grok-build-0.1": { context_window: 256000, supports_vision: true },
   "xai/grok-4.3": { context_window: 1000000, supports_vision: true },
+  "xai-oauth/grok-4.7": { context_window: 500000, supports_vision: true },
   "xai-oauth/grok-4.6": { context_window: 500000, supports_vision: true },
   "xai-oauth/grok-4.5": { context_window: 500000, supports_vision: true },
   "xai-oauth/grok-build-0.1": { context_window: 256000, supports_vision: true },
@@ -70,8 +72,8 @@ const STARTER_PROVIDER_MODELS: Record<string, string[]> = {
   "minimax-portal": ["minimax-portal/MiniMax-M3", "minimax-portal/MiniMax-M2.7"],
   "qwen-oauth": ["qwen-oauth/qwen3.5-plus"],
   "qwen-portal": ["qwen-oauth/qwen3.5-plus"],
-  "xai": ["xai/grok-4.6", "xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"],
-  "xai-oauth": ["xai-oauth/grok-4.6", "xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"],
+  "xai": ["xai/grok-4.7", "xai/grok-4.6", "xai/grok-4.5", "xai/grok-build-0.1", "xai/grok-4.3"],
+  "xai-oauth": ["xai-oauth/grok-4.7", "xai-oauth/grok-4.6", "xai-oauth/grok-4.5", "xai-oauth/grok-build-0.1", "xai-oauth/grok-4.3"],
 };
 
 const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
@@ -79,6 +81,9 @@ const STARTER_BENCHMARK_PROXIES: Record<string, string> = {
   // API endpoint latency/throughput is not a membership endpoint measurement.
   "kimi/k3-256k": "moonshot/kimi-k3",
   "qwen-oauth/qwen3.5-plus": "qwen/qwen3.6-plus",
+  // OpenClaw xai/* names and Hermes xai-oauth/* share the same AA row;
+  // these alias lookups do not substitute a different model's evidence.
+  "xai/grok-4.7": "xai-oauth/grok-4.7",
   "xai/grok-4.6": "xai-oauth/grok-4.6",
   "xai/grok-4.5": "xai-oauth/grok-4.5",
   "xai/grok-build-0.1": "xai-oauth/grok-build-0.1",

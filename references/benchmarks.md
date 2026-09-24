@@ -44,7 +44,7 @@ AA's current Intelligence Index methodology is v4.2 with 10 evaluations. The pub
 | Qwen Cloud 3.8 Max | `qwen3-8-max` | Cloud reference only; no automatic subscription enablement. |
 | Qwen Cloud 3.8 Flash / Max-0902 | Unavailable | Flash-Next is a distinct model, and the undated Max row does not establish dated-snapshot equivalence. |
 | Qwen Portal | Historical 3.5 Plus to 3.6 Plus proxy | Legacy compatible-runtime reference; current OpenClaw removed Portal. |
-| Grok 4.7 | `grok-4-7-high`, UUID `272f5f03-aea9-4675-a244-2b753b618cdf` | New direct high-effort reference available in AA. The 4.7 subscription starter route is handled separately in PR #95; benchmark presence alone does not add it here. |
+| Grok 4.7 | `grok-4-7-high`, UUID `272f5f03-aea9-4675-a244-2b753b618cdf` | Direct high-effort reference. The starter route is subscription-backed OAuth only; an AA row alone grants no entitlement. |
 | Grok 4.6 / 4.5 | `grok-4-6` / `grok-4-5`, both high | Direct rows replace the former 4.5 to 4.3 proxy. Other efforts remain separate. |
 | Grok Build 0.1 / 4.3 | Their direct rows | Existing exact model references, not the moving `auto` or `build-latest` aliases. |
 
