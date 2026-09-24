@@ -11,12 +11,28 @@
       "notes": "The 2026-09-06 AA xhigh row is the shared reference: Hermes 245e480 clamps Astra max to xhigh. Vendor max is separate. Route eligibility requires the selected accounts' live catalogs; Plus/Pro alone is not evidence of rollout access."
     },
     {
+      "id": "openai-gpt6-sol-route",
+      "provider": "openai-codex",
+      "label": "OpenAI GPT-6 Sol account-discovered route",
+      "openclaw_model_ids": ["gpt-6-sol"],
+      "benchmark_slugs": ["gpt-6-sol-xhigh"],
+      "notes": "The 2026-09-24 AA GPT-6 Sol xhigh row is a direct reference, not the separate max measurement. Requires this exact model in every selected account's live catalog; Plus/Pro alone is insufficient."
+    },
+    {
+      "id": "openai-gpt6-luna-route",
+      "provider": "openai-codex",
+      "label": "OpenAI GPT-6 Luna account-discovered route",
+      "openclaw_model_ids": ["gpt-6-luna"],
+      "benchmark_slugs": ["gpt-6-luna-xhigh"],
+      "notes": "The 2026-09-24 AA GPT-6 Luna xhigh row is a direct reference, not the separate max measurement. Requires this exact model in every selected account's live catalog; Plus/Pro alone is insufficient."
+    },
+    {
       "id": "openai-gpt56-routes",
       "provider": "openai-codex",
       "label": "OpenAI GPT-5.6 subscription routes",
       "openclaw_model_ids": ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"],
       "benchmark_slugs": ["gpt-5-6-sol", "gpt-5-6-terra", "gpt-5-6-luna"],
-      "notes": "GPT-5.6 Sol, Terra, and Luna retain direct Artificial Analysis max-effort rows in the 2026-09-06 snapshot."
+      "notes": "GPT-5.6 Sol, Terra, and Luna retain direct Artificial Analysis max-effort rows in the 2026-09-24 snapshot."
     },
     {
       "id": "openai-gpt55-core",
@@ -100,11 +116,9 @@
       "id": "xai-grok-core",
       "provider": "xai-oauth",
       "label": "xAI Grok OAuth routeable family",
-      "openclaw_model_ids": ["grok-4.6", "grok-4.5", "grok-build-0.1", "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
-      "benchmark_slugs": ["grok-4-6", "grok-4-5", "grok-build-0-1-06-16", "grok-4-3", "grok-4-20", "grok-4-20-0309-non-reasoning"],
-      "route_model_ids": ["grok-4.7"],
-      "benchmark_proxy": "xai-oauth/grok-4.6",
-      "notes": "Grok 4.7 is routeable with a conservative Grok 4.6 high-effort AA proxy until a direct 4.7 row ships. Grok 4.6 and 4.5 have direct high-effort AA rows; the old 4.3 proxy is retired for 4.5. Other 4.6 efforts remain separate reference rows. Only subscription-backed OAuth is eligible; xAI API billing and the moving auto/build-latest aliases do not inherit these scores."
+      "openclaw_model_ids": ["grok-4.7", "grok-4.6", "grok-4.5", "grok-build-0.1", "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning"],
+      "benchmark_slugs": ["grok-4-7-high", "grok-4-6", "grok-4-5", "grok-build-0-1-06-16", "grok-4-3", "grok-4-20", "grok-4-20-0309-non-reasoning"],
+      "notes": "Grok 4.7, 4.6 and 4.5 have distinct direct high-effort AA rows in the 2026-09-24 snapshot. Other efforts remain separate reference rows. Only subscription-backed OAuth is eligible; xAI API billing and the moving auto/build-latest aliases do not inherit these scores."
     }
   ]
 }

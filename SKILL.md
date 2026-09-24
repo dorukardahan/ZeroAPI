@@ -197,7 +197,7 @@ Conversation rules for this step:
 
 Practical subscription mapping:
 
-- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks and direct AA max-effort rows. Add Astra only after fresh native discovery proves access in every selected account; its canonical AA reference is xhigh, not max. Never infer entitlement from tier or config.
+- OpenAI -> GPT-5.6 Sol with Terra/Luna fallbacks and direct AA max-effort rows. Add GPT-6 Astra, Sol, and Luna independently only when fresh native discovery proves the exact id in every selected account; each has its own direct AA xhigh reference, not the separate max rows. Never infer entitlement from tier or config.
 - Kimi Coding -> `kimi/k3-256k` on Moderato+ with an explicit AA K3 max quality reference. Membership defaults to high; API benchmark throughput is not membership endpoint throughput. Do not rename or reuse a Moonshot API account as Kimi membership.
 - Z AI -> text-only GLM-5.3 and vision-capable GLM-5.3 Flash, both Coding Plan eligible
 - MiniMax -> MiniMax-M3 with M2.7 fallback

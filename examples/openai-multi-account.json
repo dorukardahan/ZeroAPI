@@ -1,7 +1,7 @@
 {
   "version": "3.11.3",
-  "generated": "2026-09-20T00:00:00.000Z",
-  "benchmarks_date": "2026-09-20",
+  "generated": "2026-09-24T00:00:00.000Z",
+  "benchmarks_date": "2026-09-24",
   "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -34,8 +34,8 @@
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 64.928,
-      "ttft_seconds": 64.464,
+      "speed_tps": 57.62,
+      "ttft_seconds": 79.856,
       "benchmarks": {
         "intelligence": 47,
         "coding": 77.4,
@@ -52,8 +52,8 @@
     "openai/gpt-5.6-terra": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 88.083,
-      "ttft_seconds": 117.758,
+      "speed_tps": 85.717,
+      "ttft_seconds": 217.469,
       "benchmarks": {
         "intelligence": 42.1,
         "coding": 76.7,
@@ -70,8 +70,8 @@
     "openai/gpt-5.6-luna": {
       "context_window": 372000,
       "supports_vision": true,
-      "speed_tps": 148.353,
-      "ttft_seconds": 81.86,
+      "speed_tps": 122.151,
+      "ttft_seconds": 91.956,
       "benchmarks": {
         "intelligence": 37.3,
         "coding": 71.4,
@@ -114,9 +114,9 @@
       ]
     },
     "fast": {
-      "primary": "openai/gpt-5.6-sol",
+      "primary": "openai/gpt-5.6-luna",
       "fallbacks": [
-        "openai/gpt-5.6-luna",
+        "openai/gpt-5.6-sol",
         "openai/gpt-5.6-terra"
       ]
     },
