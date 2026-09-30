@@ -3,29 +3,31 @@ import { resolve } from "node:path";
 import { buildStarterConfig, type StarterConfigOptions } from "../plugin/onboarding.js";
 
 const root = resolve(import.meta.dirname, "..");
+const OPENAI_EXAMPLE_DISCOVERY = ["openai-codex/gpt-6.1-sol", "openai/gpt-6-sol"];
+const OPENAI_PLUS = { providerId: "openai-codex", tierId: "plus", discoveredModels: OPENAI_EXAMPLE_DISCOVERY };
 const presets: Record<string, StarterConfigOptions> = {
-  "openai-only.json": { providers: [{ providerId: "openai-codex", tierId: "plus" }] },
-  "subscription-profile.json": { providers: [{ providerId: "openai-codex", tierId: "plus" }] },
+  "openai-only.json": { providers: [OPENAI_PLUS] },
+  "subscription-profile.json": { providers: [OPENAI_PLUS] },
   "openai-multi-account.json": {
     providers: [],
     inventoryAccounts: [
-      { accountId: "openai-personal", providerId: "openai-codex", tierId: "plus", authProfile: "openai:personal", usagePriority: 1, intendedUse: ["fast"] },
-      { accountId: "openai-work", providerId: "openai-codex", tierId: "pro", authProfile: "openai:work", usagePriority: 2, intendedUse: ["code", "research"] },
+      { accountId: "openai-personal", providerId: "openai-codex", tierId: "plus", authProfile: "openai:personal", usagePriority: 1, intendedUse: ["fast"], discoveredModels: OPENAI_EXAMPLE_DISCOVERY },
+      { accountId: "openai-work", providerId: "openai-codex", tierId: "pro", authProfile: "openai:work", usagePriority: 2, intendedUse: ["code", "research"], discoveredModels: OPENAI_EXAMPLE_DISCOVERY },
     ],
   },
   "openai-glm.json": {
-    providers: [{ providerId: "openai-codex", tierId: "plus" }, { providerId: "zai", tierId: "max" }],
+    providers: [OPENAI_PLUS, { providerId: "zai", tierId: "max" }],
   },
   "openai-glm-kimi.json": {
     providers: [
-      { providerId: "openai-codex", tierId: "plus" },
+      OPENAI_PLUS,
       { providerId: "zai", tierId: "max" },
       { providerId: "kimi", tierId: "moderato" },
     ],
   },
   "full-stack.json": {
     providers: [
-      { providerId: "openai-codex", tierId: "plus" },
+      OPENAI_PLUS,
       { providerId: "zai", tierId: "max" },
       { providerId: "kimi", tierId: "moderato" },
       { providerId: "minimax-portal", tierId: "starter" },

@@ -1,4 +1,4 @@
-# Provider and model status - 2026-09-24
+# Provider and model status - 2026-09-30
 
 Benchmark evidence and runtime availability are separate. A direct Artificial Analysis (AA) row does not prove that a subscription provider can route the model; a routeable model may also need an explicit proxy until AA publishes a matching row.
 
@@ -21,10 +21,11 @@ The [official Pro/Max Claude Code guide](https://support.claude.com/en/articles/
 
 ## Current provider and model status
 
-Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa` and Hermes `245e48008fa814b3251f50755eb656bd9fb86cb1`. These are older pinned runtime references, not newly re-audited host releases. Benchmark evidence is the 2026-09-24 AA API snapshot, 258 rows. This model/benchmark update did not change provider-policy reviews. The later, focused Anthropic re-review is recorded above; the Google review date is unchanged.
+Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa` and Hermes `245e48008fa814b3251f50755eb656bd9fb86cb1`. These are older pinned runtime references, not newly re-audited host releases. Benchmark evidence is the scoped 2026-09-30 AA API snapshot, 264 rows: the prior 259 rows plus five direct GPT-6.1 Sol effort rows. This model/benchmark update did not change provider-policy reviews.
 
 | Provider/model | Benchmark evidence | Subscription route status |
 |---|---|---|
+| OpenAI `gpt-6.1-sol` | Direct `gpt-6-1-sol-xhigh` row | Canonical `openai-codex/gpt-6.1-sol` quality/default seed only after exact discovery in every selected account. API availability and Plus/Pro tiers do not prove subscription rollout. Conservative starter budget: 272K. |
 | OpenAI `gpt-6-astra` | Direct `gpt-6-astra-xhigh` row | `openai/gpt-6-astra` only when every selected account's live catalog exposes it. Plus/Pro alone is insufficient. Native 1.05M context; starter retains OpenClaw's 272K active budget. |
 | OpenAI `gpt-6-sol`, `gpt-6-luna` | Direct `gpt-6-sol-xhigh`, `gpt-6-luna-xhigh` rows | Separate per-id discovery in every selected account is required. The starter retains a conservative 272K active budget; public API 1.05M does not prove an account's subscription context. GPT-5.6 remains in the pool. |
 | OpenAI GPT-5.6 Sol/Terra/Luna | Direct max-effort rows | Existing starter and fallback pool when Astra account discovery is unavailable. Catalog/native context and active runtime budget are separate. |
@@ -46,6 +47,7 @@ Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa`
 
 | Policy reference | AA slug | AA model UUID |
 |---|---|---|
+| GPT-6.1 Sol xhigh | `gpt-6-1-sol-xhigh` | `092a3b0e-c5c8-45dc-bf1b-53673c8ff352` |
 | Astra xhigh | `gpt-6-astra-xhigh` | `1f541ef3-913f-4eb2-9d07-0e93c7a9a5e3` |
 | Sol xhigh | `gpt-6-sol-xhigh` | `da2642fe-9f73-4788-b5af-24edcd55b37e` |
 | Luna xhigh | `gpt-6-luna-xhigh` | `19813eb2-460a-475c-af65-810bb8660fec` |
@@ -57,7 +59,7 @@ Provider code was checked at OpenClaw `679193c5ffbc02f96a54779da68e480145512cfa`
 | Grok 4.5 high | `grok-4-5` | `794f69b5-cede-482b-b1cc-d769478497cd` |
 | Grok 4.7 high | `grok-4-7-high` | `272f5f03-aea9-4675-a244-2b753b618cdf` |
 
-An effort suffix changes the measured configuration. Astra's bare AA slug denotes max, but Hermes at the checked commit clamps Astra max to xhigh; ZeroAPI therefore maps the xhigh UUID above. Grok 4.6 xhigh is separate from the canonical high reference. An AA non-reasoning Astra row does not make disabled reasoning valid in the native provider.
+An effort suffix changes the measured configuration. GPT-6.1 Sol maps only its direct xhigh UUID; max, high, medium, and low remain separate reference rows. Astra's bare AA slug denotes max, but Hermes at the checked commit clamps Astra max to xhigh; ZeroAPI therefore maps the xhigh UUID above. Grok 4.6 xhigh is separate from the canonical high reference.
 
 Kimi Coding is canonical `kimi` in current OpenClaw and `kimi-coding` in Hermes, with a separate China provider in Hermes. `moonshot` is a different endpoint and billing path. Catalog 1.2.0 does not migrate old Moonshot credentials or treat a model family relation as account entitlement.
 
@@ -69,7 +71,7 @@ Kimi Coding is canonical `kimi` in current OpenClaw and `kimi-coding` in Hermes,
 
 ## Public sources
 
-- [OpenAI Astra](https://developers.openai.com/api/docs/models/gpt-6-astra), [Sol](https://developers.openai.com/api/docs/models/gpt-6-sol), [Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), and [ChatGPT rollout notice](https://help.openai.com/en/articles/20001354)
+- [OpenAI GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), [Astra](https://developers.openai.com/api/docs/models/gpt-6-astra), [GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol), [Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), and [ChatGPT rollout notice](https://help.openai.com/en/articles/20001354)
 - [OpenClaw OpenAI contract](https://github.com/openclaw/openclaw/blob/679193c5ffbc02f96a54779da68e480145512cfa/docs/providers/openai.md)
 - [Hermes Codex effort support](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/reasoning_effort.py)
 - [Z.AI GLM-5.3](https://docs.z.ai/guides/llm/glm-5.3) and [GLM-5.3 Flash](https://docs.z.ai/guides/vlm/glm-5.3-flash)

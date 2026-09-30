@@ -56,7 +56,7 @@ export const SUBSCRIPTION_CATALOG: ProviderCatalogEntry[] = [
       },
     ],
     benchmarkRoutingBias: 0.7,
-    notes: "OpenAI tiers should be preferred only when benchmark advantage justifies subscription pressure. GPT-6 Astra rollout must be verified in every selected account's live catalog; a Plus/Pro selection alone does not grant access.",
+    notes: "OpenAI tiers should be preferred only when benchmark advantage justifies subscription pressure. GPT-6.1 Sol, Astra, Sol, and Luna each require exact discovery in every selected account's live catalog; Plus/Pro alone is not evidence of rollout access.",
   },
   {
     providerId: "kimi",

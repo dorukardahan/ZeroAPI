@@ -1,7 +1,7 @@
 {
   "version": "3.11.3",
-  "generated": "2026-09-27T00:00:00.000Z",
-  "benchmarks_date": "2026-09-27",
+  "generated": "2026-09-30T00:00:00.000Z",
+  "benchmarks_date": "2026-09-30",
   "subscription_catalog_version": "1.2.0",
   "routing_mode": "balanced",
   "external_model_policy": "stay",
@@ -14,8 +14,33 @@
       }
     }
   },
-  "default_model": "openai/gpt-5.6-sol",
+  "default_model": "openai-codex/gpt-6.1-sol",
   "models": {
+    "openai-codex/gpt-6.1-sol": {
+      "context_window": 272000,
+      "supports_vision": true,
+      "speed_tps": 73.56,
+      "ttft_seconds": 47.373,
+      "benchmarks": {
+        "intelligence": 51,
+        "terminalbench": 0.54,
+        "lcr": 0.797,
+        "hle": 0.526,
+        "scicode": 0.557
+      }
+    },
+    "openai/gpt-6-sol": {
+      "context_window": 272000,
+      "supports_vision": true,
+      "speed_tps": 76.472,
+      "ttft_seconds": 34.85,
+      "benchmarks": {
+        "intelligence": 44.1,
+        "lcr": 0.813,
+        "hle": 0.463,
+        "scicode": 0.551
+      }
+    },
     "openai/gpt-5.6-sol": {
       "context_window": 372000,
       "supports_vision": true,
@@ -74,42 +99,54 @@
       "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
         "openai/gpt-5.6-terra",
-        "openai/gpt-5.6-luna"
+        "openai/gpt-5.6-luna",
+        "openai-codex/gpt-6.1-sol",
+        "openai/gpt-6-sol"
       ]
     },
     "research": {
       "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
         "openai/gpt-5.6-terra",
-        "openai/gpt-5.6-luna"
+        "openai/gpt-5.6-luna",
+        "openai-codex/gpt-6.1-sol",
+        "openai/gpt-6-sol"
       ]
     },
     "orchestration": {
       "primary": "openai/gpt-5.6-sol",
       "fallbacks": [
         "openai/gpt-5.6-terra",
-        "openai/gpt-5.6-luna"
+        "openai/gpt-5.6-luna",
+        "openai-codex/gpt-6.1-sol",
+        "openai/gpt-6-sol"
       ]
     },
     "math": {
-      "primary": "openai/gpt-5.6-sol",
+      "primary": "openai-codex/gpt-6.1-sol",
       "fallbacks": [
+        "openai/gpt-6-sol",
+        "openai/gpt-5.6-sol",
         "openai/gpt-5.6-terra",
         "openai/gpt-5.6-luna"
       ]
     },
     "fast": {
-      "primary": "openai/gpt-5.6-terra",
+      "primary": "openai/gpt-6-sol",
       "fallbacks": [
+        "openai-codex/gpt-6.1-sol",
+        "openai/gpt-5.6-terra",
         "openai/gpt-5.6-sol",
         "openai/gpt-5.6-luna"
       ]
     },
     "default": {
-      "primary": "openai/gpt-5.6-sol",
+      "primary": "openai-codex/gpt-6.1-sol",
       "fallbacks": [
+        "openai/gpt-5.6-sol",
         "openai/gpt-5.6-terra",
-        "openai/gpt-5.6-luna"
+        "openai/gpt-5.6-luna",
+        "openai/gpt-6-sol"
       ]
     }
   },

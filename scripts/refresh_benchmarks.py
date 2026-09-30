@@ -34,7 +34,7 @@ BENCHMARK_MAP = {
     "math": "artificial_analysis_math_index",
     "tau2": "tau2",
     "tau3_banking": "tau_banking",
-    "terminalbench": ("terminalbench_v2_1", "terminalbench_hard"),
+    "terminalbench": ("terminalbench_v4_0", "terminalbench_v2_1", "terminalbench_hard"),
     "ifbench": "ifbench",
     "gpqa": "gpqa",
     "lcr": "lcr",
@@ -73,10 +73,10 @@ CANONICAL_BENCHMARK_CATEGORIES = {
         "description": "Tau-cubed Banking knowledge-grounded multi-step tool workflows",
     },
     "terminalbench": {
-        "key": "terminalbench_v2_1",
-        "fallback_key": "terminalbench_hard",
+        "key": "terminalbench_v4_0",
+        "fallback_keys": ["terminalbench_v2_1", "terminalbench_hard"],
         "scale": "0-1",
-        "description": "Agentic terminal tasks (Terminal-Bench v2.1, falling back to Hard for older rows)",
+        "description": "Agentic terminal tasks (Terminal-Bench v4.0, falling back through v2.1 and Hard for older rows)",
     },
     "ifbench": {
         "key": "ifbench",
@@ -204,9 +204,8 @@ def resolve_benchmark(evaluations: Dict[str, Any], source_spec: Any) -> Optional
     """Resolve a benchmark value from AA evaluations, supporting fallback chains.
 
     ``source_spec`` is normally a single AA field name string. For
-    ``terminalbench`` it is a ``(preferred, fallback)`` tuple so that
-    ``terminalbench_v2_1`` is preferred when available and falls back to
-    ``terminalbench_hard`` for older snapshots.
+    ``terminalbench`` it is a newest-to-oldest tuple so that v4.0 is preferred
+    when present while existing rows retain their direct v2.1/Hard evidence.
     """
     if isinstance(source_spec, tuple):
         for key in source_spec:

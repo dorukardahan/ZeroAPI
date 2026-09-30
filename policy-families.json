@@ -11,6 +11,14 @@
       "notes": "The 2026-09-06 AA xhigh row is the shared reference: Hermes 245e480 clamps Astra max to xhigh. Vendor max is separate. Route eligibility requires the selected accounts' live catalogs; Plus/Pro alone is not evidence of rollout access."
     },
     {
+      "id": "openai-gpt61-sol-route",
+      "provider": "openai-codex",
+      "label": "OpenAI GPT-6.1 Sol account-discovered route",
+      "openclaw_model_ids": ["gpt-6.1-sol"],
+      "benchmark_slugs": ["gpt-6-1-sol-xhigh"],
+      "notes": "The 2026-09-30 Artificial Analysis API snapshot supplies a direct GPT-6.1 Sol xhigh row. Max, high, medium, and low rows remain separate reference evidence and are not relabeled. Route eligibility still requires this exact model in every selected account's live catalog; API availability or a Plus/Pro tier alone is insufficient."
+    },
+    {
       "id": "openai-gpt6-sol-route",
       "provider": "openai-codex",
       "label": "OpenAI GPT-6 Sol account-discovered route",

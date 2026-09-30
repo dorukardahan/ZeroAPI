@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- Recognize account-discovered GPT-6.1 Sol as canonical `openai-codex/gpt-6.1-sol`, backed by its direct Artificial Analysis xhigh row. Keep other effort rows as reference data and retain GPT-6 Sol as an independent rollback/fallback.
+
+### Changed
+- Make discovered GPT-6.1 Sol the generated quality/default seed while preserving balanced GLM subscription-pressure offload, exact per-account eligibility gates, legacy GPT-5.6 fallbacks, and deterministic examples.
+
 ## [3.11.3] - 2026-09-15
 
 ### Fixed
