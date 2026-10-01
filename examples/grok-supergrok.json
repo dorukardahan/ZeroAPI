@@ -1,0 +1,212 @@
+{
+  "version": "3.11.3",
+  "generated": "2026-09-27T00:00:00.000Z",
+  "benchmarks_date": "2026-09-27",
+  "subscription_catalog_version": "1.2.0",
+  "routing_mode": "balanced",
+  "external_model_policy": "stay",
+  "subscription_profile": {
+    "version": "1.2.0",
+    "global": {
+      "xai": {
+        "enabled": true,
+        "tierId": "supergrok"
+      }
+    }
+  },
+  "default_model": "xai/grok-4.6",
+  "models": {
+    "xai/grok-4.7": {
+      "context_window": 500000,
+      "supports_vision": true,
+      "speed_tps": 80.877,
+      "ttft_seconds": 12.99,
+      "benchmarks": {
+        "intelligence": 46.3,
+        "lcr": 0.77,
+        "hle": 0.423,
+        "scicode": 0.578
+      }
+    },
+    "xai/grok-4.6": {
+      "context_window": 500000,
+      "supports_vision": true,
+      "speed_tps": 79.443,
+      "ttft_seconds": 24.831,
+      "benchmarks": {
+        "intelligence": 44.3,
+        "coding": 76.8,
+        "tau3_banking": 0.507,
+        "terminalbench": 0.884,
+        "gpqa": 0.949,
+        "lcr": 0.803,
+        "hle": 0.429,
+        "scicode": 0.565
+      }
+    },
+    "xai/grok-4.5": {
+      "context_window": 500000,
+      "supports_vision": true,
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "benchmarks": {
+        "intelligence": 38.8,
+        "coding": 72.4,
+        "tau3_banking": 0.421,
+        "terminalbench": 0.816,
+        "gpqa": 0.931,
+        "lcr": 0.793,
+        "hle": 0.427,
+        "scicode": 0.55
+      }
+    },
+    "xai/grok-build-0.1": {
+      "context_window": 256000,
+      "supports_vision": true,
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "benchmarks": {
+        "intelligence": 27.2,
+        "coding": 51.5,
+        "tau3_banking": 0.134,
+        "terminalbench": 0.521,
+        "gpqa": 0.895,
+        "lcr": 0.747,
+        "hle": 0.383
+      }
+    },
+    "xai/grok-4.3": {
+      "context_window": 1000000,
+      "supports_vision": true,
+      "speed_tps": null,
+      "ttft_seconds": null,
+      "benchmarks": {
+        "intelligence": 24.9,
+        "coding": 42.2,
+        "tau2": 0.977,
+        "tau3_banking": 0.124,
+        "terminalbench": 0.397,
+        "ifbench": 0.813,
+        "gpqa": 0.901,
+        "lcr": 0.73,
+        "hle": 0.372,
+        "scicode": 0.483
+      }
+    }
+  },
+  "routing_rules": {
+    "code": {
+      "primary": "xai/grok-4.6",
+      "fallbacks": [
+        "xai/grok-4.5",
+        "xai/grok-4.7",
+        "xai/grok-build-0.1",
+        "xai/grok-4.3"
+      ]
+    },
+    "research": {
+      "primary": "xai/grok-4.6",
+      "fallbacks": [
+        "xai/grok-4.5",
+        "xai/grok-build-0.1",
+        "xai/grok-4.3",
+        "xai/grok-4.7"
+      ]
+    },
+    "orchestration": {
+      "primary": "xai/grok-4.3",
+      "fallbacks": [
+        "xai/grok-4.6",
+        "xai/grok-4.5",
+        "xai/grok-build-0.1",
+        "xai/grok-4.7"
+      ]
+    },
+    "math": {
+      "primary": "xai/grok-4.7",
+      "fallbacks": [
+        "xai/grok-4.6",
+        "xai/grok-4.5",
+        "xai/grok-build-0.1",
+        "xai/grok-4.3"
+      ]
+    },
+    "fast": {
+      "primary": "xai/grok-4.7",
+      "fallbacks": [
+        "xai/grok-4.6",
+        "xai/grok-4.5",
+        "xai/grok-build-0.1",
+        "xai/grok-4.3"
+      ]
+    },
+    "default": {
+      "primary": "xai/grok-4.6",
+      "fallbacks": [
+        "xai/grok-4.5",
+        "xai/grok-4.7",
+        "xai/grok-build-0.1",
+        "xai/grok-4.3"
+      ]
+    }
+  },
+  "workspace_hints": {},
+  "keywords": {
+    "code": [
+      "implement",
+      "function",
+      "class",
+      "refactor",
+      "fix",
+      "test",
+      "debug",
+      "build",
+      "write"
+    ],
+    "research": [
+      "research",
+      "analyze",
+      "explain",
+      "compare",
+      "investigate",
+      "summarize",
+      "review"
+    ],
+    "orchestration": [
+      "orchestrate",
+      "coordinate",
+      "pipeline",
+      "workflow",
+      "plan",
+      "manage"
+    ],
+    "math": [
+      "calculate",
+      "solve",
+      "equation",
+      "proof",
+      "compute",
+      "formula"
+    ],
+    "fast": [
+      "quick",
+      "simple",
+      "format",
+      "convert",
+      "translate",
+      "list",
+      "rename"
+    ]
+  },
+  "high_risk_keywords": [
+    "deploy",
+    "delete",
+    "drop",
+    "rm",
+    "production",
+    "credentials",
+    "secret",
+    "password"
+  ],
+  "fast_ttft_max_seconds": 5
+}

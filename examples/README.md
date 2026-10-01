@@ -49,7 +49,16 @@ GPT-6 Astra/Sol/Luna each require exact live model-catalog verification for ever
 | `openai-multi-account.json` | OpenAI Codex (multi-account) | ~$40-$240 | Same-provider Plus/Pro pools with explicit account inventory |
 | `openai-glm.json` | OpenAI + Z AI GLM | ~$30 | Add GLM-5.3 and vision-capable Flash |
 | `openai-glm-kimi.json` | OpenAI + Z AI + Kimi Coding | ~$49 | Add the Moderato+ K3-256k membership route |
+| `grok-supergrok.json` | xAI OAuth / SuperGrok | varies | Standalone SuperGrok subscription with Grok 4.7 and canonical xAI fallbacks |
 | `full-stack.json` | All 5 fresh OpenClaw subscription providers | varies | Maximum subscription-route resilience |
+
+### Standalone SuperGrok example
+
+Use `grok-supergrok.json` for an authenticated xAI OAuth account with an eligible SuperGrok subscription. It is generated from the same onboarding starter as the other examples and includes `xai/grok-4.7` plus the canonical Grok fallback routes. The benchmark-based policy may select another eligible Grok model; listing Grok 4.7 does not force it to win every category.
+
+The `subscription_profile.global.xai` entry declares SuperGrok eligibility; it does not log in, create a subscription, or prove that your account has access. Authenticate and verify model availability separately using the existing xAI OAuth instructions below. A plain xAI API key is the separate, subscription-excluded `xai-api` surface and must not be represented as a SuperGrok subscription.
+
+These `xai/*` refs target OpenClaw. For Hermes, generate a host-specific starter with provider `xai-oauth` and tier `supergrok` using the [Hermes adapter setup](../integrations/hermes/README.md); the canonical Hermes refs are `xai-oauth/*`. Do not assume the OpenClaw refs configure Hermes credentials or its provider namespace.
 
 ## Model evidence reference
 

@@ -58,6 +58,7 @@ const versionedJsonSurfaces = [
   "examples/openai-multi-account.json",
   "examples/openai-glm.json",
   "examples/openai-glm-kimi.json",
+  "examples/grok-supergrok.json",
   "examples/full-stack.json",
 ];
 for (const path of versionedJsonSurfaces) {

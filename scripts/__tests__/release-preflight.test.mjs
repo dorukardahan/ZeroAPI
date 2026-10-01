@@ -34,6 +34,7 @@ const PREFLIGHT_INPUTS = [
   "examples/openai-multi-account.json",
   "examples/openai-glm.json",
   "examples/openai-glm-kimi.json",
+  "examples/grok-supergrok.json",
   "examples/full-stack.json",
 ];
 
