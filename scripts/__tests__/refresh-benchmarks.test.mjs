@@ -112,7 +112,8 @@ output_path = work_dir / "custom.json"
 output_path.write_text(json.dumps({"benchmark_categories": {"marker": "from-output"}}), encoding="utf-8")
 categories = module.read_existing_benchmark_categories(output_path)
 assert categories["marker"] == "from-output"
-assert categories["terminalbench"]["key"] == "terminalbench_v2_1"
+assert categories["terminalbench"]["key"] == "terminalbench_v4_0"
+assert categories["terminalbench"]["fallback_keys"] == ["terminalbench_v2_1", "terminalbench_hard"]
 assert categories["tau3_banking"]["key"] == "tau_banking"
 
 # A first run to a brand-new path still receives the canonical schema.
@@ -881,7 +882,35 @@ test("GPT-6 Sol/Luna map exact direct xhigh rows without relabeling other effort
   assert.equal(snapshot.models.find((row) => row.slug === "gpt-6-astra-xhigh").openclaw_model, "gpt-6-astra");
 });
 
-test("refresh_benchmarks terminalbench prefers v2_1 then falls back to hard", () => {
+test("GPT-6.1 Sol maps only its exact direct xhigh row and preserves GPT-6 Sol", () => {
+  const policies = JSON.parse(readFileSync(new URL("../../policy-families.json", import.meta.url), "utf8"));
+  const root = JSON.parse(readFileSync(new URL("../../benchmarks.json", import.meta.url), "utf8"));
+  const plugin = JSON.parse(readFileSync(new URL("../../plugin/benchmarks.json", import.meta.url), "utf8"));
+  const family = policies.families.find((item) => item.id === "openai-gpt61-sol-route");
+
+  assert.ok(family);
+  assert.equal(family.provider, "openai-codex");
+  assert.deepEqual(family.openclaw_model_ids, ["gpt-6.1-sol"]);
+  assert.deepEqual(family.benchmark_slugs, ["gpt-6-1-sol-xhigh"]);
+  assert.equal(family.benchmark_proxy, undefined);
+  assert.deepEqual(root.policy_families.families.find((item) => item.id === family.id), family);
+  assert.deepEqual(plugin, root);
+
+  const mapped = root.models.filter((row) => row.openclaw_model === "gpt-6.1-sol");
+  assert.equal(mapped.length, 1);
+  assert.equal(mapped[0].slug, "gpt-6-1-sol-xhigh");
+  assert.equal(mapped[0].id, "092a3b0e-c5c8-45dc-bf1b-53673c8ff352");
+  assert.equal(mapped[0].policy_family.family_id, family.id);
+  for (const slug of ["gpt-6-1-sol", "gpt-6-1-sol-high", "gpt-6-1-sol-medium", "gpt-6-1-sol-low"]) {
+    const row = root.models.find((item) => item.slug === slug);
+    assert.ok(row, `missing preserved direct source row ${slug}`);
+    assert.equal(row.openclaw_model, null);
+    assert.equal(row.policy_family.included, false);
+  }
+  assert.equal(root.models.find((row) => row.slug === "gpt-6-sol-xhigh").openclaw_model, "gpt-6-sol");
+});
+
+test("refresh_benchmarks terminalbench prefers v4_0 then falls back through v2_1 and hard", () => {
   runPython(`
 import importlib.util
 import pathlib
@@ -894,24 +923,18 @@ spec.loader.exec_module(module)
 
 resolve = module.resolve_benchmark
 
-# Both present: v2_1 wins
-assert resolve({"terminalbench_v2_1": 0.85, "terminalbench_hard": 0.72}, ("terminalbench_v2_1", "terminalbench_hard")) == 0.85
-
-# Only v2_1 present
-assert resolve({"terminalbench_v2_1": 0.85}, ("terminalbench_v2_1", "terminalbench_hard")) == 0.85
-
-# Only hard present (old snapshot)
-assert resolve({"terminalbench_hard": 0.72}, ("terminalbench_v2_1", "terminalbench_hard")) == 0.72
-
-# Neither present
-assert resolve({}, ("terminalbench_v2_1", "terminalbench_hard")) is None
+# Newest present: v4_0 wins.
+assert resolve({"terminalbench_v4_0": 0.91, "terminalbench_v2_1": 0.85, "terminalbench_hard": 0.72}, ("terminalbench_v4_0", "terminalbench_v2_1", "terminalbench_hard")) == 0.91
+# Older rows retain their best available direct source score.
+assert resolve({"terminalbench_v2_1": 0.85, "terminalbench_hard": 0.72}, ("terminalbench_v4_0", "terminalbench_v2_1", "terminalbench_hard")) == 0.85
+assert resolve({"terminalbench_hard": 0.72}, ("terminalbench_v4_0", "terminalbench_v2_1", "terminalbench_hard")) == 0.72
+assert resolve({}, ("terminalbench_v4_0", "terminalbench_v2_1", "terminalbench_hard")) is None
 
 # Non-tuple still works (backward compat)
 assert resolve({"gpqa": 0.935}, "gpqa") == 0.935
 
-# BENCHMARK_MAP has tuple for terminalbench
-assert isinstance(module.BENCHMARK_MAP["terminalbench"], tuple)
-assert "terminalbench_v2_1" in module.BENCHMARK_MAP["terminalbench"]
+assert module.BENCHMARK_MAP["terminalbench"] == ("terminalbench_v4_0", "terminalbench_v2_1", "terminalbench_hard")
+assert module.CANONICAL_BENCHMARK_CATEGORIES["terminalbench"]["key"] == "terminalbench_v4_0"
 `);
 });
 

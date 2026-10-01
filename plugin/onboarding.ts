@@ -26,6 +26,7 @@ const BENCHMARKS_FILE_CANDIDATES = [
   resolve(MODULE_DIR, "..", "benchmarks.json"),
 ];
 const PACKAGE_FILE = resolve(MODULE_DIR, "package.json");
+const OPENAI_QUALITY_SEED = "openai-codex/gpt-6.1-sol";
 
 export const STARTER_AUTH_CHOICES: Record<string, string> = {
   "openai-codex": "openclaw models auth login --provider openai",
@@ -38,6 +39,8 @@ export const STARTER_AUTH_CHOICES: Record<string, string> = {
 };
 
 const STARTER_RUNTIME_META: Record<string, { context_window: number; supports_vision: boolean }> = {
+  // Canonical Hermes route. The API window is 1.05M; starter policy keeps a conservative 272K budget.
+  "openai-codex/gpt-6.1-sol": { context_window: 272000, supports_vision: true },
   // Astra's native window is 1.05M; current OpenClaw keeps a 272K active input budget.
   "openai/gpt-6-astra": { context_window: 272000, supports_vision: true },
   // Conservative starter budget, not the published 1.05M API window or a live Codex entitlement.
@@ -376,7 +379,13 @@ function buildRoutingRules(models: Record<string, ModelCapabilities>): Record<st
   const rules: Record<string, RoutingRule> = {};
 
   for (const category of categories) {
-    const ranked = sortModelsForCategory(category, models);
+    let ranked = sortModelsForCategory(category, models);
+    if (category === "default" && OPENAI_QUALITY_SEED in models) {
+      // This is an explicit product seed, not a synthetic benchmark score. The
+      // measured row remains sparse and the balanced router can still offload
+      // matched work to benchmark-near providers under subscription pressure.
+      ranked = [OPENAI_QUALITY_SEED, ...ranked.filter((model) => model !== OPENAI_QUALITY_SEED)];
+    }
     rules[category] = {
       primary: ranked[0],
       fallbacks: ranked.slice(1),
@@ -569,13 +578,15 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
   const openAiAccounts = openAiInventoryAccounts.length > 0
     ? openAiInventoryAccounts
     : normalizedProviders.filter((provider) => provider.providerId === "openai-codex");
-  const discoveredOpenAiModels = ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"].filter((modelId) =>
+  const discoveredOpenAiModels = ["gpt-6.1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"].filter((modelId) =>
     openAiAccounts.length > 0 && openAiAccounts.every((account) =>
       account.discoveredModels?.some((model) =>
         model === `openai/${modelId}` || model === `openai-codex/${modelId}`,
       ),
     ),
-  ).map((modelId) => `openai/${modelId}`);
+  ).map((modelId) => modelId === "gpt-6.1-sol"
+    ? `openai-codex/${modelId}`
+    : `openai/${modelId}`);
 
   const snapshot = loadBenchmarkSnapshot();
   const models = buildStarterModels(snapshot, providerIds, discoveredOpenAiModels);
@@ -593,7 +604,9 @@ export function buildStarterConfig(options: StarterConfigOptions): ZeroAPIConfig
     "balanced",
     options.routingModifier,
   );
-  const defaultModel = weightedDefaultCandidates[0] ?? routingRules.default.primary;
+  const defaultModel = OPENAI_QUALITY_SEED in models
+    ? OPENAI_QUALITY_SEED
+    : (weightedDefaultCandidates[0] ?? routingRules.default.primary);
 
   return {
     version: loadZeroAPIVersion(),

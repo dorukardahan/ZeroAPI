@@ -71,7 +71,7 @@ Each tier should define:
 - Plus
 - Pro
 
-GPT-6 Astra has a separate account rollout gate. A tier selection is not evidence of access. Starter callers may supply live `discoveredModels` refs per selected account; Astra is included only when every selected OpenAI account exposes it. Discovery is not persisted as a permanent entitlement. The interactive wizard retains GPT-5.6 when it cannot attest per-account discovery.
+GPT-6.1 Sol, Astra, Sol, and Luna each have an independent account rollout gate. A tier selection is not evidence of access. Starter callers may supply live `discoveredModels` refs per selected account; a model is included only when every selected OpenAI account exposes that exact id. Discovery is not persisted as a permanent entitlement. GPT-6.1 Sol becomes the canonical quality/default seed when attested, while separately discovered GPT-6 Sol remains a rollback/fallback; otherwise onboarding retains GPT-5.6.
 
 ### Kimi
 

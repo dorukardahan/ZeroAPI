@@ -1,28 +1,28 @@
 # Benchmark data (September 2026)
 
-The committed snapshot was fetched on 2026-09-24 and contains 258 Artificial Analysis reference rows. `benchmarks.json` and `plugin/benchmarks.json` are generated from one serialization and must remain byte-identical.
+The committed scoped snapshot was fetched on 2026-09-30 and contains 264 Artificial Analysis reference rows: all 259 previously committed rows plus five direct GPT-6.1 Sol effort rows. `benchmarks.json` and `plugin/benchmarks.json` are generated from one serialization and must remain byte-identical.
 
 A benchmark row is evidence, not a subscription route. The exact route/proxy matrix is maintained in [provider-model-status.md](provider-model-status.md).
 
 ## Score schema coverage
 
-The committed snapshot contains 16 normalized score fields. `terminalbench_v2_1` and legacy `terminalbench_hard` collapse into `terminalbench`. The refresh consumer checks populated raw evaluation keys against explicit mappings; display names from AA's methodology page are not guessed into API field names.
+The committed snapshot contains 16 normalized score fields. `terminalbench_v4_0`, `terminalbench_v2_1`, and legacy `terminalbench_hard` collapse into `terminalbench` in newest-to-oldest order. The refresh consumer checks populated raw evaluation keys against explicit mappings; display names from AA's methodology page are not guessed into API field names.
 
 AA's current Intelligence Index methodology is v4.2 with 10 evaluations. The public methodology and API coverage are different surfaces: a missing score remains unavailable. The new snapshot's score coverage is shown below; missing values were not copied from older snapshots.
 
-| Normalized score | Non-null rows (of 258) |
+| Normalized score | Non-null rows (of 264) |
 |---|---:|
-| `intelligence` | 255 |
+| `intelligence` | 261 |
 | `coding` | 104 |
 | `math` | 100 |
 | `tau2` | 179 |
 | `tau3_banking` | 94 |
-| `terminalbench` | 212 |
+| `terminalbench` | 217 |
 | `ifbench` | 182 |
 | `gpqa` | 234 |
-| `lcr` | 221 |
-| `hle` | 244 |
-| `scicode` | 84 |
+| `lcr` | 227 |
+| `hle` | 250 |
+| `scicode` | 91 |
 | `livecodebench` | 116 |
 | `mmlu_pro` | 119 |
 | `aime_25` | 100 |
@@ -33,6 +33,7 @@ AA's current Intelligence Index methodology is v4.2 with 10 evaluations. The pub
 
 | Model or route | Evidence used | Route meaning |
 |---|---|---|
+| GPT-6.1 Sol | `gpt-6-1-sol-xhigh`, UUID `092a3b0e-c5c8-45dc-bf1b-53673c8ff352` | Direct xhigh reference and explicit default quality seed after exact per-account discovery. The separate max/high/medium/low rows remain unmapped reference data. |
 | GPT-6 Astra | `gpt-6-astra-xhigh`, UUID `1f541ef3-913f-4eb2-9d07-0e93c7a9a5e3` | Direct xhigh reference; account catalog gate required. Bare `gpt-6-astra` AA slug denotes a separate max measurement. |
 | GPT-6 Sol | `gpt-6-sol-xhigh`, UUID `da2642fe-9f73-4788-b5af-24edcd55b37e` | Direct xhigh reference; exact per-account discovery required. Bare `gpt-6-sol` is separate max evidence. |
 | GPT-6 Luna | `gpt-6-luna-xhigh`, UUID `19813eb2-460a-475c-af65-810bb8660fec` | Direct xhigh reference; exact per-account discovery required. Bare `gpt-6-luna` is separate max evidence. |
@@ -48,7 +49,7 @@ AA's current Intelligence Index methodology is v4.2 with 10 evaluations. The pub
 | Grok 4.6 / 4.5 | `grok-4-6` / `grok-4-5`, both high | Direct rows replace the former 4.5 to 4.3 proxy. Other efforts remain separate. |
 | Grok Build 0.1 / 4.3 | Their direct rows | Existing exact model references, not the moving `auto` or `build-latest` aliases. |
 
-All exact UUIDs, provider eligibility limits, and pinned native sources are recorded in [provider-model-status.md](provider-model-status.md). Only one explicit effort row maps to each canonical policy model; other rows remain reference data. Generated examples contain no Astra until actual account discovery is supplied.
+All exact UUIDs, provider eligibility limits, and pinned native sources are recorded in [provider-model-status.md](provider-model-status.md). Only one explicit effort row maps to each canonical policy model; other rows remain reference data. Generated examples model explicit discovery for GPT-6.1 Sol and the GPT-6 Sol rollback only; they do not infer entitlement from tier.
 
 ## Refresh and offline re-annotation
 
@@ -68,4 +69,4 @@ Both paths atomically update both committed snapshot files. The weekly workflow 
 
 Run the writer as a single process against operator-owned, non-group/world-writable output directories. Final-component output symlinks are rejected, artifacts are created exclusively with random names, and rollback is inode-gated. Concurrent same-principal directory mutation or non-cooperating parallel writers are outside the supported threat model.
 
-Source: [Artificial Analysis Data API v2](https://artificialanalysis.ai/api-reference) and [Artificial Analysis methodology](https://artificialanalysis.ai/methodology/intelligence-benchmarking), fetched 2026-09-24. Provider route sources are linked from [provider-model-status.md](provider-model-status.md).
+Source: [Artificial Analysis Data API v2](https://artificialanalysis.ai/api-reference) and [Artificial Analysis methodology](https://artificialanalysis.ai/methodology/intelligence-benchmarking), scoped fetch 2026-09-30. Provider route sources are linked from [provider-model-status.md](provider-model-status.md).

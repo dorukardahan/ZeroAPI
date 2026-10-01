@@ -52,7 +52,7 @@ You are configuring the installed ZeroAPI OpenClaw plugin. Keep the flow chat-na
    - `external_model_policy`: `stay`
    - model pool and routing rules based on available providers and the bundled `benchmarks.json`.
 
-   Include `openai/gpt-6-astra` only when fresh native model-catalog evidence confirms it in every selected OpenAI account. A Plus/Pro tier, existing policy entry, or AA benchmark row is not entitlement proof. Kimi K3-256k requires Moderato or above; full-context K3 requires the appropriate higher tier. GLM-5.3 is text-only; use a verified vision-capable route such as GLM-5.3 Flash for images.
+   Include GPT-6.1 Sol, Astra, Sol, or Luna only when fresh native model-catalog evidence confirms that exact id in every selected OpenAI account. When GPT-6.1 Sol is attested, use canonical `openai-codex/gpt-6.1-sol` as the quality/default seed; retain separately discovered GPT-6 Sol as a rollback/fallback. A Plus/Pro tier, API model page, existing policy entry, or AA row is not entitlement proof. Kimi K3-256k requires Moderato or above; GLM-5.3 is text-only, so use a verified vision route such as GLM-5.3 Flash for images.
 
 6. Align OpenClaw runtime state before restart:
    - add missing ZeroAPI model ids under `agents.defaults.models`

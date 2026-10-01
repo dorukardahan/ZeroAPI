@@ -2,7 +2,7 @@
   "version": "3.11.3",
   "source": "Artificial Analysis Data API v2",
   "api": "https://artificialanalysis.ai/api/v2/data/llms/models",
-  "fetched": "2026-09-27",
+  "fetched": "2026-09-30",
   "methodology": "https://artificialanalysis.ai/methodology/intelligence-benchmarking",
   "note": "Routeability and benchmark evidence are separate. Anthropic, Google, and API-only horizon providers are not auto-routed; see references/provider-model-status.md.",
   "prompt_options": {
@@ -31,10 +31,13 @@
       "description": "Tau-squared Bench Telecom dual-control troubleshooting and coordination"
     },
     "terminalbench": {
-      "key": "terminalbench_v2_1",
-      "fallback_key": "terminalbench_hard",
+      "key": "terminalbench_v4_0",
+      "fallback_keys": [
+        "terminalbench_v2_1",
+        "terminalbench_hard"
+      ],
       "scale": "0-1",
-      "description": "Agentic terminal tasks (Terminal-Bench v2.1, falling back to Hard for older rows)"
+      "description": "Agentic terminal tasks (Terminal-Bench v4.0, falling back through v2.1 and Hard for older rows)"
     },
     "ifbench": {
       "key": "ifbench",
@@ -95,21 +98,21 @@
   "source_evaluation_coverage": {
     "aime": {
       "absent": 0,
-      "null": 198,
+      "null": 203,
       "zero": 0,
       "positive": 61,
       "invalid": 0
     },
     "aime_25": {
       "absent": 0,
-      "null": 159,
+      "null": 164,
       "zero": 0,
       "positive": 100,
       "invalid": 0
     },
     "artificial_analysis_coding_index": {
       "absent": 0,
-      "null": 155,
+      "null": 160,
       "zero": 1,
       "positive": 103,
       "invalid": 0
@@ -118,19 +121,19 @@
       "absent": 0,
       "null": 3,
       "zero": 0,
-      "positive": 256,
+      "positive": 261,
       "invalid": 0
     },
     "artificial_analysis_math_index": {
       "absent": 0,
-      "null": 159,
+      "null": 164,
       "zero": 0,
       "positive": 100,
       "invalid": 0
     },
     "gpqa": {
       "absent": 0,
-      "null": 25,
+      "null": 30,
       "zero": 0,
       "positive": 234,
       "invalid": 0
@@ -139,12 +142,12 @@
       "absent": 0,
       "null": 14,
       "zero": 0,
-      "positive": 245,
+      "positive": 250,
       "invalid": 0
     },
     "ifbench": {
       "absent": 0,
-      "null": 77,
+      "null": 82,
       "zero": 0,
       "positive": 182,
       "invalid": 0
@@ -153,26 +156,26 @@
       "absent": 0,
       "null": 37,
       "zero": 19,
-      "positive": 203,
+      "positive": 208,
       "invalid": 0
     },
     "livecodebench": {
       "absent": 0,
-      "null": 143,
+      "null": 148,
       "zero": 0,
       "positive": 116,
       "invalid": 0
     },
     "math_500": {
       "absent": 0,
-      "null": 195,
+      "null": 200,
       "zero": 0,
       "positive": 64,
       "invalid": 0
     },
     "mmlu_pro": {
       "absent": 0,
-      "null": 140,
+      "null": 145,
       "zero": 0,
       "positive": 119,
       "invalid": 0
@@ -181,42 +184,49 @@
       "absent": 0,
       "null": 173,
       "zero": 0,
-      "positive": 86,
+      "positive": 91,
       "invalid": 0
     },
     "tau2": {
       "absent": 0,
-      "null": 80,
+      "null": 85,
       "zero": 2,
       "positive": 177,
       "invalid": 0
     },
     "tau_banking": {
       "absent": 0,
-      "null": 165,
+      "null": 170,
       "zero": 0,
       "positive": 94,
       "invalid": 0
     },
     "terminalbench_hard": {
       "absent": 0,
-      "null": 82,
+      "null": 87,
       "zero": 7,
       "positive": 170,
       "invalid": 0
     },
     "terminalbench_v2_1": {
       "absent": 0,
-      "null": 161,
+      "null": 166,
       "zero": 2,
       "positive": 96,
+      "invalid": 0
+    },
+    "terminalbench_v4_0": {
+      "absent": 259,
+      "null": 0,
+      "zero": 0,
+      "positive": 5,
       "invalid": 0
     }
   },
   "policy_families": {
     "version": "1.2.0",
     "description": "Benchmark mappings and separately documented current subscription routes. A benchmark row does not by itself imply routeability.",
-    "included_model_count": 35,
+    "included_model_count": 36,
     "families": [
       {
         "id": "openai-astra-routes",
@@ -229,6 +239,18 @@
           "gpt-6-astra-xhigh"
         ],
         "notes": "The 2026-09-06 AA xhigh row is the shared reference: Hermes 245e480 clamps Astra max to xhigh. Vendor max is separate. Route eligibility requires the selected accounts' live catalogs; Plus/Pro alone is not evidence of rollout access."
+      },
+      {
+        "id": "openai-gpt61-sol-route",
+        "provider": "openai-codex",
+        "label": "OpenAI GPT-6.1 Sol account-discovered route",
+        "openclaw_model_ids": [
+          "gpt-6.1-sol"
+        ],
+        "benchmark_slugs": [
+          "gpt-6-1-sol-xhigh"
+        ],
+        "notes": "The 2026-09-30 Artificial Analysis API snapshot supplies a direct GPT-6.1 Sol xhigh row. Max, high, medium, and low rows remain separate reference evidence and are not relabeled. Route eligibility still requires this exact model in every selected account's live catalog; API availability or a Plus/Pro tier alone is insufficient."
       },
       {
         "id": "openai-gpt6-sol-route",
@@ -547,6 +569,88 @@
       }
     },
     {
+      "name": "GPT-6.1 Sol (max)",
+      "slug": "gpt-6-1-sol",
+      "id": "b25ac058-1e33-4c31-bbc9-a20c3ad0717a",
+      "creator": "OpenAI",
+      "creator_id": "e67e56e3-15cd-43db-b679-da4660a69f41",
+      "creator_slug": "openai",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-09-29",
+      "speed_tps": 80.013,
+      "ttft_seconds": 157.7,
+      "ttfa_seconds": 157.7,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.0,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 10.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 51.8,
+        "coding": null,
+        "math": null,
+        "tau2": null,
+        "tau3_banking": null,
+        "terminalbench": 0.561,
+        "ifbench": null,
+        "gpqa": null,
+        "lcr": 0.83,
+        "hle": 0.529,
+        "scicode": 0.542,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "GPT-6.1 Sol (xhigh)",
+      "slug": "gpt-6-1-sol-xhigh",
+      "id": "092a3b0e-c5c8-45dc-bf1b-53673c8ff352",
+      "creator": "OpenAI",
+      "creator_id": "e67e56e3-15cd-43db-b679-da4660a69f41",
+      "creator_slug": "openai",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": "gpt-6.1-sol",
+      "release_date": "2026-09-29",
+      "speed_tps": 73.56,
+      "ttft_seconds": 47.373,
+      "ttfa_seconds": 47.373,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.0,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 10.0
+      },
+      "policy_family": {
+        "included": true,
+        "family_id": "openai-gpt61-sol-route"
+      },
+      "benchmarks": {
+        "intelligence": 51.0,
+        "coding": null,
+        "math": null,
+        "tau2": null,
+        "tau3_banking": null,
+        "terminalbench": 0.54,
+        "ifbench": null,
+        "gpqa": null,
+        "lcr": 0.797,
+        "hle": 0.526,
+        "scicode": 0.557,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "GPT-6 Astra (high)",
       "slug": "gpt-6-astra-high",
       "id": "e05a4828-0536-4876-870d-a235023f992b",
@@ -588,6 +692,47 @@
       }
     },
     {
+      "name": "GPT-6.1 Sol (high)",
+      "slug": "gpt-6-1-sol-high",
+      "id": "3b84fee3-b70a-41bc-819e-5fbdef9a0042",
+      "creator": "OpenAI",
+      "creator_id": "e67e56e3-15cd-43db-b679-da4660a69f41",
+      "creator_slug": "openai",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-09-29",
+      "speed_tps": 68.522,
+      "ttft_seconds": 20.905,
+      "ttfa_seconds": 20.905,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.0,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 10.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 50.2,
+        "coding": null,
+        "math": null,
+        "tau2": null,
+        "tau3_banking": null,
+        "terminalbench": 0.515,
+        "ifbench": null,
+        "gpqa": null,
+        "lcr": 0.823,
+        "hle": 0.514,
+        "scicode": 0.558,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
       "name": "GPT-6 Astra (medium)",
       "slug": "gpt-6-astra-medium",
       "id": "e97a4ef5-e817-480e-9595-12f81dc4974f",
@@ -621,6 +766,47 @@
         "lcr": 0.797,
         "hle": 0.527,
         "scicode": 0.542,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "GPT-6.1 Sol (medium)",
+      "slug": "gpt-6-1-sol-medium",
+      "id": "a2e51d62-ea4e-4f15-8be0-be9dc1fb489d",
+      "creator": "OpenAI",
+      "creator_id": "e67e56e3-15cd-43db-b679-da4660a69f41",
+      "creator_slug": "openai",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-09-29",
+      "speed_tps": 69.944,
+      "ttft_seconds": 4.128,
+      "ttfa_seconds": 4.128,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.0,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 10.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 47.8,
+        "coding": null,
+        "math": null,
+        "tau2": null,
+        "tau3_banking": null,
+        "terminalbench": 0.48,
+        "ifbench": null,
+        "gpqa": null,
+        "lcr": 0.833,
+        "hle": 0.499,
+        "scicode": 0.532,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,
@@ -949,6 +1135,47 @@
         "lcr": 0.83,
         "hle": 0.429,
         "scicode": 0.55,
+        "livecodebench": null,
+        "mmlu_pro": null,
+        "aime_25": null,
+        "math_500": null,
+        "aime": null
+      }
+    },
+    {
+      "name": "GPT-6.1 Sol (low)",
+      "slug": "gpt-6-1-sol-low",
+      "id": "e76e0fe5-93ca-4272-9359-2eb1740467d1",
+      "creator": "OpenAI",
+      "creator_id": "e67e56e3-15cd-43db-b679-da4660a69f41",
+      "creator_slug": "openai",
+      "openclaw_provider": "openai-codex",
+      "openclaw_model": null,
+      "release_date": "2026-09-29",
+      "speed_tps": 69.645,
+      "ttft_seconds": 1.419,
+      "ttfa_seconds": 1.419,
+      "pricing": {
+        "price_1m_blended_3_to_1": 4.0,
+        "price_1m_input_tokens": 2.0,
+        "price_1m_output_tokens": 10.0
+      },
+      "policy_family": {
+        "included": false,
+        "family_id": null
+      },
+      "benchmarks": {
+        "intelligence": 42.1,
+        "coding": null,
+        "math": null,
+        "tau2": null,
+        "tau3_banking": null,
+        "terminalbench": 0.308,
+        "ifbench": null,
+        "gpqa": null,
+        "lcr": 0.84,
+        "hle": 0.474,
+        "scicode": 0.532,
         "livecodebench": null,
         "mmlu_pro": null,
         "aime_25": null,

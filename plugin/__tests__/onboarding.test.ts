@@ -8,6 +8,7 @@ import {
   summarizeStarterConfig,
 } from "../onboarding.js";
 import { getSubscriptionWeightedCandidates } from "../router.js";
+import { resolveRoutingDecision } from "../decision.js";
 
 type DirectBenchmarkRow = {
   id: string;
@@ -195,6 +196,79 @@ describe("buildStarterConfig", () => {
         expect(buildStarterConfig(deriveStarterDefaults(config)).models[key]).toBeUndefined();
       }
     }
+  });
+
+  it("makes discovered GPT-6.1 Sol the canonical direct quality seed without bypassing GLM pressure", () => {
+    const discoveredModels = [
+      "openai-codex/gpt-6.1-sol",
+      "openai-codex/gpt-6-sol",
+    ];
+    const openAiOnly = buildStarterConfig({
+      providers: [{ providerId: "openai-codex", tierId: "plus", discoveredModels }],
+    });
+    const direct = directOpenAiBenchmarkRow("gpt-6.1-sol");
+
+    expect(direct).toMatchObject({
+      id: "092a3b0e-c5c8-45dc-bf1b-53673c8ff352",
+      slug: "gpt-6-1-sol-xhigh",
+      openclaw_provider: "openai-codex",
+      openclaw_model: "gpt-6.1-sol",
+    });
+    expect(openAiOnly.models["openai-codex/gpt-6.1-sol"]).toEqual({
+      context_window: 272000,
+      supports_vision: true,
+      speed_tps: direct.speed_tps,
+      ttft_seconds: direct.ttft_seconds,
+      benchmarks: Object.fromEntries(Object.entries(direct.benchmarks).filter(([, value]) => value != null)),
+    });
+    expect(openAiOnly.routing_rules.default.primary).toBe("openai-codex/gpt-6.1-sol");
+    expect(openAiOnly.default_model).toBe("openai-codex/gpt-6.1-sol");
+    expect(openAiOnly.models["openai/gpt-6-sol"]).toBeDefined();
+    expect(openAiOnly.routing_rules.default.fallbacks).toContain("openai/gpt-6-sol");
+
+    const mixed = buildStarterConfig({
+      providers: [
+        { providerId: "openai-codex", tierId: "plus", discoveredModels },
+        { providerId: "zai", tierId: "max" },
+      ],
+    });
+    const code = resolveRoutingDecision(mixed, {
+      prompt: "implement a regression test for the router",
+      currentModel: "openai-codex/gpt-6.1-sol",
+      includeDiagnostics: true,
+    });
+    expect(code.reason).not.toBe("external_current_model");
+    expect(code.action).toBe("route");
+    expect(code.selectedModel).toBe("zai/glm-5.3");
+    expect(code.weightedCandidates).toContain("openai-codex/gpt-6.1-sol");
+
+    const representative = [
+      ["research", "analyze and compare the evidence", false, "route", "zai/glm-5.3"],
+      ["orchestration", "coordinate this workflow across services", false, "route", "openai/gpt-5.6-sol"],
+      ["math", "solve this equation and show the proof", false, "stay", null],
+      ["fast", "quick format this list", false, "route", "zai/glm-5.3"],
+      ["vision", "analyze this screenshot", true, "route", "zai/glm-5.3-flash"],
+    ] as const;
+    for (const [label, prompt, hasImageAttachment, action, selectedModel] of representative) {
+      const result = resolveRoutingDecision(mixed, {
+        prompt,
+        hasImageAttachment,
+        currentModel: "openai-codex/gpt-6.1-sol",
+      });
+      expect(result.reason, label).not.toBe("stay:external_current_model");
+      expect(result.action, label).toBe(action);
+      expect(result.selectedModel, label).toBe(selectedModel);
+    }
+
+    const unmatched = resolveRoutingDecision(mixed, {
+      prompt: "hello there",
+      currentModel: "openai-codex/gpt-6.1-sol",
+    });
+    expect(unmatched).toMatchObject({ action: "stay", reason: "no_match" });
+    expect(resolveRoutingDecision(mixed, {
+      prompt: "implement a router regression test",
+      currentModel: "custom/private-model",
+    })).toMatchObject({ action: "stay", reason: "stay:external_current_model" });
   });
 
   it("intersects GPT-6 discovery per model across all selected inventory accounts", () => {

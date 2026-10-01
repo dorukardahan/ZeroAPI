@@ -75,6 +75,29 @@ CONFIG = {
 
 
 class ZeroAPIHermesRouterTest(unittest.TestCase):
+    def test_generated_gpt61_policy_keeps_canonical_current_in_pool_and_allows_glm_offload(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        config = json.loads((repo_root / "examples" / "openai-glm.json").read_text(encoding="utf-8"))
+        self.assertEqual(config["default_model"], "openai-codex/gpt-6.1-sol")
+        self.assertIn("openai/gpt-6-sol", config["models"])
+
+        router = ZeroAPIRouter(config)
+        route = router.resolve(
+            "implement a router regression test",
+            current_model="openai-codex/gpt-6.1-sol",
+        )
+        self.assertIsNotNone(route)
+        assert route is not None
+        self.assertEqual((route["provider"], route["model"]), ("zai", "glm-5.3"))
+        self.assertIsNone(router.resolve(
+            "hello there",
+            current_model="openai-codex/gpt-6.1-sol",
+        ))
+        self.assertIsNone(router.resolve(
+            "implement a router regression test",
+            current_model="custom/private-model",
+        ))
+
     def test_kimi_membership_and_moonshot_api_remain_separate(self):
         self.assertEqual(_hermes_provider("kimi", {}), "kimi-coding")
         self.assertEqual(_hermes_provider("kimi-coding", {}), "kimi-coding")

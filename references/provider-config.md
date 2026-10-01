@@ -52,7 +52,7 @@ Provider contracts were checked on 2026-09-06 against OpenClaw `679193c5ffbc02f9
 
 | Subscription provider | Fresh OpenClaw model refs | Benchmark evidence |
 |---|---|---|
-| OpenAI Codex | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-luna`; `openai/gpt-6-astra`, `openai/gpt-6-sol`, `openai/gpt-6-luna` only with per-model live account discovery | GPT-5.6 max rows; GPT-6 Astra/Sol/Luna distinct direct xhigh rows |
+| OpenAI Codex | canonical `openai-codex/gpt-6.1-sol` quality seed; `openai/gpt-6-sol` rollback and other GPT-6.x routes only with exact per-account discovery; GPT-5.6 Sol/Terra/Luna remain fallbacks | GPT-6.1/Astra/Sol/Luna distinct direct xhigh rows; GPT-5.6 max rows |
 | Kimi Coding | `kimi/k3-256k` | Explicit K3 max quality reference; membership endpoint TPS/TTFT unavailable |
 | Z.AI Coding Plan | `zai/glm-5.3`, `zai/glm-5.3-flash` | Direct rows; Flash supports images and Coding Plan access |
 | MiniMax Portal | `minimax-portal/MiniMax-M3`, `minimax-portal/MiniMax-M2.7` | Direct rows |
@@ -69,9 +69,9 @@ openclaw models auth login --provider openai
 openclaw models list --provider openai
 ```
 
-The runtime ref is `openai/*`; ZeroAPI's subscription profile remains `openai-codex`. A ChatGPT plan does not grant direct Platform API billing. Each GPT-6 model must appear in every selected account's live catalog. Configured entries, auth availability heuristics, offline fallback catalogs, and selecting Plus/Pro are insufficient evidence.
+The subscription identity is `openai-codex`; OpenClaw also recognizes `openai/*` aliases. ZeroAPI emits canonical `openai-codex/gpt-6.1-sol` for the new quality seed and retains older OpenAI route aliases for compatibility. A ChatGPT plan does not grant direct Platform API billing. Each GPT-6.x model must appear in every selected account's live catalog.
 
-`buildStarterConfig` accepts `discoveredModels` on each provider selection or inventory account. Populate it only from verified live account catalog refs. With inventory, every selected OpenAI account must expose the exact GPT-6 model id (both `openai/*` and `openai-codex/*` catalog refs are recognized). Discovery is not persisted as timeless access evidence: reruns require fresh verification. The interactive wizard has no per-account catalog attestation and therefore retains the GPT-5.6 starter pool.
+`buildStarterConfig` accepts `discoveredModels` on each provider selection or inventory account. Populate it only from verified live account catalog refs. With inventory, every selected OpenAI account must expose the exact GPT-6.x model id (both `openai/*` and `openai-codex/*` catalog refs are recognized). Discovery is not persisted as timeless access evidence: reruns require fresh verification. Without attestation the starter retains GPT-5.6; when GPT-6.1 Sol and GPT-6 Sol are both discovered, 6.1 becomes the default quality seed and GPT-6 Sol remains a measured rollback/fallback.
 
 The GPT-6 API models have a published 1,050,000-token context with 128,000 maximum output. The subscription starter conservatively uses a 272,000 active input budget, not a claim of live account limits. GPT-5.6's static subscription model window remains 372,000; the live runtime may apply a smaller active-input budget. Verify the account/runtime budget before expanding a live policy.
 
