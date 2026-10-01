@@ -23,6 +23,9 @@ const presets: Record<string, StarterConfigOptions> = {
       { providerId: "kimi", tierId: "moderato" },
     ],
   },
+  "grok-supergrok.json": {
+    providers: [{ providerId: "xai", tierId: "supergrok" }],
+  },
   "full-stack.json": {
     providers: [
       { providerId: "openai-codex", tierId: "plus" },
