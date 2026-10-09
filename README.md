@@ -36,7 +36,7 @@ For the written product contract behind the current router, including the option
 
 **Anthropic (status reviewed 2026-09-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
 
-**Google (status reviewed 2026-07-10):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
+**Google (status reviewed 2026-10-09):** Google's [consumer-account deprecation page](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals) says Gemini CLI stopped serving Google AI Pro, Google AI Ultra, and free-tier individual accounts on June 18, 2026. Standard and Enterprise subscriptions have a separate deprecation schedule. ZeroAPI still does not expose Google as subscription capacity; API-key access is a separate billing surface, not a subscription route. See [provider/model status](references/provider-model-status.md).
 
 Fresh OpenClaw setups support OpenAI, Kimi Coding, Z AI (GLM), MiniMax, and xAI Grok OAuth / SuperGrok subscription accounts. Existing Qwen Portal configurations remain recognizable for runtimes that still support that provider, including Hermes; current OpenClaw has removed Portal. Moonshot API billing and Qwen Cloud/Token Plan credentials are separate from those accounts.
 
@@ -442,7 +442,7 @@ The fresh OpenClaw full-stack example includes five subscription providers: Open
 Anthropic's June 15, 2026 notice says Claude Agent SDK, `claude -p`, and third-party app use still draw subscription limits. ZeroAPI waits for the canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path to be implemented and tested before enabling it. See the [official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan).
 
 **Why no Google?**
-As checked July 10, 2026, Gemini CLI individual access is sunsetting through the Antigravity transition. ZeroAPI has no routeable Google subscription provider; Gemini API keys remain usage-billed.
+Google remains outside ZeroAPI's active subscription catalog; API-key access is not subscription capacity. The current individual-access transition, enterprise/API-key exceptions and source review date are recorded in [provider/model status](references/provider-model-status.md).
 
 **How accurate is routing?**
 Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. Inspect `~/.openclaw/logs/zeroapi-routing.log` for raw decisions or run `npm run eval` for a tuning report, and treat routing as a policy hint layer rather than a guarantee that every message will switch models.

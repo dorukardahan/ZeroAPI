@@ -84,6 +84,41 @@ test("release_preflight passes on a minimal aligned fixture (no full-repo copy)"
   }
 });
 
+test("CHANGELOG covers the merged changes after the 3.11.3 release", () => {
+  const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
+  const release = changelog.indexOf("\n## [3.11.3] - 2026-09-15\n");
+  assert.notEqual(release, -1);
+  // Notes may move from Unreleased into a newer release during normal release prep.
+  const postReleaseNotes = changelog.slice(0, release);
+  for (const number of [95, 96, 99]) {
+    assert.ok(postReleaseNotes.includes(`(#${number})`), `Post-3.11.3 notes must cover PR #${number}`);
+  }
+});
+
+// Existing preflight already requires the current changelog version. Exercise
+// that guard independently while all manifest and lockfile versions stay aligned.
+for (const replacement of ["", "## [0.0.0-stale] - 2000-01-01"]) {
+  test(`release_preflight rejects a ${replacement ? "wrong-version" : "missing"} CHANGELOG release section`, () => {
+    const tmp = buildAlignedFixture();
+    try {
+      const version = realVersion();
+      const changelogPath = join(tmp, "CHANGELOG.md");
+      const changelog = readFileSync(changelogPath, "utf8");
+      const needle = `## [${version}]`;
+      assert.ok(changelog.includes(needle), "fixture must include the current version");
+      const withoutVersion = changelog.split("\n").map((line) => line.startsWith(needle) ? replacement : line).join("\n");
+      assert.ok(!withoutVersion.includes(needle));
+      writeFileSync(changelogPath, withoutVersion);
+      assert.throws(
+        () => runPreflight(tmp),
+        (error) => error.status !== 0 && `${error.stdout ?? ""}${error.stderr ?? ""}`.includes(`CHANGELOG.md is missing ${needle}`),
+      );
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+}
+
 test("release_preflight catches benchmark snapshot drift", () => {
   const tmp = buildAlignedFixture();
   try {
