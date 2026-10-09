@@ -21,7 +21,9 @@ The [official Pro/Max Claude Code guide](https://support.claude.com/en/articles/
 
 ### Google re-review - 2026-10-09
 
-The [Gemini CLI team's official transition notice](https://github.com/google-gemini/gemini-cli/discussions/28017) says individual Google AI Pro, Google AI Ultra, and free-tier requests stopped on June 18, 2026; enterprise Gemini Code Assist and API-key authentication are unaffected. The [Gemini CLI home page](https://geminicli.com/) still displays the completed Antigravity CLI transition. The [plans page](https://geminicli.com/plans/) retains older individual-plan cards below that banner, so those cards are not evidence that individual Gemini CLI service resumed.
+Google's specific [consumer-account deprecation page](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals), reviewed on 2026-10-09, says Gemini Code Assist IDE extensions and Gemini CLI stopped serving individuals, Google AI Pro, and Google AI Ultra on June 18, 2026, including the consumer Login with Google path. It explicitly places Standard and Enterprise subscriptions on a separate deprecation schedule. The [deprecation overview](https://developers.google.com/gemini-code-assist/docs/deprecations) corroborates the consumer shutdown date; the [June 18 maintainer announcement](https://github.com/google-gemini/gemini-cli/discussions/28017) separately says API-key authentication was unaffected by that consumer transition.
+
+The general Gemini CLI landing and plans pages still contain installation and individual-plan cards. This review uses the specific deprecation documentation, rather than landing-page cards or banners, for the consumer shutdown. It does not infer current account entitlement, enterprise availability, or a new routeable ZeroAPI integration from those general pages.
 
 ZeroAPI's unchanged subscription catalog and `plugin/__tests__/subscriptions.test.ts` still exclude Google from active starter capacity. This is a documentation-source re-review to satisfy the existing 90-day freshness gate, not a new provider integration, entitlement claim, or configuration change. API-key access remains separate from subscription routing.
 
@@ -70,7 +72,7 @@ Kimi Coding is canonical `kimi` in current OpenClaw and `kimi-coding` in Hermes,
 ## Observed or excluded horizon providers
 
 - Anthropic (status reviewed 2026-09-15): Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits while its separate Agent SDK credit plan is paused. ZeroAPI still does not auto-enable Anthropic. The required canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path has not been implemented and tested end to end.
-- Google (status reviewed 2026-10-09): Gemini CLI individual access stopped on June 18, 2026 in favor of Antigravity CLI; enterprise Code Assist and API-key authentication are unaffected. ZeroAPI's active subscription catalog still excludes Google. API-key access remains outside subscription capacity.
+- Google (status reviewed 2026-10-09): The specific consumer-account deprecation documentation records a June 18, 2026 Gemini CLI shutdown for individuals, Pro and Ultra; Standard and Enterprise have a separate schedule. ZeroAPI's active subscription catalog still excludes Google. API-key access remains outside subscription capacity.
 - DeepSeek, Mistral, and Cohere (status checked 2026-07-10): API-key/pay-as-you-go reference horizon only; not auto-routed as subscription capacity.
 
 ## Public sources

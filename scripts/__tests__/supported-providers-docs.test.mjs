@@ -19,6 +19,15 @@ for (const path of ["README.md", "SKILL.md", "references/provider-config.md", "r
 }
 
 
+test("Google policy review cites the specific consumer deprecation instead of landing-page banners", () => {
+  const status = readFileSync(join(repoRoot, "references/provider-model-status.md"), "utf8");
+  const review = status.match(/^### Google re-review[^\n]*\n([\s\S]*?)^## /m)?.[1];
+  assert.ok(review);
+  assert.ok(review.includes("https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals"));
+  assert.match(review, /separate deprecation schedule/i);
+  assert.doesNotMatch(review, /still displays.*transition|below that banner/i);
+});
+
 function supportedProvidersTable(readme) {
   const section = readme.match(/^## Supported Providers\s*$([\s\S]*?)^## /m)?.[1];
   assert.ok(section, "README.md must contain a Supported Providers section");
