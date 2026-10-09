@@ -36,7 +36,7 @@ For the written product contract behind the current router, including the option
 
 **Anthropic (status reviewed 2026-09-15):** Anthropic says Claude Agent SDK, `claude -p`, and third-party app usage still draw from signed-in subscription limits. ZeroAPI nevertheless does not auto-enable Anthropic until the canonical `anthropic/*` + `agentRuntime.id: "claude-cli"` path is implemented and tested. ([official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
 
-**Google (status reviewed 2026-07-10):** Gemini CLI individual access is being sunset through the Antigravity transition. ZeroAPI does not expose Google as subscription capacity; Gemini API keys are usage-billed, not subscription routes. See [provider/model status](references/provider-model-status.md).
+**Google (status reviewed 2026-10-09):** Gemini CLI stopped serving Google AI Pro, Google AI Ultra, and free-tier individual accounts on June 18, 2026 as part of the Antigravity CLI transition ([official notice](https://github.com/google-gemini/gemini-cli/discussions/28017)). Enterprise Code Assist and API-key access are unaffected by that transition. ZeroAPI still does not expose Google as subscription capacity; API-key access is a separate billing surface, not a subscription route. See [provider/model status](references/provider-model-status.md).
 
 Fresh OpenClaw setups support OpenAI, Kimi Coding, Z AI (GLM), MiniMax, and xAI Grok OAuth / SuperGrok subscription accounts. Existing Qwen Portal configurations remain recognizable for runtimes that still support that provider, including Hermes; current OpenClaw has removed Portal. Moonshot API billing and Qwen Cloud/Token Plan credentials are separate from those accounts.
 
