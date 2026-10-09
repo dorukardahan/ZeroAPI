@@ -73,5 +73,5 @@ ZeroAPI is for subscription or account-quota providers. It should not take over 
 Excluded by default:
 
 - Anthropic subscription routing, until the canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path is implemented and tested. This exclusion is not a claim that subscription access forbids all third-party usage.
-- Google/Gemini CLI OAuth routing, during the documented individual-access sunset and Antigravity transition.
+- Google/Gemini subscription routing remains excluded from ZeroAPI's active catalog. See the authoritative [provider/model status](https://github.com/dorukardahan/ZeroAPI/blob/main/references/provider-model-status.md) for the individual-access transition, exceptions and latest source review date.
 - Plain xAI API-key billing, unless the operator explicitly models that account as quota capacity. SuperGrok subscription routing should use OpenClaw native `xai` OAuth or Hermes `xai-oauth`.

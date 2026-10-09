@@ -6,6 +6,19 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+for (const path of ["README.md", "SKILL.md", "references/provider-config.md", "references/subscription-catalog.md", "plugin/skills/zeroapi/SKILL.md"]) {
+  test(`${path} delegates Google exclusion status to the authoritative review`, () => {
+    const text = readFileSync(join(repoRoot, path), "utf8");
+    const exclusions = text.split("\n").filter((line) => /^(?:-\s+(?:\*\*)?Google|\*\*Google|Google\s|As checked.*Gemini CLI)/.test(line));
+    assert.ok(exclusions.length > 0, `${path} must document the Google exclusion`);
+    for (const line of exclusions) {
+      assert.ok(line.includes("provider-model-status.md"), `${path}: Google policy must link to its authoritative review`);
+      assert.doesNotMatch(line, /2026-07-10|July 10, 2026|sunsetting|documented individual-access sunset/i);
+    }
+  });
+}
+
+
 function supportedProvidersTable(readme) {
   const section = readme.match(/^## Supported Providers\s*$([\s\S]*?)^## /m)?.[1];
   assert.ok(section, "README.md must contain a Supported Providers section");

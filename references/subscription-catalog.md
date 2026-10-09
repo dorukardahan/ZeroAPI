@@ -28,7 +28,7 @@ Qwen Portal remains recognizable for existing compatible-runtime configs, includ
 Excluded from catalog:
 
 - Anthropic: official 2026-06-15 guidance confirms `claude -p` and third-party Agent SDK usage still draw subscription limits, but ZeroAPI waits for a tested canonical `anthropic/*` + `agentRuntime claude-cli` path before auto-routing
-- Google/Gemini: non-routeable; individual Gemini CLI access is sunsetting through the Antigravity transition, and API keys are usage-billed
+- Google/Gemini: excluded from ZeroAPI's active subscription catalog; API-key access is not subscription capacity. See the authoritative [provider/model status](provider-model-status.md) for the individual-access transition, exceptions and latest source review date.
 - DeepSeek, Mistral, and Cohere: API-only reference horizon providers
 
 ## Design Principles

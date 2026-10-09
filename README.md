@@ -442,7 +442,7 @@ The fresh OpenClaw full-stack example includes five subscription providers: Open
 Anthropic's June 15, 2026 notice says Claude Agent SDK, `claude -p`, and third-party app use still draw subscription limits. ZeroAPI waits for the canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` path to be implemented and tested before enabling it. See the [official notice](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan).
 
 **Why no Google?**
-As checked July 10, 2026, Gemini CLI individual access is sunsetting through the Antigravity transition. ZeroAPI has no routeable Google subscription provider; Gemini API keys remain usage-billed.
+Google remains outside ZeroAPI's active subscription catalog; API-key access is not subscription capacity. The current individual-access transition, enterprise/API-key exceptions and source review date are recorded in [provider/model status](references/provider-model-status.md).
 
 **How accurate is routing?**
 Keyword/category routing is intentionally conservative. Some messages are routed, others stay on the current runtime default/current model. Inspect `~/.openclaw/logs/zeroapi-routing.log` for raw decisions or run `npm run eval` for a tuning report, and treat routing as a policy hint layer rather than a guarantee that every message will switch models.

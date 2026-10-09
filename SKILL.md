@@ -43,7 +43,7 @@ If the channel exposes only the generic skill runner, `/skill zeroapi` is an acc
 ZeroAPI only routes across subscription-covered alternatives.
 
 - **Anthropic (Claude):** official 2026-06-15 guidance says Agent SDK, `claude -p`, and third-party apps still draw subscription limits. Do not auto-enable it until canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` is implemented and tested.
-- **Google (Gemini):** as checked 2026-07-10, individual Gemini CLI access is sunsetting through the Antigravity transition. Google remains non-routeable; API-key billing is not subscription capacity.
+- **Google (Gemini):** excluded from the active subscription catalog; API-key access is not subscription capacity. See the authoritative [provider/model status](references/provider-model-status.md) for the transition, exceptions and latest source review date.
 - **xAI OAuth vs API keys:** OpenClaw 2026.5.20+ can use SuperGrok device-code OAuth through the native `xai` provider; older 2026.5.18+ installs use browser OAuth. Only enable `xai/*` models in a subscription policy when that runtime account is OAuth/subscription-backed. Do not auto-add plain `XAI_API_KEY` billing as subscription capacity.
 
 ## How it works

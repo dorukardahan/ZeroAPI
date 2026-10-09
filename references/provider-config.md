@@ -10,7 +10,7 @@ Important distinction:
 
 ## Provider Exclusions
 
-**Google (status checked 2026-07-10):** Non-routeable. Gemini CLI individual access is sunsetting through the Antigravity transition; API-key Gemini remains usage-billed.
+**Google:** Excluded from ZeroAPI's active subscription catalog; API-key access is not subscription capacity. The authoritative [provider/model status](provider-model-status.md) records the individual-access transition, enterprise/API-key exceptions and latest source review date.
 
 **Anthropic (official notice 2026-06-15):** Agent SDK, `claude -p`, and third-party apps still draw signed-in subscription limits. ZeroAPI does not auto-enable it until canonical `anthropic/*` plus `agentRuntime.id: "claude-cli"` is implemented and tested.
 
