@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-10-10
+
 ### Added
 - Add Grok 4.7 starter routes for the `xai` and `xai-oauth` subscription-backed providers, using the direct high-effort Artificial Analysis reference rather than a Grok 4.6 proxy. Missing measurements remain missing; benchmark evidence does not grant subscription access (#95).
 - Add GPT-6 Sol and Luna starter routes with per-account live model-catalog discovery and a conservative 272K starter budget. Refresh the paired Artificial Analysis snapshots and generated policies with distinct direct xhigh references (#96).
